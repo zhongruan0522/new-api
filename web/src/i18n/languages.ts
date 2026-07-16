@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 export const INTERFACE_LANGUAGE_OPTIONS = [
   { code: 'zh', label: '简体中文' },
-  { code: 'en', label: 'English' },
+  { code: 'en', label: 'models.fields.english' },
 ] as const
 
 export type InterfaceLanguageCode =

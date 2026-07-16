@@ -29,7 +29,7 @@ import { type ApiKeyFormData, type ApiKey } from '../types'
 export function getApiKeyFormSchema(t: TFunction) {
   return z
     .object({
-      name: z.string().min(1, t('Please enter a name')),
+      name: z.string().min(1, t('keys.errors.pleaseEnterAName')),
       quota_type: z.number().min(0).max(3),
       remain_quota_dollars: z.number().optional(),
       expired_time: z.date().optional(),
@@ -54,7 +54,7 @@ export function getApiKeyFormSchema(t: TFunction) {
         ctx.addIssue({
           code: 'custom',
           path: ['remain_quota_dollars'],
-          message: t('Quota must be zero or greater'),
+          message: t('keys.errors.quotaMustBeZeroOrGreater'),
         })
       }
 
@@ -63,14 +63,14 @@ export function getApiKeyFormSchema(t: TFunction) {
           ctx.addIssue({
             code: 'custom',
             path: ['window_hours'],
-            message: t('Window duration must be at least 1 hour'),
+            message: t('keys.errors.windowDurationMustBeAtLeast1Hour'),
           })
         }
         if ((data.window_quota_dollars ?? 0) <= 0) {
           ctx.addIssue({
             code: 'custom',
             path: ['window_quota_dollars'],
-            message: t('Window quota must be greater than zero'),
+            message: t('keys.errors.windowQuotaMustBeGreaterThanZero'),
           })
         }
         const startHour = data.window_start_hour ?? 0
@@ -78,7 +78,7 @@ export function getApiKeyFormSchema(t: TFunction) {
           ctx.addIssue({
             code: 'custom',
             path: ['window_start_hour'],
-            message: t('Window start hour must be between 0 and 23'),
+            message: t('keys.errors.windowStartHourMustBeBetween0And23'),
           })
         }
       }
@@ -88,14 +88,14 @@ export function getApiKeyFormSchema(t: TFunction) {
           ctx.addIssue({
             code: 'custom',
             path: ['cycle_days'],
-            message: t('Cycle duration must be at least 1 day'),
+            message: t('keys.errors.cycleDurationMustBeAtLeast1Day'),
           })
         }
         if ((data.cycle_quota_dollars ?? 0) <= 0) {
           ctx.addIssue({
             code: 'custom',
             path: ['cycle_quota_dollars'],
-            message: t('Cycle quota must be greater than zero'),
+            message: t('keys.errors.cycleQuotaMustBeGreaterThanZero'),
           })
         }
       }

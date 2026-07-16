@@ -151,14 +151,14 @@ export function VoiceManagement() {
       draftFilters.operatorId.trim() &&
       !normalizeOperatorId(draftFilters.operatorId)
     ) {
-      toast.error(t('Operator ID must be a positive integer'))
+      toast.error(t('minimax.errors.operatorIdMustBeAPositiveInteger'))
       return
     }
 
     const startTimestamp = toUnixSeconds(draftFilters.startTime)
     const endTimestamp = toUnixSeconds(draftFilters.endTime)
     if (startTimestamp && endTimestamp && startTimestamp > endTimestamp) {
-      toast.error(t('Start time cannot be later than end time'))
+      toast.error(t('minimax.errors.startTimeCannotBeLaterThanEndTime'))
       return
     }
 
@@ -192,7 +192,7 @@ export function VoiceManagement() {
 
   const handleSubmit = async () => {
     if (!form.voice_id.trim()) {
-      toast.error(t('Voice ID is required'))
+      toast.error(t('minimax.errors.voiceIdIsRequired'))
       return
     }
 
@@ -201,24 +201,24 @@ export function VoiceManagement() {
       if (editing) {
         const response = await updateVoice(editing.id, form)
         if (!response.success) {
-          toast.error(response.message || t('Update failed'))
+          toast.error(response.message || t('minimax.status.updateFailed'))
           return
         }
-        toast.success(t('Voice updated'))
+        toast.success(t('minimax.status.voiceUpdated'))
       } else {
         const response = await createVoice(form)
         if (!response.success) {
-          toast.error(response.message || t('Create failed'))
+          toast.error(response.message || t('minimax.actions.createFailed'))
           return
         }
-        toast.success(t('Voice created'))
+        toast.success(t('minimax.status.voiceCreated'))
       }
 
       setDialogOpen(false)
       invalidate()
     } catch (error) {
       const message = extractApiErrorMessage(error)
-      toast.error(message || t('Operation failed'))
+      toast.error(message || t('channels.status.operationFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -231,16 +231,16 @@ export function VoiceManagement() {
     try {
       const response = await deleteVoice(deleteTarget.id)
       if (!response.success) {
-        toast.error(response.message || t('Delete failed'))
+        toast.error(response.message || t('minimax.actions.deleteFailed'))
         return
       }
 
-      toast.success(t('Voice deleted'))
+      toast.success(t('minimax.status.voiceDeleted'))
       setDeleteTarget(null)
       invalidate()
     } catch (error) {
       const message = extractApiErrorMessage(error)
-      toast.error(message || t('Delete failed'))
+      toast.error(message || t('minimax.actions.deleteFailed'))
     } finally {
       setIsDeleting(false)
     }
@@ -250,10 +250,10 @@ export function VoiceManagement() {
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {t('Voice Management')}
+          {t('minimax.titles.voiceManagement')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
-          <Button onClick={openCreate}>{t('Add Voice')}</Button>
+          <Button onClick={openCreate}>{t('minimax.actions.addVoice')}</Button>
         </SectionPageLayout.Actions>
 
         <SectionPageLayout.Content>
@@ -299,10 +299,10 @@ export function VoiceManagement() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Delete Voice')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('minimax.actions.deleteVoice')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                'Are you sure you want to delete voice {{voiceId}}? This action cannot be undone.',
+                'minimax.errors.sureYouWantToDeleteVoiceVoiceIdThis',
                 {
                   voiceId: deleteTarget?.voice_id ?? '-',
                 }
@@ -311,14 +311,14 @@ export function VoiceManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               variant='destructive'
               onClick={handleDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? t('Deleting...') : t('Delete')}
+              {isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

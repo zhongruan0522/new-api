@@ -80,7 +80,7 @@ export function BotProtectionSection({
   }
 
   return (
-    <SettingsSection title={t('Bot Protection')}>
+    <SettingsSection title={t('systemSettings.fields.botProtection')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)} autoComplete='off'>
           <SettingsPageFormActions
@@ -93,10 +93,10 @@ export function BotProtectionSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable Turnstile')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableTurnstile')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Protect login and registration with Cloudflare Turnstile'
+                      'systemSettings.fields.protectLoginAndRegistrationWithCloudflareTurnstile'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -115,10 +115,10 @@ export function BotProtectionSection({
             name='TurnstileSiteKey'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Site Key')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.siteKey')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('Your Turnstile site key')}
+                    placeholder={t('systemSettings.fields.turnstileSiteKey')}
                     autoComplete='off'
                     {...field}
                   />
@@ -133,11 +133,11 @@ export function BotProtectionSection({
             name='TurnstileSecretKey'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Secret Key')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.secretKey')}</FormLabel>
                 <FormControl>
                   <Input
                     type='password'
-                    placeholder={t('Your Turnstile secret key')}
+                    placeholder={t('systemSettings.fields.turnstileSecretKey')}
                     autoComplete='new-password'
                     {...field}
                   />

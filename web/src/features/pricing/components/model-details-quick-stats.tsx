@@ -53,9 +53,9 @@ function buildStats(
     {
       key: 'context',
       icon: Layers,
-      label: t('Context'),
+      label: t('pricing.fields.context'),
       value: formatTokenCount(metadata.context_length),
-      hint: t('Maximum input window'),
+      hint: t('pricing.fields.maximumInputWindow'),
     },
   ]
 
@@ -63,16 +63,16 @@ function buildStats(
     stats.push({
       key: 'max-output',
       icon: Maximize2,
-      label: t('Max output'),
+      label: t('models.fields.maxOutput'),
       value: formatTokenCount(metadata.max_output_tokens),
-      hint: t('Maximum tokens per response'),
+      hint: t('pricing.fields.maximumTokensPerResponse'),
     })
   }
 
   stats.push({
     key: 'modalities',
     icon: FileText,
-    label: t('Modalities'),
+    label: t('pricing.fields.modalities'),
     value: (
       <ModalityFlow
         input={metadata.input_modalities}
@@ -85,7 +85,7 @@ function buildStats(
     stats.push({
       key: 'knowledge',
       icon: Sparkles,
-      label: t('Knowledge cutoff'),
+      label: t('models.fields.knowledgeCutoff'),
       value: formatYearMonth(metadata.knowledge_cutoff),
     })
   }
@@ -94,7 +94,7 @@ function buildStats(
     stats.push({
       key: 'release',
       icon: CalendarClock,
-      label: t('Released'),
+      label: t('models.fields.released'),
       value: formatYearMonth(metadata.release_date),
     })
   }

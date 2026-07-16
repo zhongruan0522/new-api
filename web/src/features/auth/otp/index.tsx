@@ -28,18 +28,18 @@ export function Otp() {
       <div className='w-full space-y-8'>
         <div className='space-y-3'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Two-factor Authentication')}
+            {t('auth.fields.twoFactorAuthentication')}
           </h2>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Please enter the authentication code.')}
+            {t('auth.errors.pleaseEnterTheAuthenticationCode')}
           </p>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Session expired?')}{' '}
+            {t('auth.status.sessionExpired')}{' '}
             <Link
               to='/sign-in'
               className='hover:text-primary font-medium underline underline-offset-4'
             >
-              {t('Re-login')}
+              {t('auth.actions.reLogin')}
             </Link>
             .
           </p>

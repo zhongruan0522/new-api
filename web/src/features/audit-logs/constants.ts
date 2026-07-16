@@ -19,29 +19,29 @@ For commercial licensing, please contact support@quantumnous.com
 import type { AuditLog } from './api'
 
 export const AUDIT_ACTION_TYPES = [
-  { value: 'create', label: 'Audit: Create' },
-  { value: 'update', label: 'Audit: Update' },
-  { value: 'delete', label: 'Audit: Delete' },
+  { value: 'create', label: 'common.fields.auditCreate' },
+  { value: 'update', label: 'common.fields.auditUpdate' },
+  { value: 'delete', label: 'common.fields.auditDelete' },
 ] as const
 
 export const AUDIT_MODULES = [
-  { value: 'option', label: 'Audit: Module - System Settings' },
-  { value: 'channel', label: 'Audit: Module - Channels' },
-  { value: 'user', label: 'Audit: Module - Users' },
-  { value: 'token', label: 'Audit: Module - Tokens' },
-  { value: 'redemption', label: 'Audit: Module - Redemption Codes' },
-  { value: 'model', label: 'Audit: Module - Models' },
-  { value: 'voice', label: 'Audit: Module - Voice Management' },
-  { value: 'vendor', label: 'Audit: Module - Vendors' },
-  { value: 'dynamic_ratio', label: 'Audit: Module - Dynamic Ratio' },
-  { value: 'prefill_group', label: 'Audit: Module - Prefill Groups' },
-  { value: 'db', label: 'Audit: Module - Database Migration' },
-  { value: 'performance', label: 'Audit: Module - Performance' },
-  { value: 'log', label: 'Audit: Module - Log Cleanup' },
-  { value: 'setup', label: 'Audit: Module - System Setup' },
+  { value: 'option', label: 'common.titles.auditModuleSystemSettings' },
+  { value: 'channel', label: 'common.titles.auditModuleChannels' },
+  { value: 'user', label: 'common.titles.auditModuleUsers' },
+  { value: 'token', label: 'common.fields.auditModuleTokens' },
+  { value: 'redemption', label: 'common.fields.auditModuleRedemptionCodes' },
+  { value: 'model', label: 'common.titles.auditModuleModels' },
+  { value: 'voice', label: 'auditLogs.titles.moduleVoiceManagement' },
+  { value: 'vendor', label: 'common.fields.auditModuleVendors' },
+  { value: 'dynamic_ratio', label: 'common.fields.auditModuleDynamicRatio' },
+  { value: 'prefill_group', label: 'common.fields.auditModulePrefillGroups' },
+  { value: 'db', label: 'common.fields.auditModuleDatabaseMigration' },
+  { value: 'performance', label: 'common.fields.auditModulePerformance' },
+  { value: 'log', label: 'common.fields.auditModuleLogCleanup' },
+  { value: 'setup', label: 'common.titles.auditModuleSystemSetup' },
   {
     value: 'dashboard_config',
-    label: 'Audit: Module - Dashboard Configuration',
+    label: 'common.titles.auditModuleDashboardConfiguration',
   },
 ] as const
 

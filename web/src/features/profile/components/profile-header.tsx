@@ -79,21 +79,21 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
   const roleLabel = getRoleLabel(profile.role)
   const stats = [
     {
-      label: t('Current Balance'),
+      label: t('channels.fields.currentBalance'),
       value: formatQuota(profile.quota),
-      description: t('Remaining Quota'),
+      description: t('keyQuery.fields.remainingQuota'),
       icon: WalletCards,
     },
     {
-      label: t('Total Usage'),
+      label: t('profile.fields.totalUsage'),
       value: formatQuota(profile.used_quota),
-      description: t('Total consumed quota'),
+      description: t('dashboard.fields.totalConsumedQuota'),
       icon: BarChart3,
     },
     {
-      label: t('API Requests'),
+      label: t('profile.fields.apiRequests'),
       value: formatCompactNumber(profile.request_count),
-      description: t('Total requests made'),
+      description: t('dashboard.fields.totalRequestsMade'),
       icon: Activity,
     },
   ]

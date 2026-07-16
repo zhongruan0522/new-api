@@ -97,7 +97,7 @@ api.interceptors.response.use(
 
       if (status === 401) {
         // Unauthorized: clear auth state and show toast
-        toast.error(i18next.t('Session expired!'))
+        toast.error(i18next.t('common.status.sessionExpired'))
         try {
           useAuthStore.getState().auth.reset()
         } catch {

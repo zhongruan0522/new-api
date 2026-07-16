@@ -102,29 +102,29 @@ export type ParamOverrideEditorDialogProps = {
 // ---------------------------------------------------------------------------
 
 const OPERATION_MODE_OPTIONS = [
-  { label: 'Set Field', value: 'set' },
-  { label: 'Delete Field', value: 'delete' },
-  { label: 'Append to End', value: 'append' },
-  { label: 'Prepend to Start', value: 'prepend' },
-  { label: 'Copy Field', value: 'copy' },
-  { label: 'Move Field', value: 'move' },
-  { label: 'String Replace', value: 'replace' },
-  { label: 'Regex Replace', value: 'regex_replace' },
-  { label: 'Trim Prefix', value: 'trim_prefix' },
-  { label: 'Trim Suffix', value: 'trim_suffix' },
-  { label: 'Ensure Prefix', value: 'ensure_prefix' },
-  { label: 'Ensure Suffix', value: 'ensure_suffix' },
-  { label: 'Trim Space', value: 'trim_space' },
-  { label: 'To Lowercase', value: 'to_lower' },
-  { label: 'To Uppercase', value: 'to_upper' },
-  { label: 'Return Custom Error', value: 'return_error' },
-  { label: 'Prune Object Items', value: 'prune_objects' },
-  { label: 'Pass Through Headers', value: 'pass_headers' },
-  { label: 'Sync Fields', value: 'sync_fields' },
-  { label: 'Set Request Header', value: 'set_header' },
-  { label: 'Delete Request Header', value: 'delete_header' },
-  { label: 'Copy Request Header', value: 'copy_header' },
-  { label: 'Move Request Header', value: 'move_header' },
+  { label: 'common.fields.setField', value: 'set' },
+  { label: 'common.actions.deleteField', value: 'delete' },
+  { label: 'common.fields.appendToEnd', value: 'append' },
+  { label: 'common.fields.prependToStart', value: 'prepend' },
+  { label: 'common.actions.copyField', value: 'copy' },
+  { label: 'common.fields.moveField', value: 'move' },
+  { label: 'common.fields.stringReplace', value: 'replace' },
+  { label: 'common.fields.regexReplace', value: 'regex_replace' },
+  { label: 'common.fields.trimPrefix', value: 'trim_prefix' },
+  { label: 'common.fields.trimSuffix', value: 'trim_suffix' },
+  { label: 'common.fields.ensurePrefix', value: 'ensure_prefix' },
+  { label: 'common.fields.ensureSuffix', value: 'ensure_suffix' },
+  { label: 'common.fields.trimSpace', value: 'trim_space' },
+  { label: 'common.fields.lowercase', value: 'to_lower' },
+  { label: 'common.fields.uppercase', value: 'to_upper' },
+  { label: 'common.fields.returnCustomError', value: 'return_error' },
+  { label: 'common.fields.pruneObjectItems', value: 'prune_objects' },
+  { label: 'channels.fields.passThroughHeaders', value: 'pass_headers' },
+  { label: 'common.fields.syncFields', value: 'sync_fields' },
+  { label: 'common.fields.setRequestHeader', value: 'set_header' },
+  { label: 'common.actions.deleteRequestHeader', value: 'delete_header' },
+  { label: 'common.actions.copyRequestHeader', value: 'copy_header' },
+  { label: 'common.fields.moveRequestHeader', value: 'move_header' },
 ]
 
 const OPERATION_MODE_VALUES = new Set(
@@ -139,13 +139,13 @@ const OPERATION_MODE_LABEL_MAP = OPERATION_MODE_OPTIONS.reduce<
 }, {})
 
 const CONDITION_MODE_OPTIONS = [
-  { label: 'Exact Match', value: 'full' },
-  { label: 'Prefix', value: 'prefix' },
-  { label: 'Suffix', value: 'suffix' },
-  { label: 'Contains', value: 'contains' },
-  { label: 'Greater Than', value: 'gt' },
+  { label: 'models.fields.exactMatch', value: 'full' },
+  { label: 'models.fields.prefix', value: 'prefix' },
+  { label: 'models.fields.suffix', value: 'suffix' },
+  { label: 'models.fields.contains', value: 'contains' },
+  { label: 'common.fields.greaterThan', value: 'gt' },
   { label: 'Greater Than or Equal', value: 'gte' },
-  { label: 'Less Than', value: 'lt' },
+  { label: 'common.fields.lessThan', value: 'lt' },
   { label: 'Less Than or Equal', value: 'lte' },
 ]
 
@@ -220,35 +220,35 @@ const TO_REQUIRED_MODES = new Set([
 ])
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-  set: 'Write value to the target field',
-  delete: 'Remove the target field',
-  append: 'Append value to array / string / object end',
-  prepend: 'Prepend value to array / string / object start',
-  copy: 'Copy source field to target field',
-  move: 'Move source field to target field',
-  replace: 'Do string replacement in the target field',
-  regex_replace: 'Do regex replacement in the target field',
-  trim_prefix: 'Remove string prefix',
-  trim_suffix: 'Remove string suffix',
-  ensure_prefix: 'Ensure the string has a specified prefix',
-  ensure_suffix: 'Ensure the string has a specified suffix',
-  trim_space: 'Trim leading/trailing whitespace',
-  to_lower: 'Convert string to lowercase',
-  to_upper: 'Convert string to uppercase',
-  return_error: 'Return a custom error immediately',
-  prune_objects: 'Prune object items by conditions',
-  pass_headers: 'Pass specified request headers to upstream',
-  sync_fields: 'Auto-fill when one field exists and another is missing',
+  set: 'common.fields.writeValueToTheTargetField',
+  delete: 'common.actions.removeTheTargetField',
+  append: 'common.tips.appendValueToArrayStringObjectEnd',
+  prepend: 'common.tips.prependValueToArrayStringObjectStart',
+  copy: 'common.actions.copySourceFieldToTargetField',
+  move: 'common.tips.moveSourceFieldToTargetField',
+  replace: 'common.tips.doStringReplacementInTheTargetField',
+  regex_replace: 'common.tips.doRegexReplacementInTheTargetField',
+  trim_prefix: 'common.actions.removeStringPrefix',
+  trim_suffix: 'common.actions.removeStringSuffix',
+  ensure_prefix: 'common.tips.ensureTheStringHasASpecifiedPrefix',
+  ensure_suffix: 'common.tips.ensureTheStringHasASpecifiedSuffix',
+  trim_space: 'common.tips.trimLeadingTrailingWhitespace',
+  to_lower: 'common.fields.convertStringToLowercase',
+  to_upper: 'common.fields.convertStringToUppercase',
+  return_error: 'common.tips.returnACustomErrorImmediately',
+  prune_objects: 'common.tips.pruneObjectItemsByConditions',
+  pass_headers: 'common.tips.passSpecifiedRequestHeadersToUpstream',
+  sync_fields: 'common.tips.autoFillWhenOneFieldExistsAndAnotherIs',
   set_header:
-    'Set runtime request header: override entire value, or manipulate comma-separated tokens',
-  delete_header: 'Delete a runtime request header',
-  copy_header: 'Copy a request header',
-  move_header: 'Move a request header',
+    'common.tips.setRuntimeRequestHeaderOverrideEntireValueOrManipulate',
+  delete_header: 'common.actions.deleteARuntimeRequestHeader',
+  copy_header: 'common.actions.copyARequestHeader',
+  move_header: 'common.fields.moveARequestHeader',
 }
 
 const SYNC_TARGET_TYPE_OPTIONS = [
-  { label: 'Request Body Field', value: 'json' },
-  { label: 'Request Header Field', value: 'header' },
+  { label: 'common.fields.requestBodyField', value: 'json' },
+  { label: 'common.fields.requestHeaderField', value: 'header' },
 ]
 
 // Templates
@@ -392,32 +392,32 @@ type TemplatePresetConfig = {
 
 const TEMPLATE_PRESET_CONFIG: Record<string, TemplatePresetConfig> = {
   operations_default: {
-    label: 'New Format Template',
+    label: 'channels.fields.newFormatTemplate',
     kind: 'operations',
     payload: OPERATION_TEMPLATE,
   },
   legacy_default: {
-    label: 'Legacy Format Template',
+    label: 'common.fields.legacyFormatTemplate',
     kind: 'legacy',
     payload: LEGACY_TEMPLATE,
   },
   pass_headers_auth: {
-    label: 'Header Passthrough (X-Request-Id)',
+    label: 'common.tips.headerPassthroughXRequestId',
     kind: 'operations',
     payload: HEADER_PASSTHROUGH_TEMPLATE,
   },
   gemini_image_4k: {
-    label: 'Gemini Image 4K',
+    label: 'common.fields.geminiImage4K',
     kind: 'operations',
     payload: GEMINI_IMAGE_4K_TEMPLATE,
   },
   claude_cli_headers_passthrough: {
-    label: 'Claude CLI Header Passthrough',
+    label: 'common.fields.claudeCliHeaderPassthrough',
     kind: 'operations',
     payload: CLAUDE_CLI_HEADER_PASSTHROUGH_TEMPLATE,
   },
   codex_cli_headers_passthrough: {
-    label: 'Codex CLI Header Passthrough',
+    label: 'common.fields.codexCliHeaderPassthrough',
     kind: 'operations',
     payload: CODEX_CLI_HEADER_PASSTHROUGH_TEMPLATE,
   },
@@ -441,7 +441,7 @@ const TEMPLATE_PRESET_CONFIG: Record<string, TemplatePresetConfig> = {
     },
   },
   aws_bedrock_anthropic_beta_override: {
-    label: 'AWS Bedrock Claude Compat',
+    label: 'common.fields.awsBedrockClaudeCompat',
     kind: 'operations',
     payload: AWS_BEDROCK_ANTHROPIC_COMPAT_TEMPLATE,
   },
@@ -594,9 +594,9 @@ const getModeTagTailwind = (mode: string): string => {
 }
 
 const getModePathLabel = (mode: string): string => {
-  if (mode === 'set_header' || mode === 'delete_header') return 'Header Name'
-  if (mode === 'prune_objects') return 'Target Path (optional)'
-  return 'Target Field Path'
+  if (mode === 'set_header' || mode === 'delete_header') return 'common.fields.headerName'
+  if (mode === 'prune_objects') return 'common.fields.targetPathOptional'
+  return 'common.fields.targetFieldPath'
 }
 
 const getModePathPlaceholder = (mode: string): string => {
@@ -607,10 +607,10 @@ const getModePathPlaceholder = (mode: string): string => {
 }
 
 const getModeFromLabel = (mode: string): string => {
-  if (mode === 'replace') return 'Match Text'
-  if (mode === 'regex_replace') return 'Regex Pattern'
-  if (mode === 'copy_header' || mode === 'move_header') return 'Source Header'
-  return 'Source Field'
+  if (mode === 'replace') return 'common.fields.matchText'
+  if (mode === 'regex_replace') return 'common.fields.regexPattern'
+  if (mode === 'copy_header' || mode === 'move_header') return 'common.fields.sourceHeader'
+  return 'common.fields.sourceField'
 }
 
 const getModeFromPlaceholder = (mode: string): string => {
@@ -621,9 +621,9 @@ const getModeFromPlaceholder = (mode: string): string => {
 }
 
 const getModeToLabel = (mode: string): string => {
-  if (mode === 'replace' || mode === 'regex_replace') return 'Replace With'
-  if (mode === 'copy_header' || mode === 'move_header') return 'Target Header'
-  return 'Target Field'
+  if (mode === 'replace' || mode === 'regex_replace') return 'common.fields.replaceWith'
+  if (mode === 'copy_header' || mode === 'move_header') return 'common.fields.targetHeader'
+  return 'common.fields.targetField'
 }
 
 const getModeToPlaceholder = (mode: string): string => {
@@ -635,18 +635,18 @@ const getModeToPlaceholder = (mode: string): string => {
 
 const getModeValueLabel = (mode: string): string => {
   if (mode === 'set_header')
-    return 'Header Value (supports string or JSON mapping)'
+    return 'common.tips.headerValueSupportsStringOrJsonMapping'
   if (mode === 'pass_headers')
-    return 'Pass-through Headers (comma-separated or JSON array)'
+    return 'common.tips.passThroughHeadersCommaSeparatedOrJsonArray'
   if (
     mode === 'trim_prefix' ||
     mode === 'trim_suffix' ||
     mode === 'ensure_prefix' ||
     mode === 'ensure_suffix'
   )
-    return 'Prefix/Suffix Text'
-  if (mode === 'prune_objects') return 'Prune Rule (string or JSON object)'
-  return 'Value (supports JSON or plain text)'
+    return 'common.fields.prefixSuffixText'
+  if (mode === 'prune_objects') return 'common.tips.pruneRuleStringOrJsonObject'
+  return 'common.tips.valueSupportsJsonOrPlainText'
 }
 
 const getModeValuePlaceholder = (mode: string): string => {
@@ -931,26 +931,26 @@ const validateOperations = (
     const toValue = op.to.trim()
 
     if (meta.path && !pathValue)
-      return t('Rule {{line}} is missing target path', { line })
+      return t('channels.tips.ruleLineIsMissingTargetPath', { line })
     if (FROM_REQUIRED_MODES.has(mode) && !fromValue) {
       if (!(meta.pathAlias && pathValue))
-        return t('Rule {{line}} is missing source field', { line })
+        return t('channels.tips.ruleLineIsMissingSourceField', { line })
     }
     if (TO_REQUIRED_MODES.has(mode) && !toValue) {
       if (!(meta.pathAlias && pathValue))
-        return t('Rule {{line}} is missing target field', { line })
+        return t('channels.tips.ruleLineIsMissingTargetField', { line })
     }
     if (VALUE_REQUIRED_MODES.has(mode) && op.value_text.trim() === '')
-      return t('Rule {{line}} is missing value', { line })
+      return t('channels.fields.ruleLineIsMissingValue', { line })
 
     if (mode === 'return_error') {
       const raw = op.value_text.trim()
-      if (!raw) return t('Rule {{line}} is missing value', { line })
+      if (!raw) return t('channels.fields.ruleLineIsMissingValue', { line })
       try {
         const parsed = JSON.parse(raw)
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           if (!String((parsed as Record<string, unknown>).message || '').trim())
-            return t('Rule {{line}} return_error requires a message field', {
+            return t('channels.tips.ruleLineReturnErrorRequiresAMessageField', {
               line,
             })
         }
@@ -962,17 +962,17 @@ const validateOperations = (
     if (mode === 'prune_objects') {
       const raw = op.value_text.trim()
       if (!raw)
-        return t('Rule {{line}} prune_objects is missing conditions', { line })
+        return t('channels.tips.ruleLinePruneObjectsIsMissingConditions', { line })
     }
 
     if (mode === 'pass_headers') {
       const raw = op.value_text.trim()
       if (!raw)
-        return t('Rule {{line}} pass_headers is missing header names', { line })
+        return t('channels.tips.ruleLinePassHeadersIsMissingHeaderNames', { line })
       const parsed = parseLooseValue(raw)
       const headers = parsePassHeaderNames(parsed)
       if (headers.length === 0)
-        return t('Rule {{line}} pass_headers format is invalid', { line })
+        return t('channels.tips.ruleLinePassHeadersFormatIsInvalid', { line })
     }
   }
   return ''
@@ -1483,10 +1483,10 @@ export function ParamOverrideEditorDialog(
       const trimmed = legacyValue.trim()
       if (!trimmed) return ''
       if (!verifyJSON(trimmed))
-        throw new Error(t('Parameter override must be valid JSON format'))
+        throw new Error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
       const parsed = JSON.parse(trimmed) as unknown
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
-        throw new Error(t('Legacy format must be a JSON object'))
+        throw new Error(t('channels.errors.legacyFormatMustBeAJsonObject'))
       return JSON.stringify(parsed, null, 2)
     }
     return buildOperationsJson(operations, { validate: true }, t)
@@ -1505,7 +1505,7 @@ export function ParamOverrideEditorDialog(
         setJsonText(buildOperationsJson(operations, { validate: false }, t))
       }
       setJsonError(
-        (error as Error).message || t('Parameter configuration error')
+        (error as Error).message || t('channels.titles.parameterConfigurationError')
       )
     }
     setEditMode('json')
@@ -1525,7 +1525,7 @@ export function ParamOverrideEditorDialog(
       return
     }
     if (!verifyJSON(trimmed)) {
-      toast.error(t('Parameter override must be valid JSON format'))
+      toast.error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
       return
     }
     const parsed = JSON.parse(trimmed) as Record<string, unknown>
@@ -1561,7 +1561,7 @@ export function ParamOverrideEditorDialog(
       setTemplatePresetKey('legacy_default')
       return
     }
-    toast.error(t('Parameter override must be a valid JSON object'))
+    toast.error(t('channels.errors.parameterOverrideMustBeAValidJsonObject'))
   }, [editMode, jsonText, t])
 
   const fillTemplate = useCallback(
@@ -1577,7 +1577,7 @@ export function ParamOverrideEditorDialog(
           let parsedCurrent: Record<string, unknown> = {}
           if (trimmed) {
             if (!verifyJSON(trimmed)) {
-              toast.error(t('Current legacy JSON is invalid, cannot append'))
+              toast.error(t('channels.errors.currentLegacyJsonIsInvalidCannotAppend'))
               return
             }
             parsedCurrent = JSON.parse(trimmed) as Record<string, unknown>
@@ -1655,7 +1655,7 @@ export function ParamOverrideEditorDialog(
         setJsonError('')
         return
       }
-      setJsonError(verifyJSON(trimmed) ? '' : t('JSON format error'))
+      setJsonError(verifyJSON(trimmed) ? '' : t('channels.fields.jsonFormatError'))
     },
     [t]
   )
@@ -1664,7 +1664,7 @@ export function ParamOverrideEditorDialog(
     const trimmed = jsonText.trim()
     if (!trimmed) return
     if (!verifyJSON(trimmed)) {
-      toast.error(t('Parameter override must be valid JSON format'))
+      toast.error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
       return
     }
     setJsonText(JSON.stringify(JSON.parse(trimmed), null, 2))
@@ -1677,7 +1677,7 @@ export function ParamOverrideEditorDialog(
       buildVisualJson()
       return ''
     } catch (error) {
-      return (error as Error)?.message || t('Parameter configuration error')
+      return (error as Error)?.message || t('channels.titles.parameterConfigurationError')
     }
   }, [buildVisualJson, editMode, t])
 
@@ -1689,7 +1689,7 @@ export function ParamOverrideEditorDialog(
         const trimmed = jsonText.trim()
         if (trimmed) {
           if (!verifyJSON(trimmed))
-            throw new Error(t('Parameter override must be valid JSON format'))
+            throw new Error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
           result = JSON.stringify(JSON.parse(trimmed), null, 2)
         }
       } else {
@@ -1725,10 +1725,10 @@ export function ParamOverrideEditorDialog(
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-5xl'>
         <DialogHeader className='border-b px-6 py-4'>
-          <DialogTitle>{t('Parameter Override')}</DialogTitle>
+          <DialogTitle>{t('channels.fields.parameterOverride')}</DialogTitle>
           <DialogDescription>
             {t(
-              'Create request parameter override rules with a visual editor or raw JSON.'
+              'channels.actions.createRequestParameterOverrideRulesWithAVisualEditor'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -1737,7 +1737,7 @@ export function ParamOverrideEditorDialog(
         <div className='bg-muted/30 border-b px-4 py-3'>
           <div className='flex flex-wrap items-center gap-2'>
             <span className='text-muted-foreground text-xs font-medium'>
-              {t('Mode')}
+              {t('channels.fields.mode')}
             </span>
             <Button
               type='button'
@@ -1745,7 +1745,7 @@ export function ParamOverrideEditorDialog(
               size='sm'
               onClick={switchToVisualMode}
             >
-              {t('Visual')}
+              {t('channels.fields.visual')}
             </Button>
             <Button
               type='button'
@@ -1753,13 +1753,13 @@ export function ParamOverrideEditorDialog(
               size='sm'
               onClick={switchToJsonMode}
             >
-              {t('JSON Text')}
+              {t('channels.fields.jsonText')}
             </Button>
 
             <div className='bg-border mx-1 h-5 w-px' />
 
             <span className='text-muted-foreground text-xs font-medium'>
-              {t('Template')}
+              {t('channels.fields.template')}
             </span>
             <Select
               items={[
@@ -1792,7 +1792,7 @@ export function ParamOverrideEditorDialog(
               size='sm'
               onClick={() => fillTemplate('fill')}
             >
-              {t('Fill Template')}
+              {t('common.actions.fillTemplate')}
             </Button>
             <Button
               type='button'
@@ -1800,7 +1800,7 @@ export function ParamOverrideEditorDialog(
               size='sm'
               onClick={() => fillTemplate('append')}
             >
-              {t('Append Template')}
+              {t('channels.fields.appendTemplate')}
             </Button>
             <Button
               type='button'
@@ -1808,7 +1808,7 @@ export function ParamOverrideEditorDialog(
               size='sm'
               onClick={resetEditorState}
             >
-              {t('Reset')}
+              {t('common.actions.reset')}
             </Button>
           </div>
         </div>
@@ -1819,7 +1819,7 @@ export function ParamOverrideEditorDialog(
             visualMode === 'legacy' ? (
               <div className='p-4'>
                 <p className='text-muted-foreground mb-2 text-sm'>
-                  {t('Legacy Format (JSON Object)')}
+                  {t('channels.fields.legacyFormatJsonObject')}
                 </p>
                 <Textarea
                   value={legacyValue}
@@ -1830,7 +1830,7 @@ export function ParamOverrideEditorDialog(
                 />
                 <p className='text-muted-foreground mt-2 text-xs'>
                   {t(
-                    'Edit JSON object directly. Suitable for simple parameter overrides.'
+                    'channels.actions.editJsonObjectDirectlySuitableForSimpleParameterOverrides'
                   )}
                 </p>
               </div>
@@ -1840,7 +1840,7 @@ export function ParamOverrideEditorDialog(
                 <div className='flex w-[280px] flex-shrink-0 flex-col border-r'>
                   <div className='flex items-center justify-between border-b px-3 py-2'>
                     <div className='flex items-center gap-2'>
-                      <span className='text-sm font-medium'>{t('Rules')}</span>
+                      <span className='text-sm font-medium'>{t('channels.fields.rules')}</span>
                       <Badge variant='secondary'>
                         {operationCount}/{operations.length}
                       </Badge>
@@ -1877,7 +1877,7 @@ export function ParamOverrideEditorDialog(
                       <Input
                         value={operationSearch}
                         onChange={(e) => setOperationSearch(e.target.value)}
-                        placeholder={t('Search rules...')}
+                        placeholder={t('channels.actions.searchRules')}
                         className='h-8 pl-8 text-xs'
                       />
                     </div>
@@ -1887,7 +1887,7 @@ export function ParamOverrideEditorDialog(
                     <div className='flex flex-col gap-1 px-3 pb-3'>
                       {filteredOperations.length === 0 ? (
                         <p className='text-muted-foreground py-4 text-center text-xs'>
-                          {t('No matching rules')}
+                          {t('channels.fields.noMatchingRules')}
                         </p>
                       ) : (
                         filteredOperations.map((operation) => {
@@ -2020,7 +2020,7 @@ export function ParamOverrideEditorDialog(
                   ) : (
                     <div className='flex flex-1 items-center justify-center'>
                       <p className='text-muted-foreground text-sm'>
-                        {t('Select a rule to edit.')}
+                        {t('channels.placeholders.selectARuleToEdit')}
                       </p>
                     </div>
                   )}
@@ -2045,10 +2045,10 @@ export function ParamOverrideEditorDialog(
                   size='sm'
                   onClick={formatJson}
                 >
-                  {t('Format')}
+                  {t('channels.fields.format')}
                 </Button>
                 <span className='text-muted-foreground text-xs'>
-                  {t('Advanced text editing')}
+                  {t('channels.fields.advancedTextEditing')}
                 </span>
               </div>
               <Textarea
@@ -2060,7 +2060,7 @@ export function ParamOverrideEditorDialog(
               />
               <p className='text-muted-foreground mt-2 text-xs'>
                 {t(
-                  'Edit JSON text directly. Format will be validated on save.'
+                  'channels.actions.editJsonTextDirectlyFormatWillBeValidatedOn'
                 )}
               </p>
               {jsonError && (
@@ -2077,10 +2077,10 @@ export function ParamOverrideEditorDialog(
             variant='outline'
             onClick={() => props.onOpenChange(false)}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button type='button' onClick={handleSave}>
-            {t('Save')}
+            {t('channels.actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2168,7 +2168,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
               onClick={() => ruleEditorProps.duplicateOperation(operation.id)}
             >
               <Copy className='mr-1 h-3.5 w-3.5' />
-              {t('Duplicate')}
+              {t('channels.errors.duplicate')}
             </Button>
             <Button
               type='button'
@@ -2178,7 +2178,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
               onClick={() => ruleEditorProps.removeOperation(operation.id)}
             >
               <Trash2 className='mr-1 h-3.5 w-3.5' />
-              {t('Delete')}
+              {t('common.actions.delete')}
             </Button>
           </div>
         </div>
@@ -2186,7 +2186,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         {/* Operation type + path */}
         <div className='grid gap-3 sm:grid-cols-2'>
           <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>{t('Operation Type')}</label>
+            <label className='text-xs font-medium'>{t('channels.fields.operationType')}</label>
             <Select
               items={[
                 ...OPERATION_MODE_OPTIONS.map((o) => ({
@@ -2246,7 +2246,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         <div className='space-y-1.5'>
           <div className='flex items-center justify-between'>
             <label className='text-xs font-medium'>
-              {t('Rule Description (optional)')}
+              {t('channels.tips.ruleDescriptionOptional')}
             </label>
             <span className='text-muted-foreground text-[10px]'>
               {operation.description.length}/180
@@ -2260,7 +2260,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
               })
             }
             placeholder={t(
-              'e.g. Clean tool parameters to avoid upstream validation errors'
+              'channels.placeholders.eGCleanToolParametersToAvoidUpstreamValidation'
             )}
             maxLength={180}
             className='h-9'
@@ -2307,7 +2307,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                       }
                     }}
                   >
-                    {t('Format')}
+                    {t('channels.fields.format')}
                   </Button>
                 )}
               </div>
@@ -2329,7 +2329,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         {meta.keepOrigin && (
           <div className='flex items-center justify-between rounded-lg border px-3 py-2'>
             <p className='text-sm font-medium'>
-              {t('Keep original value (skip if target exists)')}
+              {t('channels.tips.keepOriginalValueSkipIfTargetExists')}
             </p>
             <Switch
               checked={operation.keep_origin}
@@ -2393,11 +2393,11 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         <div className='rounded-lg border p-3'>
           <div className='mb-2 flex items-center justify-between'>
             <div className='flex items-center gap-2'>
-              <span className='text-sm font-medium'>{t('Conditions')}</span>
+              <span className='text-sm font-medium'>{t('channels.fields.conditions')}</span>
               <Select
                 items={[
-                  { value: 'OR', label: t('Match Any (OR)') },
-                  { value: 'AND', label: t('Match All (AND)') },
+                  { value: 'OR', label: t('channels.fields.matchAnyOr') },
+                  { value: 'AND', label: t('channels.fields.matchAllAnd') },
                 ]}
                 value={operation.logic || 'OR'}
                 onValueChange={(v) =>
@@ -2412,8 +2412,8 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
-                    <SelectItem value='OR'>{t('Match Any (OR)')}</SelectItem>
-                    <SelectItem value='AND'>{t('Match All (AND)')}</SelectItem>
+                    <SelectItem value='OR'>{t('channels.fields.matchAnyOr')}</SelectItem>
+                    <SelectItem value='AND'>{t('channels.fields.matchAllAnd')}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -2429,7 +2429,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                     onClick={ruleEditorProps.expandAllConditions}
                   >
                     <ChevronDown className='mr-1 h-3 w-3' />
-                    {t('Expand All')}
+                    {t('channels.fields.expandAll')}
                   </Button>
                   <Button
                     type='button'
@@ -2439,7 +2439,7 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                     onClick={ruleEditorProps.collapseAllConditions}
                   >
                     <ChevronUp className='mr-1 h-3 w-3' />
-                    {t('Collapse All')}
+                    {t('channels.fields.collapseAll')}
                   </Button>
                 </>
               )}
@@ -2451,14 +2451,14 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                 onClick={() => ruleEditorProps.addCondition(operation.id)}
               >
                 <Plus className='mr-1 h-3 w-3' />
-                {t('Add Condition')}
+                {t('channels.actions.addCondition')}
               </Button>
             </div>
           </div>
 
           {conditions.length === 0 ? (
             <p className='text-muted-foreground text-xs'>
-              {t('When no conditions are set, the operation always executes.')}
+              {t('channels.tips.noConditionsAreSetTheOperationAlwaysExecutes')}
             </p>
           ) : (
             <div className='space-y-2'>
@@ -2523,7 +2523,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
               C{conditionEditorProps.conditionIndex + 1}
             </Badge>
             <span className='text-muted-foreground text-xs'>
-              {condition.path || t('Path not set')}
+              {condition.path || t('channels.fields.pathNotSet')}
             </span>
           </div>
           {conditionEditorProps.expanded ? (
@@ -2536,7 +2536,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
           <div className='space-y-3 border-t px-3 py-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs'>
-                {t('Condition Settings')}
+                {t('channels.titles.conditionSettings')}
               </span>
               <Button
                 type='button'
@@ -2551,13 +2551,13 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
                 }
               >
                 <Trash2 className='mr-1 h-3 w-3' />
-                {t('Delete Condition')}
+                {t('channels.actions.deleteCondition')}
               </Button>
             </div>
             <div className='grid gap-2 sm:grid-cols-3'>
               <div className='space-y-1'>
                 <label className='text-[10px] font-medium'>
-                  {t('Field Path')}
+                  {t('channels.fields.fieldPath')}
                 </label>
                 <Input
                   value={condition.path}
@@ -2574,7 +2574,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
               </div>
               <div className='space-y-1'>
                 <label className='text-[10px] font-medium'>
-                  {t('Match Mode')}
+                  {t('channels.fields.matchMode')}
                 </label>
                 <Select
                   items={[
@@ -2609,7 +2609,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
               </div>
               <div className='space-y-1'>
                 <label className='text-[10px] font-medium'>
-                  {t('Match Value')}
+                  {t('channels.fields.matchValue')}
                 </label>
                 <Input
                   value={condition.value_text}
@@ -2637,7 +2637,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
                     )
                   }
                 />
-                {t('Invert match')}
+                {t('channels.fields.invertMatch')}
               </label>
               <label className='flex items-center gap-2 text-xs'>
                 <Switch
@@ -2650,7 +2650,7 @@ function ConditionEditor(conditionEditorProps: ConditionEditorProps) {
                     )
                   }
                 />
-                {t('Pass when key is missing')}
+                {t('channels.fields.passWhenKeyIsMissing')}
               </label>
             </div>
           </div>
@@ -2681,10 +2681,10 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
     <div className='rounded-lg border p-3'>
       <div className='mb-2 flex items-center justify-between'>
         <span className='text-sm font-medium'>
-          {t('Custom Error Response')}
+          {t('channels.fields.customErrorResponse')}
         </span>
         <div className='flex items-center gap-1'>
-          <span className='text-muted-foreground text-xs'>{t('Mode')}</span>
+          <span className='text-muted-foreground text-xs'>{t('channels.fields.mode')}</span>
           <Button
             type='button'
             variant={draft.simpleMode ? 'default' : 'outline'}
@@ -2697,7 +2697,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
               )
             }
           >
-            {t('Simple')}
+            {t('channels.fields.simple')}
           </Button>
           <Button
             type='button'
@@ -2711,14 +2711,14 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
               )
             }
           >
-            {t('Advanced')}
+            {t('channels.fields.advanced')}
           </Button>
         </div>
       </div>
 
       <div className='space-y-1.5'>
         <label className='text-xs font-medium'>
-          {t('Error Message (required)')}
+          {t('channels.errors.errorMessageRequired')}
         </label>
         <Textarea
           value={draft.message}
@@ -2728,7 +2728,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
               { message: e.target.value }
             )
           }
-          placeholder={t('e.g. This request does not meet access policy')}
+          placeholder={t('channels.placeholders.eGThisRequestDoesNotMeetAccessPolicy')}
           rows={2}
           className='text-xs'
         />
@@ -2737,14 +2737,14 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
       {draft.simpleMode ? (
         <p className='text-muted-foreground mt-2 text-xs'>
           {t(
-            'Simple mode only returns message; status code and error type use system defaults.'
+            'channels.tips.simpleModeOnlyReturnsMessageStatusCodeAndError'
           )}
         </p>
       ) : (
         <>
           <div className='mt-3 grid gap-3 sm:grid-cols-3'>
             <div className='space-y-1'>
-              <label className='text-xs font-medium'>{t('Status Code')}</label>
+              <label className='text-xs font-medium'>{t('channels.fields.statusCode')}</label>
               <Input
                 value={String(draft.statusCode ?? '')}
                 onChange={(e) =>
@@ -2759,7 +2759,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
             </div>
             <div className='space-y-1'>
               <label className='text-xs font-medium'>
-                {t('Error Code (optional)')}
+                {t('channels.errors.errorCodeOptional')}
               </label>
               <Input
                 value={draft.code}
@@ -2775,7 +2775,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
             </div>
             <div className='space-y-1'>
               <label className='text-xs font-medium'>
-                {t('Error Type (optional)')}
+                {t('channels.errors.errorTypeOptional')}
               </label>
               <Input
                 value={draft.type}
@@ -2792,7 +2792,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
           </div>
           <div className='mt-2 flex items-center gap-2'>
             <span className='text-muted-foreground text-xs'>
-              {t('Retry Suggestion')}
+              {t('channels.actions.retrySuggestion')}
             </span>
             <Button
               type='button'
@@ -2806,7 +2806,7 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
                 )
               }
             >
-              {t('Stop Retry')}
+              {t('channels.actions.stopRetry')}
             </Button>
             <Button
               type='button'
@@ -2820,25 +2820,25 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
                 )
               }
             >
-              {t('Allow Retry')}
+              {t('channels.fields.allowRetry')}
             </Button>
           </div>
           <div className='mt-2 flex flex-wrap gap-1'>
             {[
               {
-                label: 'Bad Request',
+                label: 'common.fields.badRequest',
                 statusCode: 400,
                 code: 'invalid_request',
                 type: 'invalid_request_error',
               },
               {
-                label: 'Unauthorized',
+                label: 'common.fields.unauthorized',
                 statusCode: 401,
                 code: 'unauthorized',
                 type: 'authentication_error',
               },
               {
-                label: 'Rate Limited',
+                label: 'common.fields.rateLimited',
                 statusCode: 429,
                 code: 'rate_limited',
                 type: 'rate_limit_error',
@@ -2900,9 +2900,9 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
   return (
     <div className='rounded-lg border p-3'>
       <div className='mb-2 flex items-center justify-between'>
-        <span className='text-sm font-medium'>{t('Object Prune Rules')}</span>
+        <span className='text-sm font-medium'>{t('channels.fields.objectPruneRules')}</span>
         <div className='flex items-center gap-1'>
-          <span className='text-muted-foreground text-xs'>{t('Mode')}</span>
+          <span className='text-muted-foreground text-xs'>{t('channels.fields.mode')}</span>
           <Button
             type='button'
             variant={draft.simpleMode ? 'default' : 'outline'}
@@ -2915,7 +2915,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
               )
             }
           >
-            {t('Simple')}
+            {t('channels.fields.simple')}
           </Button>
           <Button
             type='button'
@@ -2929,13 +2929,13 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
               )
             }
           >
-            {t('Advanced')}
+            {t('channels.fields.advanced')}
           </Button>
         </div>
       </div>
 
       <div className='space-y-1.5'>
-        <label className='text-xs font-medium'>{t('Type (common)')}</label>
+        <label className='text-xs font-medium'>{t('channels.fields.typeCommon')}</label>
         <Input
           value={draft.typeText}
           onChange={(e) =>
@@ -2951,17 +2951,17 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
 
       {draft.simpleMode ? (
         <p className='text-muted-foreground mt-2 text-xs'>
-          {t('Simple mode: prune objects by type, e.g. redacted_thinking.')}
+          {t('channels.tips.simpleModePruneObjectsByTypeEGRedacted')}
         </p>
       ) : (
         <>
           <div className='mt-3 grid gap-3 sm:grid-cols-2'>
             <div className='space-y-1'>
-              <label className='text-xs font-medium'>{t('Logic')}</label>
+              <label className='text-xs font-medium'>{t('channels.fields.logic')}</label>
               <Select
                 items={[
-                  { value: 'AND', label: t('All Must Match (AND)') },
-                  { value: 'OR', label: t('Any Match (OR)') },
+                  { value: 'AND', label: t('channels.errors.allMustMatchAnd') },
+                  { value: 'OR', label: t('channels.fields.anyMatchOr') },
                 ]}
                 value={draft.logic}
                 onValueChange={(v) =>
@@ -2977,16 +2977,16 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
                     <SelectItem value='AND'>
-                      {t('All Must Match (AND)')}
+                      {t('channels.errors.allMustMatchAnd')}
                     </SelectItem>
-                    <SelectItem value='OR'>{t('Any Match (OR)')}</SelectItem>
+                    <SelectItem value='OR'>{t('channels.fields.anyMatchOr')}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
             <div className='space-y-1'>
               <label className='text-xs font-medium'>
-                {t('Recursion Strategy')}
+                {t('channels.fields.recursionStrategy')}
               </label>
               <div className='flex gap-1'>
                 <Button
@@ -3001,7 +3001,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                     )
                   }
                 >
-                  {t('Recursive')}
+                  {t('channels.fields.recursive')}
                 </Button>
                 <Button
                   type='button'
@@ -3015,7 +3015,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                     )
                   }
                 >
-                  {t('Current Level Only')}
+                  {t('channels.fields.currentLevelOnly')}
                 </Button>
               </div>
             </div>
@@ -3024,7 +3024,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
           <div className='bg-muted/30 mt-3 rounded-md border p-2'>
             <div className='mb-2 flex items-center justify-between'>
               <span className='text-xs font-medium'>
-                {t('Additional Conditions')}
+                {t('channels.fields.additionalConditions')}
               </span>
               <Button
                 type='button'
@@ -3038,13 +3038,13 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                 }
               >
                 <Plus className='mr-1 h-3 w-3' />
-                {t('Add Condition')}
+                {t('channels.actions.addCondition')}
               </Button>
             </div>
             {draft.rules.length === 0 ? (
               <p className='text-muted-foreground text-xs'>
                 {t(
-                  'Without additional conditions, only the type above is used for pruning.'
+                  'channels.status.withoutAdditionalConditionsOnlyTheTypeAboveIsUsed'
                 )}
               </p>
             ) : (
@@ -3071,13 +3071,13 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                         }
                       >
                         <Trash2 className='mr-1 h-3 w-3' />
-                        {t('Delete')}
+                        {t('common.actions.delete')}
                       </Button>
                     </div>
                     <div className='grid gap-2 sm:grid-cols-3'>
                       <div className='space-y-0.5'>
                         <label className='text-[10px] font-medium'>
-                          {t('Field Path')}
+                          {t('channels.fields.fieldPath')}
                         </label>
                         <Input
                           value={rule.path}
@@ -3094,7 +3094,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                       </div>
                       <div className='space-y-0.5'>
                         <label className='text-[10px] font-medium'>
-                          {t('Match Mode')}
+                          {t('channels.fields.matchMode')}
                         </label>
                         <Select
                           items={[
@@ -3129,7 +3129,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                       </div>
                       <div className='space-y-0.5'>
                         <label className='text-[10px] font-medium'>
-                          {t('Match Value (optional)')}
+                          {t('channels.fields.matchValueOptional')}
                         </label>
                         <Input
                           value={rule.value_text}
@@ -3157,7 +3157,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                             )
                           }
                         />
-                        {t('Invert match')}
+                        {t('channels.fields.invertMatch')}
                       </label>
                       <label className='flex items-center gap-1.5 text-[10px]'>
                         <Switch
@@ -3170,7 +3170,7 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                             )
                           }
                         />
-                        {t('Pass when key is missing')}
+                        {t('channels.fields.passWhenKeyIsMissing')}
                       </label>
                     </div>
                   </div>
@@ -3202,11 +3202,11 @@ function SyncFieldsEditor(syncFieldsEditorProps: SyncFieldsEditorProps) {
   const { t } = useTranslation()
   return (
     <div className='space-y-3'>
-      <label className='text-xs font-medium'>{t('Sync Endpoints')}</label>
+      <label className='text-xs font-medium'>{t('channels.fields.syncEndpoints')}</label>
       <div className='grid gap-3 sm:grid-cols-2'>
         <div className='space-y-1.5'>
           <label className='text-[10px] font-medium'>
-            {t('Source Endpoint')}
+            {t('channels.fields.sourceEndpoint')}
           </label>
           <div className='flex gap-2'>
             <Select
@@ -3263,7 +3263,7 @@ function SyncFieldsEditor(syncFieldsEditorProps: SyncFieldsEditorProps) {
         </div>
         <div className='space-y-1.5'>
           <label className='text-[10px] font-medium'>
-            {t('Target Endpoint')}
+            {t('channels.fields.targetEndpoint')}
           </label>
           <div className='flex gap-2'>
             <Select

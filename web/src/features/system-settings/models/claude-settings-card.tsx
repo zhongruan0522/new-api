@@ -139,7 +139,7 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
     ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -149,7 +149,7 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
   }
 
   return (
-    <SettingsSection title={t('Claude')}>
+    <SettingsSection title={t('systemSettings.fields.claude')}>
       <Form {...form}>
         {}
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
@@ -162,13 +162,13 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
             name='claude.model_headers_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Request Header Override')}</FormLabel>
+                <FormLabel>{t('channels.fields.requestHeaderOverride')}</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Provide per-model header overrides as JSON. Useful for enabling beta features such as expanded context windows.'
+                    'systemSettings.tips.providePerModelHeaderOverridesAsJsonUsefulFor'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -181,12 +181,12 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
             name='claude.default_max_tokens'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Default Max Tokens')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.defaultMaxTokens')}</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
                 <FormDescription>
-                  {t('Example')}{' '}
+                  {t('channels.placeholders.example')}{' '}
                   {`{ "default": 8192, "claude-3-haiku-20240307": 4096, "claude-3-opus-20240229": 4096, "claude-3-7-sonnet-20250219-thinking": 8192 }`}
                 </FormDescription>
                 <FormMessage />

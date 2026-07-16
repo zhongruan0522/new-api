@@ -70,9 +70,9 @@ const suggestions = [
   { icon: BarChartIcon, text: 'Analyze data', color: '#76d0eb' },
   { icon: BoxIcon, text: 'Surprise me', color: '#76d0eb' },
   { icon: NotepadTextIcon, text: 'Summarize text', color: '#ea8444' },
-  { icon: CodeSquareIcon, text: 'Code', color: '#6c71ff' },
+  { icon: CodeSquareIcon, text: 'redemptionCodes.fields.code', color: '#6c71ff' },
   { icon: GraduationCapIcon, text: 'Get advice', color: '#76d0eb' },
-  { icon: null, text: 'More' },
+  { icon: null, text: 'common.fields.more' },
 ]
 
 export function PlaygroundInput({
@@ -102,7 +102,7 @@ export function PlaygroundInput({
   }
 
   const handleFileAction = (action: string) => {
-    toast.info(t('Feature in development'), {
+    toast.info(t('playground.fields.featureInDevelopment'), {
       description: action,
     })
   }
@@ -122,7 +122,7 @@ export function PlaygroundInput({
           className='px-5 md:text-base'
           disabled={disabled}
           onChange={(event) => setText(event.target.value)}
-          placeholder={t('Ask anything')}
+          placeholder={t('playground.fields.askAnything')}
           value={text}
         />
 
@@ -139,33 +139,33 @@ export function PlaygroundInput({
                 }
               >
                 <PaperclipIcon size={16} />
-                <span className='hidden sm:inline'>{t('Attach')}</span>
-                <span className='sr-only sm:hidden'>{t('Attach')}</span>
+                <span className='hidden sm:inline'>{t('playground.fields.attach')}</span>
+                <span className='sr-only sm:hidden'>{t('playground.fields.attach')}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='start'>
                 <DropdownMenuItem
                   onClick={() => handleFileAction('upload-file')}
                 >
                   <FileIcon className='mr-2' size={16} />
-                  {t('Upload Files')}
+                  {t('common.actions.uploadFiles')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleFileAction('upload-photo')}
                 >
                   <ImageIcon className='mr-2' size={16} />
-                  {t('Upload photo')}
+                  {t('playground.actions.uploadPhoto')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleFileAction('take-screenshot')}
                 >
                   <ScreenShareIcon className='mr-2' size={16} />
-                  {t('Take screenshot')}
+                  {t('playground.fields.takeScreenshot')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleFileAction('take-photo')}
                 >
                   <CameraIcon className='mr-2' size={16} />
-                  {t('Take photo')}
+                  {t('playground.fields.takePhoto')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -173,12 +173,12 @@ export function PlaygroundInput({
             <PromptInputButton
               className='border font-medium'
               disabled={disabled}
-              onClick={() => toast.info(t('Search feature in development'))}
+              onClick={() => toast.info(t('playground.actions.searchFeatureInDevelopment'))}
               variant='outline'
             >
               <GlobeIcon size={16} />
-              <span className='hidden sm:inline'>{t('Search')}</span>
-              <span className='sr-only sm:hidden'>{t('Search')}</span>
+              <span className='hidden sm:inline'>{t('common.actions.search')}</span>
+              <span className='sr-only sm:hidden'>{t('common.actions.search')}</span>
             </PromptInputButton>
           </PromptInputTools>
 
@@ -200,8 +200,8 @@ export function PlaygroundInput({
                 variant='secondary'
               >
                 <SquareIcon className='fill-current' size={16} />
-                <span className='hidden sm:inline'>{t('Stop')}</span>
-                <span className='sr-only sm:hidden'>{t('Stop')}</span>
+                <span className='hidden sm:inline'>{t('playground.actions.stop')}</span>
+                <span className='sr-only sm:hidden'>{t('playground.actions.stop')}</span>
               </PromptInputButton>
             ) : (
               <PromptInputButton
@@ -211,8 +211,8 @@ export function PlaygroundInput({
                 variant='secondary'
               >
                 <SendIcon size={16} />
-                <span className='hidden sm:inline'>{t('Send')}</span>
-                <span className='sr-only sm:hidden'>{t('Send')}</span>
+                <span className='hidden sm:inline'>{t('playground.actions.send')}</span>
+                <span className='sr-only sm:hidden'>{t('playground.actions.send')}</span>
               </PromptInputButton>
             )}
           </div>

@@ -28,7 +28,7 @@ export function ApiKeys() {
   return (
     <ApiKeysProvider>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('API Keys')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('dashboard.fields.apiKeys')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <ApiKeysPrimaryButtons />
         </SectionPageLayout.Actions>

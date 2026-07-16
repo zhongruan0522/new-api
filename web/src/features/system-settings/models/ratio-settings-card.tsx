@@ -271,15 +271,15 @@ export function RatioSettingsCard({
     mutationFn: resetModelRatios,
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(t('Model prices reset successfully'))
+        toast.success(t('systemSettings.fields.modelPricesResetSuccessfully'))
         queryClient.invalidateQueries({ queryKey: ['system-options'] })
         setConfirmOpen(false)
       } else {
-        toast.error(data.message || t('Failed to reset model ratios'))
+        toast.error(data.message || t('systemSettings.errors.failedToResetModelRatios'))
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to reset model ratios'))
+      toast.error(error.message || t('systemSettings.errors.failedToResetModelRatios'))
     },
   })
 
@@ -417,7 +417,7 @@ export function RatioSettingsCard({
       )
 
       if (updates.length === 0) {
-        toast.info(t('No model price changes to save'))
+        toast.info(t('systemSettings.errors.noModelPriceChangesToSave'))
         return
       }
 
@@ -430,7 +430,7 @@ export function RatioSettingsCard({
       }
       modelNormalizedDefaults.current = normalized
       await queryClient.invalidateQueries({ queryKey: ['system-options'] })
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     [queryClient, t]
   )
@@ -479,9 +479,9 @@ export function RatioSettingsCard({
   }, [resetMutate])
 
   const tabLabels: Record<RatioTabId, string> = {
-    models: 'Model prices',
-    groups: 'Group ratios',
-    'tool-prices': 'Tool prices',
+    models: 'common.fields.modelPrices',
+    groups: 'systemSettings.fields.groupRatios',
+    'tool-prices': 'common.fields.toolPrices',
   }
   const tabsGridClass =
     {
@@ -543,14 +543,14 @@ export function RatioSettingsCard({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={t('Reset all model prices?')}
+        title={t('systemSettings.actions.resetAllModelPrices')}
         desc={t(
-          'This will clear custom pricing ratios and revert to upstream defaults.'
+          'systemSettings.tips.clearCustomPricingRatiosAndRevertToUpstreamDefaults'
         )}
         destructive
         isLoading={resetMutation.isPending}
         handleConfirm={handleConfirmReset}
-        confirmText={t('Reset')}
+        confirmText={t('common.actions.reset')}
       />
     </SettingsSection>
   )

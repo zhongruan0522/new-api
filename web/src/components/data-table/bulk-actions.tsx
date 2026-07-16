@@ -181,16 +181,16 @@ export function DataTableBulkActions<TData>({
                   size='icon'
                   onClick={handleClearSelection}
                   className='size-6'
-                  aria-label={t('Clear selection')}
-                  title={t('Clear selection (Escape)')}
+                  aria-label={t('common.actions.clearSelection')}
+                  title={t('common.actions.clearSelectionEscape')}
                 />
               }
             >
               <X />
-              <span className='sr-only'>{t('Clear selection')}</span>
+              <span className='sr-only'>{t('common.actions.clearSelection')}</span>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{t('Clear selection (Escape)')}</p>
+              <p>{t('common.actions.clearSelectionEscape')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -215,7 +215,7 @@ export function DataTableBulkActions<TData>({
               {entityName}
               {selectedCount > 1 ? 's' : ''}
             </span>{' '}
-            {t('selected')}
+            {t('common.placeholders.selected')}
           </div>
 
           <Separator

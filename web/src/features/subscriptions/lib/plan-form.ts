@@ -23,9 +23,9 @@ import type { SubscriptionPlan, PlanPayload } from '../types'
 
 export function getPlanFormSchema(t: TFunction) {
   return z.object({
-    title: z.string().min(1, t('Please enter plan title')),
+    title: z.string().min(1, t('subscriptions.errors.pleaseEnterPlanTitle')),
     subtitle: z.string().optional(),
-    price_amount: z.coerce.number().min(0, t('Please enter amount')),
+    price_amount: z.coerce.number().min(0, t('subscriptions.errors.pleaseEnterAmount')),
     duration_unit: z.enum(['year', 'month', 'day', 'hour', 'custom']),
     duration_value: z.coerce.number().min(1),
     custom_seconds: z.coerce.number().min(0).optional(),

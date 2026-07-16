@@ -48,9 +48,9 @@ export function TelegramBindDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Bind Telegram Account')}</DialogTitle>
+          <DialogTitle>{t('profile.actions.bindTelegramAccount')}</DialogTitle>
           <DialogDescription>
-            {t('Click the button below to bind your Telegram account')}
+            {t('profile.tips.clickTheButtonBelowToBindYourTelegramAccount')}
           </DialogDescription>
         </DialogHeader>
 
@@ -59,7 +59,7 @@ export function TelegramBindDialog({
             <Send className='h-4 w-4' />
             <AlertDescription>
               {t(
-                'You will be redirected to Telegram to complete the binding process.'
+                'profile.tips.redirectedToTelegramToCompleteTheBindingProcess'
               )}
             </AlertDescription>
           </Alert>
@@ -71,12 +71,12 @@ export function TelegramBindDialog({
 
             <div className='text-center'>
               <p className='text-muted-foreground text-sm'>
-                {t('Bot:')}{' '}
+                {t('profile.fields.bot')}{' '}
                 <span className='font-mono font-semibold'>@{botName}</span>
               </p>
               <p className='text-muted-foreground mt-1 text-xs'>
                 {t(
-                  "After clicking the button, you'll be asked to authorize the bot"
+                  "common.tips.clickingTheButtonYouLlBeAskedToAuthorize"
                 )}
               </p>
             </div>
@@ -85,13 +85,13 @@ export function TelegramBindDialog({
             <div id='telegram-login-widget' className='flex justify-center'>
               {/* This would require the react-telegram-login library */}
               <div className='text-muted-foreground rounded-lg border border-dashed px-6 py-3 text-sm'>
-                {t('Telegram Login Widget')}
+                {t('profile.fields.telegramLoginWidget')}
               </div>
             </div>
           </div>
 
           <p className='text-muted-foreground text-center text-xs'>
-            {t('The binding will complete automatically after authorization')}
+            {t('profile.tips.bindingWillCompleteAutomaticallyAfterAuthorization')}
           </p>
         </div>
       </DialogContent>

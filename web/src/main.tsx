@@ -72,7 +72,7 @@ const queryClient = new QueryClient({
 
         if (error instanceof AxiosError) {
           if (error.response?.status === 304) {
-            toast.error(i18next.t('Content not modified!'))
+            toast.error(i18next.t('common.tips.contentNotModified'))
           }
         }
       },
@@ -82,13 +82,13 @@ const queryClient = new QueryClient({
     onError: (error) => {
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
-          toast.error(i18next.t('Session expired!'))
+          toast.error(i18next.t('common.status.sessionExpired'))
           useAuthStore.getState().auth.reset()
           const redirect = `${router.history.location.href}`
           router.navigate({ to: '/sign-in', search: { redirect } })
         }
         if (error.response?.status === 500) {
-          toast.error(i18next.t('Internal Server Error!'))
+          toast.error(i18next.t('common.tips.internalServerError'))
           router.navigate({ to: '/500' })
         }
       }

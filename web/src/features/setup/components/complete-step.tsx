@@ -55,11 +55,11 @@ export function CompleteStep({ status, values }: CompleteStepProps) {
       </div>
       <div className='space-y-2'>
         <h2 className='text-2xl font-semibold tracking-tight'>
-          {t('Ready to initialize')}
+          {t('setup.fields.readyToInitialize')}
         </h2>
         <p className='text-muted-foreground max-w-lg text-sm sm:text-base'>
           {t(
-            'Double check the configuration below. Your system will be locked until initialization is complete.'
+            'setup.tips.doubleCheckTheConfigurationBelowYourSystemWillBe'
           )}
         </p>
       </div>
@@ -68,7 +68,7 @@ export function CompleteStep({ status, values }: CompleteStepProps) {
         <dl className='grid gap-6'>
           <div className='space-y-1.5'>
             <dt className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-              {t('Database')}
+              {t('setup.fields.database')}
             </dt>
             <dd className='flex flex-wrap items-center gap-2'>
               <span className='text-sm font-semibold'>{dbType}</span>
@@ -84,12 +84,12 @@ export function CompleteStep({ status, values }: CompleteStepProps) {
 
           <div className='space-y-1.5'>
             <dt className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-              {t('Administrator account')}
+              {t('setup.fields.administratorAccount')}
             </dt>
             <dd className='text-sm font-semibold'>
               {status?.root_init
-                ? t('Existing account will be reused')
-                : values.username || t('Not set yet')}
+                ? t('setup.fields.existingAccountWillBeReused')
+                : values.username || t('setup.fields.notSetYet')}
             </dd>
           </div>
 
@@ -97,7 +97,7 @@ export function CompleteStep({ status, values }: CompleteStepProps) {
 
           <div className='space-y-1.5'>
             <dt className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-              {t('Usage mode')}
+              {t('setup.fields.usageMode')}
             </dt>
             <dd className='text-sm font-semibold'>{t(usageLabelKey)}</dd>
           </div>

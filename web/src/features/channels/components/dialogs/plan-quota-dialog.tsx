@@ -698,7 +698,7 @@ function UsageChart({ channelId }: { channelId: number }) {
           />
         ) : (
           <div className='text-muted-foreground flex h-[120px] items-center justify-center text-sm'>
-            {t('No data')}
+            {t('channels.fields.noData')}
           </div>
         )}
       </div>
@@ -887,7 +887,7 @@ function PerformanceChart({
           />
         ) : (
           <div className='text-muted-foreground flex h-[120px] items-center justify-center text-sm'>
-            {t('No data')}
+            {t('channels.fields.noData')}
           </div>
         )}
       </div>
@@ -1039,12 +1039,12 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
     try {
       const response = await getPlanQuota(currentRow.id)
       if (!response.success) {
-        throw new Error(response.message || t('Failed to query plan usage'))
+        throw new Error(response.message || t('channels.errors.failedToQueryPlanUsage'))
       }
       setQuotaData(response.data ?? null)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to query plan usage')
+        error instanceof Error ? error.message : t('channels.errors.failedToQueryPlanUsage')
       )
       setQuotaData(null)
     } finally {
@@ -1072,7 +1072,7 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[90vh] sm:max-w-5xl'>
         <DialogHeader>
-          <DialogTitle>{t('Plan Usage')}</DialogTitle>
+          <DialogTitle>{t('channels.fields.planUsage')}</DialogTitle>
           <DialogDescription>
             {currentRow.name} {currentRow.id ? `#${currentRow.id}` : ''}
             {planDisplayName ? ` · ${planDisplayName}` : ''}
@@ -1096,7 +1096,7 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
             </div>
           ) : (
             <div className='text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm'>
-              {t('No data')}
+              {t('channels.fields.noData')}
             </div>
           )}
         </ScrollArea>
@@ -1113,10 +1113,10 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
             ) : (
               <RefreshCw className='mr-1.5 h-4 w-4' />
             )}
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
           <Button type='button' onClick={() => onOpenChange(false)}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

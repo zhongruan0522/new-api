@@ -140,14 +140,14 @@ export function ExtendDeploymentDialog({
     if (!deploymentId) return
     const h = toInt(hours, 1)
     if (h <= 0) {
-      toast.error(t('Please enter a valid duration'))
+      toast.error(t('models.errors.pleaseEnterAValidDuration'))
       return
     }
     setIsSubmitting(true)
     try {
       const res = await extendDeployment(deploymentId, h)
       if (res.success) {
-        toast.success(t('Extended successfully'))
+        toast.success(t('models.fields.extendedSuccessfully'))
         queryClient.invalidateQueries({
           queryKey: deploymentsQueryKeys.lists(),
         })
@@ -155,9 +155,9 @@ export function ExtendDeploymentDialog({
         onOpenChange(false)
         return
       }
-      toast.error(res.message || t('Extend failed'))
+      toast.error(res.message || t('models.status.extendFailed'))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('Extend failed'))
+      toast.error(err instanceof Error ? err.message : t('models.status.extendFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -167,7 +167,7 @@ export function ExtendDeploymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Extend deployment')}</DialogTitle>
+          <DialogTitle>{t('models.fields.extendDeployment')}</DialogTitle>
         </DialogHeader>
 
         {isLoadingDetails ? (
@@ -177,12 +177,12 @@ export function ExtendDeploymentDialog({
         ) : (
           <div className='space-y-4'>
             <div className='text-muted-foreground text-sm'>
-              {t('Deployment ID')}:{' '}
+              {t('channels.fields.deploymentId')}:{' '}
               <span className='font-mono'>{deploymentId}</span>
             </div>
 
             <div className='space-y-2'>
-              <div className='text-sm font-medium'>{t('Duration (hours)')}</div>
+              <div className='text-sm font-medium'>{t('models.fields.durationHours')}</div>
               <Input
                 type='number'
                 min={1}
@@ -190,29 +190,29 @@ export function ExtendDeploymentDialog({
                 onChange={(e) => setHours(toInt(e.target.value, 1))}
               />
               <div className='text-muted-foreground text-xs'>
-                {t('This will extend the deployment by the specified hours.')}
+                {t('models.tips.extendTheDeploymentByTheSpecifiedHours')}
               </div>
             </div>
 
             <Separator />
 
             <div className='space-y-1'>
-              <div className='text-sm font-medium'>{t('Estimated cost')}</div>
+              <div className='text-sm font-medium'>{t('models.fields.estimatedCost')}</div>
               <div className='text-muted-foreground text-sm'>
                 {isLoadingPrice || isFetchingPrice ? (
                   <span className='inline-flex items-center gap-2'>
                     <Loader2 className='h-4 w-4 animate-spin' />
-                    {t('Calculating...')}
+                    {t('models.tips.calculating')}
                   </span>
                 ) : priceParams ? (
-                  priceSummary || t('Not available')
+                  priceSummary || t('models.fields.notAvailable')
                 ) : (
-                  t('Not available')
+                  t('models.fields.notAvailable')
                 )}
               </div>
               {!priceParams ? (
                 <div className='text-muted-foreground text-xs'>
-                  {t('Unable to estimate price for this deployment.')}
+                  {t('models.errors.unableToEstimatePriceForThisDeployment')}
                 </div>
               ) : null}
             </div>
@@ -221,13 +221,13 @@ export function ExtendDeploymentDialog({
 
         <DialogFooter className='mt-4'>
           <Button variant='outline' onClick={() => onOpenChange(false)}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={() => void onSubmit()} disabled={!canSubmit}>
             {isSubmitting ? (
               <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             ) : null}
-            {t('Extend')}
+            {t('models.fields.extend')}
           </Button>
         </DialogFooter>
       </DialogContent>

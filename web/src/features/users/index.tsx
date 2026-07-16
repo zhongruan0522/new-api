@@ -31,7 +31,7 @@ function UsersContent() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Users')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('systemSettings.titles.users')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <UsersPrimaryButtons />
         </SectionPageLayout.Actions>

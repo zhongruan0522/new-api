@@ -86,7 +86,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
 
   const systemInfoSchemaWithI18n = z.object({
     SystemName: z.string().min(1, {
-      error: () => t('System name is required'),
+      error: () => t('systemSettings.errors.nameIsRequired'),
     }),
     ServerAddress: z.string().optional(),
     Logo: z.string().url().optional().or(z.literal('')),
@@ -125,7 +125,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     <>
       <FormNavigationGuard when={isDirty} />
 
-      <SettingsSection title={t('System Information')}>
+      <SettingsSection title={t('systemSettings.titles.information')}>
         <Form {...form}>
           <SettingsForm onSubmit={handleSubmit}>
             <SettingsPageFormActions
@@ -141,12 +141,12 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='SystemName'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('System Name')}</FormLabel>
+                    <FormLabel>{t('systemSettings.titles.name')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('New API')} {...field} />
+                      <Input placeholder={t('layout.fields.newApi')} {...field} />
                     </FormControl>
                     <FormDescription>
-                      {t('The name displayed across the application')}
+                      {t('systemSettings.tips.nameDisplayedAcrossTheApplication')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -158,13 +158,13 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='ServerAddress'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Server Address')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.serverAddress')}</FormLabel>
                     <FormControl>
                       <Input placeholder='https://yourdomain.com' {...field} />
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'The public URL of your server, used for OAuth callbacks, webhooks, and other external integrations'
+                        'systemSettings.status.publicUrlOfYourServerUsedForOauthCallbacks'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -177,15 +177,15 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='Logo'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Logo URL')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.logoUrl')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('https://example.com/logo.png')}
+                        placeholder={t('systemSettings.placeholders.urlExampleComLogoPng')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('URL to your logo image (optional)')}
+                      {t('systemSettings.tips.urlToYourLogoImageOptional')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -197,18 +197,18 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='Footer'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Footer')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.footer')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          '© 2025 Your Company. All rights reserved.'
+                          'systemSettings.tips.value2025YourCompanyAllRightsReserved'
                         )}
                         rows={4}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Footer text displayed at the bottom of pages')}
+                      {t('systemSettings.tips.footerTextDisplayedAtTheBottomOfPages')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -220,11 +220,11 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='About'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('About')}</FormLabel>
+                    <FormLabel>{t('about.titles.value')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          'Enter HTML code (e.g., <p>About us...</p>) or a URL (e.g., https://example.com) to embed as iframe'
+                          'systemSettings.placeholders.enterHtmlCodeEGPAboutUsP'
                         )}
                         rows={4}
                         {...field}
@@ -232,7 +232,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Supports HTML markup or iframe embedding. Enter HTML code directly, or provide a complete URL to automatically embed it as an iframe.'
+                        'systemSettings.tips.supportsHtmlMarkupOrIframeEmbeddingEnterHtmlCode'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -246,17 +246,17 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                   name='HomePageContent'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Home Page Content')}</FormLabel>
+                      <FormLabel>{t('systemSettings.fields.homePageContent')}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder={t('Welcome to our New API...')}
+                          placeholder={t('systemSettings.tips.welcomeToOurNewApi')}
                           rows={6}
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
                         {t(
-                          'Content displayed on the home page (supports Markdown)'
+                          'systemSettings.tips.contentDisplayedOnTheHomePageSupportsMarkdown'
                         )}
                       </FormDescription>
                       <FormMessage />
@@ -270,11 +270,11 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='legal.user_agreement'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('User Agreement')}</FormLabel>
+                    <FormLabel>{t('layout.fields.userAgreement')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          'Provide Markdown, HTML, or an external URL for the user agreement'
+                          'systemSettings.tips.provideMarkdownHtmlOrAnExternalUrlForThebface8'
                         )}
                         rows={6}
                         {...field}
@@ -282,7 +282,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Leave empty to disable the agreement requirement. Supports Markdown, HTML, or a full URL to redirect users.'
+                        'systemSettings.tips.leaveEmptyToDisableTheAgreementRequirementSupportsMarkdown'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -295,11 +295,11 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='legal.privacy_policy'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Privacy Policy')}</FormLabel>
+                    <FormLabel>{t('layout.fields.privacyPolicy')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          'Provide Markdown, HTML, or an external URL for the privacy policy'
+                          'systemSettings.tips.provideMarkdownHtmlOrAnExternalUrlForThe'
                         )}
                         rows={6}
                         {...field}
@@ -307,7 +307,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Leave empty to disable the privacy policy requirement. Supports Markdown, HTML, or a full URL to redirect users.'
+                        'systemSettings.tips.leaveEmptyToDisableThePrivacyPolicyRequirementSupports'
                       )}
                     </FormDescription>
                     <FormMessage />

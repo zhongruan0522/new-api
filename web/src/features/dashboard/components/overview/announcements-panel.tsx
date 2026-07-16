@@ -59,13 +59,13 @@ export function AnnouncementsPanel() {
       title={
         <span className='flex items-center gap-2'>
           <Megaphone className='text-muted-foreground/60 size-4' />
-          {t('Announcements')}
+          {t('dashboard.fields.announcements')}
         </span>
       }
-      description={t('Latest platform updates and notices')}
+      description={t('common.tips.latestPlatformUpdatesAndNotices')}
       loading={loading}
       empty={!list.length}
-      emptyMessage={t('No announcements at this time')}
+      emptyMessage={t('common.fields.noAnnouncementsAtThisTime')}
       height='h-72'
       contentClassName='p-0'
     >
@@ -96,7 +96,7 @@ export function AnnouncementsPanel() {
                         </time>
                       )}
                       <span className='text-muted-foreground/40 text-xs opacity-0 transition-opacity group-hover:opacity-100'>
-                        {t('Click for details')}
+                        {t('dashboard.titles.clickForDetails')}
                       </span>
                     </div>
                   </div>

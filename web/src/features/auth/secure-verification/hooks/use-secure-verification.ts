@@ -88,7 +88,7 @@ export function useSecureVerification(
       if (!availableMethods.has2FA && !availableMethods.hasPasskey) {
         toast.error(
           i18next.t(
-            'Please enable Two-factor Authentication or Passkey before proceeding'
+            'auth.errors.pleaseEnableTwoFactorAuthenticationOrPasskeyBeforeProceeding'
           )
         )
         onError?.(
@@ -124,13 +124,13 @@ export function useSecureVerification(
   const executeVerification = useCallback(
     async (method?: VerificationMethod, code?: string) => {
       if (!state.apiCall) {
-        toast.error(i18next.t('Verification is not configured properly'))
+        toast.error(i18next.t('auth.tips.verificationIsNotConfiguredProperly'))
         return
       }
 
       const actualMethod = method ?? state.method
       if (!actualMethod) {
-        toast.error(i18next.t('Select a verification method first'))
+        toast.error(i18next.t('auth.placeholders.selectAVerificationMethodFirst'))
         return
       }
 
@@ -155,7 +155,7 @@ export function useSecureVerification(
         const message =
           error instanceof Error
             ? error.message
-            : i18next.t('Verification failed')
+            : i18next.t('auth.status.verificationFailed')
         toast.error(message)
         onError?.(error)
         throw error

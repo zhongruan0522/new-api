@@ -65,14 +65,14 @@ export function MissingModelsConfirmationDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {t('Models not in list, may fail to invoke')}
+            {t('channels.tips.modelsNotInListMayFailToInvoke')}
           </AlertDialogTitle>
           <AlertDialogDescription
             render={<div className='space-y-3 text-sm' />}
           >
             <div>
               {t(
-                'The following models in the model redirect have not been added to the "Models" list and may fail during invocation due to missing available models:'
+                'common.tips.followingModelsInTheModelRedirectHaveNotBeen'
               )}
             </div>
             <div className='rounded-md bg-red-50 p-2 font-mono text-xs break-all text-red-600 dark:bg-red-950/50 dark:text-red-400'>
@@ -80,20 +80,20 @@ export function MissingModelsConfirmationDialog({
             </div>
             <div>
               {t(
-                'You can manually add them in "Custom Model Names", click "Fill" and then submit, or use the operations below to handle automatically.'
+                'common.tips.manuallyAddThemInCustomModelNamesClickFill'
               )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className='flex-col gap-2 sm:flex-row'>
           <AlertDialogCancel onClick={() => onConfirm('cancel')}>
-            {t('Go back and edit')}
+            {t('channels.fields.goBackAndEdit')}
           </AlertDialogCancel>
           <Button variant='secondary' onClick={() => onConfirm('submit')}>
-            {t('Submit directly')}
+            {t('channels.actions.submitDirectly')}
           </Button>
           <AlertDialogAction onClick={() => onConfirm('add')}>
-            {t('Add and submit')}
+            {t('channels.actions.addAndSubmit')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

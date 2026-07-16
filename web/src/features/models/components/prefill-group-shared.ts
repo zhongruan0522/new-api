@@ -24,7 +24,7 @@ export type PrefillGroupType = PrefillGroup['type']
 export const PREFILL_GROUP_TYPES = [
   {
     value: 'model' as PrefillGroupType,
-    label: 'Model Group',
+    label: 'common.fields.modelGroup',
     description: 'Reusable sets of models you can attach to channels.',
     badge: 'blue' as StatusBadgeProps['variant'],
   },

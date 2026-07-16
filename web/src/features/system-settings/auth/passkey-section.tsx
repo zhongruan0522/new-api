@@ -164,7 +164,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
   }
 
   return (
-    <SettingsSection title={t('Passkey Authentication')}>
+    <SettingsSection title={t('systemSettings.fields.passkeyAuthentication')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -179,10 +179,10 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable Passkey')}</FormLabel>
+                  <FormLabel>{t('profile.actions.enablePasskey')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Allow users to register and sign in with Passkey (WebAuthn)'
+                      'systemSettings.tips.allowUsersToRegisterAndSignInWithPasskey'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -201,17 +201,17 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.rp_display_name'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Relying Party Display Name')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.relyingPartyDisplayName')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('e.g. New API Console')}
+                    placeholder={t('systemSettings.placeholders.eGNewApiConsole')}
                     {...field}
                     value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Human-readable name shown to users during Passkey prompts.'
+                    'systemSettings.tips.humanReadableNameShownToUsersDuringPasskeyPrompts'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -224,17 +224,17 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.rp_id'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Relying Party ID')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.relyingPartyId')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('e.g. example.com')}
+                    placeholder={t('systemSettings.placeholders.eGExampleCom')}
                     {...field}
                     value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'The effective domain for Passkey registration. Must match the current domain or be its parent domain.'
+                    'systemSettings.errors.effectiveDomainForPasskeyRegistrationMustMatchTheCurrent'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -247,30 +247,30 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.user_verification'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('User Verification')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.userVerification')}</FormLabel>
                 <FormControl>
                   <Select
                     items={[
-                      { value: 'required', label: t('Required') },
-                      { value: 'preferred', label: t('Recommended') },
-                      { value: 'discouraged', label: t('Discouraged') },
+                      { value: 'required', label: t('systemSettings.errors.required') },
+                      { value: 'preferred', label: t('systemSettings.tips.recommended') },
+                      { value: 'discouraged', label: t('systemSettings.fields.discouraged') },
                     ]}
                     value={field.value}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('Select requirement')} />
+                      <SelectValue placeholder={t('systemSettings.placeholders.selectRequirement')} />
                     </SelectTrigger>
                     <SelectContent alignItemWithTrigger={false}>
                       <SelectGroup>
                         <SelectItem value='required'>
-                          {t('Required')}
+                          {t('systemSettings.errors.required')}
                         </SelectItem>
                         <SelectItem value='preferred'>
-                          {t('Recommended')}
+                          {t('systemSettings.tips.recommended')}
                         </SelectItem>
                         <SelectItem value='discouraged'>
-                          {t('Discouraged')}
+                          {t('systemSettings.fields.discouraged')}
                         </SelectItem>
                       </SelectGroup>
                     </SelectContent>
@@ -278,7 +278,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Controls whether user verification (biometrics/PIN) is required during Passkey flows.'
+                    'systemSettings.errors.controlsWhetherUserVerificationBiometricsPinIsRequiredDuring'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -291,28 +291,28 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.attachment_preference'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Device Type Preference')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.deviceTypePreference')}</FormLabel>
                 <FormControl>
                   <Select
                     items={[
-                      { value: 'none', label: t('Unlimited') },
-                      { value: 'platform', label: t('Built-in Device') },
-                      { value: 'cross-platform', label: t('External Device') },
+                      { value: 'none', label: t('keyQuery.fields.unlimited') },
+                      { value: 'platform', label: t('systemSettings.fields.builtInDevice') },
+                      { value: 'cross-platform', label: t('systemSettings.fields.externalDevice') },
                     ]}
                     value={field.value}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('No preference')} />
+                      <SelectValue placeholder={t('systemSettings.fields.noPreference')} />
                     </SelectTrigger>
                     <SelectContent alignItemWithTrigger={false}>
                       <SelectGroup>
-                        <SelectItem value='none'>{t('Unlimited')}</SelectItem>
+                        <SelectItem value='none'>{t('keyQuery.fields.unlimited')}</SelectItem>
                         <SelectItem value='platform'>
-                          {t('Built-in Device')}
+                          {t('systemSettings.fields.builtInDevice')}
                         </SelectItem>
                         <SelectItem value='cross-platform'>
-                          {t('External Device')}
+                          {t('systemSettings.fields.externalDevice')}
                         </SelectItem>
                       </SelectGroup>
                     </SelectContent>
@@ -320,7 +320,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Built-in: phone fingerprint/face, or Windows Hello; External: USB security key'
+                    'systemSettings.tips.builtInPhoneFingerprintFaceOrWindowsHelloExternal'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -334,10 +334,10 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Allow Insecure Origins')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.allowInsecureOrigins')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Permit Passkey registration on non-HTTPS origins (only recommended for development)'
+                      'systemSettings.tips.permitPasskeyRegistrationOnNonHttpsOriginsOnlyRecommended'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -356,7 +356,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.max_passkeys_per_user'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Max Passkeys per User')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.maxPasskeysPerUser')}</FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -371,7 +371,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Maximum number of Passkeys each user can register (1-20)'
+                    'systemSettings.tips.maximumNumberOfPasskeysEachUserCanRegister1'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -384,18 +384,18 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.origins'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Allowed Origins')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.allowedOrigins')}</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={4}
-                    placeholder={t('https://example.com')}
+                    placeholder={t('systemSettings.placeholders.urlExampleCom')}
                     {...field}
                     value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'List of origins (one per line) allowed for Passkey registration and authentication.'
+                    'systemSettings.tips.listOfOriginsOnePerLineAllowedForPasskey'
                   )}
                 </FormDescription>
                 <FormMessage />

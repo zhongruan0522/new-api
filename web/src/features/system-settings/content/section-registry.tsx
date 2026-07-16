@@ -40,7 +40,7 @@ function validateDataExportDefaultTime(value: string): 'week' | 'hour' | 'day' {
 const CONTENT_SECTIONS = [
   {
     id: 'dashboard',
-    titleKey: 'Data Dashboard',
+    titleKey: 'systemSettings.titles.dataDashboard',
     build: (settings: ContentSettings) => (
       <DashboardSection
         defaultValues={{
@@ -55,12 +55,12 @@ const CONTENT_SECTIONS = [
   },
   {
     id: 'dashboard-config',
-    titleKey: 'Dashboard Configuration',
+    titleKey: 'systemSettings.titles.dashboardConfiguration',
     build: () => <DashboardConfigSection />,
   },
   {
     id: 'announcements',
-    titleKey: 'Announcements',
+    titleKey: 'dashboard.fields.announcements',
     build: (settings: ContentSettings) => (
       <AnnouncementsSection
         data={settings['console_setting.announcements']}
@@ -69,28 +69,28 @@ const CONTENT_SECTIONS = [
   },
   {
     id: 'api-info',
-    titleKey: 'API Addresses',
+    titleKey: 'systemSettings.fields.apiAddresses',
     build: (settings: ContentSettings) => (
       <ApiInfoSection data={settings['console_setting.api_info']} />
     ),
   },
   {
     id: 'faq',
-    titleKey: 'FAQ',
+    titleKey: 'dashboard.fields.faq',
     build: (settings: ContentSettings) => (
       <FAQSection data={settings['console_setting.faq']} />
     ),
   },
   {
     id: 'uptime-kuma',
-    titleKey: 'Uptime Kuma',
+    titleKey: 'systemSettings.fields.uptimeKuma',
     build: (settings: ContentSettings) => (
       <UptimeKumaSection data={settings['console_setting.uptime_kuma_groups']} />
     ),
   },
   {
     id: 'usage-log-fields',
-    titleKey: 'Usage Log Fields',
+    titleKey: 'common.fields.usageLogFields',
     build: (settings: ContentSettings) => (
       <UsageLogFieldsSection
         fieldsData={settings['console_setting.usage_log_fields']}

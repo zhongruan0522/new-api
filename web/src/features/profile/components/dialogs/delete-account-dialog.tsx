@@ -60,7 +60,7 @@ export function DeleteAccountDialog({
 
   const handleDelete = async () => {
     if (confirmation !== username) {
-      toast.error(t('Username confirmation does not match'))
+      toast.error(t('profile.tips.usernameConfirmationDoesNotMatch'))
       return
     }
 
@@ -69,7 +69,7 @@ export function DeleteAccountDialog({
       const response = await deleteUserAccount()
 
       if (response.success) {
-        toast.success(t('Account deleted successfully'))
+        toast.success(t('profile.status.accountDeletedSuccessfully'))
 
         // Logout and redirect
         try {
@@ -82,10 +82,10 @@ export function DeleteAccountDialog({
         localStorage.removeItem('user')
         navigate({ to: '/sign-in' })
       } else {
-        toast.error(response.message || t('Failed to delete account'))
+        toast.error(response.message || t('profile.errors.failedToDeleteAccount'))
       }
     } catch (_error) {
-      toast.error(t('Failed to delete account'))
+      toast.error(t('profile.errors.failedToDeleteAccount'))
     } finally {
       setLoading(false)
     }
@@ -106,11 +106,11 @@ export function DeleteAccountDialog({
         <DialogHeader>
           <DialogTitle className='text-destructive flex items-center gap-2'>
             <AlertTriangle className='h-5 w-5' />
-            {t('Delete Account')}
+            {t('profile.actions.deleteAccount')}
           </DialogTitle>
           <DialogDescription>
             {t(
-              'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.'
+              'profile.errors.actionCannotBeUndoneThisWillPermanentlyDeleteYour'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -119,13 +119,13 @@ export function DeleteAccountDialog({
           <Alert variant='destructive'>
             <AlertTriangle className='h-4 w-4' />
             <AlertDescription>
-              {t('Warning: This action is permanent and irreversible!')}
+              {t('profile.tips.warningThisActionIsPermanentAndIrreversible')}
             </AlertDescription>
           </Alert>
 
           <div className='space-y-2'>
             <Label htmlFor='confirmation'>
-              {t('Type')} <strong>{username}</strong> {t('to confirm')}
+              {t('channels.fields.type')} <strong>{username}</strong> {t('profile.fields.confirm')}
             </Label>
             <Input
               id='confirmation'
@@ -146,7 +146,7 @@ export function DeleteAccountDialog({
             onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button
             type='button'
@@ -155,7 +155,7 @@ export function DeleteAccountDialog({
             disabled={loading || confirmation !== username}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('Deleting...') : t('Delete Account')}
+            {loading ? t('keys.tips.deleting') : t('profile.actions.deleteAccount')}
           </Button>
         </DialogFooter>
       </DialogContent>

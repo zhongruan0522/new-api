@@ -56,7 +56,7 @@ export function ResetPasswordConfirm({
 
   async function handleSubmit() {
     if (!isValidResetLink || !email || !token) {
-      toast.error(t('Invalid reset link, please request a new password reset'))
+      toast.error(t('auth.errors.invalidResetLinkPleaseRequestANewPasswordReset'))
       return
     }
 
@@ -73,12 +73,12 @@ export function ResetPasswordConfirm({
         const copySuccess = await copyToClipboard(password)
         if (copySuccess) {
           toast.success(
-            t('Password reset and copied to clipboard: {{password}}', {
+            t('auth.status.passwordResetAndCopiedToClipboardPassword', {
               password,
             })
           )
         } else {
-          toast.success(t('Password reset: {{password}}', { password }))
+          toast.success(t('auth.fields.passwordResetPassword', { password }))
         }
       }
     } catch {
@@ -95,7 +95,7 @@ export function ResetPasswordConfirm({
     if (copySuccess) {
       setCopied(true)
       toast.success(
-        t('Password copied to clipboard: {{password}}', {
+        t('auth.status.passwordCopiedToClipboardPassword', {
           password: newPassword,
         })
       )
@@ -108,12 +108,12 @@ export function ResetPasswordConfirm({
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Reset password')}
+            {t('auth.actions.resetPassword')}
           </h2>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
             {newPassword
-              ? t('auth.resetPasswordConfirm.success')
-              : t('auth.resetPasswordConfirm.description')}
+              ? t('auth.status.resetPasswordConfirmSuccess')
+              : t('auth.tips.resetPasswordConfirmDescription')}
           </p>
         </div>
 
@@ -121,25 +121,25 @@ export function ResetPasswordConfirm({
           {!isValidResetLink && (
             <Alert variant='destructive'>
               <AlertDescription>
-                {t('Invalid reset link, please request a new password reset.')}
+                {t('auth.errors.invalidResetLinkPleaseRequestANewPasswordReset896797')}
               </AlertDescription>
             </Alert>
           )}
 
           <div className='space-y-2'>
-            <Label htmlFor='email'>{t('Email')}</Label>
+            <Label htmlFor='email'>{t('auth.fields.email')}</Label>
             <Input
               id='email'
               type='email'
               value={email || ''}
               disabled
-              placeholder={t('Waiting for email...')}
+              placeholder={t('auth.status.waitingForEmail')}
             />
           </div>
 
           {newPassword && (
             <div className='space-y-2'>
-              <Label htmlFor='password'>{t('New Password')}</Label>
+              <Label htmlFor='password'>{t('auth.fields.newPassword')}</Label>
               <div className='flex gap-2'>
                 <Input
                   id='password'
@@ -161,7 +161,7 @@ export function ResetPasswordConfirm({
                 </Button>
               </div>
               <p className='text-muted-foreground text-xs'>
-                {t('Password has been copied to clipboard')}
+                {t('auth.status.passwordHasBeenCopiedToClipboard')}
               </p>
             </div>
           )}
@@ -178,12 +178,12 @@ export function ResetPasswordConfirm({
             }
           >
             {newPassword
-              ? t('Back To Login')
+              ? t('auth.actions.backToLogin')
               : isActive
-                ? t('auth.resetPasswordConfirm.retry', {
+                ? t('auth.tips.resetPasswordConfirmRetry', {
                     seconds: secondsLeft,
                   })
-                : t('auth.resetPasswordConfirm.confirm')}
+                : t('auth.tips.resetPasswordConfirmConfirm')}
           </Button>
 
           {!newPassword && (
@@ -192,7 +192,7 @@ export function ResetPasswordConfirm({
               className='w-full'
               onClick={() => navigate({ to: '/sign-in', replace: true })}
             >
-              {t('Back To Login')}
+              {t('auth.actions.backToLogin')}
             </Button>
           )}
         </div>

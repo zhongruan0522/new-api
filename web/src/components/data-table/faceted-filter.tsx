@@ -88,7 +88,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                   variant='secondary'
                   className='rounded-sm px-1 font-normal'
                 >
-                  {selectedValues.size} {t('selected')}
+                  {selectedValues.size} {t('common.placeholders.selected')}
                 </Badge>
               ) : (
                 options
@@ -111,7 +111,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
-            <CommandEmpty>{t('No results found.')}</CommandEmpty>
+            <CommandEmpty>{t('common.tips.noResultsFound')}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
                 const isSelected = selectedValues.has(option.value)
@@ -186,7 +186,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                     onSelect={() => column?.setFilterValue(undefined)}
                     className='justify-center text-center'
                   >
-                    {t('Clear filters')}
+                    {t('common.actions.clearFilters')}
                   </CommandItem>
                 </CommandGroup>
               </>

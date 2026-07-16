@@ -8,6 +8,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -86,7 +87,7 @@ func CreateModelMeta(c *gin.Context) {
 		return
 	}
 	if m.ModelName == "" {
-		common.ApiErrorMsg(c, "模型名称不能为空")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaNameRequired)
 		return
 	}
 	// 名称冲突检查
@@ -94,7 +95,7 @@ func CreateModelMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "模型名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 		return
 	}
 
@@ -117,7 +118,7 @@ func UpdateModelMeta(c *gin.Context) {
 		return
 	}
 	if m.Id == 0 {
-		common.ApiErrorMsg(c, "缺少模型 ID")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaMissingID)
 		return
 	}
 
@@ -144,7 +145,7 @@ func UpdateModelMeta(c *gin.Context) {
 			common.ApiError(c, err)
 			return
 		} else if dup {
-			common.ApiErrorMsg(c, "模型名称已存在")
+			common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 			return
 		}
 

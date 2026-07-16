@@ -102,7 +102,7 @@ export function processChartData(
   chartCornerRadius?: number
 ): ProcessedChartData {
   const tt: TFunction = t ?? ((x) => x)
-  const otherLabel = tt('Other')
+  const otherLabel = tt('common.fields.other')
 
   const formatInt = (value: number) =>
     Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value)
@@ -163,7 +163,7 @@ export function processChartData(
       }
 
       array.unshift({
-        key: tt('labelWithColon', { label: tt('Total') }),
+        key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
         value: formatQuotaValue(sum),
       })
       return array
@@ -182,8 +182,8 @@ export function processChartData(
         categoryField: 'type',
         title: {
           visible: true,
-          text: tt('Call Count Distribution'),
-          subtext: tt('No data available'),
+          text: tt('common.fields.callCountDistribution'),
+          subtext: tt('common.fields.noDataAvailable'),
         },
         legends: { visible: false },
         label: { visible: false },
@@ -220,7 +220,7 @@ export function processChartData(
         legends: { visible: true, selectMode: 'single' },
         title: {
           visible: true,
-          text: tt('Call Trend'),
+          text: tt('common.fields.callTrend'),
         },
       },
       spec_rank_bar: {
@@ -232,7 +232,7 @@ export function processChartData(
         legends: { visible: true, selectMode: 'single' },
         title: {
           visible: true,
-          text: tt('Call Count Ranking'),
+          text: tt('common.fields.callCountRanking'),
         },
       },
       totalQuotaDisplay: formatQuotaTotal(0),
@@ -500,7 +500,7 @@ export function processChartData(
       },
       title: {
         visible: true,
-        text: tt('Call Count Distribution'),
+        text: tt('common.fields.callCountDistribution'),
       },
       legends: { visible: true, orient: 'left' },
       label: { visible: true },
@@ -616,7 +616,7 @@ export function processChartData(
       color: modelColor,
       title: {
         visible: true,
-        text: tt('Call Trend'),
+        text: tt('common.fields.callTrend'),
       },
       tooltip: {
         mark: {
@@ -660,7 +660,7 @@ export function processChartData(
               array[i].value = formatInt(v)
             }
             array.unshift({
-              key: tt('labelWithColon', { label: tt('Total') }),
+              key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
               value: formatInt(sum),
             })
             return array
@@ -693,7 +693,7 @@ export function processChartData(
       color: modelColor,
       title: {
         visible: true,
-        text: tt('Call Count Ranking'),
+        text: tt('common.fields.callCountRanking'),
       },
       bar: {
         state: {
@@ -763,8 +763,8 @@ export function processUserChartData(
       direction: 'horizontal',
       title: {
         visible: true,
-        text: tt('User Consumption Ranking'),
-        subtext: tt('No data available'),
+        text: tt('common.fields.userConsumptionRanking'),
+        subtext: tt('common.fields.noDataAvailable'),
       },
       legends: { visible: false },
       color: { type: 'ordinal', range: userColorRange },
@@ -778,8 +778,8 @@ export function processUserChartData(
       seriesField: 'User',
       title: {
         visible: true,
-        text: tt('User Consumption Trend'),
-        subtext: tt('No data available'),
+        text: tt('common.fields.userConsumptionTrend'),
+        subtext: tt('common.fields.noDataAvailable'),
       },
       legends: { visible: true, selectMode: 'single' },
       color: { type: 'ordinal', range: userColorRange },
@@ -862,8 +862,8 @@ export function processUserChartData(
       direction: 'horizontal',
       title: {
         visible: true,
-        text: tt('User Consumption Ranking'),
-        subtext: `${tt('labelWithColon', { label: tt('Total') })} ${formatVal(totalQuota)}`,
+        text: tt('common.fields.userConsumptionRanking'),
+        subtext: `${tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') })} ${formatVal(totalQuota)}`,
       },
       legends: { visible: false },
       bar: {
@@ -918,8 +918,8 @@ export function processUserChartData(
       stack: false,
       title: {
         visible: true,
-        text: tt('User Consumption Trend'),
-        subtext: `${tt('labelWithColon', { label: tt('Total') })} ${formatVal(totalQuota)}`,
+        text: tt('common.fields.userConsumptionTrend'),
+        subtext: `${tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') })} ${formatVal(totalQuota)}`,
       },
       legends: { visible: true, selectMode: 'single' },
       axes: [
@@ -966,7 +966,7 @@ export function processUserChartData(
               array[i].value = formatVal(v)
             }
             array.unshift({
-              key: tt('labelWithColon', { label: tt('Total') }),
+              key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
               value: formatVal(sum),
             })
             return array

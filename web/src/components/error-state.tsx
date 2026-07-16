@@ -52,7 +52,7 @@ export function ErrorState(props: ErrorStateProps) {
             <Icon className='text-destructive size-6' />
           </EmptyMedia>
           <EmptyTitle>
-            {props.title ?? t('Oops! Something went wrong')}
+            {props.title ?? t('common.tips.oopsSomethingWentWrong')}
           </EmptyTitle>
           {props.description != null && (
             <EmptyDescription>{props.description}</EmptyDescription>
@@ -61,7 +61,7 @@ export function ErrorState(props: ErrorStateProps) {
         <EmptyContent>
           {props.onRetry != null && (
             <Button variant='outline' size='sm' onClick={props.onRetry}>
-              {t('Retry')}
+              {t('common.actions.retry')}
             </Button>
           )}
           {props.action}

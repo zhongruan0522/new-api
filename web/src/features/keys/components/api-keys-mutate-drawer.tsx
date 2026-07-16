@@ -203,7 +203,7 @@ export function ApiKeysMutateDrawer({
             successCount++
             newKeys.push(`sk-${result.data.key}`)
           } else if (result.success) {
-            toast.error(t('Created API key response did not include a key'))
+            toast.error(t('keys.status.createdApiKeyResponseDidNotIncludeAKey'))
             break
           } else {
             toast.error(result.message || t(ERROR_MESSAGES.CREATE_FAILED))
@@ -213,7 +213,7 @@ export function ApiKeysMutateDrawer({
 
         if (successCount > 0) {
           toast.success(
-            t('Successfully created {{count}} API Key(s)', {
+            t('keys.status.successfullyCreatedCountApiKeyS', {
               count: successCount,
             })
           )
@@ -231,7 +231,7 @@ export function ApiKeysMutateDrawer({
   }
 
   const onInvalid: SubmitErrorHandler<ApiKeyFormValues> = () => {
-    toast.error(t('Please fix the highlighted fields before saving'))
+    toast.error(t('keys.tips.pleaseFixTheHighlightedFieldsBeforeSaving'))
   }
 
   const handleSetExpiry = (months: number, days: number, hours: number) => {
@@ -251,33 +251,33 @@ export function ApiKeysMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = `${t('Quota')} (${currencyLabel})`
+  const quotaLabel = `${t('keys.fields.quota')} (${currencyLabel})`
   const quotaPlaceholder = tokensOnly
-    ? t('Enter quota in tokens')
-    : t('Enter quota in {{currency}}', { currency: currencyLabel })
+    ? t('keys.placeholders.enterQuotaInTokens')
+    : t('keys.placeholders.enterQuotaInCurrency', { currency: currencyLabel })
   const quotaInputStep = tokensOnly ? 1 : 0.01
   const selectedGroup = form.watch('group')
   const quotaType = form.watch('quota_type')
   const quotaTypeOptions = [
     {
       value: 0,
-      label: t('Unlimited Quota'),
-      description: t('No quota cap; usage still depends on account balance.'),
+      label: t('keys.fields.unlimitedQuota'),
+      description: t('keys.tips.noQuotaCapUsageStillDependsOnAccountBalance'),
     },
     {
       value: 1,
-      label: t('Permanent Quota'),
-      description: t('A fixed quota that remains available until consumed.'),
+      label: t('keys.fields.permanentQuota'),
+      description: t('keys.tips.fixedQuotaThatRemainsAvailableUntilConsumed'),
     },
     {
       value: 2,
-      label: t('Hourly Reset Quota'),
-      description: t('Quota resets after each configured hour window.'),
+      label: t('keys.fields.hourlyResetQuota'),
+      description: t('keys.tips.quotaResetsAfterEachConfiguredHourWindow'),
     },
     {
       value: 3,
-      label: t('Hourly + Days Reset Quota'),
-      description: t('Quota resets by hour window and day cycle.'),
+      label: t('keys.fields.hourlyDaysResetQuota'),
+      description: t('keys.tips.quotaResetsByHourWindowAndDayCycle'),
     },
   ]
 
@@ -296,12 +296,12 @@ export function ApiKeysMutateDrawer({
       >
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isUpdate ? t('Update API Key') : t('Create API Key')}
+            {isUpdate ? t('keys.fields.updateApiKey') : t('dashboard.actions.createApiKey')}
           </SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? t('Update the API key by providing necessary info.')
-              : t('Add a new API key by providing necessary info.')}
+              ? t('keys.tips.updateTheApiKeyByProvidingNecessaryInfo')
+              : t('keys.actions.addANewApiKeyByProvidingNecessaryInfo')}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -312,8 +312,8 @@ export function ApiKeysMutateDrawer({
           >
             <SideDrawerSection>
               <SideDrawerSectionHeader
-                title={t('Basic Information')}
-                description={t('Set API key basic information')}
+                title={t('channels.titles.basicInformation')}
+                description={t('keys.titles.setApiKeyBasicInformation')}
                 icon={<KeyRound className='size-4' />}
               />
               <FormField
@@ -321,9 +321,9 @@ export function ApiKeysMutateDrawer({
                 name='name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Name')}</FormLabel>
+                    <FormLabel>{t('channels.fields.name')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('Enter a name')} />
+                      <Input {...field} placeholder={t('keys.placeholders.enterAName')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -335,13 +335,13 @@ export function ApiKeysMutateDrawer({
                 name='group'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Group')}</FormLabel>
+                    <FormLabel>{t('common.fields.group')}</FormLabel>
                     <FormControl>
                       <ApiKeyGroupCombobox
                         options={groups}
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder={t('Select a group')}
+                        placeholder={t('dynamicRatio.placeholders.selectAGroup')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -357,11 +357,11 @@ export function ApiKeysMutateDrawer({
                     <FormItem className={sideDrawerSwitchItemClassName()}>
                       <div className='flex flex-col gap-0.5'>
                         <FormLabel className='text-sm'>
-                          {t('Cross-group retry')}
+                          {t('keys.fields.crossGroupRetry')}
                         </FormLabel>
                         <FormDescription className='line-clamp-2 text-xs sm:line-clamp-none'>
                           {t(
-                            'When enabled, if channels in the current group fail, it will try channels in the next group in order.'
+                            'keys.status.enabledIfChannelsInTheCurrentGroupFailIt'
                           )}
                         </FormDescription>
                       </div>
@@ -381,13 +381,13 @@ export function ApiKeysMutateDrawer({
                 name='expired_time'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Expiration Time')}</FormLabel>
+                    <FormLabel>{t('keyQuery.fields.expirationTime')}</FormLabel>
                     <div className='grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center'>
                       <FormControl>
                         <DateTimePicker
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder={t('Never expires')}
+                          placeholder={t('keys.fields.neverExpires')}
                           className='min-w-0 [&_input[type=time]]:w-24 sm:[&_input[type=time]]:w-32'
                         />
                       </FormControl>
@@ -399,7 +399,7 @@ export function ApiKeysMutateDrawer({
                           className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 0, 0)}
                         >
-                          {t('Never')}
+                          {t('keyQuery.fields.never')}
                         </Button>
                         <Button
                           type='button'
@@ -408,7 +408,7 @@ export function ApiKeysMutateDrawer({
                           className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(1, 0, 0)}
                         >
-                          {t('1 Month')}
+                          {t('keys.placeholders.value1Month')}
                         </Button>
                         <Button
                           type='button'
@@ -417,7 +417,7 @@ export function ApiKeysMutateDrawer({
                           className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 1, 0)}
                         >
-                          {t('1 Day')}
+                          {t('keys.placeholders.value1Day')}
                         </Button>
                         <Button
                           type='button'
@@ -426,7 +426,7 @@ export function ApiKeysMutateDrawer({
                           className='px-2 text-xs sm:px-3 sm:text-sm'
                           onClick={() => handleSetExpiry(0, 0, 1)}
                         >
-                          {t('1 Hour')}
+                          {t('keys.placeholders.value1Hour')}
                         </Button>
                       </div>
                     </div>
@@ -441,13 +441,13 @@ export function ApiKeysMutateDrawer({
                   name='tokenCount'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Quantity')}</FormLabel>
+                      <FormLabel>{t('keys.fields.quantity')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type='number'
                           min='1'
-                          placeholder={t('Number of keys to create')}
+                          placeholder={t('keys.fields.numberOfKeysToCreate')}
                           onChange={(e) =>
                             field.onChange(parseInt(e.target.value, 10) || 1)
                           }
@@ -455,7 +455,7 @@ export function ApiKeysMutateDrawer({
                       </FormControl>
                       <FormDescription>
                         {t(
-                          'Create multiple API keys at once (random suffix will be added to names)'
+                          'keys.actions.createMultipleApiKeysAtOnceRandomSuffixWill'
                         )}
                       </FormDescription>
                       <FormMessage />
@@ -467,8 +467,8 @@ export function ApiKeysMutateDrawer({
 
             <SideDrawerSection>
               <SideDrawerSectionHeader
-                title={t('Quota Settings')}
-                description={t('Set quota amount and limits')}
+                title={t('keys.titles.quotaSettings')}
+                description={t('keys.fields.setQuotaAmountAndLimits')}
                 icon={<WalletCards className='size-4' />}
               />
 
@@ -477,12 +477,12 @@ export function ApiKeysMutateDrawer({
                 name='quota_type'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Quota Type')}</FormLabel>
+                    <FormLabel>{t('keys.fields.quotaType')}</FormLabel>
                     <FormControl>
                       <ApiKeyQuotaTypeCombobox
                         options={quotaTypeOptions}
                         value={field.value}
-                        placeholder={t('Select quota type')}
+                        placeholder={t('keys.placeholders.selectQuotaType')}
                         onValueChange={(nextQuotaType) => {
                           field.onChange(nextQuotaType)
                           form.setValue(
@@ -495,7 +495,7 @@ export function ApiKeysMutateDrawer({
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Choose whether this key is unlimited, has a fixed quota, or resets quota by hour/day.'
+                        'keys.placeholders.chooseWhetherThisKeyIsUnlimitedHasAFixed'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -506,7 +506,7 @@ export function ApiKeysMutateDrawer({
               {quotaType === 0 && (
                 <p className='text-muted-foreground text-sm'>
                   {t(
-                    'The key itself has no quota cap, but actual usage is still limited by the account balance.'
+                    'keys.tips.keyItselfHasNoQuotaCapButActualUsage'
                   )}
                 </p>
               )}
@@ -531,8 +531,8 @@ export function ApiKeysMutateDrawer({
                       </FormControl>
                       <FormDescription>
                         {tokensOnly
-                          ? t('Enter the quota amount in tokens')
-                          : t('Enter the quota amount in {{currency}}', {
+                          ? t('keys.placeholders.enterTheQuotaAmountInTokens')
+                          : t('keys.placeholders.enterTheQuotaAmountInCurrency', {
                               currency: currencyLabel,
                             })}
                       </FormDescription>
@@ -549,21 +549,21 @@ export function ApiKeysMutateDrawer({
                     name='window_hours'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Window Hours')}</FormLabel>
+                        <FormLabel>{t('keys.fields.windowHours')}</FormLabel>
                         <FormControl>
                           <Input
                             value={field.value ?? ''}
                             type='number'
                             min='1'
                             max='720'
-                            placeholder={t('Hours')}
+                            placeholder={t('channels.fields.hours')}
                             onChange={(e) =>
                               field.onChange(parseInt(e.target.value, 10) || 1)
                             }
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('Reset window duration in hours')}
+                          {t('keys.actions.resetWindowDurationInHours')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -576,7 +576,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Window Quota')} ({currencyLabel})
+                          {t('keys.fields.windowQuota')} ({currencyLabel})
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -590,7 +590,7 @@ export function ApiKeysMutateDrawer({
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('Quota available in each window')}
+                          {t('keys.fields.quotaAvailableInEachWindow')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -602,7 +602,7 @@ export function ApiKeysMutateDrawer({
                     name='window_start_hour'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Start Hour')}</FormLabel>
+                        <FormLabel>{t('keys.actions.startHour')}</FormLabel>
                         <FormControl>
                           <Input
                             value={field.value ?? ''}
@@ -616,7 +616,7 @@ export function ApiKeysMutateDrawer({
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('Window start hour, from 0 to 23')}
+                          {t('keys.fields.windowStartHourFrom0To23')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -632,20 +632,20 @@ export function ApiKeysMutateDrawer({
                     name='cycle_days'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Cycle Days')}</FormLabel>
+                        <FormLabel>{t('keys.fields.cycleDays')}</FormLabel>
                         <FormControl>
                           <Input
                             value={field.value ?? ''}
                             type='number'
                             min='1'
-                            placeholder={t('Days')}
+                            placeholder={t('keys.fields.days')}
                             onChange={(e) =>
                               field.onChange(parseInt(e.target.value, 10) || 1)
                             }
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('Cycle duration in days')}
+                          {t('keys.fields.cycleDurationInDays')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -658,7 +658,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Cycle Quota')} ({currencyLabel})
+                          {t('keys.fields.cycleQuota')} ({currencyLabel})
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -672,7 +672,7 @@ export function ApiKeysMutateDrawer({
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('Total quota available in each day cycle')}
+                          {t('keys.tips.totalQuotaAvailableInEachDayCycle')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -694,8 +694,8 @@ export function ApiKeysMutateDrawer({
                 >
                   <SideDrawerSectionHeader
                     className='flex-1'
-                    title={t('Advanced Settings')}
-                    description={t('Set API key access restrictions')}
+                    title={t('channels.titles.advancedSettings')}
+                    description={t('keys.fields.setApiKeyAccessRestrictions')}
                     icon={<Settings2 className='size-4' />}
                   />
                   <ChevronDown
@@ -712,7 +712,7 @@ export function ApiKeysMutateDrawer({
                       name='model_limits'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Model Limits')}</FormLabel>
+                          <FormLabel>{t('keys.fields.modelLimits')}</FormLabel>
                           <FormControl>
                             <MultiSelect
                               options={models.map((m) => ({
@@ -722,12 +722,12 @@ export function ApiKeysMutateDrawer({
                               selected={field.value}
                               onChange={field.onChange}
                               placeholder={t(
-                                'Select models (empty for allow all)'
+                                'keys.placeholders.selectModelsEmptyForAllowAll'
                               )}
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('Limit which models can be used with this key')}
+                            {t('keys.status.limitWhichModelsCanBeUsedWithThisKey')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -740,21 +740,21 @@ export function ApiKeysMutateDrawer({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            {t('IP Whitelist (supports CIDR)')}
+                            {t('keys.tips.ipWhitelistSupportsCidr')}
                           </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               className='min-h-20 resize-none'
                               placeholder={t(
-                                'One IP per line (empty for no restriction)'
+                                'keys.placeholders.oneIpPerLineEmptyForNoRestriction'
                               )}
                               rows={3}
                             />
                           </FormControl>
                           <FormDescription>
                             {t(
-                              'Do not over-trust this feature. IP may be spoofed. Please use with nginx, CDN and other gateways.'
+                              'keys.tips.doNotOverTrustThisFeatureIpMayBe'
                             )}
                           </FormDescription>
                           <FormMessage />
@@ -771,7 +771,7 @@ export function ApiKeysMutateDrawer({
           <SheetClose
             render={<Button variant='outline' className='w-full sm:w-auto' />}
           >
-            {t('Close')}
+            {t('common.actions.close')}
           </SheetClose>
           <Button
             type='button'
@@ -779,7 +779,7 @@ export function ApiKeysMutateDrawer({
             disabled={isSubmitting}
             className='w-full sm:w-auto'
           >
-            {isSubmitting ? t('Saving...') : t('Save Changes')}
+            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

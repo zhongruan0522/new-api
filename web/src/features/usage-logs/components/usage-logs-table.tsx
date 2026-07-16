@@ -135,7 +135,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       })
 
       if (!result?.success) {
-        toast.error(result?.message || t('Failed to load logs'))
+        toast.error(result?.message || t('usageLogs.errors.failedToLoadLogs'))
         return DEFAULT_LOGS_DATA
       }
 
@@ -185,9 +185,9 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       columns={columns as ColumnDef<Record<string, unknown>>[]}
       isLoading={isLoadingData}
       isFetching={isFetching}
-      emptyTitle={t('No Logs Found')}
+      emptyTitle={t('usageLogs.titles.noLogsFound')}
       emptyDescription={t(
-        'No usage logs available. Logs will appear here once API calls are made.'
+        'usageLogs.tips.noUsageLogsAvailableLogsWillAppearHereOnce'
       )}
       skeletonKeyPrefix='usage-log-skeleton'
       tableClassName='overflow-x-auto'

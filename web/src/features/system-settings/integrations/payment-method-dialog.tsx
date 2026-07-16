@@ -44,9 +44,9 @@ import { Input } from '@/components/ui/input'
 
 const createPaymentMethodDialogSchema = (t: (key: string) => string) =>
   z.object({
-    name: z.string().min(1, t('Payment method name is required')),
-    type: z.string().min(1, t('Payment method type is required')),
-    color: z.string().min(1, t('Color is required')),
+    name: z.string().min(1, t('systemSettings.errors.paymentMethodNameIsRequired')),
+    type: z.string().min(1, t('systemSettings.errors.paymentMethodTypeIsRequired')),
+    color: z.string().min(1, t('systemSettings.errors.colorIsRequired')),
     min_topup: z.string().optional(),
   })
 
@@ -69,9 +69,9 @@ type PaymentMethodDialogProps = {
 }
 
 const PAYMENT_TYPES = [
-  { value: 'alipay', label: 'Alipay' },
-  { value: 'wxpay', label: 'WeChat Pay' },
-  { value: 'stripe', label: 'Stripe' },
+  { value: 'alipay', label: 'common.fields.alipay' },
+  { value: 'wxpay', label: 'common.fields.chatPay' },
+  { value: 'stripe', label: 'common.fields.stripe' },
 ]
 
 const getColorPreview = (color: string) => {
@@ -173,10 +173,10 @@ export function PaymentMethodDialog({
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? t('Edit payment method') : t('Add payment method')}
+            {isEditMode ? t('systemSettings.actions.editPaymentMethod') : t('systemSettings.actions.addPaymentMethod')}
           </DialogTitle>
           <DialogDescription>
-            {t('Configure a payment method for user recharge options.')}
+            {t('systemSettings.tips.configureAPaymentMethodForUserRechargeOptions')}
           </DialogDescription>
         </DialogHeader>
 
@@ -190,12 +190,12 @@ export function PaymentMethodDialog({
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Name')}</FormLabel>
+                  <FormLabel>{t('channels.fields.name')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('e.g., Alipay, WeChat')} {...field} />
+                    <Input placeholder={t('systemSettings.placeholders.eGAlipayWeChat')} {...field} />
                   </FormControl>
                   <FormDescription>
-                    {t('Display name for this payment method.')}
+                    {t('systemSettings.tips.displayNameForThisPaymentMethod')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -207,19 +207,19 @@ export function PaymentMethodDialog({
               name='type'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Type')}</FormLabel>
+                  <FormLabel>{t('channels.fields.type')}</FormLabel>
                   <FormControl>
                     <Combobox
                       options={PAYMENT_TYPES}
                       value={field.value}
                       onValueChange={field.onChange}
-                      placeholder={t('Select or enter payment type')}
-                      searchPlaceholder={t('Search payment types...')}
+                      placeholder={t('systemSettings.placeholders.selectOrEnterPaymentType')}
+                      searchPlaceholder={t('systemSettings.actions.searchPaymentTypes')}
                       allowCustomValue
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Select from presets or type custom identifier.')}
+                    {t('systemSettings.placeholders.selectFromPresetsOrTypeCustomIdentifier')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -231,15 +231,15 @@ export function PaymentMethodDialog({
               name='color'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Color')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.color')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Combobox
                         options={COLOR_PRESETS}
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder={t('Select or enter color value')}
-                        searchPlaceholder={t('Search colors...')}
+                        placeholder={t('systemSettings.placeholders.selectOrEnterColorValue')}
+                        searchPlaceholder={t('systemSettings.actions.searchColors')}
                         allowCustomValue
                         className='flex-1'
                       />
@@ -253,7 +253,7 @@ export function PaymentMethodDialog({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Select preset or enter custom CSS color value.')}
+                    {t('systemSettings.placeholders.selectPresetOrEnterCustomCssColorValue')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -265,17 +265,17 @@ export function PaymentMethodDialog({
               name='min_topup'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Minimum top-up (optional)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.minimumTopUpOptional')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
                       step='0.01'
-                      placeholder={t('e.g., 50')}
+                      placeholder={t('systemSettings.placeholders.eG50')}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Optional minimum recharge amount for this method.')}
+                    {t('systemSettings.tips.optionalMinimumRechargeAmountForThisMethod')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -288,10 +288,10 @@ export function PaymentMethodDialog({
                 variant='outline'
                 onClick={() => onOpenChange(false)}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('Update') : t('Add')}
+                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

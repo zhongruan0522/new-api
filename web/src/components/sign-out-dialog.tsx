@@ -45,7 +45,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     } catch {
       /* empty */
     }
-    toast.success(t('Signed out'))
+    toast.success(t('common.fields.signedOut'))
     // Refresh the page to clear all state and update UI
     if (typeof window !== 'undefined') {
       window.location.reload()
@@ -56,11 +56,11 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={t('Sign out')}
+      title={t('layout.actions.signOut')}
       desc={t(
-        'Are you sure you want to sign out? You will need to sign in again to access your account.'
+        'common.tips.sureYouWantToSignOutYouWillNeed'
       )}
-      confirmText={t('Sign out')}
+      confirmText={t('layout.actions.signOut')}
       handleConfirm={handleSignOut}
       className='sm:max-w-sm'
     />

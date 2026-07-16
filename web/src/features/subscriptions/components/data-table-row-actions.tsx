@@ -53,7 +53,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           }}
         >
           <Pencil className='mr-2 h-4 w-4' />
-          {t('Edit')}
+          {t('channels.actions.edit')}
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={!complianceConfirmed}
@@ -65,12 +65,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           {row.original.plan.enabled ? (
             <>
               <PowerOff className='mr-2 h-4 w-4' />
-              {t('Disable')}
+              {t('channels.actions.disable')}
             </>
           ) : (
             <>
               <Power className='mr-2 h-4 w-4' />
-              {t('Enable')}
+              {t('channels.actions.enable')}
             </>
           )}
         </DropdownMenuItem>

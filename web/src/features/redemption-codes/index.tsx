@@ -29,7 +29,7 @@ export function Redemptions() {
     <RedemptionsProvider>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {t('Redemption Codes')}
+          {t('redemptionCodes.fields.codes')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <RedemptionsPrimaryButtons />

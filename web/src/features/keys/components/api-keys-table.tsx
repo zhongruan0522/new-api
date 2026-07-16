@@ -112,10 +112,10 @@ function ApiKeysMobileList({
             <EmptyMedia variant='icon'>
               <Database className='size-6' />
             </EmptyMedia>
-            <EmptyTitle>{t('No API Keys Found')}</EmptyTitle>
+            <EmptyTitle>{t('keys.fields.noApiKeysFound')}</EmptyTitle>
             <EmptyDescription>
               {t(
-                'No API keys available. Create your first API key to get started.'
+                'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
               )}
             </EmptyDescription>
           </EmptyHeader>
@@ -144,7 +144,7 @@ function ApiKeysMobileList({
                   {apiKey.name}
                 </div>
                 <div className='text-muted-foreground text-[11px]'>
-                  {t('API Key')}
+                  {t('channels.fields.apiKey')}
                 </div>
               </div>
               {statusConfig && (
@@ -165,7 +165,7 @@ function ApiKeysMobileList({
 
             <div className='space-y-1.5'>
               <span className='text-muted-foreground text-xs'>
-                {t('Quota')}
+                {t('keys.fields.quota')}
               </span>
               <ApiKeyQuotaCell apiKey={apiKey} className='w-full' />
             </div>
@@ -309,17 +309,17 @@ export function ApiKeysTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No API Keys Found')}
+      emptyTitle={t('keys.fields.noApiKeysFound')}
       emptyDescription={t(
-        'No API keys available. Create your first API key to get started.'
+        'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
       )}
       skeletonKeyPrefix='api-keys-skeleton'
       toolbarProps={{
-        searchPlaceholder: t('Filter by name or key...'),
+        searchPlaceholder: t('keys.actions.filterByNameOrKey'),
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: API_KEY_STATUS_OPTIONS,
             singleSelect: true,
           },

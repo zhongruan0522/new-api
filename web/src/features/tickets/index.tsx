@@ -103,19 +103,19 @@ const STATUS_OPTIONS: Array<{
   label: string
 }> = [
   { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'completed', label: 'Completed' },
+  { value: 'pending', label: 'common.status.pending' },
+  { value: 'processing', label: 'common.status.processing' },
+  { value: 'completed', label: 'common.fields.completed' },
 ]
 
 const TYPE_OPTIONS: Array<{
   value: TicketType
   label: string
 }> = [
-  { value: 'bug', label: 'Bug report' },
-  { value: 'feature', label: 'Feature request' },
-  { value: 'question', label: 'Question' },
-  { value: 'other', label: 'Other' },
+  { value: 'bug', label: 'common.fields.bugReport' },
+  { value: 'feature', label: 'common.fields.featureRequest' },
+  { value: 'question', label: 'systemSettings.fields.question' },
+  { value: 'other', label: 'common.fields.other' },
 ]
 
 const EMPTY_CREATE_FORM: CreateTicketPayload = {
@@ -136,7 +136,7 @@ function getTypeLabel(type: TicketType) {
 function getStatusMeta(status: TicketStatus) {
   if (status === 'pending') {
     return {
-      label: 'Pending',
+      label: 'common.status.pending',
       icon: Clock3,
       className:
         'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -144,14 +144,14 @@ function getStatusMeta(status: TicketStatus) {
   }
   if (status === 'processing') {
     return {
-      label: 'Processing',
+      label: 'common.status.processing',
       icon: RefreshCw,
       className:
         'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
     }
   }
   return {
-    label: 'Completed',
+    label: 'common.fields.completed',
     icon: CheckCircle2,
     className:
       'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
@@ -193,7 +193,7 @@ function MessageItem({ message }: { message: TicketMessage }) {
       <div className='flex justify-center'>
         <div className='text-muted-foreground bg-muted/70 flex flex-wrap items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs'>
           <span>{message.username}</span>
-          <span>{t('changed status to')}</span>
+          <span>{t('tickets.fields.changedStatusTo')}</span>
           <StatusBadge status={status} />
           <span>{formatTime(message.time)}</span>
         </div>
@@ -271,7 +271,7 @@ function TicketDetailDialog({
         <DialogHeader className='border-b p-4'>
           <DialogTitle className='flex min-w-0 flex-wrap items-center gap-2 pr-8'>
             <span className='truncate'>
-              {displayTicket?.title || t('Ticket detail')}
+              {displayTicket?.title || t('tickets.fields.ticketDetail')}
             </span>
             {displayTicket ? <StatusBadge status={displayTicket.status} /> : null}
             {displayTicket ? <TypeBadge type={displayTicket.type} /> : null}
@@ -282,11 +282,11 @@ function TicketDetailDialog({
           {loading ? (
             <div className='text-muted-foreground flex h-48 items-center justify-center gap-2 text-sm'>
               <Loader2 className='size-4 animate-spin' />
-              {t('Loading...')}
+              {t('common.tips.loading')}
             </div>
           ) : messages.length === 0 ? (
             <div className='text-muted-foreground flex h-48 items-center justify-center text-sm'>
-              {t('No messages')}
+              {t('tickets.fields.noMessages')}
             </div>
           ) : (
             <div className='space-y-4'>
@@ -299,12 +299,12 @@ function TicketDetailDialog({
 
         <div className='border-t p-4'>
           <div className='flex flex-col gap-2'>
-            <Label htmlFor='ticket-reply'>{t('Reply')}</Label>
+            <Label htmlFor='ticket-reply'>{t('tickets.fields.reply')}</Label>
             <div className='flex flex-col gap-2 sm:flex-row sm:items-end'>
               <Textarea
                 id='ticket-reply'
                 value={replyText}
-                placeholder={t('Type a reply...')}
+                placeholder={t('tickets.tips.typeAReply')}
                 className='min-h-20 flex-1 resize-none'
                 disabled={loading || sending || !displayTicket}
                 onChange={(event) => onReplyTextChange(event.target.value)}
@@ -325,7 +325,7 @@ function TicketDetailDialog({
                 ) : (
                   <SendHorizontal className='size-4' />
                 )}
-                {t('Send')}
+                {t('playground.actions.send')}
               </Button>
             </div>
           </div>
@@ -333,7 +333,7 @@ function TicketDetailDialog({
 
         <DialogFooter className='rounded-b-xl'>
           <DialogClose render={<Button variant='outline' />}>
-            {t('Close')}
+            {t('common.actions.close')}
           </DialogClose>
           {canReopen && displayTicket ? (
             <Button
@@ -341,7 +341,7 @@ function TicketDetailDialog({
               onClick={() => onStatusAction(displayTicket, 'reopen')}
             >
               <RotateCcw className='size-4' />
-              {t('Reopen')}
+              {t('tickets.fields.reopen')}
             </Button>
           ) : null}
           {canClose && displayTicket ? (
@@ -349,7 +349,7 @@ function TicketDetailDialog({
               variant='destructive'
               onClick={() => onStatusAction(displayTicket, 'close')}
             >
-              {t('Close ticket')}
+              {t('tickets.actions.closeTicket')}
             </Button>
           ) : null}
         </DialogFooter>
@@ -412,7 +412,7 @@ export function Tickets() {
   const createMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: async (detail) => {
-      toast.success(t('Ticket created'))
+      toast.success(t('tickets.status.ticketCreated'))
       setCreateOpen(false)
       setCreateForm(EMPTY_CREATE_FORM)
       setStatus('all')
@@ -433,7 +433,7 @@ export function Tickets() {
       return payload.ticketId
     },
     onSuccess: async (ticketId) => {
-      toast.success(t('Reply sent'))
+      toast.success(t('tickets.fields.replySent'))
       setReplyText('')
       await refreshTickets()
       detailMutation.mutate(ticketId)
@@ -453,8 +453,8 @@ export function Tickets() {
     onSuccess: async (target) => {
       toast.success(
         target.action === 'close'
-          ? t('Ticket closed')
-          : t('Ticket reopened')
+          ? t('tickets.fields.ticketClosed')
+          : t('tickets.fields.ticketReopened')
       )
       setStatusTarget(null)
       await refreshTickets()
@@ -489,11 +489,11 @@ export function Tickets() {
     const title = createForm.title.trim()
     const content = createForm.content.trim()
     if (!title) {
-      toast.error(t('Please enter a ticket title'))
+      toast.error(t('tickets.errors.pleaseEnterATicketTitle'))
       return
     }
     if (!content) {
-      toast.error(t('Please enter ticket content'))
+      toast.error(t('tickets.errors.pleaseEnterTicketContent'))
       return
     }
     createMutation.mutate({ ...createForm, title, content })
@@ -509,27 +509,27 @@ export function Tickets() {
 
   const confirmTitle =
     statusTarget?.action === 'close'
-      ? t('Close ticket')
-      : t('Reopen ticket')
+      ? t('tickets.actions.closeTicket')
+      : t('tickets.fields.reopenTicket')
   const confirmDescription =
     statusTarget?.action === 'close'
-      ? t('The ticket status will change to completed.')
-      : t('The ticket status will change to pending.')
+      ? t('tickets.tips.ticketStatusWillChangeToCompleted')
+      : t('tickets.status.ticketStatusWillChangeToPending')
 
   const createDialog = (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('New ticket')}</DialogTitle>
+          <DialogTitle>{t('tickets.fields.newTicket')}</DialogTitle>
         </DialogHeader>
 
         <div className='space-y-4'>
           <div className='space-y-2'>
-            <Label htmlFor='ticket-title'>{t('Title')}</Label>
+            <Label htmlFor='ticket-title'>{t('tickets.fields.title')}</Label>
             <Input
               id='ticket-title'
               value={createForm.title}
-              placeholder={t('Enter a concise title')}
+              placeholder={t('tickets.placeholders.enterAConciseTitle')}
               onChange={(event) =>
                 setCreateForm((current) => ({
                   ...current,
@@ -540,7 +540,7 @@ export function Tickets() {
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Type')}</Label>
+            <Label>{t('channels.fields.type')}</Label>
             <Select
               value={createForm.type}
               onValueChange={(value) =>
@@ -566,11 +566,11 @@ export function Tickets() {
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='ticket-content'>{t('Content')}</Label>
+            <Label htmlFor='ticket-content'>{t('dashboard.fields.content')}</Label>
             <Textarea
               id='ticket-content'
               value={createForm.content}
-              placeholder={t('Describe the question or request')}
+              placeholder={t('tickets.tips.describeTheQuestionOrRequest')}
               className='min-h-32 resize-none'
               onChange={(event) =>
                 setCreateForm((current) => ({
@@ -584,7 +584,7 @@ export function Tickets() {
 
         <DialogFooter>
           <DialogClose render={<Button variant='outline' />}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </DialogClose>
           <Button onClick={submitCreate} disabled={createMutation.isPending}>
             {createMutation.isPending ? (
@@ -592,7 +592,7 @@ export function Tickets() {
             ) : (
               <Plus className='size-4' />
             )}
-            {t('Submit')}
+            {t('common.actions.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -602,13 +602,13 @@ export function Tickets() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Tickets')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('systemSettings.fields.tickets')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <Button variant='outline' onClick={() => ticketsQuery.refetch()}>
             <RefreshCw
               className={cn('size-4', ticketsQuery.isFetching && 'animate-spin')}
             />
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
           <Button
             onClick={() => {
@@ -617,7 +617,7 @@ export function Tickets() {
             }}
           >
             <Plus className='size-4' />
-            {t('New ticket')}
+            {t('tickets.fields.newTicket')}
           </Button>
         </SectionPageLayout.Actions>
 
@@ -647,7 +647,7 @@ export function Tickets() {
                     <Input
                       value={keywordInput}
                       className='pl-8'
-                      placeholder={t('Search tickets...')}
+                      placeholder={t('tickets.actions.searchTickets')}
                       onChange={(event) => setKeywordInput(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') runSearch()
@@ -655,10 +655,10 @@ export function Tickets() {
                     />
                   </div>
                   <Button variant='outline' onClick={runSearch}>
-                    {t('Search')}
+                    {t('common.actions.search')}
                   </Button>
                   <Button variant='ghost' onClick={resetFilters}>
-                    {t('Reset')}
+                    {t('common.actions.reset')}
                   </Button>
                 </div>
               </div>
@@ -667,17 +667,17 @@ export function Tickets() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className='min-w-64'>{t('Title')}</TableHead>
-                      <TableHead className='min-w-32'>{t('Type')}</TableHead>
-                      <TableHead className='min-w-32'>{t('Status')}</TableHead>
+                      <TableHead className='min-w-64'>{t('tickets.fields.title')}</TableHead>
+                      <TableHead className='min-w-32'>{t('channels.fields.type')}</TableHead>
+                      <TableHead className='min-w-32'>{t('channels.fields.status')}</TableHead>
                       <TableHead className='min-w-40'>
-                        {t('Created At')}
+                        {t('multimodalFiles.status.createdAt')}
                       </TableHead>
                       <TableHead className='min-w-40'>
-                        {t('Updated At')}
+                        {t('models.status.updatedAt')}
                       </TableHead>
                       <TableHead className='w-14 text-right'>
-                        {t('Actions')}
+                        {t('channels.fields.actions')}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -690,7 +690,7 @@ export function Tickets() {
                         >
                           <div className='inline-flex items-center gap-2'>
                             <Loader2 className='size-4 animate-spin' />
-                            {t('Loading...')}
+                            {t('common.tips.loading')}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -700,7 +700,7 @@ export function Tickets() {
                           colSpan={6}
                           className='text-muted-foreground h-36 text-center'
                         >
-                          {t('No tickets')}
+                          {t('tickets.fields.noTickets')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -736,7 +736,7 @@ export function Tickets() {
                               >
                                 <MoreHorizontal className='size-4' />
                                 <span className='sr-only'>
-                                  {t('Open menu')}
+                                  {t('channels.actions.openMenu')}
                                 </span>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align='end' className='w-40'>
@@ -747,7 +747,7 @@ export function Tickets() {
                                   }}
                                 >
                                   <Eye className='size-4' />
-                                  {t('View details')}
+                                  {t('models.actions.viewDetails')}
                                 </DropdownMenuItem>
                                 {ticket.status === 'completed' && isAdmin ? (
                                   <DropdownMenuItem
@@ -760,7 +760,7 @@ export function Tickets() {
                                     }}
                                   >
                                     <RotateCcw className='size-4' />
-                                    {t('Reopen')}
+                                    {t('tickets.fields.reopen')}
                                   </DropdownMenuItem>
                                 ) : null}
                                 {ticket.status !== 'completed' ? (
@@ -774,7 +774,7 @@ export function Tickets() {
                                       })
                                     }}
                                   >
-                                    {t('Close ticket')}
+                                    {t('tickets.actions.closeTicket')}
                                   </DropdownMenuItem>
                                 ) : null}
                               </DropdownMenuContent>
@@ -789,7 +789,7 @@ export function Tickets() {
 
               <div className='flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between'>
                 <div className='text-muted-foreground'>
-                  {t('Total')}: {total}
+                  {t('dashboard.fields.total')}: {total}
                 </div>
                 <div className='flex flex-wrap items-center gap-2'>
                   <Select
@@ -819,7 +819,7 @@ export function Tickets() {
                       setPage((current) => Math.max(1, current - 1))
                     }
                   >
-                    {t('Previous')}
+                    {t('common.fields.previous')}
                   </Button>
                   <span className='text-muted-foreground min-w-16 text-center'>
                     {page} / {totalPages}
@@ -831,7 +831,7 @@ export function Tickets() {
                       setPage((current) => Math.min(totalPages, current + 1))
                     }
                   >
-                    {t('Next')}
+                    {t('common.fields.next')}
                   </Button>
                 </div>
               </div>
@@ -872,7 +872,7 @@ export function Tickets() {
         desc={confirmDescription}
         destructive={statusTarget?.action === 'close'}
         confirmText={
-          statusTarget?.action === 'close' ? t('Close ticket') : t('Reopen')
+          statusTarget?.action === 'close' ? t('tickets.actions.closeTicket') : t('tickets.fields.reopen')
         }
         isLoading={statusMutation.isPending}
         handleConfirm={() => {

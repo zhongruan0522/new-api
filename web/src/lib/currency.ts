@@ -483,17 +483,17 @@ export function getCurrencyLabel(): string {
   const { config, meta } = getCurrencyDisplay()
 
   if (meta.kind === 'tokens') {
-    return 'Tokens'
+    return 'rankings.fields.tokens'
   }
 
   switch (config.quotaDisplayType) {
     case 'CNY':
-      return 'CNY'
+      return 'common.fields.cny'
     case 'CUSTOM':
       return meta.kind === 'custom' ? meta.symbol : 'Custom'
     case 'USD':
     default:
-      return 'USD'
+      return 'common.fields.usd'
   }
 }
 

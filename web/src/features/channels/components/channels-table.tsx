@@ -416,7 +416,7 @@ export function ChannelsTable() {
 
     return [
       {
-        label: 'All Types',
+        label: 'pricing.fields.allTypes',
         value: 'all',
         count: totalTypes,
       },
@@ -433,7 +433,7 @@ export function ChannelsTable() {
   }, [t, typeCounts, typeFilter])
 
   const groupFilterOptions = [
-    { label: t('All Groups'), value: 'all' },
+    { label: t('channels.fields.allGroups'), value: 'all' },
     ...groupOptions,
   ]
 
@@ -443,14 +443,14 @@ export function ChannelsTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No Channels Found')}
+      emptyTitle={t('channels.titles.noChannelsFound')}
       emptyDescription={t(
-        'No channels available. Create your first channel to get started.'
+        'channels.tips.noChannelsAvailableCreateYourFirstChannelToGet'
       )}
       skeletonKeyPrefix='channel-skeleton'
       applyHeaderSize
       toolbarProps={{
-        searchPlaceholder: t('Filter by name, ID, or key...'),
+        searchPlaceholder: t('channels.actions.filterByNameIdOrKey'),
         searchValue: globalFilterInput,
         onSearchValueChange: setGlobalFilterInput,
         onSearchCompositionStart: () => setIsGlobalFilterComposing(true),
@@ -460,7 +460,7 @@ export function ChannelsTable() {
         },
         additionalSearch: (
           <Input
-            placeholder={t('Filter by model...')}
+            placeholder={t('channels.actions.filterByModel')}
             value={modelFilterInput}
             onChange={(e) => setModelFilterInput(e.target.value)}
             onCompositionStart={() => setIsModelFilterComposing(true)}
@@ -474,19 +474,19 @@ export function ChannelsTable() {
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: [...CHANNEL_STATUS_OPTIONS],
             singleSelect: true,
           },
           {
             columnId: 'type',
-            title: t('Type'),
+            title: t('channels.fields.type'),
             options: typeFilterOptions,
             singleSelect: true,
           },
           {
             columnId: 'group',
-            title: t('Group'),
+            title: t('common.fields.group'),
             options: groupFilterOptions,
             singleSelect: true,
           },

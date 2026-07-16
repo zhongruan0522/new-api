@@ -38,7 +38,7 @@ function getErrorMessage(message: string | undefined, data: unknown): string {
     return data
   }
 
-  return message || i18next.t('Payment request failed')
+  return message || i18next.t('subscriptions.status.paymentRequestFailed')
 }
 
 /**
@@ -62,7 +62,7 @@ export function useWaffoPayment() {
 
           if (paymentUrl) {
             window.open(paymentUrl, '_blank')
-            toast.success(i18next.t('Redirecting to payment page...'))
+            toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
             return true
           }
         }
@@ -70,7 +70,7 @@ export function useWaffoPayment() {
         toast.error(getErrorMessage(response.message, response.data))
         return false
       } catch (_error) {
-        toast.error(i18next.t('Payment request failed'))
+        toast.error(i18next.t('subscriptions.status.paymentRequestFailed'))
         return false
       } finally {
         setProcessing(false)

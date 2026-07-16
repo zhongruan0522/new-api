@@ -48,9 +48,9 @@ export function FailReasonDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Fail Reason Details')}</DialogTitle>
+          <DialogTitle>{t('usageLogs.titles.failReasonDetails')}</DialogTitle>
           <DialogDescription>
-            {t('View the complete error message and details')}
+            {t('usageLogs.actions.viewTheCompleteErrorMessageAndDetails')}
           </DialogDescription>
         </DialogHeader>
 
@@ -58,7 +58,7 @@ export function FailReasonDialog({
           <div className='space-y-4 py-4'>
             <div className='space-y-2'>
               <Label className='text-sm font-semibold'>
-                {t('Error Message')}
+                {t('usageLogs.errors.errorMessage')}
               </Label>
               <div className='bg-muted/50 relative rounded-md border border-red-200 p-3'>
                 <Button
@@ -66,7 +66,7 @@ export function FailReasonDialog({
                   size='sm'
                   className='absolute top-2 right-2 h-8 w-8 p-0'
                   onClick={() => copyToClipboard(failReason)}
-                  title={t('Copy to clipboard')}
+                  title={t('common.actions.copyToClipboard')}
                 >
                   {copiedText === failReason ? (
                     <Check className='size-4 text-green-600' />

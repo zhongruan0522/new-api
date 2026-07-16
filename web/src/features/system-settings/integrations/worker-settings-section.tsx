@@ -48,7 +48,7 @@ const createWorkerSchema = (t: (key: string) => string) =>
       const trimmed = value.trim()
       if (!trimmed) return true
       return /^https?:\/\//.test(trimmed)
-    }, t('Provide a valid URL starting with http:// or https://')),
+    }, t('systemSettings.tips.provideAValidUrlStartingWithUrlOrUrl')),
     WorkerValidKey: z.string(),
     WorkerAllowHttpImageRequestEnabled: z.boolean(),
   })
@@ -105,7 +105,7 @@ export function WorkerSettingsSection({
   }
 
   return (
-    <SettingsSection title={t('Worker Proxy')}>
+    <SettingsSection title={t('systemSettings.fields.workerProxy')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)} autoComplete='off'>
           <SettingsPageFormActions
@@ -118,12 +118,12 @@ export function WorkerSettingsSection({
             name='WorkerUrl'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Worker URL')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.workerUrl')}</FormLabel>
                 <FormControl>
                   <Input
                     type='url'
                     inputMode='url'
-                    placeholder={t('https://worker.example.workers.dev')}
+                    placeholder={t('systemSettings.placeholders.urlWorkerExampleWorkersDev')}
                     autoComplete='off'
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
@@ -131,7 +131,7 @@ export function WorkerSettingsSection({
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Requests will be forwarded to this worker. Trailing slashes are removed automatically.'
+                    'systemSettings.status.requestsWillBeForwardedToThisWorkerTrailingSlashes'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -144,11 +144,11 @@ export function WorkerSettingsSection({
             name='WorkerValidKey'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Worker Access Key')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.workerAccessKey')}</FormLabel>
                 <FormControl>
                   <Input
                     type='password'
-                    placeholder={t('Enter new key to update')}
+                    placeholder={t('systemSettings.placeholders.enterNewKeyToUpdate')}
                     autoComplete='new-password'
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
@@ -156,7 +156,7 @@ export function WorkerSettingsSection({
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Used to authenticate with the worker. Leave blank to keep the existing secret.'
+                    'systemSettings.status.usedToAuthenticateWithTheWorkerLeaveBlankTo'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -170,10 +170,10 @@ export function WorkerSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Allow HTTP image requests')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.allowHttpImageRequests')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Enable when proxying workers that fetch images over HTTP.'
+                      'systemSettings.actions.enableWhenProxyingWorkersThatFetchImagesOverHttp'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>

@@ -145,7 +145,7 @@ export function FetchModelsDialog({
         const normalized = normalizeModelNameList(list)
         setFetchedModels(normalized)
         setSelectedModels(existingModels)
-        toast.success(t('Fetched {{count}} models', { count: normalized.length }))
+        toast.success(t('channels.titles.fetchedCountModels', { count: normalized.length }))
       } else {
         const response = await fetchUpstreamModels(activeChannel!.id)
         if (response.success) {
@@ -153,15 +153,15 @@ export function FetchModelsDialog({
           const normalized = normalizeModelNameList(list)
           setFetchedModels(normalized)
           setSelectedModels(existingModels)
-          toast.success(t('Fetched {{count}} models', { count: normalized.length }))
+          toast.success(t('channels.titles.fetchedCountModels', { count: normalized.length }))
         } else {
-          toast.error(response.message || t('Failed to fetch models'))
+          toast.error(response.message || t('channels.errors.failedToFetchModels'))
           setFetchedModels([])
         }
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to fetch models')
+        error instanceof Error ? error.message : t('channels.errors.failedToFetchModels')
       )
       setFetchedModels([])
     } finally {
@@ -173,7 +173,7 @@ export function FetchModelsDialog({
     // If onModelsSelected callback is provided, use it (form filling mode)
     if (onModelsSelected) {
       onModelsSelected(selectedModels)
-      toast.success(t('Models filled to form'))
+      toast.success(t('channels.titles.modelsFilledToForm'))
       onOpenChange(false)
       return
     }
@@ -187,15 +187,15 @@ export function FetchModelsDialog({
         models: modelsString,
       })
       if (response.success) {
-        toast.success(t('Models updated successfully'))
+        toast.success(t('channels.status.modelsUpdatedSuccessfully'))
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('Failed to update models'))
+        toast.error(response.message || t('channels.errors.failedToUpdateModels'))
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to update models')
+        error instanceof Error ? error.message : t('channels.errors.failedToUpdateModels')
       )
     } finally {
       setIsSaving(false)
@@ -356,7 +356,7 @@ export function FetchModelsDialog({
                         render={<Info className='h-3.5 w-3.5 text-amber-500' />}
                       ></TooltipTrigger>
                       <TooltipContent>
-                        {t('From model redirect, not yet added to models list')}
+                        {t('channels.tips.modelRedirectNotYetAddedToModelsList')}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -373,27 +373,27 @@ export function FetchModelsDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>{t('Fetch Models')}</DialogTitle>
+          <DialogTitle>{t('channels.titles.fetchModels')}</DialogTitle>
           <DialogDescription>
             {activeChannel ? (
               <>
-                {t('Fetch available models for:')}{' '}
+                {t('channels.titles.fetchAvailableModelsFor')}{' '}
                 <strong>{activeChannel.name}</strong>
               </>
             ) : channelName ? (
               <>
-                {t('Fetch available models for:')}{' '}
+                {t('channels.titles.fetchAvailableModelsFor')}{' '}
                 <strong>{channelName}</strong>
               </>
             ) : (
-              t('Fetch available models from upstream')
+              t('channels.actions.fetchAvailableModelsFromUpstream')
             )}
           </DialogDescription>
         </DialogHeader>
 
         {!activeChannel && !customFetcher ? (
           <div className='text-muted-foreground py-8 text-center'>
-            {t('No channel selected')}
+            {t('channels.fields.noChannelSelected')}
           </div>
         ) : isFetching ? (
           <div className='flex items-center justify-center py-12'>
@@ -401,13 +401,13 @@ export function FetchModelsDialog({
           </div>
         ) : fetchedModels.length === 0 && removedModels.length === 0 ? (
           <div className='text-muted-foreground py-8 text-center'>
-            <p>{t('No models fetched yet.')}</p>
+            <p>{t('channels.tips.noModelsFetchedYet')}</p>
             <Button
               className='mt-4'
               onClick={handleFetchModels}
               disabled={isFetching}
             >
-              {t('Fetch Models')}
+              {t('channels.titles.fetchModels')}
             </Button>
           </div>
         ) : (
@@ -417,7 +417,7 @@ export function FetchModelsDialog({
               <div className='relative'>
                 <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
                 <Input
-                  placeholder={t('Search models...')}
+                  placeholder={t('common.actions.searchModels')}
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
                   className='pl-9'
@@ -439,19 +439,19 @@ export function FetchModelsDialog({
                   className={`grid w-full ${removedModels.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}
                 >
                   <TabsTrigger value='new' disabled={newModels.length === 0}>
-                    {t('New Models ({{count}})', { count: newModels.length })}
+                    {t('channels.titles.newModelsCount', { count: newModels.length })}
                   </TabsTrigger>
                   <TabsTrigger
                     value='existing'
                     disabled={existingFilteredModels.length === 0}
                   >
-                    {t('Existing Models ({{count}})', {
+                    {t('channels.titles.existingModelsCount', {
                       count: existingFilteredModels.length,
                     })}
                   </TabsTrigger>
                   {removedModels.length > 0 && (
                     <TabsTrigger value='removed'>
-                      {t('Removed Models ({{count}})', {
+                      {t('channels.status.removedModelsCount', {
                         count: removedModels.length,
                       })}
                     </TabsTrigger>
@@ -485,17 +485,17 @@ export function FetchModelsDialog({
                   >
                     <p className='text-muted-foreground text-xs'>
                       {t(
-                        'These models are still in your selection but were not returned by the upstream listing. Entries that are only model_mapping source aliases are omitted. Toggle to adjust before saving.'
+                        'channels.tips.modelsAreStillInYourSelectionButWereNot'
                       )}
                     </p>
-                    {renderModelCategory(t('Removed'), removedModels)}
+                    {renderModelCategory(t('channels.status.removed'), removedModels)}
                   </TabsContent>
                 )}
               </Tabs>
 
               {/* Selection Summary */}
               <div className='bg-muted/50 rounded-lg border p-3 text-sm'>
-                {t('{{n}} model(s) selected', { n: selectedModels.length })}
+                {t('channels.fields.nModelSSelected', { n: selectedModels.length })}
               </div>
             </div>
 
@@ -505,11 +505,11 @@ export function FetchModelsDialog({
                 onClick={handleClose}
                 disabled={isSaving}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('Saving...') : t('Save Models')}
+                {isSaving ? t('channels.tips.saving') : t('channels.actions.saveModels')}
               </Button>
             </DialogFooter>
           </>

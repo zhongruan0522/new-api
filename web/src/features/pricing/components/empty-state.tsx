@@ -35,21 +35,21 @@ export function EmptyState(props: EmptyStateProps) {
       <Search className='text-muted-foreground/40 mb-3 size-10' />
 
       <h3 className='text-foreground mb-1 text-base font-semibold'>
-        {t('No Models Found')}
+        {t('common.titles.noModelsFound')}
       </h3>
 
       <p className='text-muted-foreground mb-5 max-w-xs text-sm'>
         {hasSearch
           ? t(
-              'No results for "{{query}}". Try adjusting your search or filters.',
+              'common.tips.noResultsForQueryTryAdjustingYourSearchOr',
               { query: props.searchQuery }
             )
-          : t('No models match your current filters.')}
+          : t('pricing.tips.noModelsMatchYourCurrentFilters')}
       </p>
 
       {(props.hasActiveFilters || hasSearch) && (
         <Button variant='outline' size='sm' onClick={props.onClearFilters}>
-          {t('Clear all filters')}
+          {t('pricing.actions.clearAllFilters')}
         </Button>
       )}
     </div>

@@ -160,7 +160,7 @@ export function OllamaModelsDialog({
       }
 
       if (!normalized.length && lastErr) {
-        toast.error(lastErr || t('Failed to fetch models'))
+        toast.error(lastErr || t('channels.errors.failedToFetchModels'))
       }
 
       setModels(normalized)
@@ -175,7 +175,7 @@ export function OllamaModelsDialog({
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : undefined
-      toast.error(msg || t('Failed to fetch models'))
+      toast.error(msg || t('channels.errors.failedToFetchModels'))
       setModels([])
     } finally {
       setIsFetching(false)
@@ -202,7 +202,7 @@ export function OllamaModelsDialog({
   const applySelection = async (mode: 'append' | 'replace') => {
     if (!currentRow) return
     if (!selected.length) {
-      toast.info(t('No models selected'))
+      toast.info(t('channels.titles.noModelsSelected'))
       return
     }
 
@@ -215,8 +215,8 @@ export function OllamaModelsDialog({
     if (res.success) {
       toast.success(
         mode === 'replace'
-          ? t('Models updated successfully')
-          : t('Models appended successfully')
+          ? t('channels.status.modelsUpdatedSuccessfully')
+          : t('channels.titles.modelsAppendedSuccessfully')
       )
       queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
     }
@@ -225,12 +225,12 @@ export function OllamaModelsDialog({
   const pullModel = async () => {
     if (!channelId) return
     if (!pullName.trim()) {
-      toast.error(t('Please enter model name'))
+      toast.error(t('channels.errors.pleaseEnterModelName'))
       return
     }
 
     if (!resolveOllamaBaseUrl(currentRow)) {
-      toast.error(t('Please set Ollama API Base URL first'))
+      toast.error(t('channels.tips.pleaseSetOllamaApiBaseUrlFirst'))
       return
     }
 
@@ -325,7 +325,7 @@ export function OllamaModelsDialog({
         (err as { name?: unknown }).name === 'AbortError'
       if (!isAbort) {
         const msg = err instanceof Error ? err.message : ''
-        toast.error(t('Model pull failed: {{msg}}', { msg }))
+        toast.error(t('channels.status.modelPullFailedMsg', { msg }))
       }
       setIsPulling(false)
       setPullProgress(null)
@@ -342,17 +342,17 @@ export function OllamaModelsDialog({
         model_name: modelName,
       })
       if (payload?.success) {
-        toast.success(t('Model deleted'))
+        toast.success(t('channels.status.modelDeleted'))
         await fetchOllamaModels()
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
         setDeleteOpen(false)
         setDeleteTarget(null)
       } else {
-        toast.error(payload?.message || t('Failed to delete model'))
+        toast.error(payload?.message || t('channels.errors.failedToDeleteModel'))
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : undefined
-      toast.error(msg || t('Failed to delete model'))
+      toast.error(msg || t('channels.errors.failedToDeleteModel'))
     } finally {
       setIsDeleting(false)
     }
@@ -370,25 +370,25 @@ export function OllamaModelsDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className='max-h-[90vh] overflow-hidden sm:max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>{t('Ollama Models')}</DialogTitle>
+          <DialogTitle>{t('channels.titles.ollamaModels')}</DialogTitle>
           <DialogDescription>
-            {t('Manage local models for:')} <strong>{currentRow?.name}</strong>
+            {t('channels.titles.manageLocalModelsFor')} <strong>{currentRow?.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
         {!isOllamaChannel ? (
           <div className='text-muted-foreground py-8 text-center'>
-            {t('This channel is not an Ollama channel.')}
+            {t('channels.tips.channelIsNotAnOllamaChannel')}
           </div>
         ) : (
           <div className='max-h-[78vh] space-y-4 overflow-y-auto py-2 pr-1'>
             <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
               <div className='flex-1 space-y-2'>
-                <Label htmlFor='ollama-pull'>{t('Pull model')}</Label>
+                <Label htmlFor='ollama-pull'>{t('channels.fields.pullModel')}</Label>
                 <div className='flex gap-2'>
                   <Input
                     id='ollama-pull'
-                    placeholder={t('e.g. llama3.1:8b')}
+                    placeholder={t('channels.placeholders.eGLlama318b')}
                     value={pullName}
                     onChange={(e) => setPullName(e.target.value)}
                     disabled={!channelId || isPulling}
@@ -400,12 +400,12 @@ export function OllamaModelsDialog({
                     {isPulling ? (
                       <>
                         <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                        {t('Pulling...')}
+                        {t('channels.tips.pulling')}
                       </>
                     ) : (
                       <>
                         <Download className='mr-2 h-4 w-4' />
-                        {t('Pull')}
+                        {t('channels.fields.pull')}
                       </>
                     )}
                   </Button>
@@ -413,7 +413,7 @@ export function OllamaModelsDialog({
                 {pullProgress && (
                   <div className='space-y-2'>
                     <div className='text-muted-foreground text-xs'>
-                      {t('labelWithColon', { label: t('Status') })} {String(pullProgress.status || '-')}
+                      {t('channels.fields.labelWithColon', { label: t('channels.fields.status') })} {String(pullProgress.status || '-')}
                     </div>
                     <Progress
                       value={
@@ -445,7 +445,7 @@ export function OllamaModelsDialog({
                   ) : (
                     <RefreshCw className='mr-2 h-4 w-4' />
                   )}
-                  {t('Refresh')}
+                  {t('channels.actions.refresh')}
                 </Button>
               </div>
             </div>
@@ -455,15 +455,15 @@ export function OllamaModelsDialog({
             <div className='space-y-3'>
               <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
                 <div>
-                  <p className='text-sm font-medium'>{t('Local models')}</p>
+                  <p className='text-sm font-medium'>{t('channels.titles.localModels')}</p>
                   <p className='text-muted-foreground text-xs'>
-                    {t('Select models and apply to channel models list.')}
+                    {t('channels.placeholders.selectModelsAndApplyToChannelModelsList')}
                   </p>
                 </div>
                 <div className='relative sm:w-72'>
                   <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
                   <Input
-                    placeholder={t('Search models...')}
+                    placeholder={t('common.actions.searchModels')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='pl-9'
@@ -473,17 +473,17 @@ export function OllamaModelsDialog({
 
               <div className='flex flex-wrap gap-2'>
                 <Button variant='outline' size='sm' onClick={selectAllFiltered}>
-                  {t('Select all (filtered)')}
+                  {t('channels.placeholders.selectAllFiltered')}
                 </Button>
                 <Button variant='outline' size='sm' onClick={clearSelection}>
-                  {t('Clear selection')}
+                  {t('common.actions.clearSelection')}
                 </Button>
                 <Button
                   size='sm'
                   onClick={() => void applySelection('append')}
                   disabled={!selected.length}
                 >
-                  {t('Append to channel')}
+                  {t('channels.fields.appendToChannel')}
                 </Button>
                 <Button
                   variant='secondary'
@@ -491,7 +491,7 @@ export function OllamaModelsDialog({
                   onClick={() => void applySelection('replace')}
                   disabled={!selected.length}
                 >
-                  {t('Replace channel models')}
+                  {t('channels.titles.replaceChannelModels')}
                 </Button>
               </div>
 
@@ -499,7 +499,7 @@ export function OllamaModelsDialog({
                 <div className='max-h-[420px] overflow-y-auto'>
                   {filteredModels.length === 0 ? (
                     <div className='text-muted-foreground p-6 text-center text-sm'>
-                      {t('No Models Found')}
+                      {t('common.titles.noModelsFound')}
                     </div>
                   ) : (
                     <div className='divide-y'>
@@ -524,11 +524,11 @@ export function OllamaModelsDialog({
                                 </div>
                                 <div className='text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs'>
                                   <span>
-                                    {t('labelWithColon', { label: t('Size') })} {formatBytes(m.size)}
+                                    {t('channels.fields.labelWithColon', { label: t('channels.fields.size') })} {formatBytes(m.size)}
                                   </span>
                                   {m.digest && (
                                     <span className='truncate'>
-                                      {t('Digest:')} {String(m.digest)}
+                                      {t('channels.fields.digest')} {String(m.digest)}
                                     </span>
                                   )}
                                 </div>
@@ -560,7 +560,7 @@ export function OllamaModelsDialog({
 
         <DialogFooter>
           <Button variant='outline' onClick={close}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -574,16 +574,16 @@ export function OllamaModelsDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Confirm delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('channels.actions.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('Delete model "{{name}}"? This cannot be undone.', {
+              {t('channels.actions.deleteModelNameThisCannotBeUndone', {
                 name: deleteTarget || '',
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
@@ -596,7 +596,7 @@ export function OllamaModelsDialog({
               {isDeleting ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : null}
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

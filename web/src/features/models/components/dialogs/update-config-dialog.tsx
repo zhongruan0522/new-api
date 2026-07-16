@@ -157,8 +157,8 @@ export function UpdateConfigDialog({
   const title = useMemo(
     () =>
       deploymentId
-        ? `${t('Update configuration')} - ${deploymentId}`
-        : t('Update configuration'),
+        ? `${t('models.titles.updateConfiguration')} - ${deploymentId}`
+        : t('models.titles.updateConfiguration'),
     [deploymentId, t]
   )
 
@@ -196,7 +196,7 @@ export function UpdateConfigDialog({
       })
 
       if (res.success) {
-        toast.success(t('Updated successfully'))
+        toast.success(t('dynamicRatio.status.updatedSuccessfully'))
         queryClient.invalidateQueries({
           queryKey: deploymentsQueryKeys.lists(),
         })
@@ -204,9 +204,9 @@ export function UpdateConfigDialog({
         onOpenChange(false)
         return
       }
-      toast.error(res.message || t('Update failed'))
+      toast.error(res.message || t('minimax.status.updateFailed'))
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t('Update failed')
+      const msg = err instanceof Error ? err.message : t('minimax.status.updateFailed')
       toast.error(msg)
     }
   }
@@ -236,7 +236,7 @@ export function UpdateConfigDialog({
                     name='image_url'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Image')}</FormLabel>
+                        <FormLabel>{t('models.fields.image')}</FormLabel>
                         <FormControl>
                           <Input
                             placeholder='ollama/ollama:latest'
@@ -253,7 +253,7 @@ export function UpdateConfigDialog({
                     name='traffic_port'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Port')}</FormLabel>
+                        <FormLabel>{t('models.fields.port')}</FormLabel>
                         <FormControl>
                           <Input
                             type='number'
@@ -287,7 +287,7 @@ export function UpdateConfigDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Entrypoint (space separated)')}
+                          {t('models.fields.entrypointSpaceSeparated')}
                         </FormLabel>
                         <FormControl>
                           <Input placeholder='bash -lc' {...field} />
@@ -302,7 +302,7 @@ export function UpdateConfigDialog({
                     name='args'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Args (space separated)')}</FormLabel>
+                        <FormLabel>{t('models.fields.argsSpaceSeparated')}</FormLabel>
                         <FormControl>
                           <Input placeholder='--foo bar' {...field} />
                         </FormControl>
@@ -317,9 +317,9 @@ export function UpdateConfigDialog({
                   name='command'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Command')}</FormLabel>
+                      <FormLabel>{t('models.fields.command')}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('Optional')} {...field} />
+                        <Input placeholder={t('models.fields.optional')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -328,7 +328,7 @@ export function UpdateConfigDialog({
 
                 <Collapsible className='rounded-md border p-3'>
                   <CollapsibleTrigger className='cursor-pointer text-sm'>
-                    {t('Registry (optional)')}
+                    {t('models.fields.registryOptional')}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className='mt-3 grid gap-3 md:grid-cols-2 md:gap-4'>
@@ -337,7 +337,7 @@ export function UpdateConfigDialog({
                         name='registry_username'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('Registry username')}</FormLabel>
+                            <FormLabel>{t('models.fields.registryUsername')}</FormLabel>
                             <FormControl>
                               <Input autoComplete='off' {...field} />
                             </FormControl>
@@ -350,7 +350,7 @@ export function UpdateConfigDialog({
                         name='registry_secret'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('Registry secret')}</FormLabel>
+                            <FormLabel>{t('models.fields.registrySecret')}</FormLabel>
                             <FormControl>
                               <Input
                                 type='password'
@@ -368,7 +368,7 @@ export function UpdateConfigDialog({
 
                 <Collapsible className='rounded-md border p-3'>
                   <CollapsibleTrigger className='cursor-pointer text-sm'>
-                    {t('Environment variables')}
+                    {t('models.fields.environmentVariables')}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className='mt-3 grid gap-3 md:grid-cols-2 md:gap-4'>
@@ -377,7 +377,7 @@ export function UpdateConfigDialog({
                         name='env_json'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('Env (JSON object)')}</FormLabel>
+                            <FormLabel>{t('models.fields.envJsonObject')}</FormLabel>
                             <FormControl>
                               <Textarea
                                 className='min-h-40 font-mono text-xs'
@@ -395,7 +395,7 @@ export function UpdateConfigDialog({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              {t('Secret env (JSON object)')}
+                              {t('models.fields.secretEnvJsonObject')}
                             </FormLabel>
                             <FormControl>
                               <Textarea
@@ -418,13 +418,13 @@ export function UpdateConfigDialog({
                     variant='outline'
                     onClick={() => onOpenChange(false)}
                   >
-                    {t('Cancel')}
+                    {t('common.actions.cancel')}
                   </Button>
                   <Button type='submit' disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? (
                       <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     ) : null}
-                    {t('Update')}
+                    {t('channels.fields.update')}
                   </Button>
                 </DialogFooter>
               </form>

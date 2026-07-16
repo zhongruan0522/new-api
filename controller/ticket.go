@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/service"
 )
 
@@ -71,7 +72,7 @@ func CreateTicket(c *gin.Context) {
 func GetTicketDetail(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
@@ -86,7 +87,7 @@ func GetTicketDetail(c *gin.Context) {
 func ReplyTicket(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
@@ -113,7 +114,7 @@ func ReplyTicket(c *gin.Context) {
 func CloseTicket(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
@@ -128,7 +129,7 @@ func CloseTicket(c *gin.Context) {
 func UpdateTicketStatus(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 

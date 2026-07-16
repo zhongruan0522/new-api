@@ -37,16 +37,16 @@ export async function handleDeleteVendor(
   try {
     const response = await deleteVendorAPI(id)
     if (response.success) {
-      toast.success(i18next.t('Vendor deleted successfully'))
+      toast.success(i18next.t('models.status.vendorDeletedSuccessfully'))
       queryClient?.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('Failed to delete vendor'))
+      toast.error(response.message || i18next.t('models.errors.failedToDeleteVendor'))
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('Failed to delete vendor')
+      (error as Error)?.message || i18next.t('models.errors.failedToDeleteVendor')
     )
   }
 }

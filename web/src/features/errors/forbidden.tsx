@@ -28,17 +28,17 @@ export function ForbiddenError() {
     <div className='h-svh'>
       <div className='m-auto flex h-full w-full flex-col items-center justify-center gap-2'>
         <h1 className='text-[7rem] leading-tight font-bold'>403</h1>
-        <span className='font-medium'>{t('Access Forbidden')}</span>
+        <span className='font-medium'>{t('common.fields.accessForbidden')}</span>
         <p className='text-muted-foreground text-center'>
-          {t("You don't have necessary permission")} <br />
-          {t('to view this resource.')}
+          {t("common.tips.donTHaveNecessaryPermission")} <br />
+          {t('common.tips.viewThisResource')}
         </p>
         <div className='mt-6 flex gap-4'>
           <Button variant='outline' onClick={() => history.go(-1)}>
-            {t('Go Back')}
+            {t('common.fields.goBack')}
           </Button>
           <Button onClick={() => navigate({ to: '/' })}>
-            {t('Back To Home')}
+            {t('layout.actions.backToHome')}
           </Button>
         </div>
       </div>

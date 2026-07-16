@@ -35,15 +35,15 @@ interface StatusConfig {
 export const STATUS_CONFIG: Record<TopupStatus, StatusConfig> = {
   success: {
     variant: 'success',
-    label: 'Success',
+    label: 'channels.status.success',
   },
   pending: {
     variant: 'warning',
-    label: 'Pending',
+    label: 'common.status.pending',
   },
   expired: {
     variant: 'danger',
-    label: 'Expired',
+    label: 'redemptionCodes.status.expired',
   },
 }
 

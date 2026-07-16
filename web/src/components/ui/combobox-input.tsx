@@ -226,7 +226,7 @@ export function ComboboxInput({
               {t(emptyText)}
               {allowCustomValue && searchValue.trim() && (
                 <div className='text-muted-foreground mt-1 text-xs'>
-                  {t('Press Enter to use "{{value}}"', {
+                  {t('common.fields.pressEnterToUseValue', {
                     value: searchValue.trim(),
                   })}
                 </div>

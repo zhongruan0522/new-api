@@ -223,7 +223,7 @@ export function RiskAcknowledgementDialog({
           {requiredTextToDisplay ? (
             <div className='border-destructive/30 bg-destructive/5 space-y-3 rounded-lg border p-3 sm:p-4'>
               <Label className='text-sm font-medium'>
-                {inputPrompt ?? t('Please type the following text to confirm:')}
+                {inputPrompt ?? t('common.tips.pleaseTypeTheFollowingTextToConfirm')}
               </Label>
               <div className='bg-background border-border rounded-md border px-3 py-2 font-mono text-sm break-all'>
                 {requiredTextToDisplay}
@@ -252,7 +252,7 @@ export function RiskAcknowledgementDialog({
                           part.placeholder ??
                           part.text ??
                           inputPlaceholder ??
-                          t('Type the confirmation text here')
+                          t('common.fields.typeTheConfirmationTextHere')
                         }
                         autoFocus={open && part.inputIndex === 0}
                         onCopy={(event) => event.preventDefault()}
@@ -270,7 +270,7 @@ export function RiskAcknowledgementDialog({
                   value={typedText}
                   onChange={(event) => setTypedText(event.target.value)}
                   placeholder={
-                    inputPlaceholder ?? t('Type the confirmation text here')
+                    inputPlaceholder ?? t('common.fields.typeTheConfirmationTextHere')
                   }
                   autoFocus={open}
                   onCopy={(event) => event.preventDefault()}
@@ -283,7 +283,7 @@ export function RiskAcknowledgementDialog({
               {hasTypedRequiredText && !typedMatched ? (
                 <p className='text-destructive text-xs'>
                   {mismatchHint ??
-                    t('The entered text does not match the required text.')}
+                    t('common.tips.enteredTextDoesNotMatchTheRequiredText')}
                 </p>
               ) : null}
             </div>
@@ -292,14 +292,14 @@ export function RiskAcknowledgementDialog({
 
         <AlertDialogFooter className='mx-0 mb-0 shrink-0 rounded-b-xl border-t p-3 sm:p-4'>
           <AlertDialogCancel disabled={isLoading}>
-            {cancelText ?? t('Cancel')}
+            {cancelText ?? t('common.actions.cancel')}
           </AlertDialogCancel>
           <Button
             variant={destructive ? 'destructive' : 'default'}
             disabled={!canConfirm}
             onClick={onConfirm}
           >
-            {confirmText ?? t('Confirm')}
+            {confirmText ?? t('common.actions.confirm')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

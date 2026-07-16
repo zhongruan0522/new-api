@@ -74,8 +74,8 @@ export function UserAuthForm({
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
-  const legalConsentErrorMessage = t('Please agree to the legal terms first')
-  const loginFailedMessage = t('Login failed')
+  const legalConsentErrorMessage = t('auth.errors.pleaseAgreeToTheLegalTermsFirst')
+  const loginFailedMessage = t('auth.status.loginFailed')
 
   const { status } = useStatus()
   const passkeyLoginEnabled = Boolean(
@@ -172,7 +172,7 @@ export function UserAuthForm({
         }
 
         await handleLoginSuccess(res.data as { id?: number } | null, redirectTo)
-        toast.success(t('Welcome back!'))
+        toast.success(t('auth.tips.welcomeBack'))
       }
     } catch (_error) {
       // Errors are handled by global interceptor
@@ -200,7 +200,7 @@ export function UserAuthForm({
 
   async function handleWeChatLogin() {
     if (!wechatCode.trim()) {
-      toast.error(t('Please enter the verification code'))
+      toast.error(t('auth.errors.pleaseEnterTheVerificationCode'))
       return
     }
 
@@ -209,7 +209,7 @@ export function UserAuthForm({
       const res = await wechatLoginByCode(wechatCode)
       if (res?.success) {
         await handleLoginSuccess(res.data as { id?: number } | null, redirectTo)
-        toast.success(t('Signed In Via WeChat'))
+        toast.success(t('auth.status.signedInViaWeChat'))
         handleWeChatDialogChange(false)
       } else {
         toast.error(res?.message || loginFailedMessage)
@@ -228,12 +228,12 @@ export function UserAuthForm({
     }
 
     if (!passkeySupported) {
-      toast.error(t('This device does not support Passkey'))
+      toast.error(t('auth.tips.deviceDoesNotSupportPasskey'))
       return
     }
 
     if (!navigator?.credentials) {
-      toast.error(t('Passkey is not available in this browser'))
+      toast.error(t('auth.tips.passkeyIsNotAvailableInThisBrowser'))
       return
     }
 
@@ -241,7 +241,7 @@ export function UserAuthForm({
     try {
       const begin = await beginPasskeyLogin()
       if (!begin.success) {
-        throw new Error(begin.message || t('Failed to start Passkey login'))
+        throw new Error(begin.message || t('auth.errors.failedToStartPasskeyLogin'))
       }
 
       const publicKey = prepareCredentialRequestOptions(
@@ -253,36 +253,36 @@ export function UserAuthForm({
       })) as PublicKeyCredential | null
 
       if (!credential) {
-        toast.info(t('Passkey login was cancelled'))
+        toast.info(t('auth.status.passkeyLoginWasCancelled'))
         return
       }
 
       const assertion = buildAssertionResult(credential)
       if (!assertion) {
-        throw new Error(t('Invalid Passkey response'))
+        throw new Error(t('auth.errors.invalidPasskeyResponse'))
       }
 
       const finish = await finishPasskeyLogin(assertion)
       if (!finish.success) {
-        throw new Error(finish.message || t('Failed to complete Passkey login'))
+        throw new Error(finish.message || t('auth.errors.failedToCompletePasskeyLogin'))
       }
 
       if (!finish.data) {
-        throw new Error(t('Missing user data from Passkey login response'))
+        throw new Error(t('auth.errors.missingUserDataFromPasskeyLoginResponse'))
       }
 
       await handleLoginSuccess(
         finish.data as { id?: number } | null,
         redirectTo
       )
-      toast.success(t('Signed In With Passkey'))
+      toast.success(t('auth.status.signedInWithPasskey'))
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        toast.info(t('Passkey login was cancelled or timed out'))
+        toast.info(t('auth.status.passkeyLoginWasCancelledOrTimedOut'))
       } else if (error instanceof Error) {
         toast.error(error.message)
       } else {
-        toast.error(t('Passkey login failed'))
+        toast.error(t('auth.status.passkeyLoginFailed'))
       }
     } finally {
       setIsPasskeyLoading(false)
@@ -305,11 +305,11 @@ export function UserAuthForm({
             ) : (
               <KeyRound className='h-4 w-4' />
             )}
-            {t('Sign In With Passkey')}
+            {t('auth.actions.signInWithPasskey')}
           </Button>
           {!passkeySupported && (
             <p className='text-muted-foreground text-xs'>
-              {t('Passkey is not supported on this device.')}
+              {t('auth.tips.passkeyIsNotSupportedOnThisDevice')}
             </p>
           )}
         </div>
@@ -342,10 +342,10 @@ export function UserAuthForm({
               name='username'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Username or Email')}</FormLabel>
+                  <FormLabel>{t('auth.fields.usernameOrEmail')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('Enter your username or email')}
+                      placeholder={t('auth.placeholders.enterYourUsernameOrEmail')}
                       {...field}
                     />
                   </FormControl>
@@ -360,10 +360,10 @@ export function UserAuthForm({
               name='password'
               render={({ field }) => (
                 <FormItem className='relative'>
-                  <FormLabel>{t('Password')}</FormLabel>
+                  <FormLabel>{t('auth.fields.password')}</FormLabel>
                   <FormControl>
                     <PasswordInput
-                      placeholder={t('Enter password')}
+                      placeholder={t('auth.placeholders.enterPassword')}
                       {...field}
                     />
                   </FormControl>
@@ -372,7 +372,7 @@ export function UserAuthForm({
                     to='/forgot-password'
                     className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
                   >
-                    {t('Forgot password?')}
+                    {t('auth.tips.forgotPassword')}
                   </Link>
                 </FormItem>
               )}
@@ -385,7 +385,7 @@ export function UserAuthForm({
               disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
             >
               {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
-              {t('Sign In')}
+              {t('layout.actions.signIn')}
             </Button>
 
             {/* Turnstile */}
@@ -417,10 +417,10 @@ export function UserAuthForm({
         >
           <DialogContent className='max-w-sm'>
             <DialogHeader className='text-left'>
-              <DialogTitle>{t('WeChat sign in')}</DialogTitle>
+              <DialogTitle>{t('auth.fields.chatSignIn')}</DialogTitle>
               <DialogDescription>
                 {t(
-                  'Scan the QR code to follow the official account and reply with “验证码” to receive your verification code.'
+                  'auth.tips.scanTheQrCodeToFollowTheOfficialAccount'
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -429,21 +429,21 @@ export function UserAuthForm({
               <div className='flex justify-center'>
                 <img
                   src={wechatQrCodeUrl}
-                  alt={t('WeChat login QR code')}
+                  alt={t('auth.fields.chatLoginQrCode')}
                   className='h-40 w-40 rounded-md border object-contain'
                 />
               </div>
             ) : (
               <p className='text-muted-foreground text-sm'>
-                {t('QR code is not configured. Please contact support.')}
+                {t('auth.tips.qrCodeIsNotConfiguredPleaseContactSupport')}
               </p>
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('Verification Code')}</Label>
+              <Label htmlFor='wechat-code'>{t('auth.fields.verificationCode')}</Label>
               <Input
                 id='wechat-code'
-                placeholder={t('Enter the verification code')}
+                placeholder={t('auth.placeholders.enterTheVerificationCode')}
                 value={wechatCode}
                 onChange={(event) => setWeChatCode(event.target.value)}
                 autoComplete='one-time-code'
@@ -457,7 +457,7 @@ export function UserAuthForm({
                 onClick={() => handleWeChatDialogChange(false)}
                 disabled={isWeChatSubmitting}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button
                 type='button'
@@ -472,7 +472,7 @@ export function UserAuthForm({
                 {isWeChatSubmitting ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : null}
-                {t('Confirm')}
+                {t('common.actions.confirm')}
               </Button>
             </DialogFooter>
           </DialogContent>

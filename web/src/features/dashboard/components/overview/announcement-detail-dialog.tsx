@@ -50,10 +50,10 @@ export function AnnouncementDetailModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Announcement Details')}</DialogTitle>
+          <DialogTitle>{t('dashboard.titles.announcementDetails')}</DialogTitle>
           {announcement?.publishDate && (
             <DialogDescription>
-              {t('Published:')}{' '}
+              {t('dashboard.fields.published')}{' '}
               {formatDateTimeObject(new Date(announcement.publishDate))}
             </DialogDescription>
           )}
@@ -62,14 +62,14 @@ export function AnnouncementDetailModal({
           <div className='space-y-4'>
             {announcement?.content && (
               <div>
-                <h4 className='mb-2 font-medium'>{t('Content')}</h4>
+                <h4 className='mb-2 font-medium'>{t('dashboard.fields.content')}</h4>
                 <Markdown>{announcement.content}</Markdown>
               </div>
             )}
             {announcement?.extra && (
               <div>
                 <h4 className='mb-2 font-medium'>
-                  {t('Additional Information')}
+                  {t('dashboard.titles.additionalInformation')}
                 </h4>
                 <Markdown className='text-muted-foreground'>
                   {announcement.extra}

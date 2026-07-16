@@ -49,11 +49,11 @@ export function ApiKeysCreatedDialog() {
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <KeyRound className='size-4' aria-hidden='true' />
-            {t('New API Key')}
+            {t('keys.fields.newApiKey')}
           </DialogTitle>
           <DialogDescription>
             {t(
-              'This is the only time these API keys are shown. Store them securely.'
+              'keys.tips.onlyTimeTheseApiKeysAreShownStoreThem'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -78,10 +78,10 @@ export function ApiKeysCreatedDialog() {
             ) : (
               <Copy className='size-4' />
             )}
-            {t('Copy')}
+            {t('channels.actions.copy')}
           </Button>
           <Button type='button' onClick={() => handleOpenChange(false)}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

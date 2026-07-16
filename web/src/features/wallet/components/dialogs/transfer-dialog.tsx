@@ -69,17 +69,17 @@ export function TransferDialog({
       <DialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
         <DialogHeader>
           <DialogTitle className='text-xl font-semibold'>
-            {t('Transfer Rewards')}
+            {t('wallet.fields.transferRewards')}
           </DialogTitle>
           <DialogDescription>
-            {t('Move affiliate rewards to your main balance')}
+            {t('wallet.tips.moveAffiliateRewardsToYourMainBalance')}
           </DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4 py-3 sm:space-y-6 sm:py-4'>
           <div className='space-y-2'>
             <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-              {t('Available Rewards')}
+              {t('wallet.fields.availableRewards')}
             </Label>
             <div className='text-2xl font-semibold'>
               {formatQuota(availableQuota)}
@@ -91,7 +91,7 @@ export function TransferDialog({
               htmlFor='transfer-amount'
               className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
             >
-              {t('Transfer Amount')}
+              {t('wallet.fields.transferAmount')}
             </Label>
             <Input
               id='transfer-amount'
@@ -104,7 +104,7 @@ export function TransferDialog({
               className='font-mono text-lg'
             />
             <p className='text-muted-foreground text-xs'>
-              {t('Minimum:')} {formatQuota(QUOTA_PER_DOLLAR)}
+              {t('wallet.fields.minimum')} {formatQuota(QUOTA_PER_DOLLAR)}
             </p>
           </div>
         </div>
@@ -115,11 +115,11 @@ export function TransferDialog({
             onClick={() => onOpenChange(false)}
             disabled={transferring}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={transferring}>
             {transferring && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {t('Transfer')}
+            {t('wallet.fields.transfer')}
           </Button>
         </DialogFooter>
       </DialogContent>

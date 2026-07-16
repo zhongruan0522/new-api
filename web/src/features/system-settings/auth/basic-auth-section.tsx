@@ -105,7 +105,7 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('Basic Authentication')}>
+    <SettingsSection title={t('systemSettings.fields.basicAuthentication')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -118,9 +118,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Password Login')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.passwordLogin')}</FormLabel>
                   <FormDescription>
-                    {t('Allow users to log in with password')}
+                    {t('systemSettings.tips.allowUsersToLogInWithPassword')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -139,9 +139,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Registration Enabled')}</FormLabel>
+                  <FormLabel>{t('systemSettings.status.registrationEnabled')}</FormLabel>
                   <FormDescription>
-                    {t('Allow new users to register')}
+                    {t('systemSettings.titles.allowNewUsersToRegister')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -160,9 +160,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Password Registration')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.passwordRegistration')}</FormLabel>
                   <FormDescription>
-                    {t('Allow registration with password')}
+                    {t('systemSettings.tips.allowRegistrationWithPassword')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -181,9 +181,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Email Verification')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.emailVerification')}</FormLabel>
                   <FormDescription>
-                    {t('Require email verification for new accounts')}
+                    {t('systemSettings.tips.requireEmailVerificationForNewAccounts')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -202,9 +202,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Email Domain Restriction')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.emailDomainRestriction')}</FormLabel>
                   <FormDescription>
-                    {t('Only allow specific email domains')}
+                    {t('systemSettings.tips.onlyAllowSpecificEmailDomains')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -223,9 +223,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Email Alias Restriction')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.emailAliasRestriction')}</FormLabel>
                   <FormDescription>
-                    {t('Block email aliases (e.g., user+alias@domain.com)')}
+                    {t('systemSettings.tips.blockEmailAliasesEGUserAliasDomainCom')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -243,17 +243,17 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             name='EmailDomainWhitelist'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Email Domain Whitelist')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.emailDomainWhitelist')}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('example.com&#10;company.com')}
+                    placeholder={t('systemSettings.placeholders.exampleComCompanyCom')}
                     rows={4}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'One domain per line (only used when domain restriction is enabled)'
+                    'systemSettings.placeholders.oneDomainPerLineOnlyUsedWhenDomainRestriction'
                   )}
                 </FormDescription>
                 <FormMessage />

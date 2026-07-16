@@ -49,7 +49,7 @@ export function MessageError({ message, className = '' }: MessageErrorProps) {
     return (
       <Alert variant='default' className={className}>
         <AlertTriangle className='text-orange-500' />
-        <AlertTitle>{t('Model Price Not Configured')}</AlertTitle>
+        <AlertTitle>{t('playground.fields.modelPriceNotConfigured')}</AlertTitle>
         <AlertDescription className='space-y-2'>
           <p>{errorContent}</p>
           {isAdmin && (
@@ -61,7 +61,7 @@ export function MessageError({ message, className = '' }: MessageErrorProps) {
               }
             >
               <Settings className='mr-1 h-3.5 w-3.5' />
-              {t('Go to Settings')}
+              {t('channels.titles.goToSettings')}
             </Button>
           )}
         </AlertDescription>
@@ -72,7 +72,7 @@ export function MessageError({ message, className = '' }: MessageErrorProps) {
   return (
     <Alert variant='destructive' className={className}>
       <AlertCircle />
-      <AlertTitle>{t('Error')}</AlertTitle>
+      <AlertTitle>{t('common.errors.error')}</AlertTitle>
       <AlertDescription>{errorContent}</AlertDescription>
     </Alert>
   )

@@ -118,17 +118,17 @@ function getContextTierPriceLabel(
 ) {
   switch (field) {
     case 'tokenPrice':
-      return t('Input')
+      return t('pricing.fields.input')
     case 'completionTokenPrice':
-      return t('Output')
+      return t('pricing.fields.output')
     case 'cacheTokenPrice':
-      return t('Cache Read')
+      return t('systemSettings.fields.cacheRead')
     case 'createCacheTokenPrice':
-      return t('Cache Creation')
+      return t('systemSettings.fields.cacheCreation')
     case 'audioTokenPrice':
-      return t('Audio Input')
+      return t('pricing.fields.audioInput')
     case 'audioCompletionTokenPrice':
-      return t('Audio Output')
+      return t('pricing.fields.audioOutput')
   }
 }
 
@@ -326,20 +326,20 @@ function getRowSummary(
   t: (key: string, options?: Record<string, unknown>) => string
 ) {
   if (row.mode === 'unconfigured') {
-    return t('Not configured')
+    return t('systemSettings.errors.notConfigured')
   }
   if (row.mode === 'per-request') {
     return row.fixedPrice !== undefined
-      ? `$${toInputValue(row.fixedPrice)} / ${t('Request')}`
-      : t('Per Request')
+      ? `$${toInputValue(row.fixedPrice)} / ${t('home.fields.request')}`
+      : t('pricing.fields.perRequest')
   }
   if (row.mode === 'per-token-length') {
     const tierCount = row.contextTiers?.length ?? 0
-    return t('{{count}} tiers', { count: tierCount })
+    return t('pricing.fields.countTiers', { count: tierCount })
   }
   return row.inputPrice !== undefined
-    ? `$${toInputValue(row.inputPrice)} / 1M ${t('Tokens')}`
-    : t('Per-token')
+    ? `$${toInputValue(row.inputPrice)} / 1M ${t('rankings.fields.tokens')}`
+    : t('systemSettings.fields.perToken')
 }
 
 function PriceInput({
@@ -762,14 +762,14 @@ export function ModelRatioVisualEditor({
     <div className='grid min-h-[560px] gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]'>
       <Card className='min-w-0'>
         <CardHeader className='border-b'>
-          <CardTitle>{t('Models')}</CardTitle>
+          <CardTitle>{t('channels.titles.models')}</CardTitle>
           <div className='flex flex-col gap-2 sm:flex-row'>
             <div className='relative min-w-0 flex-1'>
               <Search className='text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
               <Input
                 className='pl-9'
                 value={searchText}
-                placeholder={t('Search model name')}
+                placeholder={t('systemSettings.actions.searchModelName')}
                 onChange={(event) => {
                   setSearchText(event.target.value)
                   setPageIndex(0)
@@ -779,7 +779,7 @@ export function ModelRatioVisualEditor({
             <div className='flex gap-2'>
               <Input
                 value={customModelName}
-                placeholder={t('Custom model name')}
+                placeholder={t('systemSettings.fields.customModelName')}
                 onChange={(event) => setCustomModelName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -790,7 +790,7 @@ export function ModelRatioVisualEditor({
               />
               <Button type='button' variant='outline' onClick={addCustomModel}>
                 <Plus className='h-4 w-4' />
-                {t('Add')}
+                {t('channels.actions.add')}
               </Button>
             </div>
           </div>
@@ -799,9 +799,9 @@ export function ModelRatioVisualEditor({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className='pl-4'>{t('Model Name')}</TableHead>
-                <TableHead>{t('Billing type')}</TableHead>
-                <TableHead>{t('Price summary')}</TableHead>
+                <TableHead className='pl-4'>{t('models.fields.modelName')}</TableHead>
+                <TableHead>{t('systemSettings.fields.billingType')}</TableHead>
+                <TableHead>{t('systemSettings.fields.priceSummary')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -812,8 +812,8 @@ export function ModelRatioVisualEditor({
                     className='text-muted-foreground h-32 text-center'
                   >
                     {isLoadingEnabledModels
-                      ? t('Loading...')
-                      : t('No Models Found')}
+                      ? t('common.tips.loading')
+                      : t('common.titles.noModelsFound')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -842,12 +842,12 @@ export function ModelRatioVisualEditor({
                         }
                       >
                         {row.mode === 'unconfigured'
-                          ? t('Not configured')
+                          ? t('systemSettings.errors.notConfigured')
                           : row.mode === 'per-request'
-                            ? t('Per Request')
+                            ? t('pricing.fields.perRequest')
                             : row.mode === 'per-token-length'
-                              ? t('Tiered')
-                              : t('Per-token')}
+                              ? t('systemSettings.fields.tiered')
+                              : t('systemSettings.fields.perToken')}
                       </Badge>
                     </TableCell>
                     <TableCell className='max-w-[240px] truncate text-xs'>
@@ -860,7 +860,7 @@ export function ModelRatioVisualEditor({
           </Table>
           <div className='flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='text-muted-foreground text-xs'>
-              {t('{{count}} models', { count: filteredRows.length })}
+              {t('keys.titles.countModels', { count: filteredRows.length })}
             </div>
             <div className='flex flex-wrap items-center gap-2'>
               <select
@@ -886,7 +886,7 @@ export function ModelRatioVisualEditor({
                   setPageIndex(() => Math.max(0, safePageIndex - 1))
                 }
               >
-                {t('Previous')}
+                {t('common.fields.previous')}
               </Button>
               <span className='text-muted-foreground text-xs'>
                 {safePageIndex + 1} / {pageCount}
@@ -900,7 +900,7 @@ export function ModelRatioVisualEditor({
                   setPageIndex(() => Math.min(pageCount - 1, safePageIndex + 1))
                 }
               >
-                {t('Next')}
+                {t('common.fields.next')}
               </Button>
             </div>
           </div>
@@ -910,25 +910,25 @@ export function ModelRatioVisualEditor({
       <Card className='min-w-0'>
         <CardHeader className='border-b'>
           <CardTitle className='truncate'>
-            {selectedRow ? selectedRow.name : t('Price settings')}
+            {selectedRow ? selectedRow.name : t('systemSettings.titles.priceSettings')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!selectedRow ? (
             <div className='text-muted-foreground py-10 text-center text-sm'>
-              {t('Select a model to edit pricing')}
+              {t('systemSettings.placeholders.selectAModelToEditPricing')}
             </div>
           ) : (
             <div className='space-y-5' key={selectedRow.name}>
               {selectedRow.mode === 'unconfigured' && (
                 <div className='bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm'>
                   {t(
-                    'This model has no pricing configured. Please select a billing type and set the price.'
+                    'systemSettings.tips.modelHasNoPricingConfiguredPleaseSelectABilling'
                   )}
                 </div>
               )}
               <div className='space-y-2'>
-                <Label>{t('Billing type')}</Label>
+                <Label>{t('systemSettings.fields.billingType')}</Label>
                 <RadioGroup
                   value={selectedRow.mode}
                   onValueChange={(value) =>
@@ -937,9 +937,9 @@ export function ModelRatioVisualEditor({
                   className='grid gap-2 sm:grid-cols-3'
                 >
                   {[
-                    ['per-request', t('Per Request')],
-                    ['per-token', t('Per-token')],
-                    ['per-token-length', t('Tiered pricing')],
+                    ['per-request', t('pricing.fields.perRequest')],
+                    ['per-token', t('systemSettings.fields.perToken')],
+                    ['per-token-length', t('systemSettings.fields.tieredPricing')],
                   ].map(([value, label]) => (
                     <Label
                       key={value}
@@ -955,7 +955,7 @@ export function ModelRatioVisualEditor({
 
               {selectedRow.mode === 'per-request' && (
                 <PriceInput
-                  label={t('Fixed price per request')}
+                  label={t('systemSettings.fields.fixedPricePerRequest')}
                   value={toInputValue(selectedRow.fixedPrice)}
                   placeholder='0.01'
                   onChange={(value) => setFixedPrice(selectedRow.name, value)}
@@ -965,14 +965,14 @@ export function ModelRatioVisualEditor({
               {selectedRow.mode === 'per-token' && (
                 <div className='space-y-4'>
                   <PriceInput
-                    label={t('Input price per 1M tokens')}
+                    label={t('systemSettings.fields.inputPricePer1MTokens')}
                     value={toInputValue(selectedRow.inputPrice)}
                     placeholder='2'
                     onChange={(value) => setInputPrice(selectedRow.name, value)}
                   />
                   <div className='grid gap-3 sm:grid-cols-2'>
                     <PriceInput
-                      label={t('Completion price per 1M tokens')}
+                      label={t('systemSettings.fields.completionPricePer1MTokens')}
                       value={toInputValue(selectedRow.completionPrice)}
                       placeholder='4'
                       disabled={!selectedRow.inputPrice}
@@ -987,7 +987,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Cache Read Price Per 1M Tokens')}
+                      label={t('systemSettings.fields.cacheReadPricePer1MTokens')}
                       value={toInputValue(selectedRow.cachePrice)}
                       placeholder='0.2'
                       disabled={!selectedRow.inputPrice}
@@ -1002,7 +1002,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Cache Write Price Per 1M Tokens')}
+                      label={t('systemSettings.fields.cacheWritePricePer1MTokens')}
                       value={toInputValue(selectedRow.createCachePrice)}
                       placeholder='1'
                       disabled={!selectedRow.inputPrice}
@@ -1017,7 +1017,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Audio Input Price Per 1M Tokens')}
+                      label={t('systemSettings.fields.audioInputPricePer1MTokens')}
                       value={toInputValue(selectedRow.audioInputPrice)}
                       placeholder='8'
                       disabled={!selectedRow.inputPrice}
@@ -1032,7 +1032,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Audio Output Price Per 1M Tokens')}
+                      label={t('systemSettings.tips.audioOutputPricePer1MTokens')}
                       value={toInputValue(selectedRow.audioOutputPrice)}
                       placeholder='16'
                       disabled={!selectedRow.audioInputPrice}
@@ -1053,10 +1053,10 @@ export function ModelRatioVisualEditor({
                   <div className='flex items-center justify-between gap-2'>
                     <div>
                       <Label className='text-sm font-semibold'>
-                        {t('Tiered pricing')}
+                        {t('systemSettings.fields.tieredPricing')}
                       </Label>
                       <p className='text-muted-foreground text-xs'>
-                        {t('Pricing varies by input context token range.')}
+                        {t('systemSettings.tips.pricingVariesByInputContextTokenRange')}
                       </p>
                     </div>
                     <Button
@@ -1066,7 +1066,7 @@ export function ModelRatioVisualEditor({
                       onClick={() => addContextTier(selectedRow.name)}
                     >
                       <Plus className='mr-1 h-3 w-3' />
-                      {t('Add tier')}
+                      {t('systemSettings.actions.addTier')}
                     </Button>
                   </div>
 
@@ -1084,11 +1084,11 @@ export function ModelRatioVisualEditor({
                           >
                             <div className='mb-3 flex items-center gap-2'>
                               <div className='min-w-0 flex-1 space-y-1.5'>
-                                <Label className='text-xs'>{t('Name')}</Label>
+                                <Label className='text-xs'>{t('channels.fields.name')}</Label>
                                 <Input
                                   className='h-8'
                                   value={tier.name ?? ''}
-                                  placeholder={`${t('Tier name')} ${tierIdx + 1}`}
+                                  placeholder={`${t('systemSettings.fields.tierName')} ${tierIdx + 1}`}
                                   onChange={(e) =>
                                     updateContextTier(
                                       selectedRow.name,
@@ -1118,14 +1118,14 @@ export function ModelRatioVisualEditor({
                             <div className='mb-3 grid gap-3 sm:grid-cols-2'>
                               <div className='space-y-1.5 sm:col-span-2'>
                                 <Label className='text-xs'>
-                                  {t('Context window')}
+                                  {t('models.fields.contextWindow')}
                                 </Label>
                                 <div className='grid gap-2 sm:grid-cols-2'>
                                   <Input
                                     className='h-8'
                                     type='number'
                                     value={tier.min_tokens}
-                                    placeholder={t('Start window')}
+                                    placeholder={t('systemSettings.actions.startWindow')}
                                     onChange={(e) =>
                                       updateContextTier(
                                         selectedRow.name,
@@ -1138,7 +1138,7 @@ export function ModelRatioVisualEditor({
                                   <Input
                                     className='h-8'
                                     type='number'
-                                    placeholder={t('End window')}
+                                    placeholder={t('systemSettings.fields.endWindow')}
                                     value={maxTokensStr}
                                     onChange={(e) =>
                                       updateContextTier(
@@ -1174,7 +1174,7 @@ export function ModelRatioVisualEditor({
                     </div>
                   ) : (
                     <div className='text-muted-foreground rounded-md border border-dashed p-4 text-sm'>
-                      {t('No tiers configured. Click "Add tier" to start.')}
+                      {t('common.tips.noTiersConfiguredClickAddTierToStart')}
                     </div>
                   )}
                 </div>
@@ -1187,7 +1187,7 @@ export function ModelRatioVisualEditor({
                 onClick={() => clearModel(selectedRow.name)}
               >
                 <Trash2 className='h-4 w-4' />
-                {t('Clear this model pricing')}
+                {t('systemSettings.actions.clearThisModelPricing')}
               </Button>
             </div>
           )}

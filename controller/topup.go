@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"
@@ -358,7 +359,7 @@ type AdminCompleteTopupRequest struct {
 func AdminCompleteTopUp(c *gin.Context) {
 	var req AdminCompleteTopupRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.TradeNo == "" {
-		common.ApiErrorMsg(c, "参数错误")
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 

@@ -147,14 +147,14 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
   const statusOptions = getUserStatusOptions(t)
   const roleOptions = getUserRoleOptions(t)
   const statusLabel =
-    statusOptions.find((opt) => opt.value === status)?.label ?? t('Status')
+    statusOptions.find((opt) => opt.value === status)?.label ?? t('channels.fields.status')
   const roleLabel =
-    roleOptions.find((opt) => opt.value === role)?.label ?? t('Role')
+    roleOptions.find((opt) => opt.value === role)?.label ?? t('users.fields.role')
 
   const usernameFilter = (
     <LogsFilterField>
       <LogsFilterInput
-        placeholder={t('Username')}
+        placeholder={t('auth.fields.username')}
         autoComplete="off"
         value={filters.username || ''}
         onChange={(e) => handleChange('username', e.target.value)}
@@ -166,7 +166,7 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
   const displayNameFilter = (
     <LogsFilterField>
       <LogsFilterInput
-        placeholder={t('Display Name')}
+        placeholder={t('usageLogs.fields.displayName')}
         autoComplete="off"
         value={filters.displayName || ''}
         onChange={(e) => handleChange('displayName', e.target.value)}
@@ -178,7 +178,7 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
   const emailFilter = (
     <LogsFilterField>
       <LogsFilterInput
-        placeholder={t('Email')}
+        placeholder={t('auth.fields.email')}
         autoComplete="off"
         value={filters.email || ''}
         onChange={(e) => handleChange('email', e.target.value)}
@@ -237,8 +237,8 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
     <>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder={t('LinuxDo ID')}
-          autoComplete="off"
+          placeholder={t('users.fields.linuxDoId')}
+          autoComplete="systemSettings.fields.offda7a68"
           value={filters.linuxDoId || ''}
           onChange={(e) => handleChange('linuxDoId', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -246,8 +246,8 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
       </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder={t('GitHub ID')}
-          autoComplete="off"
+          placeholder={t('users.fields.gitHubId')}
+          autoComplete="systemSettings.fields.offda7a68"
           value={filters.githubId || ''}
           onChange={(e) => handleChange('githubId', e.target.value)}
           onKeyDown={handleKeyDown}

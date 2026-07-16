@@ -500,7 +500,7 @@ function CodeSamplesSection(props: {
 
   return (
     <section>
-      <SectionTitle icon={ScrollText}>{t('Code samples')}</SectionTitle>
+      <SectionTitle icon={ScrollText}>{t('pricing.fields.codeSamples')}</SectionTitle>
 
       <div className='flex flex-wrap items-center gap-2'>
         {endpoints.length > 1 && (
@@ -541,11 +541,11 @@ function CodeSamplesSection(props: {
       </div>
 
       <p className='text-muted-foreground mt-2 text-xs'>
-        {t('Replace')}{' '}
+        {t('pricing.fields.replace')}{' '}
         <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]'>
           {'<YOUR_API_KEY>'}
         </code>{' '}
-        {t('with the API key from your token settings.')}
+        {t('pricing.tips.apiKeyFromYourTokenSettings')}
       </p>
     </section>
   )
@@ -566,15 +566,15 @@ function SupportedParametersSection(props: { model: PricingModel }) {
 
   return (
     <section>
-      <SectionTitle icon={Sigma}>{t('Supported parameters')}</SectionTitle>
+      <SectionTitle icon={Sigma}>{t('pricing.fields.supportedParameters')}</SectionTitle>
       <div className='border-border/60 overflow-hidden rounded-lg border'>
         <Table>
           <TableHeader>
             <TableRow className='bg-muted/30 hover:bg-muted/30'>
-              <TableHead className='h-9 w-44'>{t('Parameter')}</TableHead>
-              <TableHead className='h-9 w-24'>{t('Type')}</TableHead>
-              <TableHead className='h-9 w-32'>{t('Default / range')}</TableHead>
-              <TableHead className='h-9'>{t('Description')}</TableHead>
+              <TableHead className='h-9 w-44'>{t('pricing.fields.parameter')}</TableHead>
+              <TableHead className='h-9 w-24'>{t('channels.fields.type')}</TableHead>
+              <TableHead className='h-9 w-32'>{t('pricing.fields.defaultRange')}</TableHead>
+              <TableHead className='h-9'>{t('auditLogs.tips.description')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -590,7 +590,7 @@ function SupportedParametersSection(props: { model: PricingModel }) {
                         variant='outline'
                         className='h-6 border-rose-500/40 px-2 text-sm text-rose-600 dark:text-rose-400'
                       >
-                        {t('required')}
+                        {t('pricing.errors.required')}
                       </Badge>
                     )}
                   </div>
@@ -669,11 +669,11 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
   return (
     <section>
       <SectionTitle icon={ShieldCheck}>
-        {t('Provider & data privacy')}
+        {t('pricing.fields.providerDataPrivacy')}
       </SectionTitle>
 
       <div className='border-border/60 bg-border/60 grid grid-cols-1 gap-px overflow-hidden rounded-lg border sm:grid-cols-2'>
-        <InfoCell label={t('Provider')}>
+        <InfoCell label={t('models.fields.provider')}>
           <div className='flex items-center gap-1.5'>
             <span className='text-sm font-medium'>{info.vendor_label}</span>
             {info.homepage && (
@@ -683,14 +683,14 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
                 rel='noopener noreferrer'
                 className='text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5 text-[11px]'
               >
-                {t('Docs')}
+                {t('pricing.fields.docs')}
                 <ExternalLink className='size-3' />
               </a>
             )}
           </div>
         </InfoCell>
 
-        <InfoCell label={t('Tokenizer')}>
+        <InfoCell label={t('pricing.fields.tokenizer')}>
           <div className='flex flex-col gap-0.5'>
             <code className='font-mono text-xs'>{info.tokenizer}</code>
             {info.tokenizer_note && (
@@ -701,7 +701,7 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
           </div>
         </InfoCell>
 
-        <InfoCell label={t('License')}>
+        <InfoCell label={t('pricing.fields.license')}>
           <div className='flex flex-col gap-1'>
             <span className='text-sm'>{info.license}</span>
             <Badge
@@ -717,30 +717,30 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
               )}
             >
               {info.license_kind === 'open'
-                ? t('Open source')
+                ? t('pricing.actions.openSource')
                 : info.license_kind === 'open-weight'
-                  ? t('Open weights')
+                  ? t('pricing.actions.openWeights')
                   : info.license_kind === 'proprietary'
-                    ? t('Proprietary')
-                    : t('Unknown')}
+                    ? t('pricing.fields.proprietary')
+                    : t('channels.fields.unknown')}
             </Badge>
           </div>
         </InfoCell>
 
-        <InfoCell label={t('Data retention')}>
+        <InfoCell label={t('models.fields.dataRetention')}>
           <span className='text-sm'>
             {typeof info.data_retention_days === 'number'
               ? info.data_retention_days === 0
-                ? t('Zero retention')
-                : `${info.data_retention_days} ${t('days')}`
-              : t('Provider-specific')}
+                ? t('models.fields.zeroRetention')
+                : `${info.data_retention_days} ${t('dashboard.fields.days')}`
+              : t('models.fields.providerSpecific')}
           </span>
           <span className='text-muted-foreground text-[10px]'>
             {typeof info.training_opt_out === 'boolean'
               ? info.training_opt_out
-                ? t('Not used for upstream training by default')
-                : t('May be used for training by upstream provider')
-              : t('Check the upstream provider policy for details')}
+                ? t('pricing.status.notUsedForUpstreamTrainingByDefault')
+                : t('pricing.status.mayBeUsedForTrainingByUpstreamProvider')
+              : t('pricing.tips.checkTheUpstreamProviderPolicyForDetails')}
           </span>
         </InfoCell>
       </div>
@@ -767,24 +767,24 @@ function AuthSection() {
   const { t } = useTranslation()
   return (
     <section>
-      <SectionTitle icon={KeyRound}>{t('Authentication')}</SectionTitle>
+      <SectionTitle icon={KeyRound}>{t('layout.fields.authentication')}</SectionTitle>
       <div className='border-border/60 bg-muted/20 flex items-start gap-2 rounded-lg border p-3'>
         <ChevronRight className='text-muted-foreground mt-0.5 size-3.5 shrink-0' />
         <div className='space-y-1.5 text-xs leading-relaxed'>
           <p>
-            {t('All requests must include')}{' '}
+            {t('pricing.errors.allRequestsMustInclude')}{' '}
             <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]'>
               Authorization: Bearer &lt;TOKEN&gt;
             </code>{' '}
-            {t('header. Anthropic-formatted endpoints accept the')}{' '}
+            {t('pricing.tips.headerAnthropicFormattedEndpointsAcceptThe')}{' '}
             <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]'>
               x-api-key
             </code>{' '}
-            {t('header instead.')}
+            {t('pricing.tips.headerInstead')}
           </p>
           <p className='text-muted-foreground'>
             {t(
-              'Generate tokens from the Tokens page; you can scope them to specific models, groups, IPs, and rate-limits.'
+              'pricing.tips.generateTokensFromTheTokensPageYouCanScope'
             )}
           </p>
         </div>

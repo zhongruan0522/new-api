@@ -39,13 +39,13 @@ export function FAQPanel() {
       title={
         <span className='flex items-center gap-2'>
           <HelpCircle className='text-muted-foreground/60 size-4' />
-          {t('FAQ')}
+          {t('dashboard.fields.faq')}
         </span>
       }
-      description={t('Answers for common access and billing questions')}
+      description={t('dashboard.tips.answersForCommonAccessAndBillingQuestions')}
       loading={loading}
       empty={!list.length}
-      emptyMessage={t('No FAQ entries available')}
+      emptyMessage={t('dashboard.fields.noFaqEntriesAvailable')}
       height='h-80'
       contentClassName='p-0'
     >

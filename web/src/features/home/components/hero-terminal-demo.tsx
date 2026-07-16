@@ -73,7 +73,7 @@ const ACCENT_CLASSES: Record<
 const API_DEMOS: ApiDemoConfig[] = [
   {
     id: 'gpt-chat',
-    label: 'Chat',
+    label: 'common.fields.chat',
     method: 'POST',
     endpoint: '/v1/chat/completions',
     headers: ['"Authorization: Bearer sk-••••"'],
@@ -96,7 +96,7 @@ const API_DEMOS: ApiDemoConfig[] = [
   },
   {
     id: 'responses',
-    label: 'Responses',
+    label: 'channels.fields.responses',
     method: 'POST',
     endpoint: '/v1/responses',
     headers: ['"Authorization: Bearer sk-••••"'],
@@ -114,7 +114,7 @@ const API_DEMOS: ApiDemoConfig[] = [
   },
   {
     id: 'claude',
-    label: 'Claude',
+    label: 'systemSettings.fields.claude',
     method: 'POST',
     endpoint: '/v1/messages',
     headers: ['"x-api-key: sk-••••"', '"anthropic-version: 2023-06-01"'],
@@ -138,7 +138,7 @@ const API_DEMOS: ApiDemoConfig[] = [
   },
   {
     id: 'gemini',
-    label: 'Gemini',
+    label: 'systemSettings.fields.gemini',
     method: 'POST',
     endpoint: '/v1beta/models/{model}:generateContent',
     headers: ['"x-goog-api-key: sk-••••"'],
@@ -318,7 +318,7 @@ function RequestBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
 
   return (
     <div className='relative px-5 py-4'>
-      <SectionLabel>{t('Request')}</SectionLabel>
+      <SectionLabel>{t('home.fields.request')}</SectionLabel>
       <div
         className={cn(
           'mt-2 transition-opacity duration-200',
@@ -363,7 +363,7 @@ function ResponseBlock(props: { demo: ApiDemoConfig; transitioning: boolean }) {
         'border-border/40 bg-muted/20 dark:border-white/[0.05] dark:bg-white/[0.015]'
       )}
     >
-      <SectionLabel>{t('Response')}</SectionLabel>
+      <SectionLabel>{t('channels.fields.response')}</SectionLabel>
       <div
         className={cn(
           'mt-2 transition-opacity duration-200',

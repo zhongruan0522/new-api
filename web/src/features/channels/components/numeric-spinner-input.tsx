@@ -135,7 +135,7 @@ export function NumericSpinnerInput({
         <button
           type='button'
           tabIndex={-1}
-          aria-label={t('Decrement')}
+          aria-label={t('channels.fields.decrement')}
           onClick={handleDecrement}
           disabled={disabled || atMin}
           className={cn(
@@ -177,7 +177,7 @@ export function NumericSpinnerInput({
         <button
           type='button'
           tabIndex={-1}
-          aria-label={t('Increment')}
+          aria-label={t('channels.fields.increment')}
           onClick={handleIncrement}
           disabled={disabled || atMax}
           className={cn(

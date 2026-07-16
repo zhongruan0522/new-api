@@ -297,8 +297,8 @@ export function DynamicRatio() {
     onSuccess: async (_, enabled) => {
       toast.success(
         enabled
-          ? t('Dynamic ratio has been enabled')
-          : t('Dynamic ratio has been disabled')
+          ? t('dynamicRatio.status.ratioHasBeenEnabled')
+          : t('dynamicRatio.status.ratioHasBeenDisabled')
       )
       await queryClient.invalidateQueries({ queryKey: queryKeys.status })
     },
@@ -311,7 +311,7 @@ export function DynamicRatio() {
         ? updateDynamicRatioRule({ ...payload, id: editingRule.id })
         : createDynamicRatioRule(payload),
     onSuccess: async () => {
-      toast.success(editingRule ? t('Updated successfully') : t('Created'))
+      toast.success(editingRule ? t('dynamicRatio.status.updatedSuccessfully') : t('dynamicRatio.status.created'))
       setDialogOpen(false)
       setEditingRule(null)
       setForm(DEFAULT_FORM)
@@ -323,7 +323,7 @@ export function DynamicRatio() {
   const updateRuleMutation = useMutation({
     mutationFn: updateDynamicRatioRule,
     onSuccess: async () => {
-      toast.success(t('Updated successfully'))
+      toast.success(t('dynamicRatio.status.updatedSuccessfully'))
       await refreshAll()
     },
     onError: (error) => toast.error(error.message),
@@ -332,7 +332,7 @@ export function DynamicRatio() {
   const deleteMutation = useMutation({
     mutationFn: deleteDynamicRatioRule,
     onSuccess: async () => {
-      toast.success(t('Deleted successfully'))
+      toast.success(t('dynamicRatio.status.deletedSuccessfully'))
       setDeleteTarget(null)
       await refreshAll()
     },
@@ -342,7 +342,7 @@ export function DynamicRatio() {
   const reorderMutation = useMutation({
     mutationFn: reorderDynamicRatioRules,
     onSuccess: async () => {
-      toast.success(t('Order updated'))
+      toast.success(t('dynamicRatio.status.orderUpdated'))
       await refreshAll()
     },
     onError: (error) => toast.error(error.message),
@@ -360,7 +360,7 @@ export function DynamicRatio() {
       setForm(ruleToForm(rule))
       setDialogOpen(true)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('Invalid rule'))
+      toast.error(error instanceof Error ? error.message : t('dynamicRatio.errors.invalidRule'))
     }
   }
 
@@ -368,7 +368,7 @@ export function DynamicRatio() {
     try {
       saveDialogRuleMutation.mutate(buildPayload(form))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('Invalid form'))
+      toast.error(error instanceof Error ? error.message : t('dynamicRatio.errors.invalidForm'))
     }
   }
 
@@ -397,11 +397,11 @@ export function DynamicRatio() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Dynamic Ratio')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('dynamicRatio.fields.ratio')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <div className='flex items-center gap-2 rounded-lg border px-2.5 py-1.5'>
             <span className='text-muted-foreground text-sm'>
-              {t('Global')}
+              {t('dynamicRatio.fields.global')}
             </span>
             <Switch
               checked={globalEnabled}
@@ -411,11 +411,11 @@ export function DynamicRatio() {
           </div>
           <Button variant='outline' onClick={() => void refreshAll()}>
             <RefreshCw />
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
           <Button onClick={openCreateDialog} disabled={!canEdit}>
             <Plus />
-            {t('New rule')}
+            {t('dynamicRatio.fields.newRule')}
           </Button>
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
@@ -430,15 +430,15 @@ export function DynamicRatio() {
               <CardContent className='grid gap-3 sm:grid-cols-3'>
                 <div>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Status')}
+                    {t('channels.fields.status')}
                   </div>
                   <div className='mt-1 text-sm font-medium'>
-                    {globalEnabled ? t('Enabled') : t('Disabled')}
+                    {globalEnabled ? t('channels.status.enabled') : t('channels.status.disabled')}
                   </div>
                 </div>
                 <div>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Active ratio')}
+                    {t('dynamicRatio.status.activeRatio')}
                   </div>
                   <div className='mt-1 text-sm font-medium'>
                     {statusQuery.data?.active_ratio ?? '-'}x
@@ -446,7 +446,7 @@ export function DynamicRatio() {
                 </div>
                 <div>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Timezone')}
+                    {t('dynamicRatio.fields.timezone')}
                   </div>
                   <div className='mt-1 text-sm font-medium'>
                     {statusQuery.data?.timezone || '-'}
@@ -460,16 +460,16 @@ export function DynamicRatio() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                       <TableHead className='w-16'>{t('Enabled')}</TableHead>
-                       <TableHead>{t('Group')}</TableHead>
-                       <TableHead>{t('Models')}</TableHead>
-                       <TableHead>{t('Concurrency')}</TableHead>
-                       <TableHead>{t('Weekdays')}</TableHead>
-                       <TableHead>{t('Time Range')}</TableHead>
-                       <TableHead>{t('Ratio')}</TableHead>
-                       <TableHead>{t('Priority')}</TableHead>
+                       <TableHead className='w-16'>{t('channels.status.enabled')}</TableHead>
+                       <TableHead>{t('common.fields.group')}</TableHead>
+                       <TableHead>{t('channels.titles.models')}</TableHead>
+                       <TableHead>{t('dynamicRatio.fields.concurrency')}</TableHead>
+                       <TableHead>{t('dynamicRatio.fields.weekdays')}</TableHead>
+                       <TableHead>{t('dynamicRatio.fields.timeRange')}</TableHead>
+                       <TableHead>{t('dynamicRatio.fields.ratio794f65')}</TableHead>
+                       <TableHead>{t('channels.fields.priority')}</TableHead>
                        <TableHead className='w-40 text-right'>
-                         {t('Actions')}
+                         {t('channels.fields.actions')}
                        </TableHead>
                      </TableRow>
                   </TableHeader>
@@ -477,13 +477,13 @@ export function DynamicRatio() {
                     {rulesQuery.isLoading ? (
                        <TableRow>
                          <TableCell colSpan={9} className='h-24 text-center'>
-                           {t('Loading...')}
+                           {t('common.tips.loading')}
                          </TableCell>
                        </TableRow>
                      ) : rules.length === 0 ? (
                        <TableRow>
                          <TableCell colSpan={9} className='h-24 text-center'>
-                           {t('No dynamic ratio rules')}
+                           {t('dynamicRatio.fields.noDynamicRatioRules')}
                          </TableCell>
                        </TableRow>
                     ) : (
@@ -506,7 +506,7 @@ export function DynamicRatio() {
                              <Badge variant='outline'>{rule.group}</Badge>
                            </TableCell>
                            <TableCell className='max-w-48 truncate'>
-                             {formatModels(rule.models, t('All Models'))}
+                             {formatModels(rule.models, t('dynamicRatio.titles.allModels'))}
                            </TableCell>
                           <TableCell>
                             {rule.concurrency ? (
@@ -515,19 +515,19 @@ export function DynamicRatio() {
                               </Badge>
                             ) : (
                               <span className='text-muted-foreground'>
-                                {t('Any')}
+                                {t('dynamicRatio.fields.any')}
                               </span>
                             )}
                           </TableCell>
                           <TableCell>
-                            {formatWeekdays(rule.weekdays, t('Daily'))}
+                            {formatWeekdays(rule.weekdays, t('dynamicRatio.fields.daily'))}
                           </TableCell>
                           <TableCell>
                             {rule.start_time && rule.end_time ? (
                               `${rule.start_time} - ${rule.end_time}`
                             ) : (
                               <span className='text-muted-foreground'>
-                                {t('Any')}
+                                {t('dynamicRatio.fields.any')}
                               </span>
                             )}
                           </TableCell>
@@ -546,7 +546,7 @@ export function DynamicRatio() {
                                 onClick={() => handleMove(index, -1)}
                               >
                                 <ArrowUp />
-                                <span className='sr-only'>{t('Move up')}</span>
+                                <span className='sr-only'>{t('dynamicRatio.fields.moveUp')}</span>
                               </Button>
                               <Button
                                 size='icon-sm'
@@ -556,7 +556,7 @@ export function DynamicRatio() {
                               >
                                 <ArrowDown />
                                 <span className='sr-only'>
-                                  {t('Move down')}
+                                  {t('dynamicRatio.fields.moveDown')}
                                 </span>
                               </Button>
                               <Button
@@ -566,7 +566,7 @@ export function DynamicRatio() {
                                 onClick={() => openEditDialog(rule)}
                               >
                                 <Pencil />
-                                <span className='sr-only'>{t('Edit')}</span>
+                                <span className='sr-only'>{t('channels.actions.edit')}</span>
                               </Button>
                               <Button
                                 size='icon-sm'
@@ -575,7 +575,7 @@ export function DynamicRatio() {
                                 onClick={() => setDeleteTarget(rule)}
                               >
                                 <Trash2 />
-                                <span className='sr-only'>{t('Delete')}</span>
+                                <span className='sr-only'>{t('common.actions.delete')}</span>
                               </Button>
                             </div>
                           </TableCell>
@@ -594,12 +594,12 @@ export function DynamicRatio() {
         <DialogContent className='sm:max-w-xl'>
           <DialogHeader>
             <DialogTitle>
-              {editingRule ? t('Edit Rule') : t('New rule')}
+              {editingRule ? t('dynamicRatio.actions.editRule') : t('dynamicRatio.fields.newRule')}
             </DialogTitle>
           </DialogHeader>
           <div className='grid gap-4'>
             <div className='grid gap-1.5'>
-               <Label htmlFor='dynamic-ratio-group'>{t('Group')}</Label>
+               <Label htmlFor='dynamic-ratio-group'>{t('common.fields.group')}</Label>
                <Select
                  value={form.group || null}
                  onValueChange={(value) =>
@@ -610,7 +610,7 @@ export function DynamicRatio() {
                  }
                >
                  <SelectTrigger id='dynamic-ratio-group' className='w-full'>
-                   <SelectValue placeholder={t('Select a group')} />
+                   <SelectValue placeholder={t('dynamicRatio.placeholders.selectAGroup')} />
                  </SelectTrigger>
                  <SelectContent alignItemWithTrigger={false}>
                    <SelectGroup>
@@ -625,11 +625,11 @@ export function DynamicRatio() {
              </div>
 
              <div className='grid gap-1.5'>
-               <Label htmlFor='dynamic-ratio-models'>{t('Models')}</Label>
+               <Label htmlFor='dynamic-ratio-models'>{t('channels.titles.models')}</Label>
                <Input
                  id='dynamic-ratio-models'
                  value={form.models}
-                 placeholder={t('e.g. gpt-4*, claude-3-opus (empty = all)')}
+                 placeholder={t('dynamicRatio.tips.eGGpt4Claude3OpusEmptyAll')}
                  onChange={(event) =>
                    setForm((current) => ({
                      ...current,
@@ -638,21 +638,21 @@ export function DynamicRatio() {
                  }
                />
                <p className='text-muted-foreground text-xs'>
-                 {t('Comma-separated, supports * wildcard. Leave empty for all models.')}
+                 {t('dynamicRatio.tips.commaSeparatedSupportsWildcardLeaveEmptyForAllModels')}
                </p>
              </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-concurrency'>
-                  {t('Concurrency threshold')}
+                  {t('dynamicRatio.fields.concurrencyThreshold')}
                 </Label>
                 <Input
                   id='dynamic-ratio-concurrency'
                   type='number'
                   min='1'
                   value={form.concurrency}
-                  placeholder={t('Any')}
+                  placeholder={t('dynamicRatio.fields.any')}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -662,7 +662,7 @@ export function DynamicRatio() {
                 />
               </div>
               <div className='grid gap-1.5'>
-                <Label htmlFor='dynamic-ratio-ratio'>{t('Ratio')}</Label>
+                <Label htmlFor='dynamic-ratio-ratio'>{t('dynamicRatio.fields.ratio794f65')}</Label>
                 <Input
                   id='dynamic-ratio-ratio'
                   type='number'
@@ -682,7 +682,7 @@ export function DynamicRatio() {
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-start-time'>
-                  {t('Start Time')}
+                  {t('dashboard.actions.startTime')}
                 </Label>
                 <Input
                   id='dynamic-ratio-start-time'
@@ -698,7 +698,7 @@ export function DynamicRatio() {
               </div>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-end-time'>
-                  {t('End Time')}
+                  {t('dashboard.fields.endTime')}
                 </Label>
                 <Input
                   id='dynamic-ratio-end-time'
@@ -715,7 +715,7 @@ export function DynamicRatio() {
             </div>
 
             <div className='grid gap-2'>
-              <Label>{t('Weekdays')}</Label>
+              <Label>{t('dynamicRatio.fields.weekdays')}</Label>
               <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
                 {WEEKDAYS.map((weekday) => {
                   const checked = form.weekdays.includes(weekday.value)
@@ -743,7 +743,7 @@ export function DynamicRatio() {
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-priority'>
-                  {t('Priority')}
+                  {t('channels.fields.priority')}
                 </Label>
                 <Input
                   id='dynamic-ratio-priority'
@@ -759,9 +759,9 @@ export function DynamicRatio() {
               </div>
               <div className='flex items-center justify-between rounded-lg border px-3 py-2'>
                 <div>
-                  <Label>{t('Enabled')}</Label>
+                  <Label>{t('channels.status.enabled')}</Label>
                   <p className='text-muted-foreground text-xs'>
-                    {t('Enable this rule after saving')}
+                    {t('dynamicRatio.actions.enableThisRuleAfterSaving')}
                   </p>
                 </div>
                 <Switch
@@ -775,13 +775,13 @@ export function DynamicRatio() {
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => setDialogOpen(false)}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={saveDialogRuleMutation.isPending}
             >
-              {editingRule ? t('Save Changes') : t('Create')}
+              {editingRule ? t('channels.actions.saveChanges') : t('channels.actions.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -795,13 +795,13 @@ export function DynamicRatio() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Delete rule')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('dynamicRatio.actions.deleteRule')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('This dynamic ratio rule will be deleted.')}
+              {t('dynamicRatio.status.ratioRuleWillBeDeleted')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               variant='destructive'
               disabled={deleteMutation.isPending}
@@ -809,7 +809,7 @@ export function DynamicRatio() {
                 if (deleteTarget) deleteMutation.mutate(deleteTarget.id)
               }}
             >
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

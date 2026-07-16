@@ -141,9 +141,9 @@ export function usePricingColumns(
     // Model column
     {
       accessorKey: 'model_name',
-      meta: { label: t('Model') },
+      meta: { label: t('common.fields.model') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Model')} />
+        <DataTableColumnHeader column={column} title={t('common.fields.model')} />
       ),
       cell: ({ row }) => {
         const model = row.original
@@ -166,13 +166,13 @@ export function usePricingColumns(
     // Type column
     {
       accessorKey: 'quota_type',
-      meta: { label: t('Type') },
-      header: t('Type'),
+      meta: { label: t('channels.fields.type') },
+      header: t('channels.fields.type'),
       cell: ({ row }) => {
         const isTokenBased = row.original.quota_type === QUOTA_TYPE_VALUES.TOKEN
         return (
           <StatusBadge
-            label={isTokenBased ? t('Token') : t('Request')}
+            label={isTokenBased ? t('pricing.fields.token') : t('home.fields.request')}
             variant={isTokenBased ? 'info' : 'neutral'}
             copyable={false}
           />
@@ -185,9 +185,9 @@ export function usePricingColumns(
     // Price column
     {
       accessorKey: 'price',
-      meta: { label: t('Price') },
+      meta: { label: t('pricing.fields.price') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Price')} />
+        <DataTableColumnHeader column={column} title={t('pricing.fields.price')} />
       ),
       cell: ({ row }) => {
         const model = row.original
@@ -204,10 +204,10 @@ export function usePricingColumns(
             return (
               <div className='max-w-[320px] min-w-[200px]'>
                 <div className='text-xs font-medium text-amber-700 dark:text-amber-300'>
-                  {t('Special billing expression')}
+                  {t('pricing.fields.specialBillingExpression')}
                 </div>
                 <div className='text-muted-foreground text-[11px]'>
-                  {t('Unable to parse structured pricing')}
+                  {t('pricing.errors.unableToParseStructuredPricing')}
                 </div>
                 <code className='text-muted-foreground/70 mt-1 line-clamp-2 block font-mono text-[10px] leading-relaxed break-all'>
                   {dynamicSummary.rawExpression}
@@ -220,7 +220,7 @@ export function usePricingColumns(
           if (primaryEntries.length === 0) {
             return (
               <span className='text-muted-foreground text-xs'>
-                {t('Dynamic Pricing')}
+                {t('pricing.fields.dynamicPricing')}
               </span>
             )
           }
@@ -240,7 +240,7 @@ export function usePricingColumns(
               <div className='text-muted-foreground/50 text-[10px]'>
                 / {tokenUnitLabel} tokens
                 {dynamicSummary.tierCount > 1 &&
-                  ` · ${t('{{count}} tiers', {
+                  ` · ${t('pricing.fields.countTiers', {
                     count: dynamicSummary.tierCount,
                   })}`}
               </div>
@@ -257,7 +257,7 @@ export function usePricingColumns(
           return (
             <div className='min-w-[100px]'>
               <span className='text-muted-foreground/60 text-sm italic'>
-                {t('Unpriced')}
+                {t('pricing.fields.unpriced')}
               </span>
             </div>
           )
@@ -285,7 +285,7 @@ export function usePricingColumns(
               </div>
               <div className='text-muted-foreground/50 text-[10px]'>
                 / {tokenUnitLabel} tokens · {contextPricing!.tiers.length}{' '}
-                {t('tiers')}
+                {t('pricing.fields.tiers')}
               </div>
             </div>
           )
@@ -340,7 +340,7 @@ export function usePricingColumns(
           <div className='min-w-[100px]'>
             <span className='font-mono text-sm tabular-nums'>{price}</span>
             <div className='text-muted-foreground/50 text-[10px]'>
-              / {t('Request')}
+              / {t('home.fields.request')}
             </div>
           </div>
         )
@@ -352,8 +352,8 @@ export function usePricingColumns(
     // Cached price column (Vercel AI Gateway style)
     {
       id: 'cached_price',
-      meta: { label: t('Cached') },
-      header: t('Cached'),
+      meta: { label: t('pricing.fields.cached') },
+      header: t('pricing.fields.cached'),
       cell: ({ row }) => {
         const model = row.original
         const dynamicSummary = getDynamicPricingSummary(model, {
@@ -368,7 +368,7 @@ export function usePricingColumns(
           if (dynamicSummary.isSpecialExpression) {
             return (
               <span className='text-muted-foreground/50 text-xs'>
-                {t('Special billing expression')}
+                {t('pricing.fields.specialBillingExpression')}
               </span>
             )
           }
@@ -427,8 +427,8 @@ export function usePricingColumns(
     // Vendor column
     {
       accessorKey: 'vendor_name',
-      meta: { label: t('Vendor') },
-      header: t('Vendor'),
+      meta: { label: t('models.fields.vendor') },
+      header: t('models.fields.vendor'),
       cell: ({ row }) => {
         const model = row.original
         if (!model.vendor_name) {
@@ -456,8 +456,8 @@ export function usePricingColumns(
     // Tags column
     {
       accessorKey: 'tags',
-      meta: { label: t('Tags') },
-      header: t('Tags'),
+      meta: { label: t('models.fields.tags') },
+      header: t('models.fields.tags'),
       cell: ({ row }) => {
         const tags = parseTags(row.original.tags)
         if (tags.length === 0) {
@@ -486,8 +486,8 @@ export function usePricingColumns(
     // Endpoints column
     {
       accessorKey: 'supported_endpoint_types',
-      meta: { label: t('Endpoints') },
-      header: t('Endpoints'),
+      meta: { label: t('models.fields.endpoints') },
+      header: t('models.fields.endpoints'),
       cell: ({ row }) => {
         const endpoints = row.original.supported_endpoint_types || []
         if (endpoints.length === 0) {
@@ -516,8 +516,8 @@ export function usePricingColumns(
     // Enable Groups column
     {
       accessorKey: 'enable_groups',
-      meta: { label: t('Groups') },
-      header: t('Groups'),
+      meta: { label: t('channels.fields.groups') },
+      header: t('channels.fields.groups'),
       cell: ({ row }) => {
         const groups = row.original.enable_groups || []
         if (groups.length === 0) {

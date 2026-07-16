@@ -46,9 +46,9 @@ export function WeChatBindDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Bind WeChat Account')}</DialogTitle>
+          <DialogTitle>{t('profile.actions.bindWeChatAccount')}</DialogTitle>
           <DialogDescription>
-            {t('Scan the QR code with WeChat to bind your account')}
+            {t('profile.tips.scanTheQrCodeWithWeChatToBind')}
           </DialogDescription>
         </DialogHeader>
 
@@ -57,7 +57,7 @@ export function WeChatBindDialog({
             <QrCode className='h-4 w-4' />
             <AlertDescription>
               {t(
-                'Please use WeChat\'s "Scan QR Code" feature to complete the binding process.'
+                'profile.tips.pleaseUseWeChatSScanQrCodeFeatureTo'
               )}
             </AlertDescription>
           </Alert>
@@ -65,15 +65,15 @@ export function WeChatBindDialog({
           <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-8'>
             <QrCode className='text-muted-foreground mb-3 h-16 w-16' />
             <p className='text-muted-foreground text-sm'>
-              {t('WeChat QR code will be displayed here')}
+              {t('profile.tips.chatQrCodeWillBeDisplayedHere')}
             </p>
             <p className='text-muted-foreground mt-2 text-xs'>
-              {t('This feature requires server-side WeChat configuration')}
+              {t('profile.tips.featureRequiresServerSideWeChatConfiguration')}
             </p>
           </div>
 
           <p className='text-muted-foreground text-center text-xs'>
-            {t('After scanning, the binding will complete automatically')}
+            {t('profile.tips.scanningTheBindingWillCompleteAutomatically')}
           </p>
         </div>
       </DialogContent>

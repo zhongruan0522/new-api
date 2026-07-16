@@ -125,7 +125,7 @@ function buildDetailSegments(
   t: (key: string, opts?: Record<string, unknown>) => string
 ): DetailSegment[] {
   if (log.type === 6) {
-    return [{ text: t('Async task refund') }]
+    return [{ text: t('usageLogs.fields.asyncTaskRefund') }]
   }
 
   if (log.type !== 2) return []
@@ -133,7 +133,7 @@ function buildDetailSegments(
   const isViolation = isViolationFeeLog(other)
   if (isViolation) {
     const segments: DetailSegment[] = []
-    segments.push({ text: t('Violation Fee'), danger: true })
+    segments.push({ text: t('usageLogs.fields.violationFee'), danger: true })
     if (other?.violation_fee_code) {
       segments.push({
         text: other.violation_fee_code,
@@ -141,7 +141,7 @@ function buildDetailSegments(
       })
     }
     segments.push({
-      text: `${t('Fee')}: ${formatLogQuota(other?.fee_quota ?? log.quota)}`,
+      text: `${t('usageLogs.fields.fee')}: ${formatLogQuota(other?.fee_quota ?? log.quota)}`,
       muted: true,
     })
     return segments
@@ -168,7 +168,7 @@ function buildDetailSegments(
         .filter((entry) => ['inputPrice', 'outputPrice'].includes(entry.field))
         .map((entry) => formatPriceCompact(entry.price))
       if (baseEntries.length > 0) {
-        const tierLabel = tieredSummary.tier.label || t('Default')
+        const tierLabel = tieredSummary.tier.label || t('common.fields.default')
         segments.push({
           text: `${tierLabel} · ${formatPriceList(baseEntries, true)}`,
         })
@@ -185,7 +185,7 @@ function buildDetailSegments(
         })
       if (cacheEntries.length > 0) {
         segments.push({
-          text: `${t('Cache')} ${formatPriceList(cacheEntries, false)}`,
+          text: `${t('pricing.fields.cache')} ${formatPriceList(cacheEntries, false)}`,
           muted: true,
         })
       }
@@ -210,7 +210,7 @@ function buildDetailSegments(
       }
     } else {
       segments.push({
-        text: `${t('Dynamic Pricing')} · ${t('No matching results')}`,
+        text: `${t('pricing.fields.dynamicPricing')} · ${t('channels.fields.noMatchingResults')}`,
         muted: true,
       })
     }
@@ -218,7 +218,7 @@ function buildDetailSegments(
     const isPerCall = isPerCallBilling(other.model_price)
     if (isPerCall) {
       segments.push({
-        text: `${t('Per-call')} · ${formatBillingCurrencyFromUSD(other.model_price!, priceOpts)}`,
+        text: `${t('models.fields.perCall')} · ${formatBillingCurrencyFromUSD(other.model_price!, priceOpts)}`,
       })
     } else if (other.model_ratio != null) {
       const inputPriceUSD = other.model_ratio * 2.0
@@ -229,7 +229,7 @@ function buildDetailSegments(
         )
       }
       segments.push({
-        text: `${t('Standard')} · ${formatPriceList(baseEntries, true)}`,
+        text: `${t('pricing.fields.standard')} · ${formatPriceList(baseEntries, true)}`,
       })
 
       if (hasAnyCacheTokens(other)) {
@@ -248,7 +248,7 @@ function buildDetailSegments(
 
         if (cacheEntries.length > 0) {
           segments.push({
-            text: `${t('Cache')} ${formatPriceList(cacheEntries, false)}`,
+            text: `${t('pricing.fields.cache')} ${formatPriceList(cacheEntries, false)}`,
             muted: true,
           })
         }
@@ -262,8 +262,8 @@ function buildDetailSegments(
         userGroupRatio !== -1
       const effectiveRatio = isUserGroup ? userGroupRatio : groupRatio
       const ratioLabel = isUserGroup
-        ? t('User Exclusive Ratio')
-        : t('Group Ratio')
+        ? t('usageLogs.fields.userExclusiveRatio')
+        : t('systemSettings.fields.groupRatio')
 
       if (effectiveRatio != null && Number.isFinite(effectiveRatio)) {
         segments.push({
@@ -275,7 +275,7 @@ function buildDetailSegments(
 
   if (other.is_system_prompt_overwritten) {
     segments.push({
-      text: t('System Prompt Override'),
+      text: t('usageLogs.titles.systemPromptOverride'),
       danger: true,
     })
   }
@@ -289,7 +289,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'created_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Time')} />
+        <DataTableColumnHeader column={column} title={t('auditLogs.fields.time')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -316,7 +316,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         return value.includes(String(row.original.type))
       },
       enableHiding: false,
-      meta: { label: t('Time') },
+      meta: { label: t('auditLogs.fields.time') },
     },
   ]
 
@@ -325,7 +325,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       {
         id: 'channel',
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('Channel')} />
+          <DataTableColumnHeader column={column} title={t('channels.fields.channel')} />
         ),
         cell: function ChannelCell({ row }) {
           const { sensitiveVisible, setAffinityTarget, setAffinityDialogOpen } =
@@ -398,17 +398,17 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     </p>
                     {channelChain && (
                       <p className='text-muted-foreground text-xs'>
-                        {t('Chain')}: {channelChain}
+                        {t('usageLogs.fields.chain')}: {channelChain}
                       </p>
                     )}
                     {affinity && (
                       <div className='border-t pt-1 text-xs'>
-                        <p className='font-medium'>{t('Channel Affinity')}</p>
+                        <p className='font-medium'>{t('systemSettings.fields.channelAffinity')}</p>
                         <p>
-                          {t('Rule')}: {affinity.rule_name || '-'}
+                          {t('systemSettings.fields.rule')}: {affinity.rule_name || '-'}
                         </p>
                         <p>
-                          {t('Group')}:{' '}
+                          {t('common.fields.group')}:{' '}
                           {sensitiveVisible
                             ? affinity.using_group ||
                               affinity.selected_group ||
@@ -423,12 +423,12 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             </TooltipProvider>
           )
         },
-        meta: { label: t('Channel'), mobileHidden: true },
+        meta: { label: t('channels.fields.channel'), mobileHidden: true },
       },
       {
         id: 'user',
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('User')} />
+          <DataTableColumnHeader column={column} title={t('systemSettings.fields.user')} />
         ),
         cell: function UserCell({ row }) {
           const { sensitiveVisible, setSelectedUserId, setUserInfoDialogOpen } =
@@ -479,7 +479,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             </button>
           )
         },
-        meta: { label: t('User'), mobileHidden: true },
+        meta: { label: t('systemSettings.fields.user'), mobileHidden: true },
       }
     )
   }
@@ -487,7 +487,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
   columns.push({
     accessorKey: 'token_name',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('Token')} />
+      <DataTableColumnHeader column={column} title={t('pricing.fields.token')} />
     ),
     cell: function TokenNameCell({ row }) {
       const { sensitiveVisible } = useUsageLogsContext()
@@ -537,7 +537,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         </div>
       )
     },
-    meta: { label: t('Token') },
+    meta: { label: t('pricing.fields.token') },
     size: 160,
   })
 
@@ -545,7 +545,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'model_name',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Model')} />
+        <DataTableColumnHeader column={column} title={t('common.fields.model')} />
       ),
       cell: function ModelCell({ row }) {
         const log = row.original
@@ -563,13 +563,13 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </div>
         )
       },
-      meta: { label: t('Model'), mobileTitle: true },
+      meta: { label: t('common.fields.model'), mobileTitle: true },
     },
 
     {
       accessorKey: 'use_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Timing')} />
+        <DataTableColumnHeader column={column} title={t('usageLogs.fields.timing')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -623,7 +623,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             </div>
             <div className='flex items-center gap-1 text-[11px]'>
               <span className='text-muted-foreground/60'>
-                {log.is_stream ? t('Stream') : t('Non-stream')}
+                {log.is_stream ? t('keyQuery.fields.stream') : t('keyQuery.fields.nonStream')}
               </span>
               {log.is_stream && speed != null && speedVariant && (
                 <StatusBadge
@@ -645,12 +645,12 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                       <TooltipContent>
                         <div className='space-y-0.5 text-xs'>
                           <p>
-                            {t('Stream Status')}: {t('Error')}
+                            {t('usageLogs.fields.streamStatus')}: {t('common.errors.error')}
                           </p>
                           <p>{other.stream_status.end_reason || 'unknown'}</p>
                           {(other.stream_status.error_count ?? 0) > 0 && (
                             <p>
-                              {t('Soft Errors')}:{' '}
+                              {t('usageLogs.fields.softErrors')}:{' '}
                               {other.stream_status.error_count}
                             </p>
                           )}
@@ -663,13 +663,13 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </div>
         )
       },
-      meta: { label: t('Timing'), mobileHidden: true },
+      meta: { label: t('usageLogs.fields.timing'), mobileHidden: true },
     },
 
     {
       accessorKey: 'prompt_tokens',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Tokens')} />
+        <DataTableColumnHeader column={column} title={t('rankings.fields.tokens')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -702,7 +702,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               <div className='flex items-center gap-1 text-[11px]'>
                 {cacheReadTokens > 0 && (
                   <span className='text-muted-foreground/60'>
-                    {t('Cache')}↓ {cacheReadTokens.toLocaleString()}
+                    {t('pricing.fields.cache')}↓ {cacheReadTokens.toLocaleString()}
                   </span>
                 )}
                 {cacheWriteTokens > 0 && (
@@ -715,13 +715,13 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </div>
         )
       },
-      meta: { label: 'Tokens', mobileHidden: true },
+      meta: { label: 'rankings.fields.tokens', mobileHidden: true },
     },
 
     {
       accessorKey: 'quota',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Cost')} />
+        <DataTableColumnHeader column={column} title={t('keyQuery.fields.cost')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -738,7 +738,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                 <TooltipTrigger
                   render={
                     <StatusBadge
-                      label={t('Subscription')}
+                      label={t('usageLogs.fields.subscription')}
                       variant='success'
                       size='sm'
                       copyable={false}
@@ -748,7 +748,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                 />
                 <TooltipContent>
                   <span>
-                    {t('Deducted by subscription')}: {formatLogQuota(quota)}
+                    {t('usageLogs.fields.deductedBySubscription')}: {formatLogQuota(quota)}
                   </span>
                 </TooltipContent>
               </Tooltip>
@@ -766,12 +766,12 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </div>
         )
       },
-      meta: { label: t('Cost') },
+      meta: { label: t('keyQuery.fields.cost') },
     },
 
     {
       accessorKey: 'content',
-      header: t('Details'),
+      header: t('auditLogs.titles.details'),
       cell: function DetailsCell({ row }) {
         const [dialogOpen, setDialogOpen] = useState(false)
         const { detailsEnabled } = useUsageLogFieldVisibility()
@@ -789,7 +789,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                 type='button'
                 className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
                 onClick={() => setDialogOpen(true)}
-                title={t('Click to view full details')}
+                title={t('usageLogs.titles.clickToViewFullDetails')}
               >
                 {primary ? (
                   <span
@@ -829,7 +829,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </>
         )
       },
-      meta: { label: t('Details') },
+      meta: { label: t('auditLogs.titles.details') },
       size: 180,
       maxSize: 200,
     }

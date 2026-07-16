@@ -107,7 +107,7 @@ export function CheckinSettingsSection({
     }
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -119,7 +119,7 @@ export function CheckinSettingsSection({
   }
 
   return (
-    <SettingsSection title={t('Check-in Settings')}>
+    <SettingsSection title={t('systemSettings.titles.checkInSettings')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)} autoComplete='off'>
           <SettingsPageFormActions
@@ -136,10 +136,10 @@ export function CheckinSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable check-in feature')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableCheckInFeature')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Allow users to check in daily for random quota rewards'
+                      'systemSettings.tips.allowUsersToCheckInDailyForRandomQuota'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -161,20 +161,20 @@ export function CheckinSettingsSection({
                 name='minQuota'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Minimum check-in quota')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.minimumCheckInQuota')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
                         min={0}
                         step='any'
-                        placeholder={t('1000')}
+                        placeholder={t('systemSettings.placeholders.value1000')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Minimum quota amount awarded for check-in')}
+                      {t('systemSettings.tips.minimumQuotaAmountAwardedForCheckIn')}
                       {' · '}
-                      {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                      {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -186,20 +186,20 @@ export function CheckinSettingsSection({
                 name='maxQuota'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Maximum check-in quota')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.maximumCheckInQuota')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
                         min={0}
                         step='any'
-                        placeholder={t('10000')}
+                        placeholder={t('systemSettings.placeholders.value10000')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Maximum quota amount awarded for check-in')}
+                      {t('systemSettings.tips.maximumQuotaAmountAwardedForCheckIn')}
                       {' · '}
-                      {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                      {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

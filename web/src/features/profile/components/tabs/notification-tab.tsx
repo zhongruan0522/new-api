@@ -96,13 +96,13 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       const response = await updateUserSettings(settings)
 
       if (response.success) {
-        toast.success(t('Settings updated successfully'))
+        toast.success(t('channels.status.settingsUpdatedSuccessfully'))
         onUpdate()
       } else {
-        toast.error(response.message || t('Failed to update settings'))
+        toast.error(response.message || t('profile.errors.failedToUpdateSettings'))
       }
     } catch (_error) {
-      toast.error(t('Failed to update settings'))
+      toast.error(t('profile.errors.failedToUpdateSettings'))
     } finally {
       setLoading(false)
     }
@@ -112,7 +112,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
     <div className='space-y-4 sm:space-y-6'>
       {/* Notification Type */}
       <div className='space-y-2.5'>
-        <Label>{t('Notification Method')}</Label>
+        <Label>{t('profile.fields.notificationMethod')}</Label>
         <RadioGroup
           value={settings.notify_type}
           onValueChange={(value) =>
@@ -150,7 +150,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
 
       {/* Warning Threshold */}
       <div className='space-y-1.5'>
-        <Label htmlFor='threshold'>{t('Quota Warning Threshold')}</Label>
+        <Label htmlFor='threshold'>{t('profile.tips.quotaWarningThreshold')}</Label>
         <Input
           id='threshold'
           type='number'
@@ -159,24 +159,24 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
           onChange={(e) =>
             updateField('quota_warning_threshold', Number(e.target.value))
           }
-          placeholder={t('Enter threshold')}
+          placeholder={t('profile.placeholders.enterThreshold')}
         />
         <p className='text-muted-foreground text-xs'>
-          {t('Get notified when balance falls below this value')}
+          {t('profile.tips.getNotifiedWhenBalanceFallsBelowThisValue')}
         </p>
       </div>
 
       {/* Email Settings */}
       {settings.notify_type === 'email' && (
         <div className='space-y-1.5'>
-          <Label htmlFor='notifyEmail'>{t('Notification Email')}</Label>
+          <Label htmlFor='notifyEmail'>{t('profile.fields.notificationEmail')}</Label>
           <Input
             id='notifyEmail'
             type='email'
             className='h-9'
             value={settings.notification_email}
             onChange={(e) => updateField('notification_email', e.target.value)}
-            placeholder={t('Leave empty to use account email')}
+            placeholder={t('profile.tips.leaveEmptyToUseAccountEmail')}
           />
         </div>
       )}
@@ -185,23 +185,23 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {settings.notify_type === 'webhook' && (
         <>
           <div className='space-y-1.5'>
-            <Label htmlFor='webhookUrl'>{t('Webhook URL')}</Label>
+            <Label htmlFor='webhookUrl'>{t('profile.fields.webhookUrl')}</Label>
             <Input
               id='webhookUrl'
               type='url'
               className='h-9'
               value={settings.webhook_url}
               onChange={(e) => updateField('webhook_url', e.target.value)}
-              placeholder={t('https://example.com/webhook')}
+              placeholder={t('profile.placeholders.urlExampleComWebhook')}
             />
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='webhookSecret'>{t('Webhook Secret')}</Label>
+            <Label htmlFor='webhookSecret'>{t('profile.fields.webhookSecret')}</Label>
             <PasswordInput
               id='webhookSecret'
               value={settings.webhook_secret}
               onChange={(e) => updateField('webhook_secret', e.target.value)}
-              placeholder={t('Enter secret key')}
+              placeholder={t('profile.placeholders.enterSecretKey')}
             />
           </div>
         </>
@@ -210,17 +210,17 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {/* Bark Settings */}
       {settings.notify_type === 'bark' && (
         <div className='space-y-1.5'>
-          <Label htmlFor='barkUrl'>{t('Bark Push URL')}</Label>
+          <Label htmlFor='barkUrl'>{t('profile.fields.barkPushUrl')}</Label>
           <Input
             id='barkUrl'
             type='url'
             className='h-9'
             value={settings.bark_url}
             onChange={(e) => updateField('bark_url', e.target.value)}
-            placeholder={t('https://api.day.app/yourkey/{{title}}/{{content}}')}
+            placeholder={t('profile.placeholders.urlApiDayAppYourkeyTitleContent')}
           />
           <p className='text-muted-foreground text-xs'>
-            {t('Template variables:')} {'{{title}}'}, {'{{content}}'}
+            {t('profile.fields.templateVariables')} {'{{title}}'}, {'{{content}}'}
           </p>
         </div>
       )}
@@ -229,33 +229,33 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {settings.notify_type === 'gotify' && (
         <>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyUrl'>{t('Gotify Server URL')}</Label>
+            <Label htmlFor='gotifyUrl'>{t('profile.fields.gotifyServerUrl')}</Label>
             <Input
               id='gotifyUrl'
               type='url'
               className='h-9'
               value={settings.gotify_url}
               onChange={(e) => updateField('gotify_url', e.target.value)}
-              placeholder={t('https://gotify.example.com')}
+              placeholder={t('profile.placeholders.urlGotifyExampleCom')}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('Enter the full URL of your Gotify server')}
+              {t('profile.placeholders.enterTheFullUrlOfYourGotifyServer')}
             </p>
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyToken'>{t('Gotify Application Token')}</Label>
+            <Label htmlFor='gotifyToken'>{t('profile.fields.gotifyApplicationToken')}</Label>
             <PasswordInput
               id='gotifyToken'
               value={settings.gotify_token}
               onChange={(e) => updateField('gotify_token', e.target.value)}
-              placeholder={t('Enter application token')}
+              placeholder={t('profile.placeholders.enterApplicationToken')}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('Token obtained from your Gotify application')}
+              {t('profile.tips.tokenObtainedFromYourGotifyApplication')}
             </p>
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyPriority'>{t('Message Priority')}</Label>
+            <Label htmlFor='gotifyPriority'>{t('profile.fields.messagePriority')}</Label>
             <Input
               id='gotifyPriority'
               type='number'
@@ -270,28 +270,28 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             />
             <p className='text-muted-foreground text-xs'>
               {t(
-                'Priority level from 0 (lowest) to 10 (highest), default is 5'
+                'profile.tips.priorityLevelFrom0LowestTo10HighestDefault'
               )}
             </p>
           </div>
           <div className='bg-muted/50 rounded-lg border p-3 sm:p-4'>
             <h5 className='mb-1.5 text-sm font-medium sm:mb-2'>
-              {t('Setup Instructions')}
+              {t('profile.titles.setupInstructions')}
             </h5>
             <ol className='text-muted-foreground space-y-1 text-xs'>
-              <li>{t('1. Create an application in your Gotify server')}</li>
-              <li>{t('2. Copy the application token')}</li>
-              <li>{t('3. Enter your Gotify server URL and token above')}</li>
+              <li>{t('profile.placeholders.value1CreateAnApplicationInYourGotifyServer')}</li>
+              <li>{t('profile.placeholders.value2CopyTheApplicationToken')}</li>
+              <li>{t('profile.placeholders.value3EnterYourGotifyServerUrlAndToken')}</li>
             </ol>
             <p className='text-muted-foreground mt-3 text-xs'>
-              {t('labelWithColon', { label: t('Learn more') })}{' '}
+              {t('channels.fields.labelWithColon', { label: t('common.fields.learnMore') })}{' '}
               <a
                 href='https://gotify.net/'
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-primary hover:underline'
               >
-                {t('Gotify Documentation')}
+                {t('profile.fields.gotifyDocumentation')}
               </a>
             </p>
           </div>
@@ -302,7 +302,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       <div className='flex justify-end'>
         <Button onClick={handleSave} disabled={loading}>
           {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-          {loading ? t('Saving...') : t('Save Settings')}
+          {loading ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
         </Button>
       </div>
     </div>

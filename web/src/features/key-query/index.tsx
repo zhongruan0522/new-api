@@ -58,10 +58,10 @@ function isApiCallLog(record: TokenLog) {
 }
 
 function getLogTypeLabel(type: number) {
-  if (type === LOG_TYPE_CONSUME) return 'Consume'
-  if (type === LOG_TYPE_ERROR) return 'Error'
-  if (type === LOG_TYPE_REFUND) return 'Refund'
-  return 'Other'
+  if (type === LOG_TYPE_CONSUME) return 'common.fields.consume'
+  if (type === LOG_TYPE_ERROR) return 'common.errors.error'
+  if (type === LOG_TYPE_REFUND) return 'common.fields.refund'
+  return 'common.fields.other'
 }
 
 function getLogTypeVariant(type: number) {
@@ -157,21 +157,21 @@ export function KeyQuery() {
         ? formatCurrencyUSD(balance - usage)
         : '-'
     const summary = [
-      `${t('Total Quota')}: ${
-        isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
+      `${t('dashboard.fields.totalQuota')}: ${
+        isUnlimited ? t('keyQuery.fields.unlimited') : formatCurrencyUSD(balance)
       }`,
-      `${t('Used quota')}: ${usage == null ? '-' : formatCurrencyUSD(usage)}`,
-      `${t('labelWithColon', { label: t('Remaining Quota') })} ${isUnlimited ? t('Unlimited') : remaining}`,
-      `${t('Expiration Time')}: ${
-        expiredTime === 0 ? t('Never') : formatTimestampToDate(expiredTime ?? 0)
+      `${t('keyQuery.status.usedQuota')}: ${usage == null ? '-' : formatCurrencyUSD(usage)}`,
+      `${t('channels.fields.labelWithColon', { label: t('keyQuery.fields.remainingQuota') })} ${isUnlimited ? t('keyQuery.fields.unlimited') : remaining}`,
+      `${t('keyQuery.fields.expirationTime')}: ${
+        expiredTime === 0 ? t('keyQuery.fields.never') : formatTimestampToDate(expiredTime ?? 0)
       }`,
     ].join('\n')
 
     try {
       await copyToClipboard(summary)
-      toast.success(t('Copied'))
+      toast.success(t('common.status.copied'))
     } catch {
-      toast.error(t('Copy failed'))
+      toast.error(t('keyQuery.actions.copyFailed'))
     }
   }
 
@@ -213,10 +213,10 @@ export function KeyQuery() {
         <main className='relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col gap-4 px-3 pt-20 pb-8 sm:px-6 sm:pt-24 lg:px-8'>
           <header className='space-y-2'>
             <h1 className='text-2xl font-bold tracking-tight'>
-              {t('Key Usage Query')}
+              {t('keyQuery.titles.usageQuery')}
             </h1>
             <p className='text-muted-foreground max-w-2xl text-sm'>
-              {t('Query balance, recent usage, and token logs by API key.')}
+              {t('keyQuery.tips.queryBalanceRecentUsageAndTokenLogsByApi')}
             </p>
           </header>
 
@@ -239,7 +239,7 @@ export function KeyQuery() {
                 disabled={queryMutation.isPending}
                 className='sm:w-28'
               >
-                {queryMutation.isPending ? t('Querying...') : t('Query')}
+                {queryMutation.isPending ? t('channels.tips.querying') : t('keyQuery.titles.query')}
               </Button>
             </CardContent>
           </Card>
@@ -249,48 +249,48 @@ export function KeyQuery() {
               <Card size='sm'>
                 <CardHeader className='border-b'>
                   <div className='flex items-center justify-between gap-3'>
-                    <CardTitle>{t('Key Information')}</CardTitle>
+                    <CardTitle>{t('keyQuery.titles.information')}</CardTitle>
                     <Button variant='outline' onClick={copySummary}>
                       <Copy />
-                      {t('Copy')}
+                      {t('channels.actions.copy')}
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
                   <StatBlock
-                    label={t('Total Quota')}
+                    label={t('dashboard.fields.totalQuota')}
                     value={
-                      isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
+                      isUnlimited ? t('keyQuery.fields.unlimited') : formatCurrencyUSD(balance)
                     }
                   />
                   <StatBlock
-                    label={t('Used quota')}
+                    label={t('keyQuery.status.usedQuota')}
                     value={usage == null ? '-' : formatCurrencyUSD(usage)}
                   />
                   <StatBlock
-                    label={t('Remaining Quota')}
+                    label={t('keyQuery.fields.remainingQuota')}
                     value={
                       isUnlimited
-                        ? t('Unlimited')
+                        ? t('keyQuery.fields.unlimited')
                         : balance == null || usage == null
                           ? '-'
                           : formatCurrencyUSD(balance - usage)
                     }
                   />
                   <StatBlock
-                    label={t('Expiration Time')}
+                    label={t('keyQuery.fields.expirationTime')}
                     value={
                       expiredTime === 0
-                        ? t('Never')
+                        ? t('keyQuery.fields.never')
                         : formatTimestampToDate(expiredTime ?? 0)
                     }
                   />
                   <StatBlock
-                    label={t('Recent log cost')}
+                    label={t('keyQuery.fields.recentLogCost')}
                     value={formatLogQuota(totalLogQuota)}
                   />
                   <StatBlock
-                    label={t('Recent calls')}
+                    label={t('keyQuery.fields.recentCalls')}
                     value={`${logs.length}`}
                   />
                 </CardContent>
@@ -299,14 +299,14 @@ export function KeyQuery() {
               <Card size='sm'>
                 <CardHeader className='border-b'>
                   <div className='flex items-center justify-between gap-3'>
-                    <CardTitle>{t('Call Details')}</CardTitle>
+                    <CardTitle>{t('keyQuery.titles.callDetails')}</CardTitle>
                     <Button
                       variant='outline'
                       onClick={exportLogs}
                       disabled={logs.length === 0}
                     >
                       <Download />
-                      {t('Export CSV')}
+                      {t('keyQuery.actions.exportCsv')}
                     </Button>
                   </div>
                 </CardHeader>
@@ -314,20 +314,20 @@ export function KeyQuery() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('Time')}</TableHead>
-                        <TableHead>{t('Type')}</TableHead>
-                        <TableHead>{t('Model')}</TableHead>
-                        <TableHead>{t('Duration')}</TableHead>
-                        <TableHead>{t('Prompt')}</TableHead>
-                        <TableHead>{t('Completion')}</TableHead>
-                        <TableHead>{t('Cost')}</TableHead>
+                        <TableHead>{t('auditLogs.fields.time')}</TableHead>
+                        <TableHead>{t('channels.fields.type')}</TableHead>
+                        <TableHead>{t('common.fields.model')}</TableHead>
+                        <TableHead>{t('keyQuery.fields.duration')}</TableHead>
+                        <TableHead>{t('keyQuery.fields.prompt')}</TableHead>
+                        <TableHead>{t('keyQuery.fields.completion')}</TableHead>
+                        <TableHead>{t('keyQuery.fields.cost')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {logs.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className='h-24 text-center'>
-                            {t('No token logs')}
+                            {t('keyQuery.titles.noTokenLogs')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -357,8 +357,8 @@ export function KeyQuery() {
                               {isApiCallLog(log) && (
                                 <Badge variant='secondary' className='ml-2'>
                                   {log.is_stream
-                                    ? t('Stream')
-                                    : t('Non-stream')}
+                                    ? t('keyQuery.fields.stream')
+                                    : t('keyQuery.fields.nonStream')}
                                 </Badge>
                               )}
                             </TableCell>

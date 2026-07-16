@@ -149,7 +149,7 @@ export function FAQSection({ data }: FAQSectionProps) {
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) {
-      toast.error(t('Please select items to delete'))
+      toast.error(t('systemSettings.errors.pleaseSelectItemsToDelete'))
       return
     }
     setDeleteTarget('batch')
@@ -160,7 +160,7 @@ export function FAQSection({ data }: FAQSectionProps) {
     if (deleteTarget === 'single' && editingFaq) {
       setFaqList((prev) => prev.filter((item) => item.id !== editingFaq.id))
       setHasChanges(true)
-      toast.success(t('FAQ deleted. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.faqDeletedClickSaveSettingsToApply'))
     } else if (deleteTarget === 'batch') {
       setFaqList((prev) =>
         prev.filter((item) => !selectedIds.includes(item.id))
@@ -168,7 +168,7 @@ export function FAQSection({ data }: FAQSectionProps) {
       setSelectedIds([])
       setHasChanges(true)
       toast.success(
-        t('{{count}} FAQs deleted. Click "Save Settings" to apply.', {
+        t('systemSettings.status.countFaqsDeletedClickSaveSettingsToApply', {
           count: selectedIds.length,
         })
       )
@@ -184,11 +184,11 @@ export function FAQSection({ data }: FAQSectionProps) {
           item.id === editingFaq.id ? { ...item, ...values } : item
         )
       )
-      toast.success(t('FAQ updated. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.faqUpdatedClickSaveSettingsToApply'))
     } else {
       const newId = Math.max(...faqList.map((item) => item.id), 0) + 1
       setFaqList((prev) => [...prev, { id: newId, ...values }])
-      toast.success(t('FAQ added. Click "Save Settings" to apply.'))
+      toast.success(t('common.tips.faqAddedClickSaveSettingsToApply'))
     }
     setHasChanges(true)
     setShowDialog(false)
@@ -201,9 +201,9 @@ export function FAQSection({ data }: FAQSectionProps) {
         value: JSON.stringify(faqList),
       })
       setHasChanges(false)
-      toast.success(t('FAQ saved successfully'))
+      toast.success(t('systemSettings.status.faqSavedSuccessfully'))
     } catch {
-      toast.error(t('Failed to save FAQ'))
+      toast.error(t('systemSettings.errors.failedToSaveFaq'))
     }
   }
 
@@ -218,13 +218,13 @@ export function FAQSection({ data }: FAQSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('FAQ')}>
+    <SettingsSection title={t('dashboard.fields.faq')}>
       <div className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div className='flex flex-wrap items-center gap-2'>
             <Button onClick={handleAdd} size='sm'>
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add FAQ')}
+              {t('systemSettings.actions.addFaq')}
             </Button>
             <Button
               onClick={handleBatchDelete}
@@ -233,7 +233,7 @@ export function FAQSection({ data }: FAQSectionProps) {
               disabled={selectedIds.length === 0}
             >
               <Trash2 className='mr-2 h-4 w-4' />
-              {t('Delete (')}
+              {t('systemSettings.actions.delete')}
               {selectedIds.length})
             </Button>
             <Button
@@ -243,7 +243,7 @@ export function FAQSection({ data }: FAQSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('Saving...') : t('Save Settings')}
+              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -261,16 +261,16 @@ export function FAQSection({ data }: FAQSectionProps) {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>{t('Question')}</TableHead>
-                <TableHead>{t('Answer')}</TableHead>
-                <TableHead className='w-32'>{t('Actions')}</TableHead>
+                <TableHead>{t('systemSettings.fields.question')}</TableHead>
+                <TableHead>{t('systemSettings.fields.answer')}</TableHead>
+                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {faqList.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className='h-24 text-center'>
-                    {t('No FAQ entries yet. Click "Add FAQ" to create one.')}
+                    {t('common.tips.noFaqEntriesYetClickAddFaqToCreate')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -326,10 +326,10 @@ export function FAQSection({ data }: FAQSectionProps) {
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>
-              {editingFaq ? t('Edit FAQ') : t('Add FAQ')}
+              {editingFaq ? t('systemSettings.actions.editFaq') : t('systemSettings.actions.addFaq')}
             </DialogTitle>
             <DialogDescription>
-              {t('Create or update frequently asked questions for users')}
+              {t('systemSettings.actions.createOrUpdateFrequentlyAskedQuestionsForUsers')}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -342,15 +342,15 @@ export function FAQSection({ data }: FAQSectionProps) {
                 name='question'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Question')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.question')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('How to reset my quota?')}
+                        placeholder={t('systemSettings.tips.howToResetMyQuota')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Maximum 200 characters')}
+                      {t('systemSettings.fields.maximum200Characters')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -361,11 +361,11 @@ export function FAQSection({ data }: FAQSectionProps) {
                 name='answer'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Answer')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.answer')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          'Visit Settings → General and adjust quota options...'
+                          'systemSettings.actions.visitSettingsGeneralAndAdjustQuotaOptions'
                         )}
                         rows={8}
                         {...field}
@@ -373,7 +373,7 @@ export function FAQSection({ data }: FAQSectionProps) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Maximum 1000 characters. Supports Markdown and HTML.'
+                        'systemSettings.tips.maximum1000CharactersSupportsMarkdownAndHtml'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -386,10 +386,10 @@ export function FAQSection({ data }: FAQSectionProps) {
                   variant='outline'
                   onClick={() => setShowDialog(false)}
                 >
-                  {t('Cancel')}
+                  {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingFaq ? t('Update') : t('Add')}
+                  {editingFaq ? t('channels.fields.update') : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>
@@ -400,19 +400,19 @@ export function FAQSection({ data }: FAQSectionProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Are you sure?')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('keys.tips.sure')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget === 'single'
-                ? t('This FAQ entry will be removed from the list.')
-                : t('{{count}} FAQ entries will be removed from the list.', {
+                ? t('systemSettings.status.faqEntryWillBeRemovedFromTheList')
+                : t('systemSettings.status.countFaqEntriesWillBeRemovedFromTheList', {
                     count: selectedIds.length,
                   })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

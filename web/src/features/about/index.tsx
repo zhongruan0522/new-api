@@ -48,23 +48,23 @@ function EmptyAboutState() {
           <Construction className='text-muted-foreground h-24 w-24' />
         </div>
         <div className='space-y-2'>
-          <h2 className='text-2xl font-bold'>{t('No About Content Set')}</h2>
+          <h2 className='text-2xl font-bold'>{t('about.titles.noAboutContentSet')}</h2>
           <p className='text-muted-foreground'>
             {t(
-              'The administrator has not configured any about content yet. You can set it in the settings page, supporting HTML or URL.'
+              'about.tips.administratorHasNotConfiguredAnyAboutContentYetYou'
             )}
           </p>
         </div>
         <div className='space-y-4 text-sm'>
           <p>
-            {t('New API Project Repository:')}{' '}
+            {t('about.fields.newApiProjectRepository')}{' '}
             <a
               href='https://github.com/zhongruan0522/new-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('https://github.com/zhongruan0522/new-api')}
+              {t('about.placeholders.urlGithubComZhongruan0522NewApi')}
             </a>
           </p>
           <p className='text-muted-foreground'>
@@ -74,7 +74,7 @@ function EmptyAboutState() {
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('NewAPI')}
+              {t('about.fields.newApi')}
             </a>{' '}
             © {currentYear}{' '}
             <a
@@ -83,16 +83,16 @@ function EmptyAboutState() {
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('QuantumNous')}
+              {t('about.fields.quantumNous')}
             </a>{' '}
-            {t('| Based on')}{' '}
+            {t('about.fields.basedOn')}{' '}
             <a
               href='https://github.com/songquanpeng/one-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('One API')}
+              {t('about.fields.oneApi')}
             </a>{' '}
             © 2023{' '}
             <a
@@ -101,18 +101,18 @@ function EmptyAboutState() {
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('JustSong')}
+              {t('about.fields.justSong')}
             </a>
           </p>
           <p className='text-muted-foreground'>
-            {t('This project must be used in compliance with the')}{' '}
+            {t('about.errors.projectMustBeUsedInComplianceWithThe')}{' '}
             <a
               href='https://github.com/zhongruan0522/new-api/blob/main/LICENSE'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('AGPL v3.0 License')}
+              {t('about.tips.agplV30License')}
             </a>
             .
           </p>
@@ -161,7 +161,7 @@ export function About() {
         <iframe
           src={rawContent}
           className='h-[calc(100vh-3.5rem)] w-full border-0'
-          title={t('About')}
+          title={t('about.titles.value')}
         />
       </PublicLayout>
     )

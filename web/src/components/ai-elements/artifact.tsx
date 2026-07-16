@@ -79,7 +79,7 @@ export const ArtifactClose = ({
       {...props}
     >
       {children ?? <XIcon className='size-4' />}
-      <span className='sr-only'>{t('Close')}</span>
+      <span className='sr-only'>{t('common.actions.close')}</span>
     </Button>
   )
 }

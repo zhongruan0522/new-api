@@ -206,7 +206,7 @@ export function MonitoringSettingsSection({
     ).filter((key) => normalized[key] !== baselineRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -222,7 +222,7 @@ export function MonitoringSettingsSection({
   }
 
   return (
-    <SettingsSection title={t('Monitoring & Alerts')}>
+    <SettingsSection title={t('systemSettings.fields.monitoringAlerts')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -239,9 +239,9 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Scheduled channel tests')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.scheduledChannelTests')}</FormLabel>
                     <FormDescription>
-                      {t('Automatically probe all channels in the background')}
+                      {t('systemSettings.tips.automaticallyProbeAllChannelsInTheBackground')}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -259,7 +259,7 @@ export function MonitoringSettingsSection({
               name='monitor_setting.auto_test_channel_minutes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Test interval (minutes)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.testIntervalMinutes')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -280,7 +280,7 @@ export function MonitoringSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('How frequently the system tests all channels')}
+                    {t('systemSettings.tips.howFrequentlyTheSystemTestsAllChannels')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -294,7 +294,7 @@ export function MonitoringSettingsSection({
               name='ChannelDisableThreshold'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Disable threshold (seconds)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.disableThresholdSeconds')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -306,7 +306,7 @@ export function MonitoringSettingsSection({
                   </FormControl>
                   <FormDescription>
                     {t(
-                      'Automatically disable channels exceeding this response time'
+                      'systemSettings.tips.automaticallyDisableChannelsExceedingThisResponseTime'
                     )}
                   </FormDescription>
                   <FormMessage />
@@ -319,7 +319,7 @@ export function MonitoringSettingsSection({
               name='QuotaRemindThreshold'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Default quota reminder threshold')}</FormLabel>
+                  <FormLabel>{t('systemSettings.tips.defaultQuotaReminderThreshold')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -331,7 +331,7 @@ export function MonitoringSettingsSection({
                   </FormControl>
                   <FormDescription>
                     {t(
-                      'Default reminder threshold in backend quota units (tokens). Users can override it in their personal settings.'
+                      'systemSettings.tips.defaultReminderThresholdInBackendQuotaUnitsTokensUsers'
                     )}
                   </FormDescription>
                   <FormMessage />
@@ -347,9 +347,9 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Disable on failure')}</FormLabel>
+                    <FormLabel>{t('systemSettings.actions.disableOnFailure')}</FormLabel>
                     <FormDescription>
-                      {t('Automatically disable channels when tests fail')}
+                      {t('systemSettings.tips.automaticallyDisableChannelsWhenTestsFail')}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -368,9 +368,9 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Re-enable on success')}</FormLabel>
+                    <FormLabel>{t('systemSettings.status.reEnableOnSuccess')}</FormLabel>
                     <FormDescription>
-                      {t('Bring channels back online after successful checks')}
+                      {t('systemSettings.status.bringChannelsBackOnlineAfterSuccessfulChecks')}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -389,18 +389,18 @@ export function MonitoringSettingsSection({
             name='AutomaticDisableKeywords'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Failure keywords')}</FormLabel>
+                <FormLabel>{t('systemSettings.errors.failureKeywords')}</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={6}
-                    placeholder={t('one keyword per line')}
+                    placeholder={t('systemSettings.placeholders.oneKeywordPerLine')}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'If an upstream error contains any of these keywords (case insensitive), the channel will be disabled automatically.'
+                    'systemSettings.status.ifAnUpstreamErrorContainsAnyOfTheseKeywords'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -413,23 +413,23 @@ export function MonitoringSettingsSection({
             name='AutomaticDisableStatusCodes'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Auto-disable status codes')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.autoDisableStatusCodes')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('e.g. 401, 403, 429, 500-599')}
+                    placeholder={t('systemSettings.placeholders.eG401403429500599')}
                     value={field.value}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Accepts comma-separated status codes and inclusive ranges.'
+                    'systemSettings.tips.acceptsCommaSeparatedStatusCodesAndInclusiveRanges'
                   )}{' '}
                   {autoDisableParsed.ok &&
                     autoDisableParsed.normalized &&
                     autoDisableParsed.normalized !== field.value.trim() && (
                       <span className='text-muted-foreground'>
-                        {t('Normalized:')} {autoDisableParsed.normalized}
+                        {t('systemSettings.fields.normalized')} {autoDisableParsed.normalized}
                       </span>
                     )}
                 </FormDescription>

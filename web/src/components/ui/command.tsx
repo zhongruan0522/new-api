@@ -64,8 +64,8 @@ function CommandDialog({
   children: React.ReactNode
 }) {
   const { t } = useTranslation()
-  const resolvedTitle = title ?? t('Command Palette')
-  const resolvedDescription = description ?? t('Type a command or search...')
+  const resolvedTitle = title ?? t('common.fields.commandPalette')
+  const resolvedDescription = description ?? t('common.tips.typeACommandOrSearch')
 
   return (
     <Dialog {...props}>

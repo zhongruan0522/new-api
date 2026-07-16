@@ -175,7 +175,7 @@ export const BranchPrevious = ({
 
   return (
     <Button
-      aria-label={t('Previous branch')}
+      aria-label={t('common.fields.previousBranch')}
       className={cn(
         'text-muted-foreground size-7 shrink-0 transition-colors',
         'hover:bg-accent hover:text-foreground',
@@ -206,7 +206,7 @@ export const BranchNext = ({
 
   return (
     <Button
-      aria-label={t('Next branch')}
+      aria-label={t('common.fields.nextBranch')}
       className={cn(
         'text-muted-foreground size-7 shrink-0 transition-colors',
         'hover:bg-accent hover:text-foreground',
@@ -239,7 +239,7 @@ export const BranchPage = ({ className, ...props }: BranchPageProps) => {
       )}
       {...props}
     >
-      {currentBranch + 1} {t('of')} {totalBranches}
+      {currentBranch + 1} {t('common.fields.valuede04fa')} {totalBranches}
     </span>
   )
 }

@@ -198,68 +198,41 @@ func AddToken(c *gin.Context) {
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期天数必须大于等于1",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期总额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	default:
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的限额类型",
-		})
+		common.ApiErrorI18n(c, i18n.MsgTokenInvalidQuotaType)
 		return
 	}
 
@@ -379,61 +352,37 @@ func UpdateToken(c *gin.Context) {
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期天数必须大于等于1",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期总额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	}

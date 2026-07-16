@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
@@ -68,8 +70,5 @@ func ResetModelRatio(c *gin.Context) {
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置模型倍率", nil, nil)
-	c.JSON(200, gin.H{
-		"success": true,
-		"message": "重置模型倍率成功",
-	})
+	common.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
 }

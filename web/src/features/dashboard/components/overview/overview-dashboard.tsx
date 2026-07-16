@@ -304,12 +304,12 @@ function RequestPreview(props: {
           </span>
           <div className='min-w-0'>
             <div className='truncate text-sm font-medium'>
-              {t('First API request')}
+              {t('dashboard.fields.firstApiRequest')}
             </div>
             <div className='text-muted-foreground truncate text-xs'>
               {props.example.ready
                 ? props.example.keyName
-                : t('Create an API key to unlock the real request')}
+                : t('dashboard.actions.createAnApiKeyToUnlockTheRealRequest')}
             </div>
           </div>
         </div>
@@ -319,15 +319,15 @@ function RequestPreview(props: {
             variant='outline'
             size='sm'
             className='h-7 gap-1.5 px-2 text-xs'
-            tooltip={t('Copy ready-to-run curl')}
-            successTooltip={t('Copied!')}
-            aria-label={t('Copy ready-to-run curl')}
+            tooltip={t('dashboard.actions.copyReadyToRunCurl')}
+            successTooltip={t('common.status.copiedb7c3ca')}
+            aria-label={t('dashboard.actions.copyReadyToRunCurl')}
           >
-            {t('Copy')}
+            {t('channels.actions.copy')}
           </CopyButton>
         ) : (
           <Button size='sm' variant='outline' render={<Link to='/keys' />}>
-            {t('Create API Key')}
+            {t('dashboard.actions.createApiKey')}
           </Button>
         )}
       </div>
@@ -476,22 +476,22 @@ export function OverviewDashboard() {
   const startSteps = useMemo<StartStep[]>(
     () => [
       {
-        title: t('Create API Key'),
-        description: t('Create a key for your app or service'),
+        title: t('dashboard.actions.createApiKey'),
+        description: t('dashboard.actions.createAKeyForYourAppOrService'),
         to: '/keys',
         icon: KeyRound,
         completed: Boolean(preferredKey),
       },
       {
-        title: t('Add credits'),
-        description: t('Keep enough balance before production traffic'),
+        title: t('dashboard.actions.addCredits'),
+        description: t('dashboard.tips.keepEnoughBalanceBeforeProductionTraffic'),
         to: '/wallet',
         icon: CreditCard,
         completed: remainQuota > 0 || usedQuota > 0,
       },
       {
-        title: t('Send a request'),
-        description: t('Verify routing with Playground or your client'),
+        title: t('dashboard.actions.sendARequest'),
+        description: t('dashboard.actions.verifyRoutingWithPlaygroundOrYourClient'),
         to: '/playground',
         icon: TerminalSquare,
         completed: requestCount > 0,
@@ -503,27 +503,27 @@ export function OverviewDashboard() {
   const quickActions = useMemo<QuickAction[]>(
     () => [
       {
-        title: t('API Keys'),
-        description: t('Create a key for your app or service'),
+        title: t('dashboard.fields.apiKeys'),
+        description: t('dashboard.actions.createAKeyForYourAppOrService'),
         to: '/keys',
         icon: KeyRound,
       },
       {
-        title: t('Channels'),
-        description: t('Configure upstream providers and routing.'),
+        title: t('channels.titles.value'),
+        description: t('dashboard.tips.configureUpstreamProvidersAndRouting'),
         to: '/channels',
         icon: RadioTower,
         adminOnly: true,
       },
       {
-        title: t('Usage Logs'),
-        description: t('Inspect requests, errors, and billing details'),
+        title: t('dashboard.titles.usageLogs'),
+        description: t('dashboard.tips.inspectRequestsErrorsAndBillingDetails'),
         to: '/usage-logs',
         icon: FileText,
       },
       {
-        title: t('Pricing'),
-        description: t('Review model rates before scaling traffic'),
+        title: t('dashboard.fields.pricing'),
+        description: t('dashboard.tips.reviewModelRatesBeforeScalingTraffic'),
         to: '/pricing',
         icon: BookOpen,
       },
@@ -539,18 +539,18 @@ export function OverviewDashboard() {
   const heroSignals = useMemo<HeroSignal[]>(
     () => [
       {
-        label: t('Route active'),
-        value: apiInfoItems.length > 0 ? t('Online') : t('Current domain'),
+        label: t('dashboard.status.routeActive'),
+        value: apiInfoItems.length > 0 ? t('dashboard.fields.online') : t('dashboard.fields.currentDomain'),
         icon: RadioTower,
       },
       {
-        label: t('Auth configured'),
-        value: preferredKey ? t('Secured') : t('API Key Required'),
+        label: t('dashboard.fields.authConfigured'),
+        value: preferredKey ? t('dashboard.fields.secured') : t('dashboard.fields.apiKeyRequired'),
         icon: ShieldCheck,
       },
       {
-        label: t('Model selected'),
-        value: modelsQuery.data?.[0] ?? t('Loading'),
+        label: t('dashboard.fields.modelSelected'),
+        value: modelsQuery.data?.[0] ?? t('common.fields.loading'),
         icon: Timer,
       },
     ],
@@ -561,7 +561,7 @@ export function OverviewDashboard() {
     const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
     const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
     const apiKey = realKeyQuery.data ?? ''
-    const keyName = preferredKey?.name ?? t('No API key yet')
+    const keyName = preferredKey?.name ?? t('dashboard.fields.noApiKeyYet')
     const ready = Boolean(apiKey && model)
 
     return {
@@ -604,14 +604,14 @@ export function OverviewDashboard() {
                     <div className='flex max-w-2xl flex-col gap-1'>
                       <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
                         <ListChecks className='size-3.5' aria-hidden='true' />
-                        {t('Get Started')}
+                        {t('dashboard.fields.getStarted')}
                       </div>
                       <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
-                        {t('Build on your API gateway in minutes')}
+                        {t('dashboard.tips.buildOnYourApiGatewayInMinutes')}
                       </h3>
                       <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
                         {t(
-                          'A focused home for keys, balance, routing, and service health.'
+                          'dashboard.tips.focusedHomeForKeysBalanceRoutingAndServiceHealth'
                         )}
                       </p>
                     </div>
@@ -622,11 +622,11 @@ export function OverviewDashboard() {
                         onClick={handleSetupGuideToggle}
                       >
                         <ChevronUp data-icon='inline-start' />
-                        {t('Hide setup guide')}
+                        {t('dashboard.titles.hideSetupGuide')}
                       </Button>
                       <Button size='sm' render={<Link to='/keys' />}>
                         <KeyRound data-icon='inline-start' />
-                        {t('Create API Key')}
+                        {t('dashboard.actions.createApiKey')}
                       </Button>
                     </div>
                   </div>
@@ -655,10 +655,10 @@ export function OverviewDashboard() {
             <div className='flex h-full flex-col gap-4'>
               <div className='flex flex-col gap-1'>
                 <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  {t('Recommended actions')}
+                  {t('dashboard.tips.recommendedActions')}
                 </div>
                 <h3 className='text-lg font-semibold tracking-tight'>
-                  {t('Keep the platform ready')}
+                  {t('dashboard.fields.keepThePlatformReady')}
                 </h3>
               </div>
               <div className='grid gap-2'>
@@ -683,11 +683,11 @@ export function OverviewDashboard() {
                     <div className='flex items-center gap-2'>
                       <h3 className='truncate text-sm font-semibold'>
                         {setupComplete
-                          ? t('Setup guide complete')
-                          : t('Setup guide')}
+                          ? t('dashboard.titles.setupGuideComplete')
+                          : t('dashboard.titles.setupGuide')}
                       </h3>
                       <span className='text-muted-foreground bg-background/60 rounded-md border px-2 py-0.5 text-xs'>
-                        {t('Setup progress: {{completed}}/{{total}}', {
+                        {t('dashboard.tips.setupProgressCompletedTotal', {
                           completed: completedStepCount,
                           total: startSteps.length,
                         })}
@@ -696,9 +696,9 @@ export function OverviewDashboard() {
                     <p className='text-muted-foreground line-clamp-1 text-xs'>
                       {setupComplete
                         ? t(
-                            'Your setup guide is collapsed so usage stays in focus.'
+                            'dashboard.tips.setupGuideIsCollapsedSoUsageStaysInFocus'
                           )
-                        : t('Setup guide is collapsed. Expand it anytime.')}
+                        : t('dashboard.tips.setupGuideIsCollapsedExpandItAnytime')}
                     </p>
                   </div>
                 </div>
@@ -714,7 +714,7 @@ export function OverviewDashboard() {
                     onClick={handleSetupGuideToggle}
                   >
                     <ChevronDown data-icon='inline-start' />
-                    {t('Show setup guide')}
+                    {t('dashboard.titles.showSetupGuide')}
                   </Button>
                 </div>
               </div>

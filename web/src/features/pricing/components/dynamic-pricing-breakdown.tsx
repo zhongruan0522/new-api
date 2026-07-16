@@ -67,8 +67,8 @@ type DynamicPricingBreakdownProps = {
 }
 
 const VAR_LABELS: Record<string, string> = {
-  p: 'Input',
-  c: 'Output',
+  p: 'pricing.fields.input',
+  c: 'pricing.fields.output',
   len: 'Length',
 }
 const OP_LABELS: Record<string, string> = {
@@ -78,11 +78,11 @@ const OP_LABELS: Record<string, string> = {
   '>=': '≥',
 }
 const TIME_FUNC_LABELS: Record<string, string> = {
-  hour: 'Hours',
-  minute: 'Minute',
-  weekday: 'Weekday',
-  month: 'Month',
-  day: 'Day',
+  hour: 'channels.fields.hours',
+  minute: 'common.fields.minute',
+  weekday: 'common.fields.weekday',
+  month: 'common.fields.month',
+  day: 'common.fields.day',
 }
 
 function formatTokenHint(value: string | number): string {
@@ -128,11 +128,11 @@ function describeCondition(
     }
     return `${fn} ${opMap[cond.mode] || '='} ${cond.value} (${tz})`
   }
-  const src = cond.source === 'header' ? t('Header') : t('Body param')
+  const src = cond.source === 'header' ? t('pricing.fields.header') : t('pricing.fields.bodyParam')
   const path = cond.path || ''
-  if (cond.mode === MATCH_EXISTS) return `${src} ${path} ${t('Exists')}`
+  if (cond.mode === MATCH_EXISTS) return `${src} ${path} ${t('pricing.fields.exists')}`
   if (cond.mode === MATCH_CONTAINS) {
-    return `${src} ${path} ${t('Contains')} "${cond.value}"`
+    return `${src} ${path} ${t('models.fields.contains')} "${cond.value}"`
   }
   const opMap: Record<string, string> = {
     eq: '=',
@@ -202,15 +202,15 @@ export function DynamicPricingBreakdown({
           </span>
           <div>
             <div className='text-foreground text-base font-medium'>
-              {t('Special billing expression')}
+              {t('pricing.fields.specialBillingExpression')}
             </div>
             <div className='text-muted-foreground text-xs'>
-              {t('Unable to parse structured pricing')}
+              {t('pricing.errors.unableToParseStructuredPricing')}
             </div>
           </div>
         </div>
         <div className='text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase'>
-          {t('Raw expression')}
+          {t('pricing.fields.rawExpression')}
         </div>
         <code className='text-muted-foreground block text-xs break-all'>
           {expr}
@@ -235,10 +235,10 @@ export function DynamicPricingBreakdown({
         </span>
         <div>
           <div className='text-foreground text-base font-medium'>
-            {t('Dynamic Pricing')}
+            {t('pricing.fields.dynamicPricing')}
           </div>
           <div className='text-muted-foreground text-xs'>
-            {t('Prices vary by usage tier and request conditions')}
+            {t('pricing.tips.pricesVaryByUsageTierAndRequestConditions')}
           </div>
         </div>
       </div>
@@ -246,7 +246,7 @@ export function DynamicPricingBreakdown({
       {hasTiers && (
         <div className='mb-3 sm:mb-4'>
           <div className='text-foreground mb-2 text-sm font-semibold'>
-            {t('Tiered price table')}
+            {t('pricing.fields.tieredPriceTable')}
           </div>
           <div className='space-y-1.5 sm:hidden'>
             {tiers.map((tier, i) => {
@@ -268,14 +268,14 @@ export function DynamicPricingBreakdown({
                       variant='secondary'
                       className='bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                     >
-                      {tier.label || t('Default')}
+                      {tier.label || t('common.fields.default')}
                     </Badge>
                     {isMatched && (
                       <Badge
                         variant='secondary'
                         className='bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                       >
-                        {t('Matched')}
+                        {t('pricing.fields.matched')}
                       </Badge>
                     )}
                   </div>
@@ -312,7 +312,7 @@ export function DynamicPricingBreakdown({
               <TableHeader>
                 <TableRow className='hover:bg-transparent'>
                   <TableHead className='text-muted-foreground py-2 font-medium'>
-                    {t('Tier')}
+                    {t('pricing.fields.tier')}
                   </TableHead>
                   {visiblePriceFields.map((v) => (
                     <TableHead
@@ -345,14 +345,14 @@ export function DynamicPricingBreakdown({
                             variant='secondary'
                             className='bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                           >
-                            {tier.label || t('Default')}
+                            {tier.label || t('common.fields.default')}
                           </Badge>
                           {isMatched && (
                             <Badge
                               variant='secondary'
                               className='bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                             >
-                              {t('Matched')}
+                              {t('pricing.fields.matched')}
                             </Badge>
                           )}
                         </div>
@@ -393,7 +393,7 @@ export function DynamicPricingBreakdown({
       {hasRules && (
         <div>
           <div className='text-foreground mb-2 text-sm font-semibold'>
-            {t('Conditional multipliers')}
+            {t('pricing.fields.conditionalMultipliers')}
           </div>
           <ul className='space-y-1.5'>
             {ruleGroups.map((group, gi) => (

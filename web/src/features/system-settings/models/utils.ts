@@ -82,7 +82,7 @@ function extractErrorPosition(
 }
 
 function formatErrorMessage(error: unknown, jsonString: string): string {
-  if (!(error instanceof Error)) return 'Invalid JSON'
+  if (!(error instanceof Error)) return 'systemSettings.errors.invalidJson'
 
   const position = extractErrorPosition(error, jsonString)
   const message = error.message

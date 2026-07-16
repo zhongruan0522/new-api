@@ -74,7 +74,7 @@ export function DashboardRefreshSection() {
 
   if (isLoading) {
     return (
-      <SettingsSection title={t('Refresh Intervals')}>
+      <SettingsSection title={t('systemSettings.actions.refreshIntervals')}>
         <div className="space-y-4">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
@@ -86,10 +86,10 @@ export function DashboardRefreshSection() {
   if (!config) return null
 
   return (
-    <SettingsSection title={t('Refresh Intervals')}>
+    <SettingsSection title={t('systemSettings.actions.refreshIntervals')}>
       <p className="text-sm text-muted-foreground mb-4">
         {t(
-          'Configure how often dashboard data is refreshed. Lower intervals provide more real-time data but increase server load.'
+          'systemSettings.tips.configureHowOftenDashboardDataIsRefreshedLowerIntervals'
         )}
       </p>
       <SettingsForm onSubmit={handleSubmit}>
@@ -100,7 +100,7 @@ export function DashboardRefreshSection() {
               name="quota_data_refresh_interval"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Quota Data Interval (seconds)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.tips.quotaDataIntervalSeconds')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -125,7 +125,7 @@ export function DashboardRefreshSection() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {t('User Analytics Interval (seconds)')}
+                    {t('systemSettings.tips.userAnalyticsIntervalSeconds')}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -150,7 +150,7 @@ export function DashboardRefreshSection() {
               name="rankings_refresh_interval"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Rankings Interval (seconds)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.tips.rankingsIntervalSeconds')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -175,7 +175,7 @@ export function DashboardRefreshSection() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {t('Uptime Monitoring Interval (seconds)')}
+                    {t('systemSettings.tips.uptimeMonitoringIntervalSeconds')}
                   </FormLabel>
                   <FormControl>
                     <Input

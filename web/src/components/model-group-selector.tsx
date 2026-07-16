@@ -167,7 +167,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
       () =>
         models.reduce(
           (acc, model) => {
-            const category = model.category || t('Other')
+            const category = model.category || t('common.fields.other')
             if (!acc[category]) {
               acc[category] = []
             }
@@ -223,19 +223,19 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
       >
         {!isMobile && (
           <CommandInput
-            placeholder={t('Search models...')}
+            placeholder={t('common.actions.searchModels')}
             className='h-9'
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
         )}
-        <CommandEmpty>{t('No Models Found')}</CommandEmpty>
+        <CommandEmpty>{t('common.titles.noModelsFound')}</CommandEmpty>
         <CommandList
           className={isMobile ? '!max-h-full flex-1 p-2' : 'max-h-[300px]'}
         >
           {Object.keys(filteredModels).length === 0 ? (
             <div className='text-muted-foreground px-3 py-6 text-xs'>
-              {t('No Models Found')}
+              {t('common.titles.noModelsFound')}
             </div>
           ) : (
             Object.entries(filteredModels).map(
@@ -250,7 +250,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
                       isMobile ? 'text-xs' : 'text-[10px]'
                     )}
                   >
-                    {t('{{category}} Models', { category })}
+                    {t('common.titles.categoryModels', { category })}
                   </div>
                   {categoryModels.map((model) => (
                     <CommandItem
@@ -298,7 +298,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
           <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
               <ModelTriggerButton
-                currentLabel={currentModel?.label || t('Model')}
+                currentLabel={currentModel?.label || t('common.fields.model')}
                 triggerClassName={className}
                 isDisabled={disabled}
                 aria-expanded={open}
@@ -307,7 +307,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
             <DrawerContent className='flex max-h-[80vh] min-h-[60vh] flex-col'>
               <DrawerHeader className='flex-shrink-0 pb-4'>
                 <DrawerTitle className='flex items-center gap-2 text-left text-lg font-medium'>
-                  {t('Select Model')}
+                  {t('common.placeholders.selectModel')}
                 </DrawerTitle>
               </DrawerHeader>
               <div className='flex min-h-0 flex-1 flex-col'>
@@ -320,7 +320,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
             <PopoverTrigger
               render={
                 <ModelTriggerButton
-                  currentLabel={currentModel?.label || t('Model')}
+                  currentLabel={currentModel?.label || t('common.fields.model')}
                   triggerClassName={className}
                   isDisabled={disabled}
                   aria-expanded={open}
@@ -392,14 +392,14 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
           return searchableFields.includes(searchTerm) ? 1 : 0
         }}
       >
-        <CommandInput placeholder={t('Search groups...')} className='h-9' />
-        <CommandEmpty>{t('No group found.')}</CommandEmpty>
+        <CommandInput placeholder={t('common.actions.searchGroups')} className='h-9' />
+        <CommandEmpty>{t('common.tips.noGroupFound')}</CommandEmpty>
         <CommandList
           className={isMobile ? '!max-h-full flex-1 p-2' : 'max-h-[240px]'}
         >
           <CommandGroup>
             <div className='text-muted-foreground px-2 py-1 text-[10px] font-medium'>
-              {t('Model Group')}
+              {t('common.fields.modelGroup')}
             </div>
             {groups.map((group) => (
               <CommandItem
@@ -424,7 +424,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
                         {group.ratio && (
                           <>
                             {' · '}
-                            {t('Ratio: {{value}}', { value: group.ratio })}
+                            {t('common.fields.ratioValue', { value: group.ratio })}
                           </>
                         )}
                       </div>
@@ -450,7 +450,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
           <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
               <GroupTriggerButton
-                currentLabel={currentGroup?.label || t('Group')}
+                currentLabel={currentGroup?.label || t('common.fields.group')}
                 triggerClassName={className}
                 isDisabled={disabled}
                 aria-expanded={open}
@@ -458,7 +458,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
             </DrawerTrigger>
             <DrawerContent className='max-h-[80vh]'>
               <DrawerHeader className='pb-4 text-left'>
-                <DrawerTitle>{t('Choose Group')}</DrawerTitle>
+                <DrawerTitle>{t('common.placeholders.chooseGroup')}</DrawerTitle>
               </DrawerHeader>
               <div className='max-h-[calc(80vh-100px)] overflow-y-auto px-4 pb-6'>
                 <div className='space-y-2'>
@@ -486,7 +486,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
                               {group.ratio && (
                                 <>
                                   {' · '}
-                                  {t('Ratio: {{value}}', {
+                                  {t('common.fields.ratioValue', {
                                     value: group.ratio,
                                   })}
                                 </>
@@ -514,7 +514,7 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
             <PopoverTrigger
               render={
                 <GroupTriggerButton
-                  currentLabel={currentGroup?.label || t('Group')}
+                  currentLabel={currentGroup?.label || t('common.fields.group')}
                   triggerClassName={className}
                   isDisabled={disabled}
                   aria-expanded={open}

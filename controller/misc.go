@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/middleware"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
@@ -23,7 +24,7 @@ func TestStatus(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
-			"message": "数据库连接失败",
+			"message": i18n.T(c, i18n.MsgMiscDBConnectionFailed),
 		})
 		return
 	}
@@ -181,18 +182,12 @@ func GetHomePageContent(c *gin.Context) {
 func SendEmailVerification(c *gin.Context) {
 	email := c.Query("email")
 	if err := common.Validate.Var(email, "required,email"); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的邮箱地址",
-		})
+		common.ApiErrorI18n(c, i18n.MsgSettingEmailInvalid)
 		return
 	}
 	localPart := parts[0]
@@ -216,19 +211,13 @@ func SendEmailVerification(c *gin.Context) {
 	if common.EmailAliasRestrictionEnabled {
 		containsSpecialSymbols := strings.Contains(localPart, "+") || strings.Contains(localPart, ".")
 		if containsSpecialSymbols {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "管理员已启用邮箱地址别名限制，您的邮箱地址由于包含特殊符号而被拒绝。",
-			})
+			common.ApiErrorI18n(c, i18n.MsgMiscEmailAliasRejected)
 			return
 		}
 	}
 
 	if model.IsEmailAlreadyTaken(email) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "邮箱地址已被占用",
-		})
+		common.ApiErrorI18n(c, i18n.MsgMiscEmailTaken)
 		return
 	}
 	code := common.GenerateVerificationCode(6)
@@ -240,7 +229,7 @@ func SendEmailVerification(c *gin.Context) {
 	err := common.SendEmail(subject, email, content)
 	if err != nil {
 		common.SysError(fmt.Sprintf("failed to send email verification to %s: %v", email, err))
-		common.ApiErrorMsg(c, "邮件发送失败，请稍后重试或联系管理员")
+		common.ApiErrorI18n(c, i18n.MsgMiscEmailSendFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -253,10 +242,7 @@ func SendEmailVerification(c *gin.Context) {
 func SendPasswordResetEmail(c *gin.Context) {
 	email := c.Query("email")
 	if err := common.Validate.Var(email, "required,email"); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if model.IsEmailAlreadyTaken(email) {
@@ -287,17 +273,11 @@ func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
 	err := common.DecodeJson(c.Request.Body, &req)
 	if err != nil || req.Email == "" || req.Token == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if !common.VerifyCodeWithKey(req.Email, req.Token, common.PasswordResetPurpose) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "重置链接非法或已过期",
-		})
+		common.ApiErrorI18n(c, i18n.MsgMiscPasswordResetLinkInvalid)
 		return
 	}
 	password := common.GenerateVerificationCode(12)
@@ -337,7 +317,7 @@ func GetUsageLogFieldsVisible(c *gin.Context) {
 	fieldsMap, err := console_setting.GetUsageLogFieldsVisible()
 	if err != nil {
 		common.SysError("failed to parse usage_log_fields setting: " + err.Error())
-		common.ApiErrorMsg(c, "使用日志字段配置解析失败")
+		common.ApiErrorI18n(c, i18n.MsgMiscUsageLogFieldsParseFailed)
 		return
 	}
 

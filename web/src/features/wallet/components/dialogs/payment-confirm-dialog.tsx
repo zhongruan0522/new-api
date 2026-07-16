@@ -69,17 +69,17 @@ export function PaymentConfirmDialog({
       <AlertDialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
         <AlertDialogHeader>
           <AlertDialogTitle className='text-xl font-semibold'>
-            {t('Confirm Payment')}
+            {t('wallet.actions.confirmPayment')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {t('Review your payment details')}
+            {t('wallet.titles.reviewYourPaymentDetails')}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className='space-y-3 py-3 sm:space-y-4 sm:py-4'>
           <div className='flex items-center justify-between'>
             <span className='text-muted-foreground text-sm'>
-              {t('Recharge Amount')}
+              {t('systemSettings.fields.rechargeAmount')}
             </span>
             <span className='text-lg font-semibold'>
               {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
@@ -92,7 +92,7 @@ export function PaymentConfirmDialog({
 
           <div className='flex items-center justify-between'>
             <span className='text-muted-foreground text-sm'>
-              {t('You Pay')}
+              {t('wallet.fields.pay')}
             </span>
             {calculating ? (
               <Skeleton className='h-6 w-24' />
@@ -113,7 +113,7 @@ export function PaymentConfirmDialog({
           {hasDiscount && !calculating && (
             <div className='bg-muted/50 rounded-lg p-3'>
               <div className='flex items-center justify-between text-sm'>
-                <span className='text-muted-foreground'>{t('You save')}</span>
+                <span className='text-muted-foreground'>{t('wallet.fields.save')}</span>
                 <span className='font-semibold text-green-600'>
                   {formatCurrency(discountAmount)}
                 </span>
@@ -124,7 +124,7 @@ export function PaymentConfirmDialog({
           <div className='border-t pt-4'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>
-                {t('Payment Method')}
+                {t('orderQuery.fields.paymentMethod')}
               </span>
               <div className='flex items-center gap-2'>
                 {getPaymentIcon(
@@ -141,11 +141,11 @@ export function PaymentConfirmDialog({
 
         <AlertDialogFooter className='grid grid-cols-2 gap-2 sm:flex'>
           <AlertDialogCancel disabled={processing}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={processing}>
             {processing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {t('Confirm Payment')}
+            {t('wallet.actions.confirmPayment')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

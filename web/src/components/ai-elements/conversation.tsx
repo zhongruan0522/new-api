@@ -63,9 +63,9 @@ export const ConversationEmptyState = ({
   ...props
 }: ConversationEmptyStateProps) => {
   const { t } = useTranslation()
-  const resolvedTitle = title ?? t('No messages yet')
+  const resolvedTitle = title ?? t('common.fields.noMessagesYet')
   const resolvedDescription =
-    description ?? t('Start a conversation to see messages here')
+    description ?? t('common.actions.startAConversationToSeeMessagesHere')
 
   return (
     <div
@@ -116,7 +116,7 @@ export const ConversationScrollButton = ({
         size='icon'
         type='button'
         variant='outline'
-        aria-label={t('Scroll to bottom')}
+        aria-label={t('common.fields.scrollToBottom')}
         {...props}
       >
         <ArrowDownIcon className='size-4' aria-hidden='true' />

@@ -29,10 +29,10 @@ import { DashboardLimitsSection } from '../dashboard/components/dashboard-limits
 type DashboardTab = 'metrics' | 'panels' | 'refresh' | 'limits'
 
 const TABS: { id: DashboardTab; titleKey: string }[] = [
-  { id: 'metrics', titleKey: 'Data Metrics' },
-  { id: 'panels', titleKey: 'Dashboard Panels' },
-  { id: 'refresh', titleKey: 'Refresh Intervals' },
-  { id: 'limits', titleKey: 'Data Limits' },
+  { id: 'metrics', titleKey: 'systemSettings.fields.dataMetrics' },
+  { id: 'panels', titleKey: 'systemSettings.titles.dashboardPanels' },
+  { id: 'refresh', titleKey: 'systemSettings.actions.refreshIntervals' },
+  { id: 'limits', titleKey: 'systemSettings.fields.dataLimits' },
 ]
 
 // DashboardConfigSection 在 Console Content 下作为单个 section 渲染。
@@ -52,7 +52,7 @@ export function DashboardConfigSection() {
     <SettingsPageProvider actionsContainer={actionsContainer}>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          <span className='truncate'>{t('Dashboard Configuration')}</span>
+          <span className='truncate'>{t('systemSettings.titles.dashboardConfiguration')}</span>
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <div

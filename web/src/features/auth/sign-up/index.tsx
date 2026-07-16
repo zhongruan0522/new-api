@@ -32,15 +32,15 @@ export function SignUp() {
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Create an account')}
+            {t('auth.actions.createAnAccount')}
           </h2>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Already have an account?')}{' '}
+            {t('auth.tips.alreadyHaveAnAccount')}{' '}
             <Link
               to='/sign-in'
               className='hover:text-primary font-medium underline underline-offset-4'
             >
-              {t('Sign In')}
+              {t('layout.actions.signIn')}
             </Link>
             .
           </p>

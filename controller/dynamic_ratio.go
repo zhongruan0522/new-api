@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -49,7 +50,7 @@ func UpdateDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	if rule.Id == 0 {
-		common.ApiErrorMsg(c, "规则 ID 不能为空")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioRuleIDRequired)
 		return
 	}
 	if err := rule.Validate(); err != nil {
@@ -76,7 +77,7 @@ func DeleteDynamicRatioRule(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		common.ApiErrorMsg(c, "无效的规则 ID")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioInvalidRuleID)
 		return
 	}
 	if err := model.DeleteDynamicRatioRule(id); err != nil {
@@ -98,7 +99,7 @@ func ReorderDynamicRatioRules(c *gin.Context) {
 		return
 	}
 	if len(req.Ids) == 0 {
-		common.ApiErrorMsg(c, "ID 列表不能为空")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioIDListRequired)
 		return
 	}
 	if err := model.ReorderDynamicRatioRules(req.Ids); err != nil {
@@ -139,7 +140,7 @@ func GetDynamicRatioStatus(c *gin.Context) {
 
 	if group != "" {
 		if !service.GroupInUserUsableGroups(user.Group, group) {
-			common.ApiErrorMsg(c, "无权访问该分组")
+			common.ApiErrorI18n(c, i18n.MsgDynamicRatioGroupForbidden)
 			return
 		}
 		common.ApiSuccess(c, model.GetDynamicRatioStatus(group))

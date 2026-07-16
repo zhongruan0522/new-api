@@ -159,28 +159,28 @@ export function HeaderNavigationSection({
   }> = [
     {
       key: 'home',
-      title: t('Home'),
-      description: t('Landing page with system overview.'),
+      title: t('systemSettings.fields.home'),
+      description: t('systemSettings.tips.landingPageWithSystemOverview'),
     },
     {
       key: 'console',
-      title: t('Console'),
-      description: t('User dashboard and quota controls.'),
+      title: t('common.titles.console'),
+      description: t('systemSettings.tips.userDashboardAndQuotaControls'),
     },
     {
       key: 'key_query',
-      title: t('Key Usage Query'),
-      description: t('Query balance and recent usage by API key.'),
+      title: t('keyQuery.titles.usageQuery'),
+      description: t('systemSettings.actions.queryBalanceAndRecentUsageByApiKey'),
     },
     {
       key: 'docs',
-      title: t('Docs'),
-      description: t('Documentation or external knowledge base.'),
+      title: t('pricing.fields.docs'),
+      description: t('systemSettings.tips.documentationOrExternalKnowledgeBase'),
     },
     {
       key: 'about',
-      title: t('About'),
-      description: t('Static page describing the platform.'),
+      title: t('about.titles.value'),
+      description: t('systemSettings.tips.staticPageDescribingThePlatform'),
     },
   ]
 
@@ -197,28 +197,28 @@ export function HeaderNavigationSection({
       enabledKey: 'pricingEnabled',
       requireAuthKey: 'pricingRequireAuth',
       requireAuthDependsOn: 'pricingEnabled',
-      title: t('Model Square'),
-      description: t('Public model catalog and pricing page.'),
-      requireAuthTitle: t('Require login to view models'),
+      title: t('pricing.fields.modelSquare'),
+      description: t('systemSettings.tips.publicModelCatalogAndPricingPage'),
+      requireAuthTitle: t('systemSettings.tips.requireLoginToViewModels'),
       requireAuthDescription: t(
-        'Visitors must authenticate before accessing the pricing directory.'
+        'systemSettings.errors.visitorsMustAuthenticateBeforeAccessingThePricingDirectory'
       ),
     },
     {
       enabledKey: 'rankingsEnabled',
       requireAuthKey: 'rankingsRequireAuth',
       requireAuthDependsOn: 'rankingsEnabled',
-      title: t('Rankings'),
-      description: t('Public rankings page based on live usage data.'),
-      requireAuthTitle: t('Require login to view rankings'),
+      title: t('rankings.titles.value'),
+      description: t('systemSettings.tips.publicRankingsPageBasedOnLiveUsageData'),
+      requireAuthTitle: t('systemSettings.tips.requireLoginToViewRankings'),
       requireAuthDescription: t(
-        'Visitors must authenticate before accessing the rankings page.'
+        'systemSettings.errors.visitorsMustAuthenticateBeforeAccessingTheRankingsPage'
       ),
     },
   ]
 
   return (
-    <SettingsSection title={t('Header navigation')}>
+    <SettingsSection title={t('systemSettings.fields.headerNavigation')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions

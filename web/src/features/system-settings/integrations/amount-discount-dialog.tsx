@@ -45,12 +45,12 @@ const createAmountDiscountDialogSchema = (t: (key: string) => string) =>
   z.object({
     amount: z
       .number()
-      .positive(t('Amount must be greater than 0'))
-      .int(t('Amount must be a whole number')),
+      .positive(t('systemSettings.errors.amountMustBeGreaterThan0'))
+      .int(t('systemSettings.errors.amountMustBeAWholeNumber')),
     discountRate: z
       .number()
-      .positive(t('Discount rate must be greater than 0'))
-      .max(1, t('Discount rate must be ≤ 1')),
+      .positive(t('systemSettings.errors.discountRateMustBeGreaterThan0'))
+      .max(1, t('systemSettings.errors.discountRateMustBe1')),
   })
 
 type AmountDiscountDialogFormValues = z.infer<
@@ -119,10 +119,10 @@ export function AmountDiscountDialog({
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? t('Edit discount tier') : t('Add discount tier')}
+            {isEditMode ? t('systemSettings.actions.editDiscountTier') : t('systemSettings.actions.addDiscountTier')}
           </DialogTitle>
           <DialogDescription>
-            {t('Set a discount rate for a specific recharge amount threshold.')}
+            {t('systemSettings.tips.setADiscountRateForASpecificRechargeAmount')}
           </DialogDescription>
         </DialogHeader>
 
@@ -136,13 +136,13 @@ export function AmountDiscountDialog({
               name='amount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Recharge Amount (USD)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.rechargeAmountUsd')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
                       step='1'
                       min='1'
-                      placeholder={t('e.g., 100')}
+                      placeholder={t('systemSettings.placeholders.eG100')}
                       {...field}
                       onChange={(e) =>
                         field.onChange(parseInt(e.target.value) || 0)
@@ -152,9 +152,9 @@ export function AmountDiscountDialog({
                   </FormControl>
                   <FormDescription>
                     {isEditMode
-                      ? t('Amount cannot be changed when editing.')
+                      ? t('systemSettings.errors.amountCannotBeChangedWhenEditing')
                       : t(
-                          'Minimum recharge amount to qualify for this discount.'
+                          'systemSettings.tips.minimumRechargeAmountToQualifyForThisDiscount'
                         )}
                   </FormDescription>
                   <FormMessage />
@@ -167,14 +167,14 @@ export function AmountDiscountDialog({
               name='discountRate'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Discount Rate')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.discountRate')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
                       step='0.01'
                       min='0.01'
                       max='1'
-                      placeholder={t('e.g., 0.95')}
+                      placeholder={t('systemSettings.placeholders.eG095')}
                       {...field}
                       onChange={(e) =>
                         field.onChange(parseFloat(e.target.value) || 0)
@@ -182,11 +182,11 @@ export function AmountDiscountDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Final price multiplier (0.95 = 5% discount')}
+                    {t('systemSettings.tips.finalPriceMultiplier0955Discount')}
                     {discountPercentage > 0 && (
                       <span className='ml-1 font-medium text-green-600 dark:text-green-400'>
                         = {discountPercentage}
-                        {t('% off')}
+                        {t('systemSettings.fields.off')}
                       </span>
                     )}
                     )
@@ -202,10 +202,10 @@ export function AmountDiscountDialog({
                 variant='outline'
                 onClick={() => onOpenChange(false)}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('Update') : t('Add')}
+                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

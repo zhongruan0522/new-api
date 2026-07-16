@@ -33,7 +33,7 @@ function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
   return (
     <nav
       role='navigation'
-      aria-label={t('Page navigation')}
+      aria-label={t('common.fields.pageNavigation')}
       data-slot='pagination'
       className={cn('mx-auto flex w-full justify-center', className)}
       {...props}
@@ -96,7 +96,7 @@ function PaginationPrevious({
 
   return (
     <PaginationLink
-      aria-label={t('Go to previous page')}
+      aria-label={t('common.fields.goToPreviousPage')}
       size='default'
       className={cn('pl-1.5!', className)}
       {...props}
@@ -106,7 +106,7 @@ function PaginationPrevious({
         strokeWidth={2}
         data-icon='inline-start'
       />
-      <span className='hidden sm:block'>{text ?? t('Previous')}</span>
+      <span className='hidden sm:block'>{text ?? t('common.fields.previous')}</span>
     </PaginationLink>
   )
 }
@@ -120,12 +120,12 @@ function PaginationNext({
 
   return (
     <PaginationLink
-      aria-label={t('Go to next page')}
+      aria-label={t('common.fields.goToNextPage')}
       size='default'
       className={cn('pr-1.5!', className)}
       {...props}
     >
-      <span className='hidden sm:block'>{text ?? t('Next')}</span>
+      <span className='hidden sm:block'>{text ?? t('common.fields.next')}</span>
       <HugeiconsIcon
         icon={ArrowRight01Icon}
         strokeWidth={2}
@@ -152,7 +152,7 @@ function PaginationEllipsis({
       {...props}
     >
       <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
-      <span className='sr-only'>{t('More pages')}</span>
+      <span className='sr-only'>{t('common.fields.morePages')}</span>
     </span>
   )
 }

@@ -26,7 +26,7 @@ import type { UpdateOptionRequest } from '../types'
 const STATUS_RELATED_KEYS = [
   'HeaderNavModules',
   'SidebarModulesAdmin',
-  'Notice',
+  'common.fields.notice',
   'LogConsumeEnabled',
 ]
 
@@ -37,7 +37,7 @@ export function useUpdateOption() {
     mutationFn: async (request: UpdateOptionRequest) => {
       const data = await updateSystemOption(request)
       if (!data.success) {
-        throw new Error(data.message || i18next.t('Failed to update setting'))
+        throw new Error(data.message || i18next.t('channels.errors.failedToUpdateSetting'))
       }
       return data
     },
@@ -60,10 +60,10 @@ export function useUpdateOption() {
         }
       }
 
-      toast.success(i18next.t('Settings updated successfully'))
+      toast.success(i18next.t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || i18next.t('Failed to update setting'))
+      toast.error(error.message || i18next.t('channels.errors.failedToUpdateSetting'))
     },
   })
 }

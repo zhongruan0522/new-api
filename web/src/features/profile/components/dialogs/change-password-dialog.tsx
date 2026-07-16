@@ -65,27 +65,27 @@ export function ChangePasswordDialog({
 
     // Validation
     if (!formData.originalPassword) {
-      toast.error(t('Please enter your current password'))
+      toast.error(t('profile.errors.pleaseEnterYourCurrentPassword'))
       return
     }
 
     if (!formData.newPassword) {
-      toast.error(t('Please enter a new password'))
+      toast.error(t('profile.errors.pleaseEnterANewPassword'))
       return
     }
 
     if (formData.newPassword.length < 8) {
-      toast.error(t('Password must be at least 8 characters'))
+      toast.error(t('profile.errors.passwordMustBeAtLeast8Characters'))
       return
     }
 
     if (formData.originalPassword === formData.newPassword) {
-      toast.error(t('New password must be different from current password'))
+      toast.error(t('profile.errors.newPasswordMustBeDifferentFromCurrentPassword'))
       return
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error(t('Passwords do not match'))
+      toast.error(t('profile.fields.passwordsDoNotMatch'))
       return
     }
 
@@ -97,7 +97,7 @@ export function ChangePasswordDialog({
       })
 
       if (response.success) {
-        toast.success(t('Password changed successfully'))
+        toast.success(t('profile.fields.passwordChangedSuccessfully'))
         onOpenChange(false)
         setFormData({
           originalPassword: '',
@@ -105,10 +105,10 @@ export function ChangePasswordDialog({
           confirmPassword: '',
         })
       } else {
-        toast.error(response.message || t('Failed to change password'))
+        toast.error(response.message || t('profile.errors.failedToChangePassword'))
       }
     } catch (_error) {
-      toast.error(t('Failed to change password'))
+      toast.error(t('profile.errors.failedToChangePassword'))
     } finally {
       setLoading(false)
     }
@@ -119,16 +119,16 @@ export function ChangePasswordDialog({
       <DialogContent className='sm:max-w-md'>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{t('Change Password')}</DialogTitle>
+            <DialogTitle>{t('profile.fields.changePassword')}</DialogTitle>
             <DialogDescription>
-              {t('Update your password for account:')}{' '}
+              {t('profile.tips.updateYourPasswordForAccount')}{' '}
               <strong>{username}</strong>
             </DialogDescription>
           </DialogHeader>
 
           <div className='my-6 space-y-4'>
             <div className='space-y-2'>
-              <Label htmlFor='currentPassword'>{t('Current Password')}</Label>
+              <Label htmlFor='currentPassword'>{t('profile.fields.currentPassword')}</Label>
               <PasswordInput
                 id='currentPassword'
                 value={formData.originalPassword}
@@ -142,7 +142,7 @@ export function ChangePasswordDialog({
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='newPassword'>{t('New Password')}</Label>
+              <Label htmlFor='newPassword'>{t('auth.fields.newPassword')}</Label>
               <PasswordInput
                 id='newPassword'
                 value={formData.newPassword}
@@ -153,13 +153,13 @@ export function ChangePasswordDialog({
                 autoComplete='new-password'
               />
               <p className='text-muted-foreground text-xs'>
-                {t('Must be at least 8 characters')}
+                {t('profile.errors.mustBeAtLeast8Characters')}
               </p>
             </div>
 
             <div className='space-y-2'>
               <Label htmlFor='confirmPassword'>
-                {t('Confirm New Password')}
+                {t('profile.actions.confirmNewPassword')}
               </Label>
               <PasswordInput
                 id='confirmPassword'
@@ -181,11 +181,11 @@ export function ChangePasswordDialog({
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button type='submit' disabled={loading}>
               {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {loading ? t('Changing...') : t('Change Password')}
+              {loading ? t('profile.tips.changing') : t('profile.fields.changePassword')}
             </Button>
           </DialogFooter>
         </form>

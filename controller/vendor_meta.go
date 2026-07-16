@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -63,7 +64,7 @@ func CreateVendorMeta(c *gin.Context) {
 		return
 	}
 	if v.Name == "" {
-		common.ApiErrorMsg(c, "供应商名称不能为空")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameRequired)
 		return
 	}
 	// 创建前先检查名称
@@ -71,7 +72,7 @@ func CreateVendorMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "供应商名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameExists)
 		return
 	}
 
@@ -91,7 +92,7 @@ func UpdateVendorMeta(c *gin.Context) {
 		return
 	}
 	if v.Id == 0 {
-		common.ApiErrorMsg(c, "缺少供应商 ID")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaMissingID)
 		return
 	}
 	// 查询更新前的原始数据用于审计差异对比
@@ -105,7 +106,7 @@ func UpdateVendorMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "供应商名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameExists)
 		return
 	}
 

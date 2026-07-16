@@ -287,11 +287,11 @@ type TFunction = (key: string, options?: { value?: number | string }) => string
  * Pass `t` from useTranslation() for i18n (e.g. "Not tested", "{{value}}ms", "{{value}}s").
  */
 export function formatResponseTime(timeMs: number, t?: TFunction): string {
-  if (timeMs === 0) return t ? t('Not tested') : 'Not tested'
+  if (timeMs === 0) return t ? t('channels.fields.notTested') : 'Not tested'
   if (timeMs < 1000)
-    return t ? t('{{value}}ms', { value: timeMs }) : `${timeMs}ms`
+    return t ? t('channels.fields.valueMs', { value: timeMs }) : `${timeMs}ms`
   return t
-    ? t('{{value}}s', { value: (timeMs / 1000).toFixed(2) })
+    ? t('channels.fields.valueS', { value: (timeMs / 1000).toFixed(2) })
     : `${(timeMs / 1000).toFixed(2)}s`
 }
 

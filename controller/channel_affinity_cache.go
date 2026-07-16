@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 )
@@ -38,7 +39,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 	if ruleName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "缺少参数：rule_name，或使用 all=true 清空全部",
+			"message": i18n.T(c, i18n.MsgDashboardMissingAffinityClearArgs),
 		})
 		return
 	}

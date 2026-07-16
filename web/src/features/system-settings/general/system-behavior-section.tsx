@@ -162,7 +162,7 @@ export function SystemBehaviorSection({
   }
 
   return (
-    <SettingsSection title={t('System Behavior')}>
+    <SettingsSection title={t('systemSettings.titles.behavior')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -178,10 +178,10 @@ export function SystemBehaviorSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Automatic Retry')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.automaticRetry')}</FormLabel>
                     <FormDescription>
                       {t(
-                        'Retry failed requests on alternate channels before returning an error'
+                        'systemSettings.actions.retryFailedRequestsOnAlternateChannelsBeforeReturningAn'
                       )}
                     </FormDescription>
                   </SettingsSwitchContent>
@@ -201,7 +201,7 @@ export function SystemBehaviorSection({
                 name='RetryTimes'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Retry Times')}</FormLabel>
+                    <FormLabel>{t('systemSettings.actions.retryTimes')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -225,7 +225,7 @@ export function SystemBehaviorSection({
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Number of retry attempts beyond the first request (0-99)'
+                        'systemSettings.tips.numberOfRetryAttemptsBeyondTheFirstRequest0'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -238,10 +238,10 @@ export function SystemBehaviorSection({
                 name='AutomaticRetryStatusCodes'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Auto-retry status codes')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.autoRetryStatusCodes')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('e.g. 401, 403, 429, 500-599')}
+                        placeholder={t('systemSettings.placeholders.eG401403429500599')}
                         value={field.value}
                         onChange={(event) =>
                           field.onChange(event.target.value)
@@ -251,14 +251,14 @@ export function SystemBehaviorSection({
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Accepts comma-separated status codes and inclusive ranges.'
+                        'systemSettings.tips.acceptsCommaSeparatedStatusCodesAndInclusiveRanges'
                       )}{' '}
                       {autoRetryParsed.ok &&
                         autoRetryParsed.normalized &&
                         autoRetryParsed.normalized !==
                           field.value.trim() && (
                           <span className='text-muted-foreground'>
-                            {t('Normalized:')} {autoRetryParsed.normalized}
+                            {t('systemSettings.fields.normalized')} {autoRetryParsed.normalized}
                           </span>
                         )}
                     </FormDescription>
@@ -275,9 +275,9 @@ export function SystemBehaviorSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Default Collapse Sidebar')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.defaultCollapseSidebar')}</FormLabel>
                   <FormDescription>
-                    {t('Sidebar collapsed by default for new users')}
+                    {t('systemSettings.tips.sidebarCollapsedByDefaultForNewUsers')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>

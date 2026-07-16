@@ -134,17 +134,17 @@ export function CommonLogsStats() {
   return (
     <div className='flex flex-wrap items-center gap-2'>
       <StatBadge
-        label={t('Usage')}
+        label={t('usageLogs.fields.value')}
         value={sensitiveVisible ? formatLogQuota(stats?.quota || 0) : '••••'}
         accent='bg-sky-500/70'
       />
       <StatBadge
-        label={t('RPM')}
+        label={t('usageLogs.fields.rpm')}
         value={stats?.rpm || 0}
         accent='bg-rose-500/65'
       />
       <StatBadge
-        label={t('TPM')}
+        label={t('usageLogs.fields.tpm')}
         value={stats?.tpm || 0}
         accent='bg-slate-400/70'
       />

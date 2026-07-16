@@ -74,12 +74,12 @@ export function DataTableTagRowActions({ row }: DataTableTagRowActionsProps) {
         }
       >
         <MoreHorizontal className='h-4 w-4' />
-        <span className='sr-only'>{t('Open menu')}</span>
+        <span className='sr-only'>{t('channels.actions.openMenu')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-48'>
         {/* Edit Tag */}
         <DropdownMenuItem onClick={handleEditTag}>
-          {t('Edit Tag')}
+          {t('channels.actions.editTag')}
           <DropdownMenuShortcut>
             <Edit size={16} />
           </DropdownMenuShortcut>
@@ -87,7 +87,7 @@ export function DataTableTagRowActions({ row }: DataTableTagRowActionsProps) {
 
         {/* Batch Edit */}
         <DropdownMenuItem onClick={handleBatchEdit}>
-          {t('Batch Edit')}
+          {t('channels.fields.batchEdit')}
           <DropdownMenuShortcut>
             <Pencil size={16} />
           </DropdownMenuShortcut>
@@ -97,7 +97,7 @@ export function DataTableTagRowActions({ row }: DataTableTagRowActionsProps) {
 
         {/* Enable All */}
         <DropdownMenuItem onClick={handleEnableAll}>
-          {t('Enable All')}
+          {t('channels.actions.enableAll')}
           <DropdownMenuShortcut>
             <Power size={16} />
           </DropdownMenuShortcut>
@@ -105,7 +105,7 @@ export function DataTableTagRowActions({ row }: DataTableTagRowActionsProps) {
 
         {/* Disable All */}
         <DropdownMenuItem onClick={handleDisableAll}>
-          {t('Disable All')}
+          {t('channels.actions.disableAll')}
           <DropdownMenuShortcut>
             <PowerOff size={16} />
           </DropdownMenuShortcut>

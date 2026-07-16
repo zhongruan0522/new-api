@@ -58,7 +58,7 @@ export function CompactDateTimeRangePicker({
   const [draftEnd, setDraftEnd] = useState(toInputValue(end))
 
   const label = useMemo(() => {
-    if (!start && !end) return t('Time Range')
+    if (!start && !end) return t('dynamicRatio.fields.timeRange')
     // The popover's <input type="datetime-local"> only supports minute
     // precision, so seconds are always 00 (manual pick) or 59 (preset
     // end-of-day). Hide them in the trigger label to keep the button
@@ -141,7 +141,7 @@ export function CompactDateTimeRangePicker({
           <div className='grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-end'>
             <div className='space-y-1.5'>
               <div className='text-muted-foreground text-xs'>
-                {t('Start Time')}
+                {t('dashboard.actions.startTime')}
               </div>
               <Input
                 type='datetime-local'
@@ -155,7 +155,7 @@ export function CompactDateTimeRangePicker({
             </span>
             <div className='space-y-1.5'>
               <div className='text-muted-foreground text-xs'>
-                {t('End Time')}
+                {t('dashboard.fields.endTime')}
               </div>
               <Input
                 type='datetime-local'
@@ -174,7 +174,7 @@ export function CompactDateTimeRangePicker({
               className='h-7 flex-1 px-2 text-xs'
               onClick={() => applyPreset('today')}
             >
-              {t('Today')}
+              {t('profile.fields.today')}
             </Button>
             <Button
               type='button'
@@ -183,7 +183,7 @@ export function CompactDateTimeRangePicker({
               className='h-7 flex-1 px-2 text-xs'
               onClick={() => applyPreset('7d')}
             >
-              {t('7 Days')}
+              {t('usageLogs.placeholders.value7Days')}
             </Button>
             <Button
               type='button'
@@ -192,7 +192,7 @@ export function CompactDateTimeRangePicker({
               className='h-7 flex-1 px-2 text-xs'
               onClick={() => applyPreset('week')}
             >
-              {t('This week')}
+              {t('usageLogs.fields.week')}
             </Button>
             <Button
               type='button'
@@ -201,7 +201,7 @@ export function CompactDateTimeRangePicker({
               className='h-7 flex-1 px-2 text-xs'
               onClick={() => applyPreset('30d')}
             >
-              {t('30 Days')}
+              {t('usageLogs.placeholders.value30Days')}
             </Button>
             <Button
               type='button'
@@ -210,13 +210,13 @@ export function CompactDateTimeRangePicker({
               className='h-7 flex-1 px-2 text-xs'
               onClick={() => applyPreset('month')}
             >
-              {t('This month')}
+              {t('profile.fields.month')}
             </Button>
           </div>
 
           <div className='flex justify-end'>
             <Button size='sm' className='h-8' onClick={applyDraft}>
-              {t('Confirm')}
+              {t('common.actions.confirm')}
             </Button>
           </div>
         </div>

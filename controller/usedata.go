@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
@@ -29,21 +30,14 @@ func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
 func GetAllQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "配额数据功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	username := c.Query("username")
@@ -63,21 +57,14 @@ func GetAllQuotaDates(c *gin.Context) {
 func GetQuotaDataGroupByUser(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.UserAnalyticsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "用户分析功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardUserAnalyticsDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := model.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
@@ -95,11 +82,7 @@ func GetQuotaDataGroupByUser(c *gin.Context) {
 func GetUserQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "配额数据功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
@@ -107,10 +90,7 @@ func GetUserQuotaDates(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := model.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
@@ -130,11 +110,7 @@ func GetUserQuotaDates(c *gin.Context) {
 func GetAllMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "图片/视频转URL统计功能已禁用",
-			"data":    map[string]interface{}{"image_count": 0, "video_count": 0},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 
@@ -159,10 +135,7 @@ func RecalculateQuotaData(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
 	if startTimestamp <= 0 || endTimestamp <= 0 || endTimestamp <= startTimestamp {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的时间范围",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardInvalidTimeRange)
 		return
 	}
 
@@ -172,21 +145,14 @@ func RecalculateQuotaData(c *gin.Context) {
 		return
 	}
 	service.ClearRankingsCache()
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "重新计算完成",
-	})
+	common.ApiSuccessI18n(c, i18n.MsgDashboardRecalculateComplete, nil)
 }
 
 // GetUserMediaConvertStats 普通用户查询自己的图片/视频转URL统计
 func GetUserMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "图片/视频转URL统计功能已禁用",
-			"data":    map[string]interface{}{"image_count": 0, "video_count": 0},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 

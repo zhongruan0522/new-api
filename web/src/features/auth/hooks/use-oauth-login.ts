@@ -47,7 +47,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
   const { auth } = useAuthStore()
 
   useEffect(() => {
-    setGithubButtonText(t('Continue with GitHub'))
+    setGithubButtonText(t('auth.actions.continueWithGitHub'))
 
     return () => {
       if (githubTimeoutRef.current) {
@@ -77,7 +77,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
 
     setIsLoading(true)
     setGithubButtonDisabled(true)
-    setGithubButtonText(t('Redirecting to GitHub...'))
+    setGithubButtonText(t('auth.status.redirectingToGitHub'))
 
     if (githubTimeoutRef.current) {
       clearTimeout(githubTimeoutRef.current)
@@ -86,7 +86,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
     githubTimeoutRef.current = setTimeout(() => {
       setIsLoading(false)
       setGithubButtonText(
-        t('Request timed out, please refresh and restart GitHub login')
+        t('auth.errors.requestTimedOutPleaseRefreshAndRestartGitHub')
       )
       setGithubButtonDisabled(true)
     }, 20000)
@@ -95,12 +95,12 @@ export function useOAuthLogin(status: SystemStatus | null) {
       await resetSession()
       const state = await getOAuthState()
       if (!state) {
-        toast.error(t('Failed to initialize OAuth'))
+        toast.error(t('auth.errors.failedToInitializeOauth'))
         if (githubTimeoutRef.current) {
           clearTimeout(githubTimeoutRef.current)
         }
         setIsLoading(false)
-        setGithubButtonText(t('Continue with GitHub'))
+        setGithubButtonText(t('auth.actions.continueWithGitHub'))
         setGithubButtonDisabled(false)
         return
       }
@@ -108,12 +108,12 @@ export function useOAuthLogin(status: SystemStatus | null) {
       const url = buildGitHubOAuthUrl(status.github_client_id, state)
       window.open(url, '_self')
     } catch (_error) {
-      toast.error(t('Failed to start GitHub login'))
+      toast.error(t('auth.errors.failedToStartGitHubLogin'))
       if (githubTimeoutRef.current) {
         clearTimeout(githubTimeoutRef.current)
       }
       setIsLoading(false)
-      setGithubButtonText(t('Continue with GitHub'))
+      setGithubButtonText(t('auth.actions.continueWithGitHub'))
       setGithubButtonDisabled(false)
     }
   }
@@ -126,14 +126,14 @@ export function useOAuthLogin(status: SystemStatus | null) {
       await resetSession()
       const state = await getOAuthState()
       if (!state) {
-        toast.error(t('Failed to initialize OAuth'))
+        toast.error(t('auth.errors.failedToInitializeOauth'))
         return
       }
 
       const url = buildDiscordOAuthUrl(status.discord_client_id, state)
       window.open(url, '_self')
     } catch (_error) {
-      toast.error(t('Failed to start Discord login'))
+      toast.error(t('auth.errors.failedToStartDiscordLogin'))
     } finally {
       setIsLoading(false)
     }
@@ -147,7 +147,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
       await resetSession()
       const state = await getOAuthState()
       if (!state) {
-        toast.error(t('Failed to initialize OAuth'))
+        toast.error(t('auth.errors.failedToInitializeOauth'))
         return
       }
 
@@ -158,7 +158,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
       )
       window.open(url, '_self')
     } catch (_error) {
-      toast.error(t('Failed to start OIDC login'))
+      toast.error(t('auth.errors.failedToStartOidcLogin'))
     } finally {
       setIsLoading(false)
     }
@@ -172,21 +172,21 @@ export function useOAuthLogin(status: SystemStatus | null) {
       await resetSession()
       const state = await getOAuthState()
       if (!state) {
-        toast.error(t('Failed to initialize OAuth'))
+        toast.error(t('auth.errors.failedToInitializeOauth'))
         return
       }
 
       const url = buildLinuxDOOAuthUrl(status.linuxdo_client_id, state)
       window.open(url, '_self')
     } catch (_error) {
-      toast.error(t('Failed to start LinuxDO login'))
+      toast.error(t('auth.errors.failedToStartLinuxDoLogin'))
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleTelegramLogin = () => {
-    toast.info(t('Telegram login requires widget integration; coming soon'))
+    toast.info(t('auth.tips.telegramLoginRequiresWidgetIntegrationComingSoon'))
   }
 
   const handleCustomOAuthLogin = async (provider: CustomOAuthProviderInfo) => {
@@ -197,7 +197,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
       await resetSession()
       const state = await getOAuthState()
       if (!state) {
-        toast.error(t('Failed to initialize OAuth'))
+        toast.error(t('auth.errors.failedToInitializeOauth'))
         return
       }
 
@@ -214,7 +214,7 @@ export function useOAuthLogin(status: SystemStatus | null) {
       window.open(url.toString(), '_self')
     } catch (_error) {
       toast.error(
-        t('Failed to start {{provider}} login', { provider: provider.name })
+        t('auth.errors.failedToStartProviderLogin', { provider: provider.name })
       )
     } finally {
       setIsLoading(false)

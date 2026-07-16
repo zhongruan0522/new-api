@@ -131,7 +131,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                       'text-primary hover:text-primary'
                   )}
                 >
-                  {t('Filter')}
+                  {t('dashboard.actions.filter')}
                   {activeMobileFilterCount > 0 && (
                     <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                       {activeMobileFilterCount}
@@ -145,7 +145,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                 disabled={props.searchLoading}
               >
                 {props.searchLoading && <Loader2 className='animate-spin' />}
-                {t('Search')}
+                {t('common.actions.search')}
               </Button>
               <DataTableViewOptions table={props.table} />
             </div>
@@ -155,9 +155,9 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
         <DrawerContent className='max-h-[85dvh] p-0'>
           <div className='mx-auto flex w-full max-w-md flex-1 flex-col overflow-hidden'>
             <DrawerHeader className='border-border/70 border-b px-4 py-3 text-left'>
-              <DrawerTitle>{t('Filter')}</DrawerTitle>
+              <DrawerTitle>{t('dashboard.actions.filter')}</DrawerTitle>
               <DrawerDescription>
-                {t('Adjust filters, then search to refresh the logs.')}
+                {t('usageLogs.tips.adjustFiltersThenSearchToRefreshTheLogs')}
               </DrawerDescription>
             </DrawerHeader>
             <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3'>
@@ -176,7 +176,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                 onClick={handleMobileReset}
                 disabled={!props.hasActiveFilters}
               >
-                {t('Reset')}
+                {t('common.actions.reset')}
               </Button>
               <Button
                 type='button'
@@ -184,7 +184,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                 disabled={props.searchLoading}
               >
                 {props.searchLoading && <Loader2 className='animate-spin' />}
-                {t('Search')}
+                {t('common.actions.search')}
               </Button>
             </DrawerFooter>
           </div>
@@ -230,7 +230,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                   'text-primary hover:text-primary'
               )}
             >
-              {advancedOpen ? t('Collapse') : t('Expand')}
+              {advancedOpen ? t('common.fields.collapse') : t('common.fields.expand')}
               {activeAdvancedCount > 0 && (
                 <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                   {activeAdvancedCount}
@@ -257,7 +257,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                   'text-primary hover:text-primary'
               )}
             >
-              {clientOpen ? t('Collapse') : t('Client Info')}
+              {clientOpen ? t('common.fields.collapse') : t('usageLogs.fields.clientInfo')}
               {activeClientCount > 0 && (
                 <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                   {activeClientCount}
@@ -278,7 +278,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
             onClick={props.onReset}
             disabled={!props.hasActiveFilters}
           >
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
           <Button
             type='button'
@@ -286,7 +286,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
             disabled={props.searchLoading}
           >
             {props.searchLoading && <Loader2 className='animate-spin' />}
-            {t('Search')}
+            {t('common.actions.search')}
           </Button>
           <DataTableViewOptions table={props.table} />
         </div>

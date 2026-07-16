@@ -142,13 +142,13 @@ const getThinkingMessage = (isStreaming: boolean, duration?: number) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { t } = useTranslation()
   if (isStreaming) {
-    return <Shimmer duration={1}>{t('Thinking...')}</Shimmer>
+    return <Shimmer duration={1}>{t('common.tips.thinking')}</Shimmer>
   }
   // When duration is unknown or 0 (e.g., non-streaming responses), show a generic message
   if (duration === undefined || duration === 0) {
-    return <p>{t('Thought for a few seconds')}</p>
+    return <p>{t('common.fields.thoughtForAFewSeconds')}</p>
   }
-  return <p>{t('Thought for {{duration}} seconds', { duration })}</p>
+  return <p>{t('common.tips.thoughtForDurationSeconds', { duration })}</p>
 }
 
 export const ReasoningTrigger = memo(

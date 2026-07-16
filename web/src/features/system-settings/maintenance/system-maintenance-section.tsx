@@ -26,15 +26,15 @@ export function SystemMaintenanceSection() {
   const buildHash = status?.version || ''
 
   return (
-    <SettingsSection title={t('System maintenance')}>
+    <SettingsSection title={t('systemSettings.titles.maintenance')}>
       <div className='rounded-lg border p-4'>
         <div className='text-muted-foreground text-sm'>
-          {t('Build ID hash')}
+          {t('systemSettings.fields.buildIdHash')}
         </div>
         <div className='mt-1 font-mono text-lg font-semibold break-all'>
           {loading && !buildHash
-            ? t('Loading...')
-            : buildHash || t('Unknown version')}
+            ? t('common.tips.loading')
+            : buildHash || t('layout.fields.unknownVersion')}
         </div>
       </div>
     </SettingsSection>

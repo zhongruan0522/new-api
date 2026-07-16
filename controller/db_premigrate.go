@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -32,7 +33,7 @@ func StartDBPreMigrate(c *gin.Context) {
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "无效的参数",
+			"message": i18n.T(c, i18n.MsgInvalidParams),
 		})
 		return
 	}
@@ -56,7 +57,7 @@ func GetDBPreMigrateJob(c *gin.Context) {
 	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "job_id 不能为空",
+			"message": i18n.T(c, i18n.MsgJobIDRequired),
 		})
 		return
 	}
@@ -65,7 +66,7 @@ func GetDBPreMigrateJob(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "任务不存在",
+			"message": i18n.T(c, i18n.MsgTaskNotFound),
 		})
 		return
 	}

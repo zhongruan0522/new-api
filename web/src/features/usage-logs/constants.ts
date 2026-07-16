@@ -74,10 +74,10 @@ export const LOG_TYPE_ALL_VALUE = '0' as const
  * Quick time range presets for filter dialog
  */
 export const TIME_RANGE_PRESETS = [
-  { days: 1, label: '24 Hours' },
-  { days: 7, label: '7 Days' },
-  { days: 14, label: '14 Days' },
-  { days: 30, label: '30 Days' },
+  { days: 1, label: 'common.placeholders.value24Hours' },
+  { days: 7, label: 'usageLogs.placeholders.value7Days' },
+  { days: 14, label: 'common.placeholders.value14Days' },
+  { days: 30, label: 'usageLogs.placeholders.value30Days' },
 ] as const
 
 // ============================================================================
@@ -88,13 +88,13 @@ export const TIME_RANGE_PRESETS = [
  * Log types configuration for filtering and display
  */
 export const LOG_TYPES = [
-  { value: 0, label: 'Unknown', color: 'default' },
-  { value: 1, label: 'Recharge', color: 'cyan' },
-  { value: 2, label: 'Consume', color: 'green' },
-  { value: 3, label: 'Manage', color: 'orange' },
-  { value: 4, label: 'System', color: 'purple' },
-  { value: 5, label: 'Error', color: 'red' },
-  { value: 6, label: 'Refund', color: 'blue' },
+  { value: 0, label: 'channels.fields.unknown', color: 'default' },
+  { value: 1, label: 'pricing.fields.recharge', color: 'cyan' },
+  { value: 2, label: 'common.fields.consume', color: 'green' },
+  { value: 3, label: 'common.fields.manage', color: 'orange' },
+  { value: 4, label: 'common.titles.system', color: 'purple' },
+  { value: 5, label: 'common.errors.error', color: 'red' },
+  { value: 6, label: 'common.fields.refund', color: 'blue' },
 ] as const
 
 /**
@@ -103,7 +103,7 @@ export const LOG_TYPES = [
  * must not expose the display-only "Unknown" label for that value.
  */
 export const LOG_TYPE_FILTERS = [
-  { label: 'All Types', value: LOG_TYPE_ALL_VALUE },
+  { label: 'pricing.fields.allTypes', value: LOG_TYPE_ALL_VALUE },
   ...LOG_TYPES.filter((type) => type.value !== LOG_TYPE_ENUM.UNKNOWN).map(
     (type) => ({
       label: type.label,
@@ -224,35 +224,35 @@ export interface StatusMapping {
  * Midjourney task type mappings
  */
 export const MJ_TASK_TYPE_MAPPINGS: Record<string, StatusMapping> = {
-  [MJ_TASK_TYPES.IMAGINE]: { label: 'Draw', variant: 'blue' },
-  [MJ_TASK_TYPES.UPSCALE]: { label: 'Upscale', variant: 'orange' },
-  [MJ_TASK_TYPES.VIDEO]: { label: 'Video', variant: 'orange' },
-  [MJ_TASK_TYPES.EDITS]: { label: 'Edit', variant: 'orange' },
-  [MJ_TASK_TYPES.VARIATION]: { label: 'Vary', variant: 'violet' },
-  [MJ_TASK_TYPES.HIGH_VARIATION]: { label: 'Vary (Strong)', variant: 'violet' },
-  [MJ_TASK_TYPES.LOW_VARIATION]: { label: 'Vary (Subtle)', variant: 'violet' },
-  [MJ_TASK_TYPES.PAN]: { label: 'Pan', variant: 'cyan' },
-  [MJ_TASK_TYPES.DESCRIBE]: { label: 'Describe', variant: 'yellow' },
-  [MJ_TASK_TYPES.BLEND]: { label: 'Blend', variant: 'lime' },
-  [MJ_TASK_TYPES.UPLOAD]: { label: 'Upload', variant: 'blue' },
-  [MJ_TASK_TYPES.SHORTEN]: { label: 'Shorten', variant: 'pink' },
-  [MJ_TASK_TYPES.REROLL]: { label: 'Reroll', variant: 'indigo' },
-  [MJ_TASK_TYPES.INPAINT]: { label: 'Inpaint', variant: 'teal' },
-  [MJ_TASK_TYPES.SWAP_FACE]: { label: 'Swap Face', variant: 'purple' },
-  [MJ_TASK_TYPES.ZOOM]: { label: 'Zoom', variant: 'green' },
-  [MJ_TASK_TYPES.CUSTOM_ZOOM]: { label: 'Custom Zoom', variant: 'green' },
+  [MJ_TASK_TYPES.IMAGINE]: { label: 'common.fields.draw', variant: 'blue' },
+  [MJ_TASK_TYPES.UPSCALE]: { label: 'common.fields.upscale', variant: 'orange' },
+  [MJ_TASK_TYPES.VIDEO]: { label: 'pricing.fields.video', variant: 'orange' },
+  [MJ_TASK_TYPES.EDITS]: { label: 'channels.actions.edit', variant: 'orange' },
+  [MJ_TASK_TYPES.VARIATION]: { label: 'common.fields.vary', variant: 'violet' },
+  [MJ_TASK_TYPES.HIGH_VARIATION]: { label: 'common.fields.varyStrong', variant: 'violet' },
+  [MJ_TASK_TYPES.LOW_VARIATION]: { label: 'common.fields.varySubtle', variant: 'violet' },
+  [MJ_TASK_TYPES.PAN]: { label: 'common.fields.pan', variant: 'cyan' },
+  [MJ_TASK_TYPES.DESCRIBE]: { label: 'common.fields.describe', variant: 'yellow' },
+  [MJ_TASK_TYPES.BLEND]: { label: 'common.fields.blend', variant: 'lime' },
+  [MJ_TASK_TYPES.UPLOAD]: { label: 'common.actions.upload', variant: 'blue' },
+  [MJ_TASK_TYPES.SHORTEN]: { label: 'common.fields.shorten', variant: 'pink' },
+  [MJ_TASK_TYPES.REROLL]: { label: 'common.fields.reroll', variant: 'indigo' },
+  [MJ_TASK_TYPES.INPAINT]: { label: 'common.fields.inpaint', variant: 'teal' },
+  [MJ_TASK_TYPES.SWAP_FACE]: { label: 'common.fields.swapFace', variant: 'purple' },
+  [MJ_TASK_TYPES.ZOOM]: { label: 'common.fields.zoom', variant: 'green' },
+  [MJ_TASK_TYPES.CUSTOM_ZOOM]: { label: 'common.fields.customZoom', variant: 'green' },
 }
 
 /**
  * Midjourney task status mappings
  */
 export const MJ_STATUS_MAPPINGS: Record<string, StatusMapping> = {
-  [MJ_TASK_STATUS.SUCCESS]: { label: 'Success', variant: 'green' },
-  [MJ_TASK_STATUS.NOT_START]: { label: 'Not Started', variant: 'neutral' },
-  [MJ_TASK_STATUS.SUBMITTED]: { label: 'Queued', variant: 'yellow' },
-  [MJ_TASK_STATUS.IN_PROGRESS]: { label: 'In Progress', variant: 'blue' },
-  [MJ_TASK_STATUS.FAILURE]: { label: 'Failed', variant: 'red' },
-  [MJ_TASK_STATUS.MODAL]: { label: 'Waiting', variant: 'amber' },
+  [MJ_TASK_STATUS.SUCCESS]: { label: 'channels.status.success', variant: 'green' },
+  [MJ_TASK_STATUS.NOT_START]: { label: 'common.fields.notStarted', variant: 'neutral' },
+  [MJ_TASK_STATUS.SUBMITTED]: { label: 'common.fields.queued', variant: 'yellow' },
+  [MJ_TASK_STATUS.IN_PROGRESS]: { label: 'common.fields.progress', variant: 'blue' },
+  [MJ_TASK_STATUS.FAILURE]: { label: 'channels.errors.failed', variant: 'red' },
+  [MJ_TASK_STATUS.MODAL]: { label: 'common.status.waiting', variant: 'amber' },
 }
 
 /**
@@ -260,19 +260,19 @@ export const MJ_STATUS_MAPPINGS: Record<string, StatusMapping> = {
  */
 export const MJ_SUBMIT_RESULT_MAPPINGS: Record<string, StatusMapping> = {
   [String(MJ_SUBMIT_RESULT_CODES.SUBMITTED)]: {
-    label: 'Submitted',
+    label: 'common.fields.submitted',
     variant: 'green',
   },
   [String(MJ_SUBMIT_RESULT_CODES.WAITING)]: {
-    label: 'Waiting',
+    label: 'common.status.waiting',
     variant: 'lime',
   },
   [String(MJ_SUBMIT_RESULT_CODES.DUPLICATE)]: {
-    label: 'Duplicate',
+    label: 'channels.errors.duplicate',
     variant: 'orange',
   },
   [String(MJ_SUBMIT_RESULT_CODES.NOT_SUBMITTED)]: {
-    label: 'Not Submitted',
+    label: 'common.fields.notSubmitted',
     variant: 'yellow',
   },
 }
@@ -281,20 +281,20 @@ export const MJ_SUBMIT_RESULT_MAPPINGS: Record<string, StatusMapping> = {
  * Task action type mappings
  */
 export const TASK_ACTION_MAPPINGS: Record<string, StatusMapping> = {
-  [TASK_ACTIONS.MUSIC]: { label: 'Generate Music', variant: 'neutral' },
-  [TASK_ACTIONS.LYRICS]: { label: 'Generate Lyrics', variant: 'pink' },
-  [TASK_ACTIONS.GENERATE]: { label: 'Image to Video', variant: 'blue' },
-  [TASK_ACTIONS.TEXT_GENERATE]: { label: 'Text to Video', variant: 'blue' },
+  [TASK_ACTIONS.MUSIC]: { label: 'common.fields.generateMusic', variant: 'neutral' },
+  [TASK_ACTIONS.LYRICS]: { label: 'common.fields.generateLyrics', variant: 'pink' },
+  [TASK_ACTIONS.GENERATE]: { label: 'common.fields.imageToVideo', variant: 'blue' },
+  [TASK_ACTIONS.TEXT_GENERATE]: { label: 'common.fields.textToVideo', variant: 'blue' },
   [TASK_ACTIONS.FIRST_TAIL_GENERATE]: {
-    label: 'First/Last Frame to Video',
+    label: 'common.fields.firstLastFrameToVideo',
     variant: 'blue',
   },
   [TASK_ACTIONS.REFERENCE_GENERATE]: {
-    label: 'Reference Video',
+    label: 'common.fields.referenceVideo',
     variant: 'blue',
   },
   [TASK_ACTIONS.REMIX_GENERATE]: {
-    label: 'Video Remix',
+    label: 'common.fields.videoRemix',
     variant: 'blue',
   },
 }
@@ -303,13 +303,13 @@ export const TASK_ACTION_MAPPINGS: Record<string, StatusMapping> = {
  * Task status mappings
  */
 export const TASK_STATUS_MAPPINGS: Record<string, StatusMapping> = {
-  [TASK_STATUS.SUCCESS]: { label: 'Success', variant: 'green' },
-  [TASK_STATUS.NOT_START]: { label: 'Not Started', variant: 'neutral' },
-  [TASK_STATUS.SUBMITTED]: { label: 'Queued', variant: 'yellow' },
-  [TASK_STATUS.IN_PROGRESS]: { label: 'In Progress', variant: 'blue' },
-  [TASK_STATUS.FAILURE]: { label: 'Failed', variant: 'red' },
-  [TASK_STATUS.QUEUED]: { label: 'Queued', variant: 'orange' },
-  [TASK_STATUS.UNKNOWN]: { label: 'Unknown', variant: 'neutral' },
+  [TASK_STATUS.SUCCESS]: { label: 'channels.status.success', variant: 'green' },
+  [TASK_STATUS.NOT_START]: { label: 'common.fields.notStarted', variant: 'neutral' },
+  [TASK_STATUS.SUBMITTED]: { label: 'common.fields.queued', variant: 'yellow' },
+  [TASK_STATUS.IN_PROGRESS]: { label: 'common.fields.progress', variant: 'blue' },
+  [TASK_STATUS.FAILURE]: { label: 'channels.errors.failed', variant: 'red' },
+  [TASK_STATUS.QUEUED]: { label: 'common.fields.queued', variant: 'orange' },
+  [TASK_STATUS.UNKNOWN]: { label: 'channels.fields.unknown', variant: 'neutral' },
 }
 
 /**
@@ -331,9 +331,9 @@ export const TASK_PLATFORM_MAPPINGS: Record<string, StatusMapping> = {
  * Log category display labels
  */
 export const LOG_CATEGORY_LABELS: Record<LogCategory, string> = {
-  common: 'Common',
-  drawing: 'Drawing',
-  task: 'Task',
+  common: 'common.fields.value',
+  drawing: 'common.fields.drawing',
+  task: 'common.fields.task',
 }
 
 // ============================================================================

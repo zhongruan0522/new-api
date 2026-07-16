@@ -188,8 +188,8 @@ export function RechargeFormCard({
 
   return (
     <TitledCard
-      title={t('Add Funds')}
-      description={t('Choose an amount and payment method')}
+      title={t('wallet.actions.addFunds')}
+      description={t('wallet.placeholders.chooseAnAmountAndPaymentMethod')}
       icon={<WalletCards className='h-4 w-4' />}
       action={
         onOpenBilling ? (
@@ -200,7 +200,7 @@ export function RechargeFormCard({
             className='w-full gap-2 sm:w-auto'
           >
             <Receipt className='h-4 w-4' />
-            {t('Order History')}
+            {t('wallet.fields.orderHistory')}
           </Button>
         ) : null
       }
@@ -214,7 +214,7 @@ export function RechargeFormCard({
               {presetAmounts.length > 0 && (
                 <div className='space-y-2.5 sm:space-y-3'>
                   <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                    {t('Amount')}
+                    {t('orderQuery.fields.amount')}
                   </Label>
                   <div className='grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-4'>
                     {presetAmounts.map((preset, index) => {
@@ -276,7 +276,7 @@ export function RechargeFormCard({
                   htmlFor='topup-amount'
                   className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
                 >
-                  {t('Custom Amount')}
+                  {t('wallet.fields.customAmount')}
                 </Label>
                 <div className='grid grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'>
                   <Input
@@ -290,7 +290,7 @@ export function RechargeFormCard({
                   />
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
                     <span className='text-muted-foreground truncate text-xs'>
-                      {t('Amount to pay:')}
+                      {t('wallet.fields.amountToPay')}
                     </span>
                     {calculating ? (
                       <Skeleton className='h-5 w-16' />
@@ -305,7 +305,7 @@ export function RechargeFormCard({
 
               <div className='space-y-2.5 sm:space-y-3'>
                 <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  {t('Payment Method')}
+                  {t('orderQuery.fields.paymentMethod')}
                 </Label>
                 {hasStandardPaymentMethods ? (
                   <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
@@ -340,7 +340,7 @@ export function RechargeFormCard({
                           <Tooltip>
                             <TooltipTrigger render={button}></TooltipTrigger>
                             <TooltipContent>
-                              {t('Minimum topup amount: {{amount}}', {
+                              {t('wallet.tips.minimumTopupAmountAmount', {
                                 amount: minTopup,
                               })}
                             </TooltipContent>
@@ -355,7 +355,7 @@ export function RechargeFormCard({
                   <Alert>
                     <AlertDescription>
                       {t(
-                        'No payment methods available. Please contact administrator.'
+                        'wallet.tips.noPaymentMethodsAvailablePleaseContactAdministrator'
                       )}
                     </AlertDescription>
                   </Alert>
@@ -367,7 +367,7 @@ export function RechargeFormCard({
                 onWaffoMethodSelect && (
                   <div className='space-y-2.5 sm:space-y-3'>
                     <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                      {t('Waffo Payment')}
+                      {t('wallet.fields.waffoPayment')}
                     </Label>
                     <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
                       {waffoPayMethods?.map((method, index) => {
@@ -403,7 +403,7 @@ export function RechargeFormCard({
                             <Tooltip>
                               <TooltipTrigger render={button}></TooltipTrigger>
                               <TooltipContent>
-                                {t('Minimum topup amount: {{amount}}', {
+                                {t('wallet.tips.minimumTopupAmountAmount', {
                                   amount: waffoMin,
                                 })}
                               </TooltipContent>
@@ -423,7 +423,7 @@ export function RechargeFormCard({
         <Alert>
           <AlertDescription>
             {t(
-              'Online topup is not enabled. Please use redemption code or contact administrator.'
+              'wallet.status.onlineTopupIsNotEnabledPleaseUseRedemptionCode'
             )}
           </AlertDescription>
         </Alert>
@@ -436,7 +436,7 @@ export function RechargeFormCard({
         onCreemProductSelect && (
           <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6'>
             <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-              {t('Creem Payment')}
+              {t('wallet.fields.creemPayment')}
             </Label>
             <CreemProductsSection
               products={creemProducts}
@@ -454,7 +454,7 @@ export function RechargeFormCard({
               htmlFor='redemption-code'
               className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
             >
-              {t('Have a Code?')}
+              {t('wallet.tips.haveACode')}
             </Label>
           </div>
           <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
@@ -462,7 +462,7 @@ export function RechargeFormCard({
               id='redemption-code'
               value={redemptionCode}
               onChange={(e) => onRedemptionCodeChange(e.target.value)}
-              placeholder={t('Enter your redemption code')}
+              placeholder={t('wallet.placeholders.enterYourRedemptionCode')}
               className='h-9 min-w-0'
             />
             <Button
@@ -472,19 +472,19 @@ export function RechargeFormCard({
               className='h-9 px-4'
             >
               {redeeming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {t('Redeem')}
+              {t('wallet.fields.redeem')}
             </Button>
           </div>
           {topupLink && (
             <p className='text-muted-foreground text-xs'>
-              {t('Need a redemption code?')}{' '}
+              {t('wallet.tips.needARedemptionCode')}{' '}
               <a
                 href={topupLink}
                 target='_blank'
                 rel='noopener noreferrer'
                 className='inline-flex items-center gap-1 underline-offset-4 hover:underline'
               >
-                {t('Get one here')}
+                {t('wallet.fields.getOneHere')}
                 <ExternalLink className='h-3 w-3' />
               </a>
             </p>
@@ -494,7 +494,7 @@ export function RechargeFormCard({
         <Alert className='border-t'>
           <AlertDescription>
             {t(
-              'Redemption codes are disabled until the administrator confirms compliance terms.'
+              'wallet.status.redemptionCodesAreDisabledUntilTheAdministratorConfirmsCompliance'
             )}
           </AlertDescription>
         </Alert>

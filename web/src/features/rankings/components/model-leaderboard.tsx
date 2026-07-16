@@ -120,7 +120,7 @@ function ModelList(props: {
                 <>
                   {' '}
                   <span className='text-muted-foreground/80 font-normal'>
-                    {t('Tokens')}
+                    {t('rankings.fields.tokens')}
                   </span>
                 </>
               )}

@@ -79,7 +79,7 @@ function SubscriptionStatusBadge(props: {
   if (isActive)
     return (
       <StatusBadge
-        label={props.t('Active')}
+        label={props.t('subscriptions.status.active')}
         variant='success'
         copyable={false}
       />
@@ -87,14 +87,14 @@ function SubscriptionStatusBadge(props: {
   if (props.sub.status === 'cancelled')
     return (
       <StatusBadge
-        label={props.t('Invalidated')}
+        label={props.t('subscriptions.fields.invalidated')}
         variant='neutral'
         copyable={false}
       />
     )
   return (
     <StatusBadge
-      label={props.t('Expired')}
+      label={props.t('redemptionCodes.status.expired')}
       variant='neutral'
       copyable={false}
     />
@@ -132,7 +132,7 @@ export function UserSubscriptionsDialog(props: Props) {
       if (plansRes.success) setPlans(plansRes.data || [])
       if (subsRes.success) setSubs(subsRes.data || [])
     } catch {
-      toast.error(t('Loading failed'))
+      toast.error(t('subscriptions.status.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -147,7 +147,7 @@ export function UserSubscriptionsDialog(props: Props) {
 
   const handleCreate = async () => {
     if (!props.user?.id || !selectedPlanId) {
-      toast.error(t('Please select a subscription plan'))
+      toast.error(t('subscriptions.errors.pleaseSelectASubscriptionPlan'))
       return
     }
     setCreating(true)
@@ -156,13 +156,13 @@ export function UserSubscriptionsDialog(props: Props) {
         plan_id: Number(selectedPlanId),
       })
       if (res.success) {
-        toast.success(res.data?.message || t('Added successfully'))
+        toast.success(res.data?.message || t('subscriptions.fields.addedSuccessfully'))
         setSelectedPlanId('')
         await loadData()
         props.onSuccess?.()
       }
     } catch {
-      toast.error(t('Request failed'))
+      toast.error(t('subscriptions.status.requestFailed'))
     } finally {
       setCreating(false)
     }
@@ -174,20 +174,20 @@ export function UserSubscriptionsDialog(props: Props) {
       if (confirmAction.type === 'invalidate') {
         const res = await invalidateUserSubscription(confirmAction.subId)
         if (res.success) {
-          toast.success(res.data?.message || t('Invalidated'))
+          toast.success(res.data?.message || t('subscriptions.fields.invalidated'))
           await loadData()
           props.onSuccess?.()
         }
       } else {
         const res = await deleteUserSubscription(confirmAction.subId)
         if (res.success) {
-          toast.success(t('Deleted'))
+          toast.success(t('subscriptions.actions.deleted'))
           await loadData()
           props.onSuccess?.()
         }
       }
     } catch {
-      toast.error(t('Operation failed'))
+      toast.error(t('channels.status.operationFailed'))
     } finally {
       setConfirmAction(null)
     }
@@ -198,7 +198,7 @@ export function UserSubscriptionsDialog(props: Props) {
       <Sheet open={props.open} onOpenChange={props.onOpenChange}>
         <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
           <SheetHeader className={sideDrawerHeaderClassName()}>
-            <SheetTitle>{t('User Subscription Management')}</SheetTitle>
+            <SheetTitle>{t('subscriptions.titles.userSubscriptionManagement')}</SheetTitle>
             <SheetDescription>
               {props.user?.username || '-'} (ID: {props.user?.id || '-'})
             </SheetDescription>
@@ -222,7 +222,7 @@ export function UserSubscriptionsDialog(props: Props) {
                 onValueChange={(v) => v !== null && setSelectedPlanId(v)}
               >
                 <SelectTrigger className='flex-1'>
-                  <SelectValue placeholder={t('Select Subscription Plan')} />
+                  <SelectValue placeholder={t('subscriptions.placeholders.selectSubscriptionPlan')} />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
@@ -240,7 +240,7 @@ export function UserSubscriptionsDialog(props: Props) {
                 disabled={creating || !selectedPlanId}
               >
                 <Plus className='mr-1 h-4 w-4' />
-                {t('Add subscription')}
+                {t('subscriptions.actions.addSubscription')}
               </Button>
             </div>
 
@@ -248,19 +248,19 @@ export function UserSubscriptionsDialog(props: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('ID')}</TableHead>
-                    <TableHead>{t('Plan')}</TableHead>
-                    <TableHead>{t('Status')}</TableHead>
-                    <TableHead>{t('Validity Period')}</TableHead>
-                    <TableHead>{t('Total Quota')}</TableHead>
-                    <TableHead className='text-right'>{t('Actions')}</TableHead>
+                    <TableHead>{t('channels.fields.id')}</TableHead>
+                    <TableHead>{t('subscriptions.fields.plan')}</TableHead>
+                    <TableHead>{t('channels.fields.status')}</TableHead>
+                    <TableHead>{t('subscriptions.fields.validityPeriod')}</TableHead>
+                    <TableHead>{t('dashboard.fields.totalQuota')}</TableHead>
+                    <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={6} className='py-8 text-center'>
-                        {t('Loading...')}
+                        {t('common.tips.loading')}
                       </TableCell>
                     </TableRow>
                   ) : subs.length === 0 ? (
@@ -269,7 +269,7 @@ export function UserSubscriptionsDialog(props: Props) {
                         colSpan={6}
                         className='text-muted-foreground py-8 text-center'
                       >
-                        {t('No subscription records')}
+                        {t('subscriptions.fields.noSubscriptionRecords')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -294,7 +294,7 @@ export function UserSubscriptionsDialog(props: Props) {
                                   `#${sub.plan_id}`}
                               </div>
                               <div className='text-muted-foreground text-sm'>
-                                {t('Source')}: {sub.source || '-'}
+                                {t('subscriptions.fields.source')}: {sub.source || '-'}
                               </div>
                             </div>
                           </TableCell>
@@ -304,15 +304,15 @@ export function UserSubscriptionsDialog(props: Props) {
                           <TableCell>
                             <div className='text-sm'>
                               <div>
-                                {t('Start')}: {formatTimestamp(sub.start_time)}
+                                {t('subscriptions.actions.start')}: {formatTimestamp(sub.start_time)}
                               </div>
                               <div>
-                                {t('End')}: {formatTimestamp(sub.end_time)}
+                                {t('subscriptions.fields.end')}: {formatTimestamp(sub.end_time)}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            {total > 0 ? `${used}/${total}` : t('Unlimited')}
+                            {total > 0 ? `${used}/${total}` : t('keyQuery.fields.unlimited')}
                           </TableCell>
                           <TableCell className='text-right'>
                             <div className='flex justify-end gap-1'>
@@ -327,7 +327,7 @@ export function UserSubscriptionsDialog(props: Props) {
                                   })
                                 }
                               >
-                                {t('Invalidate')}
+                                {t('subscriptions.fields.invalidate')}
                               </Button>
                               <Button
                                 size='sm'
@@ -339,7 +339,7 @@ export function UserSubscriptionsDialog(props: Props) {
                                   })
                                 }
                               >
-                                {t('Delete')}
+                                {t('common.actions.delete')}
                               </Button>
                             </div>
                           </TableCell>
@@ -360,16 +360,16 @@ export function UserSubscriptionsDialog(props: Props) {
           onOpenChange={(v) => !v && setConfirmAction(null)}
           title={
             confirmAction.type === 'invalidate'
-              ? t('Confirm invalidate')
-              : t('Confirm delete')
+              ? t('subscriptions.actions.confirmInvalidate')
+              : t('channels.actions.confirmDelete')
           }
           desc={
             confirmAction.type === 'invalidate'
               ? t(
-                  'After invalidating, this subscription will be immediately deactivated. Historical records are not affected. Continue?'
+                  'subscriptions.tips.invalidatingThisSubscriptionWillBeImmediatelyDeactivatedHistoricalRecords'
                 )
               : t(
-                  'Deleting will permanently remove this subscription record (including benefit details). Continue?'
+                  'subscriptions.tips.deletingWillPermanentlyRemoveThisSubscriptionRecordIncludingBenefit'
                 )
           }
           handleConfirm={handleConfirmAction}

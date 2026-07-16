@@ -31,7 +31,7 @@ type SearchProps = {
 export function Search({ className = '', placeholder }: SearchProps) {
   const { t } = useTranslation()
   const { setOpen } = useSearch()
-  const resolvedPlaceholder = placeholder ?? t('Search')
+  const resolvedPlaceholder = placeholder ?? t('common.actions.search')
   return (
     <Button
       variant='outline'
@@ -50,7 +50,7 @@ export function Search({ className = '', placeholder }: SearchProps) {
       <span className='ms-4'>{resolvedPlaceholder}</span>
       <kbd className='bg-muted group-hover:bg-accent pointer-events-none absolute end-[0.3rem] top-[0.3rem] hidden h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none sm:flex'>
         <span className='text-xs'>⌘</span>
-        {t('K')}
+        {t('common.fields.k')}
       </kbd>
     </Button>
   )

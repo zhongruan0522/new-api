@@ -82,14 +82,14 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label={t('Select all')}
+          aria-label={t('channels.placeholders.selectAll')}
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label={t('Select row')}
+          aria-label={t('channels.placeholders.selectRow')}
         />
       ),
       enableSorting: false,
@@ -100,9 +100,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // ID column
     {
       accessorKey: 'id',
-      meta: { label: t('ID'), mobileHidden: true },
+      meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('ID')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
       ),
       cell: ({ row }) => {
         const id = row.getValue('id') as number
@@ -114,8 +114,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Icon column
     {
       accessorKey: 'icon',
-      meta: { label: t('Icon'), mobileHidden: true },
-      header: t('Icon'),
+      meta: { label: t('models.fields.icon'), mobileHidden: true },
+      header: t('models.fields.icon'),
       cell: ({ row }) => {
         const model = row.original
         const iconKey =
@@ -134,9 +134,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Model Name column
     {
       accessorKey: 'model_name',
-      meta: { label: t('Model Name'), mobileTitle: true },
+      meta: { label: t('models.fields.modelName'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Model Name')} />
+        <DataTableColumnHeader column={column} title={t('models.fields.modelName')} />
       ),
       cell: ({ row }) => {
         const name = row.getValue('model_name') as string
@@ -156,9 +156,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Name Rule column
     {
       accessorKey: 'name_rule',
-      meta: { label: t('Match Type') },
+      meta: { label: t('models.fields.matchType') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Match Type')} />
+        <DataTableColumnHeader column={column} title={t('models.fields.matchType')} />
       ),
       cell: ({ row }) => {
         const rule = row.getValue('name_rule') as 0 | 1 | 2 | 3
@@ -219,8 +219,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Status column
     {
       accessorKey: 'status',
-      meta: { label: t('Status'), mobileBadge: true },
-      header: t('Status'),
+      meta: { label: t('channels.fields.status'), mobileBadge: true },
+      header: t('channels.fields.status'),
       cell: ({ row }) => {
         const status = row.getValue('status') as number
         const config =
@@ -249,8 +249,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Vendor column
     {
       accessorKey: 'vendor_id',
-      meta: { label: t('Vendor') },
-      header: t('Vendor'),
+      meta: { label: t('models.fields.vendor') },
+      header: t('models.fields.vendor'),
       cell: ({ row }) => {
         const vendorId = row.getValue('vendor_id') as number
         const vendor = vendorMap[vendorId]
@@ -283,8 +283,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Description column
     {
       accessorKey: 'description',
-      meta: { label: t('Description'), mobileHidden: true },
-      header: t('Description'),
+      meta: { label: t('auditLogs.tips.description'), mobileHidden: true },
+      header: t('auditLogs.tips.description'),
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         const modelName = row.getValue('model_name') as string
@@ -300,8 +300,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Tags column
     {
       accessorKey: 'tags',
-      meta: { label: t('Tags'), mobileHidden: true },
-      header: t('Tags'),
+      meta: { label: t('models.fields.tags'), mobileHidden: true },
+      header: t('models.fields.tags'),
       cell: ({ row }) => {
         const tags = row.getValue('tags') as string
         const tagArray = parseModelTags(tags)
@@ -339,8 +339,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Endpoints column
     {
       accessorKey: 'endpoints',
-      meta: { label: t('Endpoints'), mobileHidden: true },
-      header: t('Endpoints'),
+      meta: { label: t('models.fields.endpoints'), mobileHidden: true },
+      header: t('models.fields.endpoints'),
       cell: ({ row }) => {
         const endpoints = row.getValue('endpoints') as string
         const endpointArray = formatEndpointsDisplay(endpoints)
@@ -378,8 +378,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Bound Channels column
     {
       accessorKey: 'bound_channels',
-      meta: { label: t('Bound Channels'), mobileHidden: true },
-      header: t('Bound Channels'),
+      meta: { label: t('models.titles.boundChannels'), mobileHidden: true },
+      header: t('models.titles.boundChannels'),
       cell: ({ row }) => {
         const channels = row.getValue('bound_channels') as Array<{
           id: number
@@ -426,9 +426,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Enable Groups column
     {
       accessorKey: 'enable_groups',
-      meta: { label: t('Enable Groups'), mobileHidden: true },
+      meta: { label: t('models.actions.enableGroups'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Enable Groups')} />
+        <DataTableColumnHeader column={column} title={t('models.actions.enableGroups')} />
       ),
       cell: ({ row }) => {
         const groups = row.getValue('enable_groups') as string[]
@@ -466,8 +466,8 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Quota Types column
     {
       accessorKey: 'quota_types',
-      meta: { label: t('Quota Types'), mobileHidden: true },
-      header: t('Quota Types'),
+      meta: { label: t('models.fields.quotaTypes'), mobileHidden: true },
+      header: t('models.fields.quotaTypes'),
       cell: ({ row }) => {
         const quotaTypes = row.getValue('quota_types') as number[]
 
@@ -519,13 +519,13 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Sync Official column
     {
       accessorKey: 'sync_official',
-      meta: { label: t('Official Sync'), mobileHidden: true },
-      header: t('Official Sync'),
+      meta: { label: t('models.fields.officialSync'), mobileHidden: true },
+      header: t('models.fields.officialSync'),
       cell: ({ row }) => {
         const syncOfficial = row.getValue('sync_official') as number
         return (
           <StatusBadge
-            label={syncOfficial === 1 ? t('Official Sync') : t('No Sync')}
+            label={syncOfficial === 1 ? t('models.fields.officialSync') : t('models.fields.noSync')}
             variant={syncOfficial === 1 ? 'success' : 'warning'}
             size='sm'
             copyable={false}
@@ -546,9 +546,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Created Time column
     {
       accessorKey: 'created_time',
-      meta: { label: t('Created'), mobileHidden: true },
+      meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Created')} />
+        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
       ),
       cell: ({ row }) => {
         const timestamp = row.getValue('created_time') as number
@@ -564,9 +564,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Updated Time column
     {
       accessorKey: 'updated_time',
-      meta: { label: t('Updated At'), mobileHidden: true },
+      meta: { label: t('models.status.updatedAt'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Updated At')} />
+        <DataTableColumnHeader column={column} title={t('models.status.updatedAt')} />
       ),
       cell: ({ row }) => {
         const timestamp = row.getValue('updated_time') as number

@@ -184,7 +184,7 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
     ).filter((key) => !isEqual(normalized[key], baselineRef.current[key]))
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -203,7 +203,7 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
   const ipFilterMode = form.watch('fetch_setting.ip_filter_mode')
 
   return (
-    <SettingsSection title={t('SSRF Protection')}>
+    <SettingsSection title={t('systemSettings.fields.ssrfProtection')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -217,9 +217,9 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable SSRF Protection')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableSsrfProtection')}</FormLabel>
                   <FormDescription>
-                    {t('Prevent server-side request forgery attacks')}
+                    {t('systemSettings.tips.preventServerSideRequestForgeryAttacks')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -238,10 +238,10 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Allow Private IPs')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.allowPrivateIps')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Allow requests to private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)'
+                      'systemSettings.tips.allowRequestsToPrivateIpRanges1000'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -260,16 +260,16 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             name='fetch_setting.domain_filter_mode'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Domain Filter Mode')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.domainFilterMode')}</FormLabel>
                 <Select
                   items={[
                     {
                       value: 'false',
-                      label: t('Blacklist (Block listed domains)'),
+                      label: t('systemSettings.tips.blacklistBlockListedDomains'),
                     },
                     {
                       value: 'true',
-                      label: t('Whitelist (Only allow listed domains)'),
+                      label: t('systemSettings.tips.whitelistOnlyAllowListedDomains'),
                     },
                   ]}
                   onValueChange={(value) => field.onChange(value === 'true')}
@@ -283,16 +283,16 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
                   <SelectContent alignItemWithTrigger={false}>
                     <SelectGroup>
                       <SelectItem value='false'>
-                        {t('Blacklist (Block listed domains)')}
+                        {t('systemSettings.tips.blacklistBlockListedDomains')}
                       </SelectItem>
                       <SelectItem value='true'>
-                        {t('Whitelist (Only allow listed domains)')}
+                        {t('systemSettings.tips.whitelistOnlyAllowListedDomains')}
                       </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  {t('Choose how to filter domains')}
+                  {t('systemSettings.placeholders.chooseHowToFilterDomains')}
                 </FormDescription>
               </FormItem>
             )}
@@ -304,17 +304,17 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {t('Domain')}{' '}
-                  {domainFilterMode ? t('Whitelist') : t('Blacklist')}
+                  {t('systemSettings.fields.domain')}{' '}
+                  {domainFilterMode ? t('minimax.fields.whitelist') : t('systemSettings.fields.blacklist')}
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('example.com&#10;blocked-site.com')}
+                    placeholder={t('systemSettings.placeholders.exampleComBlockedSiteCom')}
                     rows={4}
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>{t('One domain per line')}</FormDescription>
+                <FormDescription>{t('systemSettings.placeholders.oneDomainPerLine')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -325,16 +325,16 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             name='fetch_setting.ip_filter_mode'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('IP Filter Mode')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.ipFilterMode')}</FormLabel>
                 <Select
                   items={[
                     {
                       value: 'false',
-                      label: t('Blacklist (Block listed IPs)'),
+                      label: t('systemSettings.fields.blacklistBlockListedIps'),
                     },
                     {
                       value: 'true',
-                      label: t('Whitelist (Only allow listed IPs)'),
+                      label: t('systemSettings.tips.whitelistOnlyAllowListedIps'),
                     },
                   ]}
                   onValueChange={(value) => field.onChange(value === 'true')}
@@ -348,16 +348,16 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
                   <SelectContent alignItemWithTrigger={false}>
                     <SelectGroup>
                       <SelectItem value='false'>
-                        {t('Blacklist (Block listed IPs)')}
+                        {t('systemSettings.fields.blacklistBlockListedIps')}
                       </SelectItem>
                       <SelectItem value='true'>
-                        {t('Whitelist (Only allow listed IPs)')}
+                        {t('systemSettings.tips.whitelistOnlyAllowListedIps')}
                       </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  {t('Choose how to filter IP addresses')}
+                  {t('systemSettings.placeholders.chooseHowToFilterIpAddresses')}
                 </FormDescription>
               </FormItem>
             )}
@@ -369,17 +369,17 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {t('IP')} {ipFilterMode ? t('Whitelist') : t('Blacklist')}
+                  {t('auditLogs.fields.ip')} {ipFilterMode ? t('minimax.fields.whitelist') : t('systemSettings.fields.blacklist')}
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('192.168.1.1&#10;10.0.0.0/8')}
+                    placeholder={t('systemSettings.placeholders.value1921681110000')}
                     rows={4}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('One IP or CIDR range per line')}
+                  {t('systemSettings.placeholders.oneIpOrCidrRangePerLine')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -391,13 +391,13 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             name='fetch_setting.allowed_ports'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Allowed Ports')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.allowedPorts')}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t('80,443,8080')} {...field} />
+                  <Input placeholder={t('systemSettings.placeholders.value804438080')} {...field} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Comma-separated list of allowed ports (empty = all ports)'
+                    'systemSettings.tips.commaSeparatedListOfAllowedPortsEmptyAllPorts'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -412,11 +412,11 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
                   <FormLabel>
-                    {t('Apply IP Filter to Resolved Domains')}
+                    {t('systemSettings.tips.applyIpFilterToResolvedDomains')}
                   </FormLabel>
                   <FormDescription>
                     {t(
-                      'Check resolved IPs against IP filters even when accessing by domain'
+                      'systemSettings.tips.checkResolvedIpsAgainstIpFiltersEvenWhenAccessing'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>

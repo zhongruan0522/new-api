@@ -54,25 +54,25 @@ export function CreemConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>{t('Confirm Creem Purchase')}</DialogTitle>
+          <DialogTitle>{t('wallet.actions.confirmCreemPurchase')}</DialogTitle>
           <DialogDescription>
-            {t('Review your purchase details before proceeding.')}
+            {t('wallet.tips.reviewYourPurchaseDetailsBeforeProceeding')}
           </DialogDescription>
         </DialogHeader>
 
         <div className='space-y-3 py-3 sm:space-y-4 sm:py-4'>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('Product')}</span>
+            <span className='text-muted-foreground'>{t('wallet.fields.product')}</span>
             <span className='font-medium'>{product.name}</span>
           </div>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('Price')}</span>
+            <span className='text-muted-foreground'>{t('pricing.fields.price')}</span>
             <span className='font-medium text-indigo-600'>
               {formatCreemPrice(product.price, product.currency)}
             </span>
           </div>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('Quota')}</span>
+            <span className='text-muted-foreground'>{t('keys.fields.quota')}</span>
             <span className='font-medium'>{formatNumber(product.quota)}</span>
           </div>
         </div>
@@ -83,11 +83,11 @@ export function CreemConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={processing}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={onConfirm} disabled={processing}>
             {processing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {t('Confirm Payment')}
+            {t('wallet.actions.confirmPayment')}
           </Button>
         </DialogFooter>
       </DialogContent>

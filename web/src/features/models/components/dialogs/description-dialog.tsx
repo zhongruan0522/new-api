@@ -45,7 +45,7 @@ export function DescriptionDialog({
       <DialogContent className='max-w-2xl'>
         <DialogHeader>
           <DialogTitle>{modelName}</DialogTitle>
-          <DialogDescription>{t('Model Description')}</DialogDescription>
+          <DialogDescription>{t('models.tips.modelDescription')}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className='max-h-96'>

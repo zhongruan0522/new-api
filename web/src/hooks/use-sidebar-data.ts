@@ -53,19 +53,19 @@ export function useSidebarData(): SidebarData {
     navGroups: [
       {
         id: 'chat',
-        title: t('Experience Center'),
+        title: t('common.fields.experienceCenter'),
         items: [
           {
-            title: t('Playground'),
+            title: t('systemSettings.titles.playground'),
             url: '/playground',
             icon: FlaskConical,
           },
           {
-            title: t('Multimodal'),
+            title: t('common.fields.multimodal'),
             icon: WandSparkles,
             items: [
               {
-                title: t('Custom Voice'),
+                title: t('multimodal.fields.customVoice'),
                 url: '/multimodal/custom-voice',
               },
             ],
@@ -74,30 +74,30 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'general',
-        title: t('General'),
+        title: t('common.fields.general'),
         items: [
           {
-            title: t('Overview'),
+            title: t('common.titles.overview'),
             url: '/dashboard/overview',
             icon: Activity,
           },
           {
-            title: t('Dashboard'),
+            title: t('systemSettings.titles.dashboard'),
             url: '/dashboard/models',
             icon: LayoutDashboard,
           },
           {
-            title: t('API Keys'),
+            title: t('dashboard.fields.apiKeys'),
             url: '/keys',
             icon: Key,
           },
           {
-            title: t('Usage Logs'),
+            title: t('dashboard.titles.usageLogs'),
             url: '/usage-logs/common',
             icon: FileText,
           },
           {
-            title: t('Multimodal Files'),
+            title: t('multimodalFiles.fields.files'),
             url: '/multimodal-files',
             icon: Files,
           },
@@ -105,20 +105,20 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'personal',
-        title: t('Personal'),
+        title: t('common.fields.personal'),
         items: [
           {
-            title: t('Wallet'),
+            title: t('layout.titles.wallet'),
             url: '/wallet',
             icon: Wallet,
           },
           {
-            title: t('Order Query'),
+            title: t('orderQuery.titles.query'),
             url: '/order-query',
             icon: ReceiptText,
           },
           {
-            title: t('Profile'),
+            title: t('layout.titles.profile'),
             url: '/profile',
             icon: User,
           },
@@ -126,10 +126,10 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'support',
-        title: t('Support'),
+        title: t('common.fields.support'),
         items: [
           {
-            title: t('Tickets'),
+            title: t('systemSettings.fields.tickets'),
             url: '/ticket',
             icon: LifeBuoy,
           },
@@ -137,50 +137,50 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'admin',
-        title: t('Admin'),
+        title: t('systemSettings.fields.admin'),
         items: [
           {
-            title: t('Dynamic Ratio'),
+            title: t('dynamicRatio.fields.ratio'),
             url: '/dynamic-ratio',
             icon: Gauge,
           },
           {
-            title: t('Channels'),
+            title: t('channels.titles.value'),
             url: '/channels',
             icon: Radio,
           },
           {
-            title: t('Models'),
+            title: t('channels.titles.models'),
             url: '/models/metadata',
             icon: Box,
           },
           {
-            title: t('Users'),
+            title: t('systemSettings.titles.users'),
             url: '/users',
             icon: Users,
           },
           {
-            title: t('Redemption Codes'),
+            title: t('redemptionCodes.fields.codes'),
             url: '/redemption-codes',
             icon: Ticket,
           },
           {
-            title: t('Audit Logs'),
+            title: t('auditLogs.titles.logs'),
             url: '/audit-logs',
             icon: ShieldCheck,
           },
           {
-            title: t('MiniMax'),
+            title: t('common.fields.miniMax'),
             icon: Mic,
             items: [
               {
-                title: t('Voice Management'),
+                title: t('minimax.titles.voiceManagement'),
                 url: '/minimax/voice-management',
               },
             ],
           },
           {
-            title: t('System Settings'),
+            title: t('common.titles.systemSettings'),
             url: '/system-settings/site',
             activeUrls: ['/system-settings'],
             icon: Settings,

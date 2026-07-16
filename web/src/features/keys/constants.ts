@@ -38,22 +38,22 @@ export const API_KEY_STATUSES: Record<
   }
 > = {
   [API_KEY_STATUS.ENABLED]: {
-    label: 'Enabled',
+    label: 'channels.status.enabled',
     variant: 'success',
     value: API_KEY_STATUS.ENABLED,
   },
   [API_KEY_STATUS.DISABLED]: {
-    label: 'Disabled',
+    label: 'channels.status.disabled',
     variant: 'neutral',
     value: API_KEY_STATUS.DISABLED,
   },
   [API_KEY_STATUS.EXPIRED]: {
-    label: 'Expired',
+    label: 'redemptionCodes.status.expired',
     variant: 'warning',
     value: API_KEY_STATUS.EXPIRED,
   },
   [API_KEY_STATUS.EXHAUSTED]: {
-    label: 'Exhausted',
+    label: 'common.status.exhausted',
     variant: 'danger',
     value: API_KEY_STATUS.EXHAUSTED,
   },
@@ -77,15 +77,15 @@ export const DEFAULT_GROUP = '' as const
 // ============================================================================
 
 export const ERROR_MESSAGES = {
-  UNEXPECTED: 'An unexpected error occurred',
-  LOAD_FAILED: 'Failed to load API keys',
-  SEARCH_FAILED: 'Failed to search API keys',
-  CREATE_FAILED: 'Failed to create API key',
-  UPDATE_FAILED: 'Failed to update API key',
-  DELETE_FAILED: 'Failed to delete API key',
-  BATCH_DELETE_FAILED: 'Failed to delete API keys',
-  STATUS_UPDATE_FAILED: 'Failed to update API key status',
-  RESET_FAILED: 'Failed to reset API key',
+  UNEXPECTED: 'common.fields.unexpectedErrorOccurred',
+  LOAD_FAILED: 'common.errors.failedToLoadApiKeys',
+  SEARCH_FAILED: 'common.errors.failedToSearchApiKeys',
+  CREATE_FAILED: 'common.errors.failedToCreateApiKey',
+  UPDATE_FAILED: 'common.errors.failedToUpdateApiKey',
+  DELETE_FAILED: 'common.errors.failedToDeleteApiKey',
+  BATCH_DELETE_FAILED: 'common.errors.failedToDeleteApiKeys',
+  STATUS_UPDATE_FAILED: 'common.errors.failedToUpdateApiKeyStatus',
+  RESET_FAILED: 'common.errors.failedToResetApiKey',
 } as const
 
 // ============================================================================
@@ -93,10 +93,10 @@ export const ERROR_MESSAGES = {
 // ============================================================================
 
 export const SUCCESS_MESSAGES = {
-  API_KEY_CREATED: 'API Key created successfully',
-  API_KEY_UPDATED: 'API Key updated successfully',
-  API_KEY_DELETED: 'API Key deleted successfully',
-  API_KEY_ENABLED: 'API Key enabled successfully',
-  API_KEY_DISABLED: 'API Key disabled successfully',
-  API_KEY_RESET: 'API Key reset successfully',
+  API_KEY_CREATED: 'common.status.apiKeyCreatedSuccessfully',
+  API_KEY_UPDATED: 'common.status.apiKeyUpdatedSuccessfully',
+  API_KEY_DELETED: 'common.status.apiKeyDeletedSuccessfully',
+  API_KEY_ENABLED: 'common.status.apiKeyEnabledSuccessfully',
+  API_KEY_DISABLED: 'common.status.apiKeyDisabledSuccessfully',
+  API_KEY_RESET: 'common.fields.apiKeyResetSuccessfully',
 } as const

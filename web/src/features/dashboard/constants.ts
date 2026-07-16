@@ -38,27 +38,27 @@ export const TIME_RANGE_BY_GRANULARITY = {
 } as const
 
 export const TIME_GRANULARITY_OPTIONS = [
-  { label: 'Hours', value: 'hour' },
-  { label: 'Day', value: 'day' },
-  { label: 'Week', value: 'week' },
+  { label: 'channels.fields.hours', value: 'hour' },
+  { label: 'common.fields.day', value: 'day' },
+  { label: 'common.fields.week', value: 'week' },
 ] as const
 
 export const TIME_RANGE_PRESETS = [
-  { label: '1 Day', days: 1 },
-  { label: '7 Days', days: 7 },
-  { label: '14 Days', days: 14 },
-  { label: '29 Days', days: 29 },
+  { label: 'keys.placeholders.value1Day', days: 1 },
+  { label: 'usageLogs.placeholders.value7Days', days: 7 },
+  { label: 'common.placeholders.value14Days', days: 14 },
+  { label: 'common.placeholders.value29Days', days: 29 },
 ] as const
 
 export const CONSUMPTION_DISTRIBUTION_CHART_OPTIONS = [
-  { value: 'bar', labelKey: 'Bar Chart' },
-  { value: 'area', labelKey: 'Area Chart' },
+  { value: 'bar', labelKey: 'common.fields.barChart' },
+  { value: 'area', labelKey: 'common.fields.areaChart' },
 ] as const
 
 export const MODEL_ANALYTICS_CHART_OPTIONS = [
-  { value: 'trend', labelKey: 'Call Trend' },
-  { value: 'proportion', labelKey: 'Call Count Distribution' },
-  { value: 'top', labelKey: 'Call Count Ranking' },
+  { value: 'trend', labelKey: 'common.fields.callTrend' },
+  { value: 'proportion', labelKey: 'common.fields.callCountDistribution' },
+  { value: 'top', labelKey: 'common.fields.callCountRanking' },
 ] as const
 
 export const EMPTY_DASHBOARD_FILTERS: DashboardFilters = {

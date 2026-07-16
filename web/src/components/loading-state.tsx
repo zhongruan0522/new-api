@@ -59,7 +59,7 @@ export function LoadingState(props: LoadingStateProps) {
         <Loader2 className={iconSize} />
       </div>
       <p className='text-muted-foreground text-sm'>
-        {props.message ?? t('Loading...')}
+        {props.message ?? t('common.tips.loading')}
       </p>
     </div>
   )

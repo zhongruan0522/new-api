@@ -64,15 +64,15 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 function getStatusMeta(status: string) {
   if (status === 'success') {
-    return { label: 'Success', variant: 'success' as const }
+    return { label: 'channels.status.success', variant: 'success' as const }
   }
   if (status === 'expired') {
-    return { label: 'Expired', variant: 'danger' as const }
+    return { label: 'redemptionCodes.status.expired', variant: 'danger' as const }
   }
   if (status === 'failed') {
-    return { label: 'Failed', variant: 'danger' as const }
+    return { label: 'channels.errors.failed', variant: 'danger' as const }
   }
-  return { label: 'Pending', variant: 'warning' as const }
+  return { label: 'common.status.pending', variant: 'warning' as const }
 }
 
 function OrderNumberCell({ record }: { record: TopupRecord }) {
@@ -85,7 +85,7 @@ function OrderNumberCell({ record }: { record: TopupRecord }) {
       <Button
         variant='ghost'
         size='icon-xs'
-        aria-label={t('Copy order number')}
+        aria-label={t('orderQuery.actions.copyOrderNumber')}
         onClick={() => copyToClipboard(record.trade_no)}
       >
         {copiedText === record.trade_no ? (
@@ -127,11 +127,11 @@ export function OrderQuery() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Order Query')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('orderQuery.titles.query')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <Button variant='outline' onClick={() => refresh()}>
             <RefreshCw className={loading ? 'size-4 animate-spin' : 'size-4'} />
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
@@ -143,7 +143,7 @@ export function OrderQuery() {
                   <Input
                     value={keyword}
                     className='pl-8'
-                    placeholder={t('Search by order number...')}
+                    placeholder={t('orderQuery.actions.searchByOrderNumber')}
                     onChange={(event) => handleSearch(event.target.value)}
                   />
                 </div>
@@ -174,25 +174,25 @@ export function OrderQuery() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className='min-w-64'>
-                        {t('Order number')}
+                        {t('orderQuery.fields.number')}
                       </TableHead>
                       {isAdmin ? (
                         <TableHead className='min-w-28'>
-                          {t('User ID')}
+                          {t('orderQuery.fields.userId')}
                         </TableHead>
                       ) : null}
                       <TableHead className='min-w-36'>
-                        {t('Payment Method')}
+                        {t('orderQuery.fields.paymentMethod')}
                       </TableHead>
-                      <TableHead className='min-w-32'>{t('Amount')}</TableHead>
-                      <TableHead className='min-w-32'>{t('Payment')}</TableHead>
-                      <TableHead className='min-w-32'>{t('Status')}</TableHead>
+                      <TableHead className='min-w-32'>{t('orderQuery.fields.amount')}</TableHead>
+                      <TableHead className='min-w-32'>{t('orderQuery.fields.payment')}</TableHead>
+                      <TableHead className='min-w-32'>{t('channels.fields.status')}</TableHead>
                       <TableHead className='min-w-40'>
-                        {t('Created At')}
+                        {t('multimodalFiles.status.createdAt')}
                       </TableHead>
                       {isAdmin ? (
                         <TableHead className='w-32 text-right'>
-                          {t('Actions')}
+                          {t('channels.fields.actions')}
                         </TableHead>
                       ) : null}
                     </TableRow>
@@ -206,7 +206,7 @@ export function OrderQuery() {
                         >
                           <div className='inline-flex items-center gap-2'>
                             <Loader2 className='size-4 animate-spin' />
-                            {t('Loading...')}
+                            {t('common.tips.loading')}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -216,7 +216,7 @@ export function OrderQuery() {
                           colSpan={isAdmin ? 8 : 6}
                           className='text-muted-foreground h-36 text-center'
                         >
-                          {t('No orders found')}
+                          {t('orderQuery.fields.noOrdersFound')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -263,7 +263,7 @@ export function OrderQuery() {
                                       setConfirmTradeNo(record.trade_no)
                                     }
                                   >
-                                    {t('Complete Order')}
+                                    {t('orderQuery.fields.completeOrder')}
                                   </Button>
                                 ) : null}
                               </TableCell>
@@ -278,7 +278,7 @@ export function OrderQuery() {
 
               <div className='flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between'>
                 <div className='text-muted-foreground'>
-                  {t('Total')}: {total}
+                  {t('dashboard.fields.total')}: {total}
                 </div>
                 <div className='flex items-center gap-2'>
                   <Button
@@ -312,11 +312,11 @@ export function OrderQuery() {
         onOpenChange={(open) => {
           if (!open && !completing) setConfirmTradeNo(null)
         }}
-        title={t('Complete Order')}
+        title={t('orderQuery.fields.completeOrder')}
         desc={t(
-          'Are you sure you want to manually complete this order? The user will be credited with the corresponding quota.'
+          'orderQuery.tips.sureYouWantToManuallyCompleteThisOrderThe'
         )}
-        confirmText={t('Complete Order')}
+        confirmText={t('orderQuery.fields.completeOrder')}
         isLoading={completing}
         handleConfirm={confirmComplete}
       />

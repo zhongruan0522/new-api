@@ -165,7 +165,7 @@ export function ChannelAffinitySection(props: Props) {
       const res = await getCacheStats()
       if (res.success) setCacheStats(res.data || null)
     } catch {
-      toast.error(t('Failed to refresh cache stats'))
+      toast.error(t('systemSettings.errors.failedToRefreshCacheStats'))
     } finally {
       setCacheLoading(false)
     }
@@ -190,7 +190,7 @@ export function ChannelAffinitySection(props: Props) {
     setRules((prev) =>
       [...prev, ...templates].map((r, idx) => ({ ...r, id: idx }))
     )
-    toast.success(t('Templates appended'))
+    toast.success(t('systemSettings.fields.templatesAppended'))
     setFillTemplateDialogOpen(false)
   }
 
@@ -208,12 +208,12 @@ export function ChannelAffinitySection(props: Props) {
       try {
         const parsed = JSON.parse(jsonText)
         if (!Array.isArray(parsed)) {
-          toast.error(t('Rules JSON must be an array'))
+          toast.error(t('systemSettings.errors.rulesJsonMustBeAnArray'))
           return
         }
         rulesJson = JSON.stringify(parsed)
       } catch {
-        toast.error(t('Invalid rules JSON format'))
+        toast.error(t('systemSettings.errors.invalidRulesJsonFormat'))
         return
       }
     } else {
@@ -270,16 +270,16 @@ export function ChannelAffinitySection(props: Props) {
       }
 
       if (updates.length === 0) {
-        toast.info(t('No changes'))
+        toast.info(t('systemSettings.fields.noChanges'))
         return
       }
 
       for (const u of updates) {
         await updateOption.mutateAsync(u)
       }
-      toast.success(t('Saved successfully'))
+      toast.success(t('systemSettings.status.savedSuccessfully'))
     } catch {
-      toast.error(t('Failed to save'))
+      toast.error(t('systemSettings.errors.failedToSave'))
     } finally {
       setSaving(false)
     }
@@ -304,13 +304,13 @@ export function ChannelAffinitySection(props: Props) {
     setRules((prev) =>
       prev.filter((_, i) => i !== idx).map((r, i) => ({ ...r, id: i }))
     )
-    toast.success(t('Deleted successfully'))
+    toast.success(t('dynamicRatio.status.deletedSuccessfully'))
   }
 
   const handleClearAll = async () => {
     const res = await clearAllCache()
     if (res.success) {
-      toast.success(t('Cleared'))
+      toast.success(t('systemSettings.fields.cleared'))
       refreshCache()
     }
     setClearAllDialogOpen(false)
@@ -320,7 +320,7 @@ export function ChannelAffinitySection(props: Props) {
     if (!clearRuleName) return
     const res = await clearRuleCache(clearRuleName)
     if (res.success) {
-      toast.success(t('Cleared'))
+      toast.success(t('systemSettings.fields.cleared'))
       refreshCache()
     }
     setClearRuleName(null)
@@ -341,7 +341,7 @@ export function ChannelAffinitySection(props: Props) {
     try {
       const parsed = JSON.parse(jsonText)
       if (!Array.isArray(parsed)) {
-        toast.error(t('Rules JSON must be an array'))
+        toast.error(t('systemSettings.errors.rulesJsonMustBeAnArray'))
         return
       }
       setRules(
@@ -352,17 +352,17 @@ export function ChannelAffinitySection(props: Props) {
       )
       setEditMode('visual')
     } catch {
-      toast.error(t('Invalid rules JSON format'))
+      toast.error(t('systemSettings.errors.invalidRulesJsonFormat'))
     }
   }
 
   return (
     <>
-      <SettingsSection title={t('Channel Affinity')}>
+      <SettingsSection title={t('systemSettings.fields.channelAffinity')}>
         <Alert>
           <AlertDescription className='text-xs'>
             {t(
-              'Channel affinity reuses the last successful channel based on keys extracted from the request context or JSON body.'
+              'systemSettings.status.channelAffinityReusesTheLastSuccessfulChannelBasedOn'
             )}
           </AlertDescription>
         </Alert>
@@ -374,11 +374,11 @@ export function ChannelAffinitySection(props: Props) {
           <SettingsSwitchField
             checked={enabled}
             onCheckedChange={setEnabled}
-            label={t('Enable')}
+            label={t('channels.actions.enable')}
             className='border-b-0 py-0'
           />
           <div className='grid gap-1.5'>
-            <Label>{t('Max Entries')}</Label>
+            <Label>{t('systemSettings.fields.maxEntries')}</Label>
             <Input
               type='number'
               min={0}
@@ -387,7 +387,7 @@ export function ChannelAffinitySection(props: Props) {
             />
           </div>
           <div className='grid gap-1.5'>
-            <Label>{t('Default TTL (seconds)')}</Label>
+            <Label>{t('systemSettings.fields.defaultTtlSeconds')}</Label>
             <Input
               type='number'
               min={0}
@@ -400,9 +400,9 @@ export function ChannelAffinitySection(props: Props) {
         <SettingsSwitchField
           checked={switchOnSuccess}
           onCheckedChange={setSwitchOnSuccess}
-          label={t('Switch affinity on success')}
+          label={t('systemSettings.actions.switchAffinityOnSuccess')}
           description={t(
-            'If the affinity channel fails and retry succeeds on another channel, update affinity to the successful channel.'
+            'systemSettings.status.ifTheAffinityChannelFailsAndRetrySucceedsOn'
           )}
         />
 
@@ -414,7 +414,7 @@ export function ChannelAffinitySection(props: Props) {
             size='sm'
             onClick={editMode === 'json' ? switchToVisualMode : undefined}
           >
-            {t('Visual')}
+            {t('channels.fields.visual')}
           </Button>
           <Button
             variant={editMode === 'json' ? 'default' : 'outline'}
@@ -428,7 +428,7 @@ export function ChannelAffinitySection(props: Props) {
               render={<Button variant='outline' size='sm' />}
             >
               <Plus className='mr-1 h-3 w-3' />
-              {t('Add Rule')}
+              {t('systemSettings.actions.addRule')}
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem
@@ -438,7 +438,7 @@ export function ChannelAffinitySection(props: Props) {
                   setRuleEditorOpen(true)
                 }}
               >
-                {t('Blank Rule')}
+                {t('systemSettings.fields.blankRule')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -462,10 +462,10 @@ export function ChannelAffinitySection(props: Props) {
           </DropdownMenu>
           <Button variant='outline' size='sm' onClick={handleFillTemplates}>
             <FileText className='mr-1 h-3 w-3' />
-            {t('Fill Templates')}
+            {t('systemSettings.actions.fillTemplates')}
           </Button>
           <Button size='sm' onClick={handleSave} disabled={saving}>
-            {saving ? t('Saving...') : t('Save')}
+            {saving ? t('channels.tips.saving') : t('channels.actions.save')}
           </Button>
           <Button
             variant='outline'
@@ -476,18 +476,18 @@ export function ChannelAffinitySection(props: Props) {
             <RefreshCw
               className={`mr-1 h-3 w-3 ${cacheLoading ? 'animate-spin' : ''}`}
             />
-            {t('Refresh Cache')}
+            {t('systemSettings.actions.refreshCache')}
           </Button>
           <Button
             variant='destructive'
             size='sm'
             onClick={() => setClearAllDialogOpen(true)}
           >
-            {t('Clear All Cache')}
+            {t('systemSettings.actions.clearAllCache')}
           </Button>
           {cacheStats && (
             <span className='text-muted-foreground text-xs'>
-              {t('Cache Entries')}: {cacheStats.total} /{' '}
+              {t('systemSettings.fields.cacheEntries')}: {cacheStats.total} /{' '}
               {cacheStats.cache_capacity}
             </span>
           )}
@@ -499,14 +499,14 @@ export function ChannelAffinitySection(props: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('Name')}</TableHead>
-                  <TableHead>{t('Model Regex')}</TableHead>
-                  <TableHead>{t('Key Sources')}</TableHead>
-                  <TableHead>{t('TTL')}</TableHead>
-                  <TableHead>{t('Retry')}</TableHead>
-                  <TableHead>{t('Scope')}</TableHead>
-                  <TableHead>{t('Cache')}</TableHead>
-                  <TableHead className='text-right'>{t('Actions')}</TableHead>
+                  <TableHead>{t('channels.fields.name')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.modelRegex')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.keySources')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.ttl')}</TableHead>
+                  <TableHead>{t('common.actions.retry')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.scope')}</TableHead>
+                  <TableHead>{t('pricing.fields.cache')}</TableHead>
+                  <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -516,7 +516,7 @@ export function ChannelAffinitySection(props: Props) {
                       colSpan={8}
                       className='text-muted-foreground py-8 text-center'
                     >
-                      {t('No rules yet')}
+                      {t('systemSettings.fields.noRulesYet')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -541,8 +541,8 @@ export function ChannelAffinitySection(props: Props) {
                         <StatusBadge
                           label={
                             rule.skip_retry_on_failure
-                              ? t('No Retry')
-                              : t('Retry')
+                              ? t('systemSettings.fields.noRetry')
+                              : t('common.actions.retry')
                           }
                           variant={
                             rule.skip_retry_on_failure ? 'danger' : 'neutral'
@@ -553,9 +553,9 @@ export function ChannelAffinitySection(props: Props) {
                       <TableCell>
                         {(() => {
                           const scopeItems = [
-                            rule.include_using_group && t('Group'),
-                            rule.include_model_name && t('Model'),
-                            rule.include_rule_name && t('Rule'),
+                            rule.include_using_group && t('common.fields.group'),
+                            rule.include_model_name && t('common.fields.model'),
+                            rule.include_rule_name && t('systemSettings.fields.rule'),
                           ].filter(Boolean) as string[]
                           if (scopeItems.length === 0) return '-'
                           return <RuleBadgeList items={scopeItems} />
@@ -574,7 +574,7 @@ export function ChannelAffinitySection(props: Props) {
                               size='icon'
                               className='h-7 w-7'
                               onClick={() => setClearRuleName(rule.name)}
-                              title={t('Clear cache for this rule')}
+                              title={t('systemSettings.actions.clearCacheForThisRule')}
                             >
                               <X className='h-3 w-3' />
                             </Button>
@@ -609,7 +609,7 @@ export function ChannelAffinitySection(props: Props) {
           </div>
         ) : (
           <div className='grid gap-1.5'>
-            <Label>{t('Rules JSON')}</Label>
+            <Label>{t('systemSettings.fields.rulesJson')}</Label>
             <Textarea
               className='min-h-[300px] font-mono text-xs'
               value={jsonText}
@@ -630,9 +630,9 @@ export function ChannelAffinitySection(props: Props) {
       <ConfirmDialog
         open={clearAllDialogOpen}
         onOpenChange={setClearAllDialogOpen}
-        title={t('Confirm clearing all channel affinity cache')}
+        title={t('systemSettings.actions.confirmClearingAllChannelAffinityCache')}
         desc={t(
-          'This will delete all channel affinity cache entries still in memory.'
+          'systemSettings.tips.deleteAllChannelAffinityCacheEntriesStillInMemory'
         )}
         handleConfirm={handleClearAll}
         destructive
@@ -642,8 +642,8 @@ export function ChannelAffinitySection(props: Props) {
         <ConfirmDialog
           open
           onOpenChange={(v) => !v && setClearRuleName(null)}
-          title={t('Confirm clearing cache for this rule')}
-          desc={`${t('Rule')}: ${clearRuleName}`}
+          title={t('systemSettings.actions.confirmClearingCacheForThisRule')}
+          desc={`${t('systemSettings.fields.rule')}: ${clearRuleName}`}
           handleConfirm={handleClearRule}
           destructive
         />
@@ -652,9 +652,9 @@ export function ChannelAffinitySection(props: Props) {
       <ConfirmDialog
         open={fillTemplateDialogOpen}
         onOpenChange={setFillTemplateDialogOpen}
-        title={t('Fill Codex CLI / Claude CLI Templates')}
+        title={t('systemSettings.actions.fillCodexCliClaudeCliTemplates')}
         desc={t(
-          'This will append 2 template rules (Codex CLI and Claude CLI) to the existing rule list.'
+          'systemSettings.tips.append2TemplateRulesCodexCliAndClaudeCli'
         )}
         handleConfirm={appendCliTemplates}
       />

@@ -151,15 +151,15 @@ export function DeploymentsTable() {
     try {
       const res = await deleteDeployment(deleteTarget.id)
       if (res?.success) {
-        toast.success(t('Deleted successfully'))
+        toast.success(t('dynamicRatio.status.deletedSuccessfully'))
         queryClient.invalidateQueries({
           queryKey: deploymentsQueryKeys.lists(),
         })
       } else {
-        toast.error(res?.message || t('Delete failed'))
+        toast.error(res?.message || t('minimax.actions.deleteFailed'))
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('Delete failed'))
+      toast.error(err instanceof Error ? err.message : t('minimax.actions.deleteFailed'))
     } finally {
       setIsDeleting(false)
       setDeleteOpen(false)
@@ -235,18 +235,18 @@ export function DeploymentsTable() {
         columns={columns}
         isLoading={isLoading}
         isFetching={isFetching}
-        emptyTitle={t('No Deployments Found')}
+        emptyTitle={t('models.fields.noDeploymentsFound')}
         emptyDescription={t(
-          'No deployments available. Create one to get started.'
+          'models.tips.noDeploymentsAvailableCreateOneToGetStarted'
         )}
         skeletonKeyPrefix='deployment-skeleton'
         applyHeaderSize
         toolbarProps={{
-          searchPlaceholder: t('Search deployments...'),
+          searchPlaceholder: t('models.actions.searchDeployments'),
           filters: [
             {
               columnId: 'status',
-              title: t('Status'),
+              title: t('channels.fields.status'),
               options: statusFilterOptions,
               singleSelect: true,
             },
@@ -303,10 +303,10 @@ export function DeploymentsTable() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Confirm delete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('channels.actions.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                'Are you sure you want to delete deployment "{{name}}"? This action cannot be undone.',
+                'common.errors.sureYouWantToDeleteDeploymentNameThisAction',
                 {
                   name:
                     deleteTarget?.container_name ||
@@ -318,14 +318,14 @@ export function DeploymentsTable() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
-              {isDeleting ? t('Deleting...') : t('Delete')}
+              {isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

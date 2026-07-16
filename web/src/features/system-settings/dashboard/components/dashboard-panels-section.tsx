@@ -32,7 +32,7 @@ export function DashboardPanelsSection() {
 
   if (isLoading) {
     return (
-      <SettingsSection title={t('Dashboard Panels')}>
+      <SettingsSection title={t('systemSettings.titles.dashboardPanels')}>
         <div className="space-y-4">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
@@ -50,10 +50,10 @@ export function DashboardPanelsSection() {
   }
 
   return (
-    <SettingsSection title={t('Dashboard Panels')}>
+    <SettingsSection title={t('systemSettings.titles.dashboardPanels')}>
       <p className="text-sm text-muted-foreground mb-4">
         {t(
-          'Control which panels are displayed in the Overview section of the dashboard'
+          'systemSettings.tips.controlWhichPanelsAreDisplayedInTheOverviewSectionOf'
         )}
       </p>
       <div className="space-y-4">
@@ -62,9 +62,9 @@ export function DashboardPanelsSection() {
           onCheckedChange={(checked) =>
             handleToggle('api_info_enabled', checked)
           }
-          label={t('API Information Panel')}
+          label={t('systemSettings.fields.apiInformationPanel')}
           description={t(
-            'Display API endpoint information and documentation links'
+            'systemSettings.tips.displayApiEndpointInformationAndDocumentationLinks'
           )}
         />
 
@@ -73,9 +73,9 @@ export function DashboardPanelsSection() {
           onCheckedChange={(checked) =>
             handleToggle('uptime_kuma_enabled', checked)
           }
-          label={t('Uptime Monitoring Panel')}
+          label={t('systemSettings.tips.uptimeMonitoringPanel')}
           description={t(
-            'Display Uptime Kuma service monitoring status. Requires external API calls.'
+            'systemSettings.tips.displayUptimeKumaServiceMonitoringStatusRequiresExternalApiCalls'
           )}
         />
 
@@ -84,15 +84,15 @@ export function DashboardPanelsSection() {
           onCheckedChange={(checked) =>
             handleToggle('announcements_enabled', checked)
           }
-          label={t('Announcements Panel')}
-          description={t('Display system announcements to users')}
+          label={t('systemSettings.fields.announcementsPanel')}
+          description={t('systemSettings.tips.displaySystemAnnouncementsToUsers')}
         />
 
         <SettingsSwitchField
           checked={config.faq_enabled}
           onCheckedChange={(checked) => handleToggle('faq_enabled', checked)}
-          label={t('FAQ Panel')}
-          description={t('Display frequently asked questions')}
+          label={t('systemSettings.fields.faqPanel')}
+          description={t('systemSettings.tips.displayFrequentlyAskedQuestions')}
         />
       </div>
     </SettingsSection>

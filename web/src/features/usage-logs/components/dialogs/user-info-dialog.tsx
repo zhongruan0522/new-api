@@ -55,12 +55,12 @@ export function UserInfoDialog({
         if (result.success) {
           setUserInfo(result.data || null)
         } else {
-          toast.error(result.message || t('Failed to fetch user information'))
+          toast.error(result.message || t('usageLogs.errors.failedToFetchUserInformation'))
         }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to fetch user info:', error)
-        toast.error(t('Failed to fetch user information'))
+        toast.error(t('usageLogs.errors.failedToFetchUserInformation'))
       } finally {
         setIsLoading(false)
       }
@@ -91,10 +91,10 @@ export function UserInfoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('User Information')}</DialogTitle>
+          <DialogTitle>{t('usageLogs.titles.userInformation')}</DialogTitle>
           <DialogDescription>
             {t(
-              'View detailed information about this user including balance, usage statistics, and invitation details.'
+              'usageLogs.actions.viewDetailedInformationAboutThisUserIncludingBalanceUsage'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -107,10 +107,10 @@ export function UserInfoDialog({
           <div className='space-y-4 py-4'>
             {/* Basic Info */}
             <div className='grid grid-cols-2 gap-4'>
-              <InfoItem label={t('Username')} value={userInfo.username} />
+              <InfoItem label={t('auth.fields.username')} value={userInfo.username} />
               {userInfo.display_name && (
                 <InfoItem
-                  label={t('Display Name')}
+                  label={t('usageLogs.fields.displayName')}
                   value={userInfo.display_name}
                 />
               )}
@@ -119,11 +119,11 @@ export function UserInfoDialog({
             {/* Balance Info */}
             <div className='grid grid-cols-2 gap-4'>
               <InfoItem
-                label={t('Balance')}
+                label={t('usageLogs.fields.balance')}
                 value={formatQuota(userInfo.quota)}
               />
               <InfoItem
-                label={t('Used Quota')}
+                label={t('usageLogs.status.usedQuota')}
                 value={formatQuota(userInfo.used_quota)}
               />
             </div>
@@ -131,11 +131,11 @@ export function UserInfoDialog({
             {/* Statistics */}
             <div className='grid grid-cols-2 gap-4'>
               <InfoItem
-                label={t('Request Count')}
+                label={t('dashboard.fields.requestCount')}
                 value={formatCompactNumber(userInfo.request_count)}
               />
               {userInfo.group && (
-                <InfoItem label={t('User Group')} value={userInfo.group} />
+                <InfoItem label={t('common.fields.userGroup')} value={userInfo.group} />
               )}
             </div>
 
@@ -147,13 +147,13 @@ export function UserInfoDialog({
                 <div className='grid grid-cols-2 gap-4'>
                   {userInfo.aff_code && (
                     <InfoItem
-                      label={t('Invitation Code')}
+                      label={t('usageLogs.fields.invitationCode')}
                       value={userInfo.aff_code}
                     />
                   )}
                   {userInfo.aff_count !== undefined && (
                     <InfoItem
-                      label={t('Invited Users')}
+                      label={t('usageLogs.titles.invitedUsers')}
                       value={formatCompactNumber(userInfo.aff_count)}
                     />
                   )}
@@ -161,7 +161,7 @@ export function UserInfoDialog({
 
                 {userInfo.aff_quota !== undefined && userInfo.aff_quota > 0 && (
                   <InfoItem
-                    label={t('Invitation Quota')}
+                    label={t('usageLogs.fields.invitationQuota')}
                     value={formatQuota(userInfo.aff_quota)}
                   />
                 )}
@@ -172,7 +172,7 @@ export function UserInfoDialog({
             {userInfo.remark && (
               <div className='space-y-1.5'>
                 <Label className='text-muted-foreground text-xs'>
-                  {t('Remark')}
+                  {t('channels.fields.remark')}
                 </Label>
                 <div className='text-sm leading-relaxed font-semibold break-words'>
                   {userInfo.remark}
@@ -182,7 +182,7 @@ export function UserInfoDialog({
           </div>
         ) : (
           <div className='text-muted-foreground py-8 text-center text-sm'>
-            {t('No user information available')}
+            {t('usageLogs.titles.noUserInformationAvailable')}
           </div>
         )}
       </DialogContent>

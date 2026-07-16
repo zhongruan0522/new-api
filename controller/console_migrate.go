@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 	opts, err := model.AllOption()
 	if err != nil {
 		common.SysError("failed to get all options: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "获取配置失败，请稍后重试"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": i18n.T(c, i18n.MsgConfigFetchFailed)})
 		return
 	}
 	// 建立 map

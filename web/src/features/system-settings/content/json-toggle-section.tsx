@@ -179,7 +179,7 @@ export function JsonToggleSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Module availability')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.moduleAvailability')}</FormLabel>
                   {toggleDescription && (
                     <FormDescription>{t(toggleDescription)}</FormDescription>
                   )}

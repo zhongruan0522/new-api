@@ -147,14 +147,14 @@ export function ModelsFilter(props: ModelsFilterProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant='outline' size='sm' />}>
         <Filter className='mr-2 h-4 w-4' />
-        {t('Filter')}
+        {t('dashboard.actions.filter')}
       </DialogTrigger>
       <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Filter Dashboard Models')}</DialogTitle>
+          <DialogTitle>{t('dashboard.actions.filterDashboardModels')}</DialogTitle>
           <DialogDescription>
             {t(
-              'Set filters to customize your dashboard statistics and charts.'
+              'dashboard.tips.setFiltersToCustomizeYourDashboardStatisticsAndCharts'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -165,7 +165,7 @@ export function ModelsFilter(props: ModelsFilterProps) {
             <div className='grid gap-2'>
               <Label className='flex items-center gap-2'>
                 <Calendar className='h-4 w-4' />
-                {t('Quick Range')}
+                {t('dashboard.fields.quickRange')}
               </Label>
               <div className='grid grid-cols-2 gap-2 sm:flex'>
                 {TIME_RANGE_PRESETS.map((range) => (
@@ -189,37 +189,37 @@ export function ModelsFilter(props: ModelsFilterProps) {
               </div>
             </div>
 
-            <SectionDivider label={t('Custom Time Range')} />
+            <SectionDivider label={t('dashboard.fields.customTimeRange')} />
 
             {/* Custom time range */}
             <div className='grid gap-3 sm:gap-4'>
               <div className='grid gap-2'>
-                <Label htmlFor='start_timestamp'>{t('Start Time')}</Label>
+                <Label htmlFor='start_timestamp'>{t('dashboard.actions.startTime')}</Label>
                 <DateTimePicker
                   value={filters.start_timestamp}
                   onChange={(date) =>
                     handleChange('start_timestamp', date || undefined)
                   }
-                  placeholder={t('Select start time')}
+                  placeholder={t('dashboard.placeholders.selectStartTime')}
                 />
               </div>
 
               <div className='grid gap-2'>
-                <Label htmlFor='end_timestamp'>{t('End Time')}</Label>
+                <Label htmlFor='end_timestamp'>{t('dashboard.fields.endTime')}</Label>
                 <DateTimePicker
                   value={filters.end_timestamp}
                   onChange={(date) =>
                     handleChange('end_timestamp', date || undefined)
                   }
-                  placeholder={t('Select end time')}
+                  placeholder={t('dashboard.placeholders.selectEndTime')}
                 />
               </div>
             </div>
 
-            <SectionDivider label={t('Chart Settings')} />
+            <SectionDivider label={t('dashboard.titles.chartSettings')} />
 
             <div className='grid gap-2'>
-              <Label htmlFor='time_granularity'>{t('Time Granularity')}</Label>
+              <Label htmlFor='time_granularity'>{t('dashboard.fields.timeGranularity')}</Label>
               <Select
                 items={[
                   ...TIME_GRANULARITY_OPTIONS.map((option) => ({
@@ -233,7 +233,7 @@ export function ModelsFilter(props: ModelsFilterProps) {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('Select time granularity')} />
+                  <SelectValue placeholder={t('dashboard.placeholders.selectTimeGranularity')} />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
@@ -249,13 +249,13 @@ export function ModelsFilter(props: ModelsFilterProps) {
 
             {isAdmin && (
               <>
-                <SectionDivider label={t('Admin Only')} />
+                <SectionDivider label={t('dashboard.fields.adminOnly')} />
 
                 <div className='grid gap-2'>
-                  <Label htmlFor='username'>{t('Username')}</Label>
+                  <Label htmlFor='username'>{t('auth.fields.username')}</Label>
                   <Input
                     id='username'
-                    placeholder={t('Filter by username')}
+                    placeholder={t('dashboard.actions.filterByUsername')}
                     value={filters.username}
                     onChange={(e) => handleChange('username', e.target.value)}
                   />
@@ -268,11 +268,11 @@ export function ModelsFilter(props: ModelsFilterProps) {
         <DialogFooter className='grid grid-cols-2 gap-2 sm:flex'>
           <Button onClick={handleReset} variant='outline' type='button'>
             <RotateCcw className='mr-2 h-4 w-4' />
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
           <Button onClick={handleApply} type='submit'>
             <Search className='mr-2 h-4 w-4' />
-            {t('Apply Filters')}
+            {t('dashboard.fields.applyFilters')}
           </Button>
         </DialogFooter>
       </DialogContent>

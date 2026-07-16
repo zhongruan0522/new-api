@@ -67,7 +67,7 @@ export function EmailBindDialog({
 
   const handleSendCode = async () => {
     if (!email || !email.includes('@')) {
-      toast.error(t('Please enter a valid email address'))
+      toast.error(t('profile.errors.pleaseEnterAValidEmailAddress'))
       return
     }
 
@@ -76,13 +76,13 @@ export function EmailBindDialog({
       const response = await sendEmailVerification(email)
 
       if (response.success) {
-        toast.success(t('Verification code sent! Please check your email.'))
+        toast.success(t('profile.tips.verificationCodeSentPleaseCheckYourEmail'))
         startCountdown()
       } else {
-        toast.error(response.message || t('Failed to send verification code'))
+        toast.error(response.message || t('profile.errors.failedToSendVerificationCode'))
       }
     } catch (_error) {
-      toast.error(t('Failed to send verification code'))
+      toast.error(t('profile.errors.failedToSendVerificationCode'))
     } finally {
       setSendingCode(false)
     }
@@ -90,7 +90,7 @@ export function EmailBindDialog({
 
   const handleBind = async () => {
     if (!email || !code) {
-      toast.error(t('Please enter email and verification code'))
+      toast.error(t('profile.errors.pleaseEnterEmailAndVerificationCode'))
       return
     }
 
@@ -99,7 +99,7 @@ export function EmailBindDialog({
       const response = await bindEmail(email, code)
 
       if (response.success) {
-        toast.success(t('Email bound successfully!'))
+        toast.success(t('profile.tips.emailBoundSuccessfully'))
         onOpenChange(false)
         onSuccess()
         // Reset form
@@ -107,10 +107,10 @@ export function EmailBindDialog({
         setCode('')
         resetCountdown()
       } else {
-        toast.error(response.message || t('Failed to bind email'))
+        toast.error(response.message || t('profile.errors.failedToBindEmail'))
       }
     } catch (_error) {
-      toast.error(t('Failed to bind email'))
+      toast.error(t('profile.errors.failedToBindEmail'))
     } finally {
       setLoading(false)
     }
@@ -132,37 +132,37 @@ export function EmailBindDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Bind Email')}</DialogTitle>
+          <DialogTitle>{t('profile.actions.bindEmail')}</DialogTitle>
           <DialogDescription>
             {currentEmail
-              ? t('Current email: {{email}}. Enter a new email to change.', {
+              ? t('profile.tips.currentEmailEmailEnterANewEmailToChange', {
                   email: currentEmail,
                 })
-              : t('Bind an email address to your account.')}
+              : t('profile.actions.bindAnEmailAddressToYourAccount')}
           </DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4 py-4'>
           <div className='space-y-2'>
-            <Label htmlFor='email'>{t('Email Address')}</Label>
+            <Label htmlFor='email'>{t('profile.fields.emailAddress')}</Label>
             <Input
               id='email'
               type='email'
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('Enter your email')}
+              placeholder={t('profile.placeholders.enterYourEmail')}
               disabled={loading}
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='code'>{t('Verification Code')}</Label>
+            <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
             <div className='flex gap-2'>
               <Input
                 id='code'
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder={t('Enter code')}
+                placeholder={t('profile.placeholders.enterCode')}
                 disabled={loading}
                 maxLength={6}
               />
@@ -175,8 +175,8 @@ export function EmailBindDialog({
                 {isActive
                   ? `${secondsLeft}s`
                   : sendingCode
-                    ? t('Sending...')
-                    : t('Send')}
+                    ? t('profile.tips.sending')
+                    : t('playground.actions.send')}
               </Button>
             </div>
           </div>
@@ -189,7 +189,7 @@ export function EmailBindDialog({
             onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button
             type='button'
@@ -197,7 +197,7 @@ export function EmailBindDialog({
             disabled={loading || !email || !code}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('Binding...') : t('Bind Email')}
+            {loading ? t('profile.tips.binding') : t('profile.actions.bindEmail')}
           </Button>
         </DialogFooter>
       </DialogContent>

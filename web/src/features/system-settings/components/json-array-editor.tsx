@@ -109,7 +109,7 @@ export function JsonArrayEditor({
   }, [])
 
   const isServerPaginated = Boolean(optionKey)
-  const failedToLoadSettingsMessage = t('Failed to load settings')
+  const failedToLoadSettingsMessage = t('channels.errors.failedToLoadSettings')
 
   const jsonArrayQuery = useQuery({
     queryKey: [
@@ -153,7 +153,7 @@ export function JsonArrayEditor({
         value: entryValue,
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to update setting'))
+        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
       }
     },
     onSuccess: async () => {
@@ -166,10 +166,10 @@ export function JsonArrayEditor({
         }),
         queryClient.invalidateQueries({ queryKey: ['system-options'] }),
       ])
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to update setting'))
+      toast.error(error.message || t('channels.errors.failedToUpdateSetting'))
     },
   })
 
@@ -178,7 +178,7 @@ export function JsonArrayEditor({
       if (!optionKey) return
       const entryValue = row.value.trim()
       if (!entryValue) {
-        throw new Error(t('Array item cannot be empty'))
+        throw new Error(t('systemSettings.errors.arrayItemCannotBeEmpty'))
       }
       const data = await upsertOptionJsonArrayEntry({
         key: optionKey,
@@ -186,7 +186,7 @@ export function JsonArrayEditor({
         old_value: row.isNew ? undefined : row.originalValue,
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to update setting'))
+        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
       }
     },
     onSuccess: async () => {
@@ -199,10 +199,10 @@ export function JsonArrayEditor({
         }),
         queryClient.invalidateQueries({ queryKey: ['system-options'] }),
       ])
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to update setting'))
+      toast.error(error.message || t('channels.errors.failedToUpdateSetting'))
     },
   })
 
@@ -376,7 +376,7 @@ export function JsonArrayEditor({
       if (isServerPaginated) {
         const result = await fullJsonQuery.refetch()
         if (result.isError) {
-          toast.error(result.error.message || t('Failed to load settings'))
+          toast.error(result.error.message || t('channels.errors.failedToLoadSettings'))
           return
         }
         const fullValue = result.data ?? '[]'
@@ -408,12 +408,12 @@ export function JsonArrayEditor({
             {mode === 'visual' ? (
               <>
                 <Code className='mr-2 h-4 w-4' />
-                {t('JSON Mode')}
+                {t('common.fields.jsonMode')}
               </>
             ) : (
               <>
                 <Table className='mr-2 h-4 w-4' />
-                {t('Visual Mode')}
+                {t('common.fields.visualMode')}
               </>
             )}
           </Button>
@@ -426,7 +426,7 @@ export function JsonArrayEditor({
               onClick={handleFillTemplate}
               disabled={disabled}
             >
-              {t('Fill Template')}
+              {t('common.actions.fillTemplate')}
             </Button>
           ) : null}
         </div>
@@ -451,17 +451,17 @@ export function JsonArrayEditor({
               {hasPendingServerRows ? (
                 <div className='text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm'>
                   {t(
-                    'Save or delete pending rows in this list before using the page save button.'
+                    'systemSettings.actions.saveOrDeletePendingRowsInThisListBefore'
                   )}
                 </div>
               ) : null}
               <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
-                <div>{itemLabel ? t(itemLabel) : t('Item')}</div>
+                <div>{itemLabel ? t(itemLabel) : t('systemSettings.fields.item')}</div>
                 <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
               </div>
               {isLoadingRows ? (
                 <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
-                  {t('Loading...')}
+                  {t('common.tips.loading')}
                 </div>
               ) : null}
               {visibleRows.map((row) => (
@@ -512,7 +512,7 @@ export function JsonArrayEditor({
           {pageCount > 1 || totalRows > 0 ? (
             <div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
               <div className='text-muted-foreground'>
-                {t('Total')}: {totalRows}
+                {t('dashboard.fields.total')}: {totalRows}
               </div>
               <div className='flex items-center gap-2'>
                 <select
@@ -526,7 +526,7 @@ export function JsonArrayEditor({
                 >
                   {PAGE_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>
-                      {t('{{count}} / page', { count: size })}
+                      {t('systemSettings.status.countPage', { count: size })}
                     </option>
                   ))}
                 </select>
@@ -537,7 +537,7 @@ export function JsonArrayEditor({
                   onClick={() => setPageIndex((current) => Math.max(0, current - 1))}
                   disabled={disabled || safePageIndex === 0}
                 >
-                  {t('Previous')}
+                  {t('common.fields.previous')}
                 </Button>
                 <span>
                   {safePageIndex + 1} / {pageCount}
@@ -551,7 +551,7 @@ export function JsonArrayEditor({
                   }
                   disabled={disabled || safePageIndex >= pageCount - 1}
                 >
-                  {t('Next')}
+                  {t('common.fields.next')}
                 </Button>
               </div>
             </div>

@@ -91,11 +91,11 @@ export const MESSAGE_ACTION_BUTTON_STYLES = {
 
 // Message action labels
 export const MESSAGE_ACTION_LABELS = {
-  COPY: 'Copy',
-  COPIED: 'Copied!',
-  REGENERATE: 'Regenerate',
-  EDIT: 'Edit',
-  DELETE: 'Delete',
+  COPY: 'channels.actions.copy',
+  COPIED: 'common.status.copiedb7c3ca',
+  REGENERATE: 'profile.fields.regenerate',
+  EDIT: 'channels.actions.edit',
+  DELETE: 'common.actions.delete',
   NO_CONTENT: 'No content to copy',
   WAIT_GENERATION: 'Please wait for the current generation to complete',
 } as const

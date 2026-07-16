@@ -56,7 +56,7 @@ export function EmptyState(props: EmptyStateProps) {
           <EmptyMedia variant='icon'>
             <Icon className='size-6' />
           </EmptyMedia>
-          <EmptyTitle>{props.title ?? t('No Data')}</EmptyTitle>
+          <EmptyTitle>{props.title ?? t('common.fields.noData')}</EmptyTitle>
           {props.description != null && (
             <EmptyDescription>{props.description}</EmptyDescription>
           )}

@@ -71,14 +71,14 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>
-            {cancelBtnText ?? t('Cancel')}
+            {cancelBtnText ?? t('common.actions.cancel')}
           </AlertDialogCancel>
           <Button
             variant={destructive ? 'destructive' : 'default'}
             onClick={handleConfirm}
             disabled={disabled || isLoading}
           >
-            {confirmText ?? t('Continue')}
+            {confirmText ?? t('common.actions.continue')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

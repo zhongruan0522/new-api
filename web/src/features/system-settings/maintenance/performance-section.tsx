@@ -149,7 +149,7 @@ export function PerformanceSection(props: Props) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t('Failed to fetch performance stats')
+          : t('systemSettings.errors.failedToFetchPerformanceStats')
       )
     }
   }, [t])
@@ -165,7 +165,7 @@ export function PerformanceSection(props: Props) {
         value !== (props.defaultValues[key as keyof PerfFormValues] as unknown)
     )
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
     for (const [key, value] of updates) {
@@ -174,7 +174,7 @@ export function PerformanceSection(props: Props) {
         value: value as string | number | boolean,
       })
     }
-    toast.success(t('Saved successfully'))
+    toast.success(t('systemSettings.status.savedSuccessfully'))
     fetchStats()
   }
 
@@ -182,11 +182,11 @@ export function PerformanceSection(props: Props) {
     try {
       const res = await api.delete('/api/performance/disk_cache')
       if (res.data.success) {
-        toast.success(t('Disk cache cleared'))
+        toast.success(t('systemSettings.fields.diskCacheCleared'))
         fetchStats()
       }
     } catch {
-      toast.error(t('Cleanup failed'))
+      toast.error(t('systemSettings.status.cleanupFailed'))
     }
   }
 
@@ -194,11 +194,11 @@ export function PerformanceSection(props: Props) {
     try {
       const res = await api.post('/api/performance/reset_stats')
       if (res.data.success) {
-        toast.success(t('Statistics reset'))
+        toast.success(t('systemSettings.fields.statisticsReset'))
         fetchStats()
       }
     } catch {
-      toast.error(t('Reset failed'))
+      toast.error(t('systemSettings.actions.resetFailed'))
     }
   }
 
@@ -206,11 +206,11 @@ export function PerformanceSection(props: Props) {
     try {
       const res = await api.post('/api/performance/gc')
       if (res.data.success) {
-        toast.success(t('GC executed'))
+        toast.success(t('systemSettings.fields.gcExecuted'))
         fetchStats()
       }
     } catch {
-      toast.error(t('GC execution failed'))
+      toast.error(t('systemSettings.status.gcExecutionFailed'))
     }
   }
 
@@ -238,7 +238,7 @@ export function PerformanceSection(props: Props) {
       : 0
 
   return (
-    <SettingsSection title={t('Performance Settings')}>
+    <SettingsSection title={t('systemSettings.titles.performanceSettings')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -247,10 +247,10 @@ export function PerformanceSection(props: Props) {
           />
           {/* Disk Cache Settings */}
           <div>
-            <h4 className='font-medium'>{t('Disk Cache Settings')}</h4>
+            <h4 className='font-medium'>{t('systemSettings.titles.diskCacheSettings')}</h4>
             <p className='text-muted-foreground mt-1 text-xs'>
               {t(
-                'When enabled, large request bodies are temporarily stored on disk instead of memory, significantly reducing memory usage. SSD recommended.'
+                'systemSettings.status.enabledLargeRequestBodiesAreTemporarilyStoredOnDisk'
               )}
             </p>
           </div>
@@ -264,7 +264,7 @@ export function PerformanceSection(props: Props) {
               render={({ field }) => (
                 <SettingsSwitchItem className='border-b-2 pb-3'>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Enable Disk Cache')}</FormLabel>
+                    <FormLabel>{t('systemSettings.actions.enableDiskCache')}</FormLabel>
                   </SettingsSwitchContent>
                   <FormControl>
                     <Switch
@@ -283,7 +283,7 @@ export function PerformanceSection(props: Props) {
                   name='performance_setting.disk_cache_threshold_mb'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Disk Cache Threshold (MB)')}</FormLabel>
+                      <FormLabel>{t('systemSettings.fields.diskCacheThresholdMb')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -293,7 +293,7 @@ export function PerformanceSection(props: Props) {
                       </FormControl>
                       <FormDescription>
                         {t(
-                          'Use disk cache when request body exceeds this size'
+                          'systemSettings.actions.useDiskCacheWhenRequestBodyExceedsThisSize'
                         )}
                       </FormDescription>
                     </FormItem>
@@ -304,7 +304,7 @@ export function PerformanceSection(props: Props) {
                   name='performance_setting.disk_cache_max_size_mb'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Max Disk Cache Size (MB)')}</FormLabel>
+                      <FormLabel>{t('systemSettings.fields.maxDiskCacheSizeMb')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -315,7 +315,7 @@ export function PerformanceSection(props: Props) {
                       {stats?.disk_space_info &&
                         stats.disk_space_info.total > 0 && (
                           <FormDescription>
-                            {t('Free: {{free}} / Total: {{total}}', {
+                            {t('systemSettings.tips.freeFreeTotalTotal', {
                               free: formatBytes(stats.disk_space_info.free),
                               total: formatBytes(stats.disk_space_info.total),
                             })}
@@ -329,7 +329,7 @@ export function PerformanceSection(props: Props) {
               {lowDiskSpace && (
                 <Alert variant='destructive'>
                   <AlertDescription>
-                    {`${t('Warning')}: ${t('Available disk space')} (${formatBytes(stats?.disk_space_info?.free ?? 0)}) ${t('is less than the configured maximum cache size')} (${maxCacheSizeMb} MB). ${t('This may cause cache failures.')}`}
+                    {`${t('systemSettings.tips.warning')}: ${t('systemSettings.fields.availableDiskSpace')} (${formatBytes(stats?.disk_space_info?.free ?? 0)}) ${t('systemSettings.tips.lessThanTheConfiguredMaximumCacheSize')} (${maxCacheSizeMb} MB). ${t('systemSettings.tips.mayCauseCacheFailures')}`}
                   </AlertDescription>
                 </Alert>
               )}
@@ -340,11 +340,11 @@ export function PerformanceSection(props: Props) {
                   name='performance_setting.disk_cache_path'
                   render={({ field }) => (
                     <FormItem className='max-w-md'>
-                      <FormLabel>{t('Cache Directory')}</FormLabel>
+                      <FormLabel>{t('systemSettings.fields.cacheDirectory')}</FormLabel>
                       <FormControl>
                         <Input
                           placeholder={t(
-                            'Leave empty to use system temp directory'
+                            'systemSettings.tips.leaveEmptyToUseSystemTempDirectory'
                           )}
                           {...field}
                           value={field.value ?? ''}
@@ -363,11 +363,11 @@ export function PerformanceSection(props: Props) {
           {/* System Performance Monitor */}
           <div>
             <h4 className='font-medium'>
-              {t('System Performance Monitoring')}
+              {t('systemSettings.titles.performanceMonitoring')}
             </h4>
             <p className='text-muted-foreground mt-1 text-xs'>
               {t(
-                'When performance monitoring is enabled and system resource usage exceeds the set threshold, new Relay requests will be rejected.'
+                'systemSettings.status.performanceMonitoringIsEnabledAndSystemResourceUsageExceeds'
               )}
             </p>
           </div>
@@ -381,7 +381,7 @@ export function PerformanceSection(props: Props) {
               render={({ field }) => (
                 <SettingsSwitchItem className='border-b-2 pb-3'>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Enable Performance Monitoring')}</FormLabel>
+                    <FormLabel>{t('systemSettings.actions.enablePerformanceMonitoring')}</FormLabel>
                   </SettingsSwitchContent>
                   <FormControl>
                     <Switch
@@ -399,7 +399,7 @@ export function PerformanceSection(props: Props) {
                 name='performance_setting.monitor_cpu_threshold'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('CPU Threshold (%)')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.cpuThreshold')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -415,7 +415,7 @@ export function PerformanceSection(props: Props) {
                 name='performance_setting.monitor_memory_threshold'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Memory Threshold (%)')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.memoryThreshold')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -431,7 +431,7 @@ export function PerformanceSection(props: Props) {
                 name='performance_setting.monitor_disk_threshold'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Disk Threshold (%)')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.diskThreshold')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -452,38 +452,38 @@ export function PerformanceSection(props: Props) {
       {/* Performance Stats Dashboard */}
       <div className='space-y-4'>
         <div className='flex items-center gap-2'>
-          <h4 className='font-medium'>{t('Performance Monitor')}</h4>
+          <h4 className='font-medium'>{t('systemSettings.fields.performanceMonitor')}</h4>
           <Button variant='outline' size='sm' onClick={fetchStats}>
-            {t('Refresh Stats')}
+            {t('systemSettings.actions.refreshStats')}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger render={<Button variant='outline' size='sm' />}>
-              {t('Clean up inactive cache')}
+              {t('systemSettings.actions.cleanUpInactiveCache')}
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {t('Confirm cleanup of inactive disk cache?')}
+                  {t('systemSettings.actions.confirmCleanupOfInactiveDiskCache')}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {t(
-                    'This will delete temporary cache files that have not been used for more than 10 minutes'
+                    'systemSettings.status.deleteTemporaryCacheFilesThatHaveNotBeenUsed'
                   )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+                <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={clearDiskCache}>
-                  {t('Confirm')}
+                  {t('common.actions.confirm')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           <Button variant='outline' size='sm' onClick={resetStats}>
-            {t('Reset Stats')}
+            {t('systemSettings.actions.resetStats')}
           </Button>
           <Button variant='outline' size='sm' onClick={forceGC}>
-            {t('Run GC')}
+            {t('systemSettings.actions.runGc')}
           </Button>
         </div>
 
@@ -492,7 +492,7 @@ export function PerformanceSection(props: Props) {
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <div className='space-y-2 rounded-lg border p-4'>
                 <p className='text-sm font-medium'>
-                  {t('Request Body Disk Cache')}
+                  {t('systemSettings.fields.requestBodyDiskCache')}
                 </p>
                 <Progress value={diskCachePercent} />
                 <div className='text-muted-foreground flex justify-between text-xs'>
@@ -504,32 +504,32 @@ export function PerformanceSection(props: Props) {
                     {formatBytes(stats.cache_stats?.disk_cache_max_bytes ?? 0)}
                   </span>
                   <span>
-                    {t('Active Files')}:{' '}
+                    {t('systemSettings.status.activeFiles')}:{' '}
                     {stats.cache_stats?.active_disk_files ?? 0}
                   </span>
                 </div>
                 <StatusBadge variant='neutral' copyable={false}>
-                  {t('Disk Hits')}: {stats.cache_stats?.disk_cache_hits ?? 0}
+                  {t('systemSettings.fields.diskHits')}: {stats.cache_stats?.disk_cache_hits ?? 0}
                 </StatusBadge>
               </div>
               <div className='space-y-2 rounded-lg border p-4'>
                 <p className='text-sm font-medium'>
-                  {t('Request Body Memory Cache')}
+                  {t('systemSettings.fields.requestBodyMemoryCache')}
                 </p>
                 <div className='text-muted-foreground flex justify-between text-xs'>
                   <span>
-                    {t('Current Cache Size')}:{' '}
+                    {t('systemSettings.fields.currentCacheSize')}:{' '}
                     {formatBytes(
                       stats.cache_stats?.current_memory_usage_bytes ?? 0
                     )}
                   </span>
                   <span>
-                    {t('Active Cache Count')}:{' '}
+                    {t('systemSettings.status.activeCacheCount')}:{' '}
                     {stats.cache_stats?.active_memory_buffers ?? 0}
                   </span>
                 </div>
                 <StatusBadge variant='neutral' copyable={false}>
-                  {t('Memory Hits')}:{' '}
+                  {t('systemSettings.fields.memoryHits')}:{' '}
                   {stats.cache_stats?.memory_cache_hits ?? 0}
                 </StatusBadge>
               </div>
@@ -538,20 +538,20 @@ export function PerformanceSection(props: Props) {
             {stats.disk_space_info && stats.disk_space_info.total > 0 && (
               <div className='rounded-lg border p-4'>
                 <p className='mb-2 text-sm font-medium'>
-                  {t('Cache Directory Disk Space')}
+                  {t('systemSettings.fields.cacheDirectoryDiskSpace')}
                 </p>
                 <Progress
                   value={Math.round(stats.disk_space_info.used_percent)}
                 />
                 <div className='text-muted-foreground mt-2 flex justify-between text-xs'>
                   <span>
-                    {t('Used')}: {formatBytes(stats.disk_space_info.used)}
+                    {t('common.status.used')}: {formatBytes(stats.disk_space_info.used)}
                   </span>
                   <span>
-                    {t('Available')}: {formatBytes(stats.disk_space_info.free)}
+                    {t('channels.fields.available')}: {formatBytes(stats.disk_space_info.free)}
                   </span>
                   <span>
-                    {t('Total')}: {formatBytes(stats.disk_space_info.total)}
+                    {t('dashboard.fields.total')}: {formatBytes(stats.disk_space_info.total)}
                   </span>
                 </div>
               </div>
@@ -560,30 +560,30 @@ export function PerformanceSection(props: Props) {
             {stats.memory_stats && (
               <div className='rounded-lg border p-4'>
                 <p className='mb-2 text-sm font-medium'>
-                  {t('System Memory Stats')}
+                  {t('systemSettings.titles.memoryStats')}
                 </p>
                 <div className='grid grid-cols-2 gap-2 text-xs md:grid-cols-5'>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('Allocated Memory')}:
+                      {t('systemSettings.fields.allocatedMemory')}:
                     </span>{' '}
                     {formatBytes(stats.memory_stats.alloc)}
                   </div>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('Total Allocated')}:
+                      {t('systemSettings.fields.totalAllocated')}:
                     </span>{' '}
                     {formatBytes(stats.memory_stats.total_alloc)}
                   </div>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('System Memory')}:
+                      {t('systemSettings.titles.memory')}:
                     </span>{' '}
                     {formatBytes(stats.memory_stats.sys)}
                   </div>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('GC Count')}:
+                      {t('systemSettings.fields.gcCount')}:
                     </span>{' '}
                     {stats.memory_stats.num_gc}
                   </div>
@@ -598,12 +598,12 @@ export function PerformanceSection(props: Props) {
             {stats.disk_cache_info && (
               <div className='rounded-lg border p-4'>
                 <p className='mb-2 text-sm font-medium'>
-                  {t('Cache Directory Info')}
+                  {t('systemSettings.fields.cacheDirectoryInfo')}
                 </p>
                 <div className='grid grid-cols-3 gap-2 text-xs'>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('Cache Directory')}:
+                      {t('systemSettings.fields.cacheDirectory')}:
                     </span>{' '}
                     <span className='font-mono'>
                       {stats.disk_cache_info.path}
@@ -611,13 +611,13 @@ export function PerformanceSection(props: Props) {
                   </div>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('Directory File Count')}:
+                      {t('systemSettings.fields.directoryFileCount')}:
                     </span>{' '}
                     {stats.disk_cache_info.file_count}
                   </div>
                   <div>
                     <span className='text-muted-foreground'>
-                      {t('Directory Total Size')}:
+                      {t('systemSettings.fields.directoryTotalSize')}:
                     </span>{' '}
                     {formatBytes(stats.disk_cache_info.total_size)}
                   </div>

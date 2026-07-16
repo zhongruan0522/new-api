@@ -66,10 +66,10 @@ export function RenameDeploymentDialog({
     checkRes?.success === true ? checkRes?.data?.available : undefined
 
   const helper = useMemo(() => {
-    if (!trimmed) return t('Enter a new name')
-    if (isChecking) return t('Checking name...')
-    if (available === true) return t('Name is available')
-    if (available === false) return t('Name is not available')
+    if (!trimmed) return t('models.placeholders.enterANewName')
+    if (isChecking) return t('models.tips.checkingName')
+    if (available === true) return t('models.fields.nameIsAvailable')
+    if (available === false) return t('models.fields.nameIsNotAvailable')
     return ''
   }, [available, isChecking, t, trimmed])
 
@@ -82,11 +82,11 @@ export function RenameDeploymentDialog({
   const onSubmit = async () => {
     if (!deploymentId) return
     if (!trimmed) {
-      toast.error(t('Please enter a name'))
+      toast.error(t('keys.errors.pleaseEnterAName'))
       return
     }
     if (available === false) {
-      toast.error(t('Name is not available'))
+      toast.error(t('models.fields.nameIsNotAvailable'))
       return
     }
 
@@ -94,7 +94,7 @@ export function RenameDeploymentDialog({
     try {
       const res = await updateDeploymentName(deploymentId, trimmed)
       if (res.success) {
-        toast.success(t('Renamed successfully'))
+        toast.success(t('models.fields.renamedSuccessfully'))
         queryClient.invalidateQueries({
           queryKey: deploymentsQueryKeys.lists(),
         })
@@ -102,9 +102,9 @@ export function RenameDeploymentDialog({
         onOpenChange(false)
         return
       }
-      toast.error(res.message || t('Rename failed'))
+      toast.error(res.message || t('models.status.renameFailed'))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('Rename failed'))
+      toast.error(err instanceof Error ? err.message : t('models.status.renameFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -114,16 +114,16 @@ export function RenameDeploymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Rename deployment')}</DialogTitle>
+          <DialogTitle>{t('models.fields.renameDeployment')}</DialogTitle>
         </DialogHeader>
 
         <div className='space-y-2'>
           <div className='text-muted-foreground text-sm'>
-            {t('Deployment ID')}:{' '}
+            {t('channels.fields.deploymentId')}:{' '}
             <span className='font-mono'>{deploymentId}</span>
           </div>
           <Input
-            placeholder={t('Enter a new name')}
+            placeholder={t('models.placeholders.enterANewName')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete='off'
@@ -133,13 +133,13 @@ export function RenameDeploymentDialog({
 
         <DialogFooter className='mt-4'>
           <Button variant='outline' onClick={() => onOpenChange(false)}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={() => void onSubmit()} disabled={!canSubmit}>
             {isSubmitting ? (
               <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             ) : null}
-            {t('Rename')}
+            {t('models.fields.rename')}
           </Button>
         </DialogFooter>
       </DialogContent>

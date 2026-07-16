@@ -45,11 +45,11 @@ export function TermsFooter({
   }
 
   const agreementLink = {
-    label: 'User Agreement',
+    label: 'layout.fields.userAgreement',
     href: '/user-agreement',
   }
   const privacyLink = {
-    label: 'Privacy Policy',
+    label: 'layout.fields.privacyPolicy',
     href: '/privacy-policy',
   }
 
@@ -77,7 +77,7 @@ export function TermsFooter({
       {secondLink && (
         <>
           {' '}
-          {t('and')}{' '}
+          {t('auth.fields.value')}{' '}
           <a
             href={secondLink.href}
             className='hover:text-primary underline underline-offset-4'

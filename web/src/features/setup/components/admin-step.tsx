@@ -44,7 +44,7 @@ export function AdminStep({ form, rootInitialized }: AdminStepProps) {
         <AlertDescription className='flex items-start gap-2'>
           <ShieldCheck className='mt-0.5 size-4 text-sky-500' />
           {t(
-            'The administrator account is already initialized. You can keep your existing credentials and continue to the next step.'
+            'setup.tips.administratorAccountIsAlreadyInitializedYouCanKeepYour'
           )}
         </AlertDescription>
       </Alert>
@@ -58,11 +58,11 @@ export function AdminStep({ form, rootInitialized }: AdminStepProps) {
         name='username'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>{t('Administrator username')}</FormLabel>
+            <FormLabel>{t('setup.fields.administratorUsername')}</FormLabel>
             <FormControl>
               <Input
                 {...field}
-                placeholder={t('Choose a username')}
+                placeholder={t('setup.placeholders.chooseAUsername')}
                 autoComplete='username'
                 onChange={(event) => {
                   form.clearErrors('username')
@@ -80,11 +80,11 @@ export function AdminStep({ form, rootInitialized }: AdminStepProps) {
         name='password'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>{t('Password')}</FormLabel>
+            <FormLabel>{t('auth.fields.password')}</FormLabel>
             <FormControl>
               <PasswordInput
                 {...field}
-                placeholder={t('Set a secure password (min. 8 characters)')}
+                placeholder={t('setup.tips.setASecurePasswordMin8Characters')}
                 autoComplete='new-password'
                 onChange={(event) => {
                   form.clearErrors('password')
@@ -102,11 +102,11 @@ export function AdminStep({ form, rootInitialized }: AdminStepProps) {
         name='confirmPassword'
         render={({ field }) => (
           <FormItem className='sm:col-span-2'>
-            <FormLabel>{t('Confirm password')}</FormLabel>
+            <FormLabel>{t('auth.actions.confirmPassword')}</FormLabel>
             <FormControl>
               <PasswordInput
                 {...field}
-                placeholder={t('Repeat the administrator password')}
+                placeholder={t('setup.tips.repeatTheAdministratorPassword')}
                 autoComplete='new-password'
                 onChange={(event) => {
                   form.clearErrors('confirmPassword')

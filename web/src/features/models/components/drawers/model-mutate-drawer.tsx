@@ -233,17 +233,17 @@ export function ModelMutateDrawer({
         if (response.success) {
           toast.success(
             isEditing
-              ? t('Model updated successfully')
-              : t('Model created successfully')
+              ? t('models.status.modelUpdatedSuccessfully')
+              : t('models.status.modelCreatedSuccessfully')
           )
           queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
           queryClient.invalidateQueries({ queryKey: ['pricing'] })
           onOpenChange(false)
         } else {
-          toast.error(response.message || t('Operation failed'))
+          toast.error(response.message || t('channels.status.operationFailed'))
         }
       } catch (error: unknown) {
-        toast.error((error as Error)?.message || t('Operation failed'))
+        toast.error((error as Error)?.message || t('channels.status.operationFailed'))
       } finally {
         setIsSubmitting(false)
       }
@@ -264,13 +264,13 @@ export function ModelMutateDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEditing ? t('Edit Model') : t('Create Model')}
+            {isEditing ? t('models.actions.editModel') : t('models.actions.createModel')}
           </SheetTitle>
           <SheetDescription>
             {isEditing
-              ? t("Update model configuration and click save when you're done.")
+              ? t("common.tips.updateModelConfigurationAndClickSaveWhenYouRe")
               : t(
-                  'Add a new model to the system by providing the necessary information.'
+                  'models.actions.addANewModelToTheSystemByProviding'
                 )}
           </SheetDescription>
         </SheetHeader>
@@ -286,7 +286,7 @@ export function ModelMutateDrawer({
             {/* Basic Information */}
             <SideDrawerSection>
               <h3 className='text-sm font-semibold'>
-                {t('Basic Information')}
+                {t('channels.titles.basicInformation')}
               </h3>
 
               <FormField
@@ -294,15 +294,15 @@ export function ModelMutateDrawer({
                 name='model_name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Model Name *')}</FormLabel>
+                    <FormLabel>{t('models.fields.modelNamee83a31')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('gpt-4, claude-3-opus, etc.')}
+                        placeholder={t('models.tips.gpt4Claude3OpusEtc')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('The unique identifier for this model')}
+                      {t('models.tips.uniqueIdentifierForThisModel')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -314,16 +314,16 @@ export function ModelMutateDrawer({
                 name='description'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Description')}</FormLabel>
+                    <FormLabel>{t('auditLogs.tips.description')}</FormLabel>
                     <FormControl>
                       <Textarea
                         rows={3}
-                        placeholder={t('Describe this model...')}
+                        placeholder={t('models.tips.describeThisModel')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Displayed in the model marketplace details.')}
+                      {t('models.tips.displayedInTheModelMarketplaceDetails')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -335,15 +335,15 @@ export function ModelMutateDrawer({
                 name='icon'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Icon')}</FormLabel>
+                    <FormLabel>{t('models.fields.icon')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('OpenAI, Anthropic, etc.')}
+                        placeholder={t('models.tips.openAiAnthropicEtc')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription className='text-xs'>
-                      {t('@lobehub/icons key')}
+                      {t('models.fields.lobehubIconsKey')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -355,7 +355,7 @@ export function ModelMutateDrawer({
                 name='vendor_id'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Vendor')}</FormLabel>
+                    <FormLabel>{t('models.fields.vendor')}</FormLabel>
                     <Select
                       items={[
                         ...vendors.map((vendor) => ({
@@ -370,7 +370,7 @@ export function ModelMutateDrawer({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('Select vendor')} />
+                          <SelectValue placeholder={t('models.placeholders.selectVendor')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -396,16 +396,16 @@ export function ModelMutateDrawer({
                 name='tags'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Tags')}</FormLabel>
+                    <FormLabel>{t('models.fields.tags')}</FormLabel>
                     <FormControl>
                       <TagInput
                         value={field.value || []}
                         onChange={field.onChange}
-                        placeholder={t('Add tags...')}
+                        placeholder={t('common.actions.addTags')}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Press Enter or comma to add tags')}
+                      {t('models.tips.pressEnterOrCommaToAddTags')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -415,14 +415,14 @@ export function ModelMutateDrawer({
 
             {/* Matching Configuration */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('Matching Rules')}</h3>
+              <h3 className='text-sm font-semibold'>{t('models.fields.matchingRules')}</h3>
 
               <FormField
                 control={form.control}
                 name='name_rule'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Name Rule')}</FormLabel>
+                    <FormLabel>{t('models.fields.nameRule')}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={(value) =>
@@ -451,7 +451,7 @@ export function ModelMutateDrawer({
                       </RadioGroup>
                     </FormControl>
                     <FormDescription>
-                      {t('How this model name should match requests')}
+                      {t('models.tips.howThisModelNameShouldMatchRequests')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -462,7 +462,7 @@ export function ModelMutateDrawer({
             {/* Endpoints Configuration */}
             <SideDrawerSection>
               <div className='flex items-center justify-between'>
-                <h3 className='text-sm font-semibold'>{t('Endpoints')}</h3>
+                <h3 className='text-sm font-semibold'>{t('models.fields.endpoints')}</h3>
                 <Select<string>
                   items={[
                     ...Object.keys(ENDPOINT_TEMPLATES).map((key) => ({
@@ -475,7 +475,7 @@ export function ModelMutateDrawer({
                   }
                 >
                   <SelectTrigger size='sm' className='w-[200px]'>
-                    <SelectValue placeholder={t('Load template...')} />
+                    <SelectValue placeholder={t('models.tips.loadTemplate')} />
                   </SelectTrigger>
                   <SelectContent alignItemWithTrigger={false}>
                     <SelectGroup>
@@ -494,7 +494,7 @@ export function ModelMutateDrawer({
                 name='endpoints'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Endpoint Configuration')}</FormLabel>
+                    <FormLabel>{t('models.titles.endpointConfiguration')}</FormLabel>
                     <FormControl>
                       <JsonEditor
                         value={field.value || ''}
@@ -505,12 +505,12 @@ export function ModelMutateDrawer({
                         valueLabel='Configuration'
                         valueType='any'
                         emptyMessage={t(
-                          'No endpoints configured. Switch to JSON mode or add rows to define endpoints.'
+                          'models.tips.noEndpointsConfiguredSwitchToJsonModeOrAdd'
                         )}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Define API endpoints for this model (JSON format)')}
+                      {t('models.tips.defineApiEndpointsForThisModelJsonFormat')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -520,7 +520,7 @@ export function ModelMutateDrawer({
 
             {/* Metadata Configuration */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('Model metadata')}</h3>
+              <h3 className='text-sm font-semibold'>{t('models.fields.modelMetadata')}</h3>
 
               <div className='grid gap-4 sm:grid-cols-2'>
                 <FormField
@@ -528,7 +528,7 @@ export function ModelMutateDrawer({
                   name='context_length'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Context window')}</FormLabel>
+                      <FormLabel>{t('models.fields.contextWindow')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -541,7 +541,7 @@ export function ModelMutateDrawer({
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('Maximum input tokens supported by this model.')}
+                        {t('models.tips.maximumInputTokensSupportedByThisModel')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -553,7 +553,7 @@ export function ModelMutateDrawer({
                   name='max_output_tokens'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Max output')}</FormLabel>
+                      <FormLabel>{t('models.fields.maxOutput')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -566,7 +566,7 @@ export function ModelMutateDrawer({
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('Maximum tokens per response.')}
+                        {t('models.tips.maximumTokensPerResponse')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -580,7 +580,7 @@ export function ModelMutateDrawer({
                   name='knowledge_cutoff'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Knowledge cutoff')}</FormLabel>
+                      <FormLabel>{t('models.fields.knowledgeCutoff')}</FormLabel>
                       <FormControl>
                         <Input placeholder='2024-10' {...field} />
                       </FormControl>
@@ -594,7 +594,7 @@ export function ModelMutateDrawer({
                   name='release_date'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Released')}</FormLabel>
+                      <FormLabel>{t('models.fields.released')}</FormLabel>
                       <FormControl>
                         <Input placeholder='2025-05' {...field} />
                       </FormControl>
@@ -608,7 +608,7 @@ export function ModelMutateDrawer({
                   name='parameter_count'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Parameters')}</FormLabel>
+                      <FormLabel>{t('common.fields.parameters')}</FormLabel>
                       <FormControl>
                         <Input placeholder='70B' {...field} />
                       </FormControl>
@@ -623,7 +623,7 @@ export function ModelMutateDrawer({
                 name='input_modalities'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Input modalities')}</FormLabel>
+                    <FormLabel>{t('models.fields.inputModalities')}</FormLabel>
                     <FormControl>
                       <CheckboxGrid
                         options={MODALITY_OPTIONS}
@@ -642,7 +642,7 @@ export function ModelMutateDrawer({
                 name='output_modalities'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Output modalities')}</FormLabel>
+                    <FormLabel>{t('models.fields.outputModalities')}</FormLabel>
                     <FormControl>
                       <CheckboxGrid
                         options={MODALITY_OPTIONS}
@@ -661,7 +661,7 @@ export function ModelMutateDrawer({
                 name='capabilities'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Capabilities')}</FormLabel>
+                    <FormLabel>{t('models.fields.capabilities')}</FormLabel>
                     <FormControl>
                       <CheckboxGrid
                         options={CAPABILITY_OPTIONS}
@@ -678,7 +678,7 @@ export function ModelMutateDrawer({
 
             {/* Status */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('Status')}</h3>
+              <h3 className='text-sm font-semibold'>{t('channels.fields.status')}</h3>
 
               <FormField
                 control={form.control}
@@ -687,10 +687,10 @@ export function ModelMutateDrawer({
                   <FormItem className={sideDrawerSwitchItemClassName()}>
                     <div className='flex flex-col gap-0.5'>
                       <FormLabel className='text-base'>
-                        {t('Enabled')}
+                        {t('channels.status.enabled')}
                       </FormLabel>
                       <FormDescription>
-                        {t('Enable or disable this model')}
+                        {t('models.actions.enableOrDisableThisModel')}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -710,11 +710,11 @@ export function ModelMutateDrawer({
           <SheetClose
             render={<Button variant='outline' disabled={isSubmitting} />}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </SheetClose>
           <Button form='model-form' type='submit' disabled={isSubmitting}>
             {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {isEditing ? t('Update Model') : t('Save Changes')}
+            {isEditing ? t('models.fields.updateModel') : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

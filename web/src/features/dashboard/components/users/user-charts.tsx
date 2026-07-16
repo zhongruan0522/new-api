@@ -56,12 +56,12 @@ const USER_CHARTS: {
 }[] = [
   {
     value: 'rank',
-    labelKey: 'User Consumption Ranking',
+    labelKey: 'common.fields.userConsumptionRanking',
     specKey: 'spec_user_rank',
   },
   {
     value: 'trend',
-    labelKey: 'User Consumption Trend',
+    labelKey: 'common.fields.userConsumptionTrend',
     specKey: 'spec_user_trend',
   },
 ]
@@ -218,7 +218,7 @@ export function UserCharts() {
         >
           <TabsList>
             <span className='text-muted-foreground px-2 text-xs font-medium whitespace-nowrap'>
-              {t('Top Users')}
+              {t('dashboard.titles.topUsers')}
             </span>
             {TOP_USER_LIMIT_OPTIONS.map((limit) => (
               <TabsTrigger
@@ -226,7 +226,7 @@ export function UserCharts() {
                 value={String(limit)}
                 className='px-2.5 text-xs'
               >
-                {t('Top {{count}}', { count: limit })}
+                {t('dashboard.fields.topCount', { count: limit })}
               </TabsTrigger>
             ))}
           </TabsList>

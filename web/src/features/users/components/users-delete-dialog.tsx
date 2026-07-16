@@ -66,23 +66,23 @@ export function UsersDeleteDialog() {
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t('Are you sure?')}</AlertDialogTitle>
+          <AlertDialogTitle>{t('keys.tips.sure')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('This will permanently delete user')}{' '}
+            {t('users.tips.permanentlyDeleteUser')}{' '}
             <span className='font-semibold'>{currentRow?.username}</span>
-            {t('. This action cannot be undone.')}
+            {t('keys.errors.actionCannotBeUndone')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
             className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
           >
-            {isDeleting ? t('Deleting...') : t('Delete')}
+            {isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

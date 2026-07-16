@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/middleware"
 	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
@@ -25,7 +26,7 @@ func Playground(c *gin.Context) {
 
 	useAccessToken := c.GetBool("use_access_token")
 	if useAccessToken {
-		newAPIError = types.NewError(errors.New("暂不支持使用 access token"), types.ErrorCodeAccessDenied, types.ErrOptionWithSkipRetry())
+		newAPIError = types.NewError(errors.New(i18n.T(c, i18n.MsgPlaygroundAccessTokenUnsupported)), types.ErrorCodeAccessDenied, types.ErrOptionWithSkipRetry())
 		return
 	}
 

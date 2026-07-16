@@ -32,7 +32,7 @@ import { createSectionRegistry } from '../utils/section-registry'
 const SITE_SECTIONS = [
   {
     id: 'system-info',
-    titleKey: 'System Information',
+    titleKey: 'systemSettings.titles.information',
     build: (settings: SiteSettings) => (
       <SystemInfoSection
         defaultValues={{
@@ -52,14 +52,14 @@ const SITE_SECTIONS = [
   },
   {
     id: 'notice',
-    titleKey: 'System Announcements',
+    titleKey: 'common.titles.systemAnnouncements',
     build: (settings: SiteSettings) => (
       <NoticeSection defaultValue={settings.Notice ?? ''} />
     ),
   },
   {
     id: 'header-navigation',
-    titleKey: 'Header navigation',
+    titleKey: 'systemSettings.fields.headerNavigation',
     build: (settings: SiteSettings) => {
       const headerNavConfig = parseHeaderNavModules(settings.HeaderNavModules)
       const headerNavSerialized = serializeHeaderNavModules(headerNavConfig)
@@ -73,7 +73,7 @@ const SITE_SECTIONS = [
   },
   {
     id: 'sidebar-modules',
-    titleKey: 'Sidebar modules',
+    titleKey: 'systemSettings.fields.sidebarModules',
     build: (settings: SiteSettings) => {
       const sidebarConfig = parseSidebarModulesAdmin(
         settings.SidebarModulesAdmin

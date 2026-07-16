@@ -162,17 +162,17 @@ export function RedemptionsTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No Redemption Codes Found')}
+      emptyTitle={t('redemptionCodes.fields.noRedemptionCodesFound')}
       emptyDescription={t(
-        'No redemption codes available. Create your first redemption code to get started.'
+        'redemptionCodes.tips.noRedemptionCodesAvailableCreateYourFirstRedemptionCode'
       )}
       skeletonKeyPrefix='redemptions-skeleton'
       toolbarProps={{
-        searchPlaceholder: t('Filter by name or ID...'),
+        searchPlaceholder: t('redemptionCodes.actions.filterByNameOrId'),
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: redemptionStatusOptions,
             singleSelect: true,
           },

@@ -32,7 +32,7 @@ export function DashboardMetricsSection() {
 
   if (isLoading) {
     return (
-      <SettingsSection title={t('Data Metrics')}>
+      <SettingsSection title={t('systemSettings.fields.dataMetrics')}>
         <div className="space-y-4">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
@@ -50,10 +50,10 @@ export function DashboardMetricsSection() {
   }
 
   return (
-    <SettingsSection title={t('Data Metrics')}>
+    <SettingsSection title={t('systemSettings.fields.dataMetrics')}>
       <p className="text-sm text-muted-foreground mb-4">
         {t(
-          'Control which data metrics are calculated and displayed in the dashboard'
+          'systemSettings.tips.controlWhichDataMetricsAreCalculatedAndDisplayedInThe'
         )}
       </p>
       <div className="space-y-4">
@@ -62,9 +62,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('quota_data_enabled', checked)
           }
-          label={t('Quota Data')}
+          label={t('systemSettings.fields.quotaData')}
           description={t(
-            'Enable time-series quota data display. Disabling will hide model analytics charts.'
+            'systemSettings.actions.enableTimeSeriesQuotaDataDisplayDisablingWillHideModel'
           )}
         />
 
@@ -73,9 +73,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('user_analytics_enabled', checked)
           }
-          label={t('User Analytics')}
+          label={t('systemSettings.titles.userAnalytics')}
           description={t(
-            'Enable user consumption rankings and trends. Disabling will reduce database query load.'
+            'systemSettings.actions.enableUserConsumptionRankingsAndTrendsDisablingWillReduceDatabase'
           )}
         />
 
@@ -84,9 +84,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('rankings_enabled', checked)
           }
-          label={t('Rankings')}
+          label={t('rankings.titles.value')}
           description={t(
-            'Enable model and vendor rankings. This is a high-cost query that runs every 5 minutes.'
+            'systemSettings.actions.enableModelAndVendorRankingsThisIsAHighCost'
           )}
         />
 
@@ -95,9 +95,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('media_convert_stats_enabled', checked)
           }
-          label={t('Media Conversion Stats')}
+          label={t('systemSettings.fields.mediaConversionStats')}
           description={t(
-            'Enable image/video to URL conversion statistics display.'
+            'systemSettings.actions.enableImageVideoToUrlConversionStatisticsDisplay'
           )}
         />
 
@@ -106,9 +106,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('quota_data_track_tokens', checked)
           }
-          label={t('Track Token Usage')}
+          label={t('systemSettings.fields.trackTokenUsage')}
           description={t(
-            'Record token_used in quota data. Disabling reduces write cost when token analytics are not needed.'
+            'systemSettings.tips.recordTokenUsedInQuotaDataDisablingReducesWriteCost'
           )}
         />
 
@@ -117,9 +117,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('quota_data_track_by_model', checked)
           }
-          label={t('Aggregate by Model')}
+          label={t('systemSettings.tips.aggregateByModel')}
           description={t(
-            'Aggregate quota data per model. Disabling collapses all models into a single global bucket, reducing row count.'
+            'systemSettings.tips.aggregateQuotaDataPerModelDisablingCollapsesAllModelsInto'
           )}
         />
 
@@ -128,9 +128,9 @@ export function DashboardMetricsSection() {
           onCheckedChange={(checked) =>
             handleToggle('quota_data_track_by_user', checked)
           }
-          label={t('Aggregate by User')}
+          label={t('systemSettings.tips.aggregateByUser')}
           description={t(
-            'Aggregate quota data per user. Disabling collapses all users into a single anonymous bucket, reducing row count.'
+            'systemSettings.tips.aggregateQuotaDataPerUserDisablingCollapsesAllUsersInto'
           )}
         />
       </div>

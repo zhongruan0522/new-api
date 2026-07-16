@@ -48,7 +48,7 @@ const getGroupDefaults = (settings: BillingSettings) => ({
 const BILLING_SECTIONS = [
   {
     id: 'quota',
-    titleKey: 'Quota Settings',
+    titleKey: 'keys.titles.quotaSettings',
     build: (settings: BillingSettings) => (
       <QuotaSettingsSection
         defaultValues={{
@@ -69,7 +69,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'payment',
-    titleKey: 'Payment Settings',
+    titleKey: 'systemSettings.titles.paymentSettings',
     build: (settings: BillingSettings) => (
       <PaymentSettingsSection
         defaultValues={{
@@ -96,7 +96,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'model-pricing',
-    titleKey: 'Model Pricing',
+    titleKey: 'common.fields.modelPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Model Pricing'
@@ -109,7 +109,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'group-pricing',
-    titleKey: 'Group Pricing',
+    titleKey: 'common.fields.groupPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Group Pricing'
@@ -122,7 +122,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'checkin',
-    titleKey: 'Check-in Rewards',
+    titleKey: 'common.fields.checkInRewards',
     build: (settings: BillingSettings) => (
       <CheckinSettingsSection
         defaultValues={{

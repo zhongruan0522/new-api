@@ -34,21 +34,21 @@ type ProviderMeta = {
 
 const providerDictionary: Record<string, ProviderMeta> = {
   github: {
-    label: 'GitHub',
+    label: 'profile.fields.gitHub',
     Icon: (props: { className?: string }) => (
       <SiGithub className={props.className} focusable='false' />
     ),
   },
-  oidc: { label: 'OIDC', Icon: Shield },
+  oidc: { label: 'profile.fields.oidc', Icon: Shield },
   linuxdo: {
-    label: 'LinuxDO',
+    label: 'profile.fields.linuxDo',
     Icon: (props: { className?: string }) => (
       <SiLinux className={props.className} focusable='false' />
     ),
   },
-  telegram: { label: 'Telegram', Icon: Send },
+  telegram: { label: 'profile.fields.telegram', Icon: Send },
   wechat: {
-    label: 'WeChat',
+    label: 'profile.fields.chat',
     Icon: (props: { className?: string }) => (
       <SiWechat className={props.className} focusable='false' />
     ),
@@ -74,19 +74,19 @@ export function OAuthCallbackScreen({
   const isBindMode = mode === 'bind'
 
   const headline = isBindMode
-    ? t('Binding your {{provider}} account', { provider: providerLabel })
-    : t('Signing you in with {{provider}}', { provider: providerLabel })
+    ? t('auth.tips.bindingYourProviderAccount', { provider: providerLabel })
+    : t('auth.tips.signingYouInWithProvider', { provider: providerLabel })
 
   const description = isBindMode
-    ? t('Hang tight while we securely link this account to your profile.')
-    : t('Hang tight while we finish connecting your account.')
+    ? t('auth.tips.hangTightWhileWeSecurelyLinkThisAccountTo')
+    : t('auth.tips.hangTightWhileWeFinishConnectingYourAccount')
 
   const secondaryNote = isBindMode
     ? t(
-        'You can close this tab once the binding completes or a success message appears in the original window.'
+        'auth.status.closeThisTabOnceTheBindingCompletesOrA'
       )
     : t(
-        "You'll be redirected automatically. You can return to the previous page if nothing happens after a few seconds."
+        "common.tips.llBeRedirectedAutomaticallyYouCanReturnToThe"
       )
 
   return (
@@ -109,12 +109,12 @@ export function OAuthCallbackScreen({
         <div className='space-y-4 text-center'>
           <div className='flex items-center justify-center gap-2 text-sm font-medium'>
             <Loader2 className='h-4 w-4 animate-spin' />
-            <span>{t('Processing OAuth response...')}</span>
+            <span>{t('auth.status.processingOauthResponse')}</span>
           </div>
           <p className='text-muted-foreground text-sm'>{secondaryNote}</p>
           <p className='text-muted-foreground text-xs'>
             {t(
-              'This may take a few moments while we validate the request and update your session.'
+              'auth.tips.mayTakeAFewMomentsWhileWeValidateThe'
             )}
           </p>
         </div>

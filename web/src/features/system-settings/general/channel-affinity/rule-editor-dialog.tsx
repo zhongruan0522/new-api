@@ -178,7 +178,7 @@ export function RuleEditorDialog(props: Props) {
   const handleSave = (values: RuleFormValues) => {
     const modelRegex = normalizeStringList(values.model_regex_text)
     if (modelRegex.length === 0) {
-      toast.error(t('At least one model regex pattern is required'))
+      toast.error(t('systemSettings.errors.leastOneModelRegexPatternIsRequired'))
       return
     }
 
@@ -186,7 +186,7 @@ export function RuleEditorDialog(props: Props) {
       .map(normalizeKeySource)
       .filter((s) => s.type && (s.type === 'gjson' ? s.path : s.key))
     if (validKeySources.length === 0) {
-      toast.error(t('At least one valid key source is required'))
+      toast.error(t('systemSettings.errors.leastOneValidKeySourceIsRequired'))
       return
     }
 
@@ -199,12 +199,12 @@ export function RuleEditorDialog(props: Props) {
           Array.isArray(parsed) ||
           parsed === null
         ) {
-          toast.error(t('Parameter override template must be a JSON object'))
+          toast.error(t('systemSettings.errors.parameterOverrideTemplateMustBeAJsonObject'))
           return
         }
         paramTemplate = parsed
       } catch {
-        toast.error(t('Invalid JSON in parameter override template'))
+        toast.error(t('systemSettings.errors.invalidJsonInParameterOverrideTemplate'))
         return
       }
     }
@@ -233,12 +233,12 @@ export function RuleEditorDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='max-h-[85vh] max-w-2xl overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('Edit Rule') : t('Add Rule')}</DialogTitle>
+          <DialogTitle>{isEdit ? t('dynamicRatio.actions.editRule') : t('systemSettings.actions.addRule')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSave)} className='space-y-4'>
           <div className='grid gap-1.5'>
-            <Label>{t('Name')} *</Label>
+            <Label>{t('channels.fields.name')} *</Label>
             <Input
               placeholder='prefer-by-conversation-id'
               {...form.register('name', { required: true })}
@@ -247,7 +247,7 @@ export function RuleEditorDialog(props: Props) {
 
           <div className='grid grid-cols-2 gap-3'>
             <div className='grid gap-1.5'>
-              <Label>{t('Model Regex (one per line)')} *</Label>
+              <Label>{t('systemSettings.fields.modelRegexOnePerLine')} *</Label>
               <Textarea
                 rows={4}
                 placeholder={'^gpt-4o.*$\n^claude-3.*$'}
@@ -255,7 +255,7 @@ export function RuleEditorDialog(props: Props) {
               />
             </div>
             <div className='grid gap-1.5'>
-              <Label>{t('Path Regex (one per line)')}</Label>
+              <Label>{t('systemSettings.fields.pathRegexOnePerLine')}</Label>
               <Textarea
                 rows={4}
                 placeholder='/v1/chat/completions'
@@ -267,7 +267,7 @@ export function RuleEditorDialog(props: Props) {
           <SettingsSwitchField
             checked={form.watch('skip_retry_on_failure')}
             onCheckedChange={(v) => form.setValue('skip_retry_on_failure', v)}
-            label={t('Skip retry on failure')}
+            label={t('systemSettings.fields.skipRetryOnFailure')}
           />
 
           <Separator />
@@ -275,7 +275,7 @@ export function RuleEditorDialog(props: Props) {
           {/* Key Sources */}
           <div>
             <div className='mb-2 flex items-center justify-between'>
-              <Label>{t('Key Sources')}</Label>
+              <Label>{t('systemSettings.fields.keySources')}</Label>
               <Button
                 type='button'
                 variant='outline'
@@ -288,11 +288,11 @@ export function RuleEditorDialog(props: Props) {
                 }
               >
                 <Plus className='mr-1 h-3 w-3' />
-                {t('Add')}
+                {t('channels.actions.add')}
               </Button>
             </div>
             <p className='text-muted-foreground mb-2 text-xs'>
-              {t('Common Keys')}: {CONTEXT_KEY_PRESETS.join(', ')}
+              {t('systemSettings.fields.commonKeys')}: {CONTEXT_KEY_PRESETS.join(', ')}
             </p>
             <div className='space-y-2'>
               {keySources.map((src, idx) => (
@@ -373,11 +373,11 @@ export function RuleEditorDialog(props: Props) {
                 />
               }
             >
-              {advancedOpen ? '▼' : '▶'} {t('Advanced Settings')}
+              {advancedOpen ? '▼' : '▶'} {t('channels.titles.advancedSettings')}
             </CollapsibleTrigger>
             <CollapsibleContent className='space-y-3 pt-2'>
               <div className='grid gap-1.5'>
-                <Label>{t('User-Agent include (one per line)')}</Label>
+                <Label>{t('systemSettings.tips.userAgentIncludeOnePerLine')}</Label>
                 <Textarea
                   rows={3}
                   placeholder='curl&#10;PostmanRuntime'
@@ -387,14 +387,14 @@ export function RuleEditorDialog(props: Props) {
 
               <div className='grid grid-cols-2 gap-3'>
                 <div className='grid gap-1.5'>
-                  <Label>{t('Value Regex')}</Label>
+                  <Label>{t('systemSettings.fields.valueRegex')}</Label>
                   <Input
                     placeholder='^[-0-9A-Za-z._:]{1,128}$'
                     {...form.register('value_regex')}
                   />
                 </div>
                 <div className='grid gap-1.5'>
-                  <Label>{t('TTL (seconds, 0 = default)')}</Label>
+                  <Label>{t('systemSettings.fields.ttlSeconds0Default')}</Label>
                   <Input
                     type='number'
                     min={0}
@@ -404,7 +404,7 @@ export function RuleEditorDialog(props: Props) {
               </div>
 
               <div className='grid gap-1.5'>
-                <Label>{t('Parameter Override Template (JSON)')}</Label>
+                <Label>{t('systemSettings.tips.parameterOverrideTemplateJson')}</Label>
                 <Textarea
                   rows={5}
                   placeholder='{"operations": [...]}'
@@ -419,7 +419,7 @@ export function RuleEditorDialog(props: Props) {
                   onCheckedChange={(v) =>
                     form.setValue('include_using_group', v)
                   }
-                  label={t('Include Group')}
+                  label={t('systemSettings.fields.includeGroup')}
                   className='border-b-0 py-0'
                 />
                 <SettingsSwitchField
@@ -427,13 +427,13 @@ export function RuleEditorDialog(props: Props) {
                   onCheckedChange={(v) =>
                     form.setValue('include_model_name', v)
                   }
-                  label={t('Include Model')}
+                  label={t('systemSettings.fields.includeModel')}
                   className='border-b-0 py-0'
                 />
                 <SettingsSwitchField
                   checked={form.watch('include_rule_name')}
                   onCheckedChange={(v) => form.setValue('include_rule_name', v)}
-                  label={t('Include Rule Name')}
+                  label={t('systemSettings.fields.includeRuleName')}
                   className='border-b-0 py-0'
                 />
               </div>
@@ -446,9 +446,9 @@ export function RuleEditorDialog(props: Props) {
               variant='outline'
               onClick={() => props.onOpenChange(false)}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
-            <Button type='submit'>{t('Save')}</Button>
+            <Button type='submit'>{t('channels.actions.save')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

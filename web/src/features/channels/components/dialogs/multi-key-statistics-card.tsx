@@ -34,7 +34,7 @@ export function StatisticsCard({ label, count, total }: StatisticsCardProps) {
       <div className='flex items-baseline gap-2'>
         <span className='text-foreground text-2xl font-semibold'>{count}</span>
         <span className='text-muted-foreground text-sm'>
-          {t('of')} {total}
+          {t('common.fields.valuede04fa')} {total}
         </span>
       </div>
     </div>

@@ -73,42 +73,42 @@ export const USAGE_LOG_FIELD_GROUPS: {
   value: UsageLogFieldGroup
   labelKey: string
 }[] = [
-  { value: 'basic', labelKey: 'Usage Log Field Group: Basic' },
-  { value: 'request', labelKey: 'Usage Log Field Group: Request' },
-  { value: 'billing', labelKey: 'Usage Log Field Group: Billing' },
-  { value: 'token', labelKey: 'Usage Log Field Group: Token' },
-  { value: 'system', labelKey: 'Usage Log Field Group: System' },
-  { value: 'other', labelKey: 'Usage Log Field Group: Other' },
+  { value: 'basic', labelKey: 'common.fields.usageLogFieldGroupBasic' },
+  { value: 'request', labelKey: 'common.fields.usageLogFieldGroupRequest' },
+  { value: 'billing', labelKey: 'common.fields.usageLogFieldGroupBilling' },
+  { value: 'token', labelKey: 'common.fields.usageLogFieldGroupToken' },
+  { value: 'system', labelKey: 'common.titles.usageLogFieldGroupSystem' },
+  { value: 'other', labelKey: 'common.fields.usageLogFieldGroupOther' },
 ]
 
 export const USAGE_LOG_FIELDS: UsageLogFieldMeta[] = [
   // 基本信息
-  { key: 'request_id', nameKey: 'UsageLogField.name.request_id', descriptionKey: 'UsageLogField.desc.request_id', group: 'basic', admin: true, user: true },
-  { key: 'upstream_request_id', nameKey: 'UsageLogField.name.upstream_request_id', descriptionKey: 'UsageLogField.desc.upstream_request_id', group: 'basic', admin: true, user: true },
-  { key: 'retry_chain', nameKey: 'UsageLogField.name.retry_chain', descriptionKey: 'UsageLogField.desc.retry_chain', group: 'basic', admin: true, user: false },
-  { key: 'ip_address', nameKey: 'UsageLogField.name.ip_address', descriptionKey: 'UsageLogField.desc.ip_address', group: 'basic', admin: true, user: true },
+  { key: 'request_id', nameKey: 'common.tips.usageLogFieldNameRequestId', descriptionKey: 'common.tips.usageLogFieldDescRequestId', group: 'basic', admin: true, user: true },
+  { key: 'upstream_request_id', nameKey: 'common.tips.usageLogFieldNameUpstreamRequestId', descriptionKey: 'common.tips.usageLogFieldDescUpstreamRequestId', group: 'basic', admin: true, user: true },
+  { key: 'retry_chain', nameKey: 'common.tips.usageLogFieldNameRetryChain', descriptionKey: 'common.tips.usageLogFieldDescRetryChain', group: 'basic', admin: true, user: false },
+  { key: 'ip_address', nameKey: 'common.tips.usageLogFieldNameIpAddress', descriptionKey: 'common.tips.usageLogFieldDescIpAddress', group: 'basic', admin: true, user: true },
   // 请求信息
-  { key: 'client_headers', nameKey: 'UsageLogField.name.client_headers', descriptionKey: 'UsageLogField.desc.client_headers', group: 'request', admin: true, user: true },
-  { key: 'request_conversion', nameKey: 'UsageLogField.name.request_conversion', descriptionKey: 'UsageLogField.desc.request_conversion', group: 'request', admin: true, user: false },
-  { key: 'reasoning_effort', nameKey: 'UsageLogField.name.reasoning_effort', descriptionKey: 'UsageLogField.desc.reasoning_effort', group: 'request', admin: true, user: true },
-  { key: 'system_prompt_override', nameKey: 'UsageLogField.name.system_prompt_override', descriptionKey: 'UsageLogField.desc.system_prompt_override', group: 'request', admin: true, user: true },
-  { key: 'model_mapping', nameKey: 'UsageLogField.name.model_mapping', descriptionKey: 'UsageLogField.desc.model_mapping', group: 'request', admin: true, user: true },
-  { key: 'parameter_override', nameKey: 'UsageLogField.name.parameter_override', descriptionKey: 'UsageLogField.desc.parameter_override', group: 'request', admin: true, user: true },
+  { key: 'client_headers', nameKey: 'common.tips.usageLogFieldNameClientHeaders', descriptionKey: 'common.tips.usageLogFieldDescClientHeaders', group: 'request', admin: true, user: true },
+  { key: 'request_conversion', nameKey: 'common.tips.usageLogFieldNameRequestConversion', descriptionKey: 'common.tips.usageLogFieldDescRequestConversion', group: 'request', admin: true, user: false },
+  { key: 'reasoning_effort', nameKey: 'common.tips.usageLogFieldNameReasoningEffort', descriptionKey: 'common.tips.usageLogFieldDescReasoningEffort', group: 'request', admin: true, user: true },
+  { key: 'system_prompt_override', nameKey: 'common.tips.usageLogFieldNameSystemPromptOverride', descriptionKey: 'common.tips.usageLogFieldDescSystemPromptOverride', group: 'request', admin: true, user: true },
+  { key: 'model_mapping', nameKey: 'common.tips.usageLogFieldNameModelMapping', descriptionKey: 'common.tips.usageLogFieldDescModelMapping', group: 'request', admin: true, user: true },
+  { key: 'parameter_override', nameKey: 'common.tips.usageLogFieldNameParameterOverride', descriptionKey: 'common.tips.usageLogFieldDescParameterOverride', group: 'request', admin: true, user: true },
   // 计费
-  { key: 'billing_source', nameKey: 'UsageLogField.name.billing_source', descriptionKey: 'UsageLogField.desc.billing_source', group: 'billing', admin: true, user: false },
-  { key: 'billing_details', nameKey: 'UsageLogField.name.billing_details', descriptionKey: 'UsageLogField.desc.billing_details', group: 'billing', admin: true, user: true },
-  { key: 'price_table', nameKey: 'UsageLogField.name.price_table', descriptionKey: 'UsageLogField.desc.price_table', group: 'billing', admin: true, user: true },
-  { key: 'tiered_pricing', nameKey: 'UsageLogField.name.tiered_pricing', descriptionKey: 'UsageLogField.desc.tiered_pricing', group: 'billing', admin: true, user: true },
-  { key: 'violation_fee', nameKey: 'UsageLogField.name.violation_fee', descriptionKey: 'UsageLogField.desc.violation_fee', group: 'billing', admin: true, user: true },
-  { key: 'refund_details', nameKey: 'UsageLogField.name.refund_details', descriptionKey: 'UsageLogField.desc.refund_details', group: 'billing', admin: true, user: true },
-  { key: 'subscription_billing', nameKey: 'UsageLogField.name.subscription_billing', descriptionKey: 'UsageLogField.desc.subscription_billing', group: 'billing', admin: true, user: true },
+  { key: 'billing_source', nameKey: 'common.tips.usageLogFieldNameBillingSource', descriptionKey: 'common.tips.usageLogFieldDescBillingSource', group: 'billing', admin: true, user: false },
+  { key: 'billing_details', nameKey: 'common.tips.usageLogFieldNameBillingDetails', descriptionKey: 'common.tips.usageLogFieldDescBillingDetails', group: 'billing', admin: true, user: true },
+  { key: 'price_table', nameKey: 'common.tips.usageLogFieldNamePriceTable', descriptionKey: 'common.tips.usageLogFieldDescPriceTable', group: 'billing', admin: true, user: true },
+  { key: 'tiered_pricing', nameKey: 'common.tips.usageLogFieldNameTieredPricing', descriptionKey: 'common.tips.usageLogFieldDescTieredPricing', group: 'billing', admin: true, user: true },
+  { key: 'violation_fee', nameKey: 'common.tips.usageLogFieldNameViolationFee', descriptionKey: 'common.tips.usageLogFieldDescViolationFee', group: 'billing', admin: true, user: true },
+  { key: 'refund_details', nameKey: 'common.tips.usageLogFieldNameRefundDetails', descriptionKey: 'common.tips.usageLogFieldDescRefundDetails', group: 'billing', admin: true, user: true },
+  { key: 'subscription_billing', nameKey: 'common.tips.usageLogFieldNameSubscriptionBilling', descriptionKey: 'common.tips.usageLogFieldDescSubscriptionBilling', group: 'billing', admin: true, user: true },
   // Token
-  { key: 'token_breakdown', nameKey: 'UsageLogField.name.token_breakdown', descriptionKey: 'UsageLogField.desc.token_breakdown', group: 'token', admin: true, user: true },
-  { key: 'audio_tokens', nameKey: 'UsageLogField.name.audio_tokens', descriptionKey: 'UsageLogField.desc.audio_tokens', group: 'token', admin: true, user: true },
+  { key: 'token_breakdown', nameKey: 'common.tips.usageLogFieldNameTokenBreakdown', descriptionKey: 'common.tips.usageLogFieldDescTokenBreakdown', group: 'token', admin: true, user: true },
+  { key: 'audio_tokens', nameKey: 'common.tips.usageLogFieldNameAudioTokens', descriptionKey: 'common.tips.usageLogFieldDescAudioTokens', group: 'token', admin: true, user: true },
   // 系统/管理
-  { key: 'topup_audit', nameKey: 'UsageLogField.name.topup_audit', descriptionKey: 'UsageLogField.desc.topup_audit', group: 'system', admin: true, user: false },
-  { key: 'operator_admin', nameKey: 'UsageLogField.name.operator_admin', descriptionKey: 'UsageLogField.desc.operator_admin', group: 'system', admin: true, user: false },
-  { key: 'stream_status', nameKey: 'UsageLogField.name.stream_status', descriptionKey: 'UsageLogField.desc.stream_status', group: 'system', admin: true, user: false },
+  { key: 'topup_audit', nameKey: 'common.tips.usageLogFieldNameTopupAudit', descriptionKey: 'common.tips.usageLogFieldDescTopupAudit', group: 'system', admin: true, user: false },
+  { key: 'operator_admin', nameKey: 'common.tips.usageLogFieldNameOperatorAdmin', descriptionKey: 'common.tips.usageLogFieldDescOperatorAdmin', group: 'system', admin: true, user: false },
+  { key: 'stream_status', nameKey: 'common.tips.usageLogFieldNameStreamStatus', descriptionKey: 'common.tips.usageLogFieldDescStreamStatus', group: 'system', admin: true, user: false },
 ]
 
 // 构建 UsageLogFields 配置的默认 JSON 字符串。

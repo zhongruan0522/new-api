@@ -595,7 +595,7 @@ func UpdateSelf(c *gin.Context) {
 		user.Password = "" // rollback to what it should be
 		cleanUser.Password = ""
 	}
-	updatePassword, err := checkUpdatePassword(user.OriginalPassword, user.Password, cleanUser.Id)
+	updatePassword, err := checkUpdatePassword(c, user.OriginalPassword, user.Password, cleanUser.Id)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -613,7 +613,7 @@ func UpdateSelf(c *gin.Context) {
 	return
 }
 
-func checkUpdatePassword(originalPassword string, newPassword string, userId int) (updatePassword bool, err error) {
+func checkUpdatePassword(c *gin.Context, originalPassword string, newPassword string, userId int) (updatePassword bool, err error) {
 	var currentUser *model.User
 	currentUser, err = model.GetUserById(userId, true)
 	if err != nil {
@@ -623,7 +623,7 @@ func checkUpdatePassword(originalPassword string, newPassword string, userId int
 	// 密码不为空,需要验证原密码
 	// 支持第一次账号绑定时原密码为空的情况
 	if !common.ValidatePasswordAndHash(originalPassword, currentUser.Password) && currentUser.Password != "" {
-		err = fmt.Errorf("原密码错误")
+		err = fmt.Errorf("%s", i18n.T(c, i18n.MsgUserOriginalPasswordError))
 		return
 	}
 	if newPassword == "" {
@@ -915,10 +915,7 @@ func EmailBind(c *gin.Context) {
 	if user.Status != common.UserStatusEnabled {
 		session.Clear()
 		_ = session.Save()
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "用户已被封禁",
-		})
+		common.ApiErrorI18n(c, i18n.MsgUserBanned)
 		return
 	}
 	user.Email = email

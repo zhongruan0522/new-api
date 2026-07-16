@@ -38,11 +38,11 @@ const MODALITY_META: Record<
   Modality,
   { icon: IconComponent; labelKey: string }
 > = {
-  text: { icon: TypeIcon, labelKey: 'Text' },
-  image: { icon: ImageIcon, labelKey: 'Image' },
-  audio: { icon: Mic2, labelKey: 'Audio' },
-  video: { icon: Video, labelKey: 'Video' },
-  file: { icon: FileText, labelKey: 'File' },
+  text: { icon: TypeIcon, labelKey: 'common.fields.text' },
+  image: { icon: ImageIcon, labelKey: 'models.fields.image' },
+  audio: { icon: Mic2, labelKey: 'common.fields.audio' },
+  video: { icon: Video, labelKey: 'pricing.fields.video' },
+  file: { icon: FileText, labelKey: 'common.fields.file' },
 }
 
 const ALL_MODALITIES: Modality[] = ['text', 'image', 'audio', 'video', 'file']
@@ -125,10 +125,10 @@ export function ModalitiesMatrix(props: {
               )}
               aria-label={
                 enabled
-                  ? t('{{modality}} supported', {
+                  ? t('pricing.fields.modalitySupported', {
                       modality: t(MODALITY_META[modality].labelKey),
                     })
-                  : t('{{modality}} not supported', {
+                  : t('pricing.fields.modalityNotSupported', {
                       modality: t(MODALITY_META[modality].labelKey),
                     })
               }
@@ -150,7 +150,7 @@ export function ModalitiesMatrix(props: {
               scope='col'
               className='text-muted-foreground px-3 py-2 text-left text-[11px] font-medium tracking-wider uppercase'
             >
-              {t('Modality')}
+              {t('pricing.fields.modality')}
             </th>
             {ALL_MODALITIES.map((modality) => (
               <th
@@ -164,8 +164,8 @@ export function ModalitiesMatrix(props: {
           </tr>
         </thead>
         <tbody>
-          {renderRow(t('Input'), inputSet)}
-          {renderRow(t('Output'), outputSet)}
+          {renderRow(t('pricing.fields.input'), inputSet)}
+          {renderRow(t('pricing.fields.output'), outputSet)}
         </tbody>
       </table>
     </div>

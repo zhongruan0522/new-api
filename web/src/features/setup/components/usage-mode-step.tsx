@@ -44,23 +44,23 @@ const USAGE_MODE_OPTIONS: Array<{
 }> = [
   {
     value: 'external',
-    titleKey: 'External operations',
+    titleKey: 'common.fields.externalOperations',
     descriptionKey:
-      'Serve multiple users or teams with billing and quota control.',
+      'common.tips.serveMultipleUsersOrTeamsWithBillingAndQuota',
     icon: Building2,
   },
   {
     value: 'self',
-    titleKey: 'Personal use',
+    titleKey: 'common.fields.personalUse',
     descriptionKey:
-      'Best for single-tenant deployments. Pricing and billing options stay hidden.',
+      'common.tips.bestForSingleTenantDeploymentsPricingAndBillingOptions',
     icon: Home,
   },
   {
     value: 'demo',
-    titleKey: 'Demo site',
+    titleKey: 'common.fields.demoSite',
     descriptionKey:
-      'Showcase core capabilities with demo credentials and limited access.',
+      'common.tips.showcaseCoreCapabilitiesWithDemoCredentialsAndLimitedAccess',
     icon: Presentation,
   },
 ]
@@ -74,7 +74,7 @@ export function UsageModeStep({ form }: UsageModeStepProps) {
       name='usageMode'
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{t('How will you use the platform?')}</FormLabel>
+          <FormLabel>{t('setup.tips.howWillYouUseThePlatform')}</FormLabel>
           <FormControl>
             <RadioGroup
               value={field.value}

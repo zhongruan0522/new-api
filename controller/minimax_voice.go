@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 )
@@ -67,19 +68,19 @@ type miniMaxVoiceUpsertRequest struct {
 func CreateMiniMaxVoice(c *gin.Context) {
 	var req miniMaxVoiceUpsertRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 	req.VoiceId = strings.TrimSpace(req.VoiceId)
 	if req.VoiceId == "" {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色ID不能为空"})
+		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceIDRequired)
 		return
 	}
 	if req.Type == "" {
 		req.Type = model.MiniMaxVoiceTypeCreated
 	}
 	if !isValidVoiceType(req.Type) {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色类型不合规"})
+		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
 		return
 	}
 
@@ -90,7 +91,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 	if exists {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色ID不合规"})
+		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 		return
 	}
 
@@ -107,7 +108,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	if err := model.InsertMiniMaxVoice(voice); err != nil {
 		// 唯一约束冲突也归一为不合规。
 		if isVoiceDupErr(err) {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色ID不合规"})
+			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		common.ApiError(c, err)
@@ -134,23 +135,23 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的音色ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceInvalidID)})
 		return
 	}
 	var req miniMaxVoiceUpsertRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 	if req.Type != "" && !isValidVoiceType(req.Type) {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色类型不合规"})
+		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
 		return
 	}
 
 	before, err := model.GetMiniMaxVoiceById(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "音色不存在"})
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
 			return
 		}
 		common.ApiError(c, err)
@@ -166,7 +167,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 			return
 		}
 		if exists {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色ID不合规"})
+			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		before.VoiceId = newVoiceId
@@ -182,7 +183,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 	before.UpdatedAt = time.Now().Unix()
 	if err := model.UpdateMiniMaxVoice(before); err != nil {
 		if isVoiceDupErr(err) {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "音色ID不合规"})
+			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		common.ApiError(c, err)
@@ -209,13 +210,13 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的音色ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceInvalidID)})
 		return
 	}
 	before, err := model.GetMiniMaxVoiceById(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "音色不存在"})
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
 			return
 		}
 		common.ApiError(c, err)
@@ -238,12 +239,12 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 
 func voiceAuditMap(v *model.MiniMaxVoice) map[string]interface{} {
 	return map[string]interface{}{
-		"id":           v.Id,
-		"voice_id":     v.VoiceId,
-		"type":         v.Type,
-		"redirect_id":  v.RedirectId,
-		"allowed":      v.Allowed,
-		"operator_id":  v.OperatorId,
+		"id":            v.Id,
+		"voice_id":      v.VoiceId,
+		"type":          v.Type,
+		"redirect_id":   v.RedirectId,
+		"allowed":       v.Allowed,
+		"operator_id":   v.OperatorId,
 		"operator_kind": v.OperatorKind,
 	}
 }

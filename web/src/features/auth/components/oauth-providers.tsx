@@ -70,7 +70,7 @@ export function OAuthProviders({
   if (status?.wechat_login && onWeChatLogin) {
     providerButtons.push({
       key: 'wechat',
-      label: t('Continue with WeChat'),
+      label: t('auth.actions.continueWithWeChat'),
       onClick: onWeChatLogin,
       icon: <IconWeChat className='h-4 w-4' />,
       disabled: isWeChatLoading,
@@ -80,7 +80,7 @@ export function OAuthProviders({
   if (status?.github_oauth) {
     providerButtons.push({
       key: 'github',
-      label: githubButtonText || t('Continue with GitHub'),
+      label: githubButtonText || t('auth.actions.continueWithGitHub'),
       onClick: handleGitHubLogin,
       icon: <IconGithub className='h-4 w-4' />,
       disabled: githubButtonDisabled,
@@ -90,7 +90,7 @@ export function OAuthProviders({
   if (status?.discord_oauth) {
     providerButtons.push({
       key: 'discord',
-      label: t('Continue with Discord'),
+      label: t('auth.actions.continueWithDiscord'),
       onClick: handleDiscordLogin,
       icon: <IconDiscord className='h-4 w-4' />,
     })
@@ -99,7 +99,7 @@ export function OAuthProviders({
   if (status?.oidc_enabled) {
     providerButtons.push({
       key: 'oidc',
-      label: t('Continue with OIDC'),
+      label: t('auth.actions.continueWithOidc'),
       onClick: handleOIDCLogin,
     })
   }
@@ -107,7 +107,7 @@ export function OAuthProviders({
   if (status?.linuxdo_oauth) {
     providerButtons.push({
       key: 'linuxdo',
-      label: t('Continue with LinuxDO'),
+      label: t('auth.actions.continueWithLinuxDo'),
       onClick: handleLinuxDOLogin,
       icon: <IconLinuxDo className='h-4 w-4' />,
     })
@@ -116,7 +116,7 @@ export function OAuthProviders({
   if (status?.telegram_oauth) {
     providerButtons.push({
       key: 'telegram',
-      label: t('Continue with Telegram'),
+      label: t('auth.actions.continueWithTelegram'),
       onClick: handleTelegramLogin,
     })
   }
@@ -127,7 +127,7 @@ export function OAuthProviders({
     for (const provider of customProviders) {
       providerButtons.push({
         key: `custom-${provider.slug}`,
-        label: t('Continue with {{name}}', { name: provider.name }),
+        label: t('auth.actions.continueWithName', { name: provider.name }),
         onClick: () => handleCustomOAuthLogin(provider),
       })
     }
@@ -143,7 +143,7 @@ export function OAuthProviders({
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
           <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
+            {t('auth.fields.continueWith')}
           </span>
         </div>
       </div>

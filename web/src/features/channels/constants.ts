@@ -76,34 +76,34 @@ export const CHANNEL_STATUS = {
 } as const
 
 export const CHANNEL_STATUS_LABELS = {
-  [CHANNEL_STATUS.UNKNOWN]: 'Unknown',
-  [CHANNEL_STATUS.ENABLED]: 'Enabled',
-  [CHANNEL_STATUS.MANUAL_DISABLED]: 'Disabled',
-  [CHANNEL_STATUS.AUTO_DISABLED]: 'Auto Disabled',
+  [CHANNEL_STATUS.UNKNOWN]: 'channels.fields.unknown',
+  [CHANNEL_STATUS.ENABLED]: 'channels.status.enabled',
+  [CHANNEL_STATUS.MANUAL_DISABLED]: 'channels.status.disabled',
+  [CHANNEL_STATUS.AUTO_DISABLED]: 'channels.status.autoDisabled',
 } as const
 
 export const CHANNEL_STATUS_OPTIONS = [
-  { value: 'all', label: 'All Status' },
-  { value: 'enabled', label: 'Enabled' },
-  { value: 'disabled', label: 'Disabled' },
+  { value: 'all', label: 'channels.fields.allStatus' },
+  { value: 'enabled', label: 'channels.status.enabled' },
+  { value: 'disabled', label: 'channels.status.disabled' },
 ] as const
 
 export const CHANNEL_STATUS_CONFIG = {
   [CHANNEL_STATUS.UNKNOWN]: {
     variant: 'neutral' as const,
-    label: 'Unknown',
+    label: 'channels.fields.unknown',
   },
   [CHANNEL_STATUS.ENABLED]: {
     variant: 'success' as const,
-    label: 'Enabled',
+    label: 'channels.status.enabled',
   },
   [CHANNEL_STATUS.MANUAL_DISABLED]: {
     variant: 'neutral' as const,
-    label: 'Disabled',
+    label: 'channels.status.disabled',
   },
   [CHANNEL_STATUS.AUTO_DISABLED]: {
     variant: 'danger' as const,
-    label: 'Auto Disabled',
+    label: 'channels.status.autoDisabled',
   },
 }
 
@@ -118,23 +118,23 @@ export const MULTI_KEY_STATUS = {
 } as const
 
 export const MULTI_KEY_STATUS_LABELS = {
-  [MULTI_KEY_STATUS.ENABLED]: 'Enabled',
-  [MULTI_KEY_STATUS.MANUAL_DISABLED]: 'Manual Disabled',
-  [MULTI_KEY_STATUS.AUTO_DISABLED]: 'Auto Disabled',
+  [MULTI_KEY_STATUS.ENABLED]: 'channels.status.enabled',
+  [MULTI_KEY_STATUS.MANUAL_DISABLED]: 'channels.status.manualDisabled',
+  [MULTI_KEY_STATUS.AUTO_DISABLED]: 'channels.status.autoDisabled',
 } as const
 
 export const MULTI_KEY_STATUS_CONFIG = {
   [MULTI_KEY_STATUS.ENABLED]: {
     variant: 'success' as const,
-    label: 'Enabled',
+    label: 'channels.status.enabled',
   },
   [MULTI_KEY_STATUS.MANUAL_DISABLED]: {
     variant: 'neutral' as const,
-    label: 'Manual Disabled',
+    label: 'channels.status.manualDisabled',
   },
   [MULTI_KEY_STATUS.AUTO_DISABLED]: {
     variant: 'danger' as const,
-    label: 'Auto Disabled',
+    label: 'channels.status.autoDisabled',
   },
 }
 
@@ -143,16 +143,16 @@ export const MULTI_KEY_STATUS_CONFIG = {
 // ============================================================================
 
 export const MULTI_KEY_MODES = [
-  { value: 'random', label: 'Random' },
-  { value: 'polling', label: 'Polling' },
+  { value: 'random', label: 'channels.fields.random' },
+  { value: 'polling', label: 'channels.fields.polling' },
 ] as const
 
 export const ADD_MODE_OPTIONS = [
-  { value: 'single', label: 'Single Key' },
-  { value: 'batch', label: 'Batch Add (one key per line)' },
+  { value: 'single', label: 'common.fields.singleKey' },
+  { value: 'batch', label: 'common.fields.batchAddOneKeyPerLine' },
   {
     value: 'multi_to_single',
-    label: 'Multi-Key Mode (multiple keys, one channel)',
+    label: 'common.tips.multiKeyModeMultipleKeysOneChannel',
   },
 ] as const
 
@@ -161,21 +161,21 @@ export const ADD_MODE_OPTIONS = [
 // ============================================================================
 
 export const MULTI_KEY_FILTER_OPTIONS = [
-  { value: 'all', label: 'All Status' },
-  { value: '1', label: 'Enabled' },
-  { value: '2', label: 'Manual Disabled' },
-  { value: '3', label: 'Auto Disabled' },
+  { value: 'all', label: 'channels.fields.allStatus' },
+  { value: '1', label: 'channels.status.enabled' },
+  { value: '2', label: 'channels.status.manualDisabled' },
+  { value: '3', label: 'channels.status.autoDisabled' },
 ] as const
 
 export const MULTI_KEY_CONFIRM_MESSAGES = {
   DELETE:
-    'Are you sure you want to delete this key? This action cannot be undone.',
-  ENABLE: 'Enable this key?',
-  DISABLE: 'Disable this key?',
-  ENABLE_ALL: 'Are you sure you want to enable all keys?',
-  DISABLE_ALL: 'Are you sure you want to disable all enabled keys?',
+    'common.errors.sureYouWantToDeleteThisKeyThisAction',
+  ENABLE: 'common.actions.enableThisKey',
+  DISABLE: 'common.actions.disableThisKey',
+  ENABLE_ALL: 'common.tips.sureYouWantToEnableAllKeys',
+  DISABLE_ALL: 'common.status.sureYouWantToDisableAllEnabledKeys',
   DELETE_DISABLED:
-    'Are you sure you want to delete all auto-disabled keys? This action cannot be undone.',
+    'common.errors.sureYouWantToDeleteAllAutoDisabledKeys',
 } as const
 
 // ============================================================================
@@ -183,8 +183,8 @@ export const MULTI_KEY_CONFIRM_MESSAGES = {
 // ============================================================================
 
 export const AUTO_BAN_OPTIONS = [
-  { value: 1, label: 'Enabled' },
-  { value: 0, label: 'Disabled' },
+  { value: 1, label: 'channels.status.enabled' },
+  { value: 0, label: 'channels.status.disabled' },
 ] as const
 
 // ============================================================================
@@ -192,33 +192,33 @@ export const AUTO_BAN_OPTIONS = [
 // ============================================================================
 
 export const ERROR_MESSAGES = {
-  REQUIRED_NAME: 'Channel name is required',
-  REQUIRED_TYPE: 'Channel type is required',
-  REQUIRED_KEY: 'API Key Required',
-  REQUIRED_MODELS: 'Models are required',
-  REQUIRED_GROUP: 'Group is required',
-  INVALID_JSON: 'Invalid JSON format',
-  INVALID_MODEL_MAPPING: 'Invalid model mapping format',
-  CREATE_FAILED: 'Failed to create channel',
-  UPDATE_FAILED: 'Failed to update channel',
-  DELETE_FAILED: 'Failed to delete channel',
-  TEST_FAILED: 'Failed to test channel',
-  BALANCE_QUERY_FAILED: 'Failed to query balance',
-  FETCH_MODELS_FAILED: 'Failed to fetch models',
+  REQUIRED_NAME: 'common.errors.channelNameIsRequired',
+  REQUIRED_TYPE: 'common.errors.channelTypeIsRequired',
+  REQUIRED_KEY: 'dashboard.fields.apiKeyRequired',
+  REQUIRED_MODELS: 'common.titles.modelsAreRequired',
+  REQUIRED_GROUP: 'common.errors.groupIsRequired',
+  INVALID_JSON: 'common.errors.invalidJsonFormat',
+  INVALID_MODEL_MAPPING: 'common.errors.invalidModelMappingFormat',
+  CREATE_FAILED: 'common.errors.failedToCreateChannel',
+  UPDATE_FAILED: 'common.errors.failedToUpdateChannel',
+  DELETE_FAILED: 'common.errors.failedToDeleteChannel',
+  TEST_FAILED: 'common.errors.failedToTestChannel',
+  BALANCE_QUERY_FAILED: 'channels.errors.failedToQueryBalance',
+  FETCH_MODELS_FAILED: 'channels.errors.failedToFetchModels',
 } as const
 
 export const SUCCESS_MESSAGES = {
-  CREATED: 'Channel created successfully',
-  UPDATED: 'Channel updated successfully',
-  DELETED: 'Channel deleted successfully',
-  ENABLED: 'Channel enabled successfully',
-  DISABLED: 'Channel disabled successfully',
-  TESTED: 'Channel test completed',
-  BALANCE_QUERIED: 'Balance queried successfully',
-  MODELS_FETCHED: 'Models fetched successfully',
-  COPIED: 'Channel copied successfully',
-  TAG_SET: 'Tag set successfully',
-  BATCH_DELETED: 'Channels deleted successfully',
+  CREATED: 'common.status.channelCreatedSuccessfully',
+  UPDATED: 'common.status.channelUpdatedSuccessfully',
+  DELETED: 'common.status.channelDeletedSuccessfully',
+  ENABLED: 'common.status.channelEnabledSuccessfully',
+  DISABLED: 'common.status.channelDisabledSuccessfully',
+  TESTED: 'common.fields.channelTestCompleted',
+  BALANCE_QUERIED: 'common.fields.balanceQueriedSuccessfully',
+  MODELS_FETCHED: 'common.titles.modelsFetchedSuccessfully',
+  COPIED: 'common.status.channelCopiedSuccessfully',
+  TAG_SET: 'common.fields.tagSetSuccessfully',
+  BATCH_DELETED: 'common.status.channelsDeletedSuccessfully',
 } as const
 
 // ============================================================================
@@ -252,11 +252,11 @@ export const CHANNELS_TABLE_PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 // ============================================================================
 
 export const SORT_OPTIONS = [
-  { value: 'priority', label: 'Priority (Default)' },
-  { value: 'id', label: 'ID' },
-  { value: 'name', label: 'Name' },
-  { value: 'balance', label: 'Balance' },
-  { value: 'response_time', label: 'Response Time' },
+  { value: 'priority', label: 'common.fields.priorityDefault' },
+  { value: 'id', label: 'channels.fields.id' },
+  { value: 'name', label: 'channels.fields.name' },
+  { value: 'balance', label: 'usageLogs.fields.balance' },
+  { value: 'response_time', label: 'usageLogs.fields.responseTime' },
 ] as const
 
 // ============================================================================
@@ -281,11 +281,11 @@ export const RESPONSE_TIME_THRESHOLDS = {
 } as const
 
 export const RESPONSE_TIME_CONFIG = {
-  EXCELLENT: { variant: 'success' as const, label: 'Excellent' },
-  GOOD: { variant: 'info' as const, label: 'Good' },
-  FAIR: { variant: 'warning' as const, label: 'Fair' },
-  POOR: { variant: 'danger' as const, label: 'Poor' },
-  UNKNOWN: { variant: 'neutral' as const, label: 'Not tested' },
+  EXCELLENT: { variant: 'success' as const, label: 'common.fields.excellent' },
+  GOOD: { variant: 'info' as const, label: 'common.fields.good' },
+  FAIR: { variant: 'warning' as const, label: 'common.fields.fair' },
+  POOR: { variant: 'danger' as const, label: 'common.fields.poor' },
+  UNKNOWN: { variant: 'neutral' as const, label: 'channels.fields.notTested' },
 } as const
 
 // ============================================================================
@@ -293,43 +293,43 @@ export const RESPONSE_TIME_CONFIG = {
 // ============================================================================
 
 export const FIELD_PLACEHOLDERS = {
-  NAME: 'e.g., OpenAI GPT-4 Production',
-  BASE_URL: 'Leave empty to use default',
-  KEY: 'API Key (one per line for batch mode)',
-  MODELS: 'Comma-separated model names, e.g., gpt-4,gpt-3.5-turbo',
-  GROUP: 'Please Select user groups that can access this channel.',
+  NAME: 'common.placeholders.eGOpenAiGpt4Production',
+  BASE_URL: 'common.fields.leaveEmptyToUseDefault',
+  KEY: 'common.tips.apiKeyOnePerLineForBatchMode',
+  MODELS: 'common.tips.commaSeparatedModelNamesEGGpt4Gpt',
+  GROUP: 'common.errors.pleaseSelectUserGroupsThatCanAccessThisChannel',
   MODEL_MAPPING: '{"request_model": "actual_model"}',
-  TEST_MODEL: 'Model to use for testing',
-  TAG: 'Optional tag for grouping channels',
-  REMARK: 'Optional notes about this channel',
+  TEST_MODEL: 'common.fields.modelToUseForTesting',
+  TAG: 'common.tips.optionalTagForGroupingChannels',
+  REMARK: 'common.tips.optionalNotesAboutThisChannel',
   PARAM_OVERRIDE: '{"temperature": 0.7}',
   HEADER_OVERRIDE: '{"X-Custom-Header": "value"}',
   STATUS_CODE_MAPPING: '{"400": "500"}',
 } as const
 
 export const FIELD_DESCRIPTIONS = {
-  NAME: 'Friendly name to identify this channel',
-  TYPE: 'Provider type (OpenAI, Anthropic, etc.)',
-  BASE_URL: 'Custom API base URL. Leave empty to use provider default.',
-  KEY: 'API key from the provider',
+  NAME: 'common.tips.friendlyNameToIdentifyThisChannel',
+  TYPE: 'common.tips.providerTypeOpenAiAnthropicEtc',
+  BASE_URL: 'common.tips.customApiBaseUrlLeaveEmptyToUseProvider',
+  KEY: 'common.fields.apiKeyFromTheProvider',
   MODELS:
-    'List of models supported by this channel. Use comma to separate multiple models.',
-  GROUP: 'User groups that can access this channel. ',
+    'common.tips.listOfModelsSupportedByThisChannelUseComma',
+  GROUP: 'common.tips.userGroupsThatCanAccessThisChannel',
   MODEL_MAPPING:
-    'Map request model names to actual provider model names (JSON format)',
-  PRIORITY: 'Higher priority channels are selected first',
-  WEIGHT: 'Used for load balancing. Higher weight = more requests',
-  TEST_MODEL: 'Model to use when testing channel connectivity',
-  AUTO_BAN: 'Automatically disable channel on repeated failures',
-  STATUS_CODE_MAPPING: 'Map response status codes (JSON format)',
-  TAG: 'Group channels by tag for batch operations',
-  REMARK: 'Internal notes (not shown to users)',
-  SETTING: 'Channel-specific settings (JSON format)',
-  PARAM_OVERRIDE: 'Override request parameters (JSON format)',
-  HEADER_OVERRIDE: 'Override request headers (JSON format)',
-  MULTI_KEY_MODE: 'How to select keys: random or sequential polling',
-  BATCH_ADD: 'Create multiple channels from multiple keys',
-  OPENAI_ORG: 'OpenAI Organization ID (optional)',
+    'common.tips.mapRequestModelNamesToActualProviderModelNames',
+  PRIORITY: 'common.tips.higherPriorityChannelsAreSelectedFirst',
+  WEIGHT: 'common.status.usedForLoadBalancingHigherWeightMoreRequests',
+  TEST_MODEL: 'common.tips.modelToUseWhenTestingChannelConnectivity',
+  AUTO_BAN: 'common.tips.automaticallyDisableChannelOnRepeatedFailures',
+  STATUS_CODE_MAPPING: 'common.tips.mapResponseStatusCodesJsonFormat',
+  TAG: 'common.tips.groupChannelsByTagForBatchOperations',
+  REMARK: 'common.tips.internalNotesNotShownToUsers',
+  SETTING: 'common.tips.channelSpecificSettingsJsonFormat',
+  PARAM_OVERRIDE: 'common.tips.overrideRequestParametersJsonFormat',
+  HEADER_OVERRIDE: 'common.tips.overrideRequestHeadersJsonFormat',
+  MULTI_KEY_MODE: 'common.tips.howToSelectKeysRandomOrSequentialPolling',
+  BATCH_ADD: 'common.actions.createMultipleChannelsFromMultipleKeys',
+  OPENAI_ORG: 'common.tips.openAiOrganizationIdOptional',
 } as const
 
 // ============================================================================

@@ -133,7 +133,7 @@ export function UsersMutateDrawer({
       if (passwordLength < 8 || passwordLength > 20) {
         form.setError('password', {
           type: 'manual',
-          message: t('Password must be between 8 and 20 characters'),
+          message: t('users.errors.passwordMustBeBetween8And20Characters'),
         })
         return
       }
@@ -194,12 +194,12 @@ export function UsersMutateDrawer({
         >
           <SheetHeader className={sideDrawerHeaderClassName()}>
             <SheetTitle>
-              {isUpdate ? t('Update') : t('Create')} {t('User')}
+              {isUpdate ? t('channels.fields.update') : t('channels.actions.create')} {t('systemSettings.fields.user')}
             </SheetTitle>
             <SheetDescription>
               {isUpdate
-                ? t('Update the user by providing necessary info.')
-                : t('Add a new user by providing necessary info.')}
+                ? t('users.tips.updateTheUserByProvidingNecessaryInfo')
+                : t('users.actions.addANewUserByProvidingNecessaryInfo')}
             </SheetDescription>
           </SheetHeader>
           <Form {...form}>
@@ -211,7 +211,7 @@ export function UsersMutateDrawer({
               {/* Basic Information */}
               <SideDrawerSection>
                 <h3 className='text-sm font-medium'>
-                  {t('Basic Information')}
+                  {t('channels.titles.basicInformation')}
                 </h3>
 
                 <FormField
@@ -219,11 +219,11 @@ export function UsersMutateDrawer({
                   name='username'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Username')}</FormLabel>
+                      <FormLabel>{t('auth.fields.username')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder={t('Enter username')}
+                          placeholder={t('users.placeholders.enterUsername')}
                           disabled={isUpdate}
                         />
                       </FormControl>
@@ -238,11 +238,11 @@ export function UsersMutateDrawer({
                     name='role'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Role')}</FormLabel>
+                        <FormLabel>{t('users.fields.role')}</FormLabel>
                         <Select
                           items={[
-                            { value: '1', label: t('Common User') },
-                            { value: '10', label: t('Admin') },
+                            { value: '1', label: t('users.fields.commonUser') },
+                            { value: '10', label: t('systemSettings.fields.admin') },
                           ]}
                           onValueChange={(value) =>
                             value !== null && field.onChange(parseInt(value))
@@ -251,20 +251,20 @@ export function UsersMutateDrawer({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t('Select a role')} />
+                              <SelectValue placeholder={t('users.placeholders.selectARole')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent alignItemWithTrigger={false}>
                             <SelectGroup>
                               <SelectItem value='1'>
-                                {t('Common User')}
+                                {t('users.fields.commonUser')}
                               </SelectItem>
-                              <SelectItem value='10'>{t('Admin')}</SelectItem>
+                              <SelectItem value='10'>{t('systemSettings.fields.admin')}</SelectItem>
                             </SelectGroup>
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          {t("Set the user's role (cannot be Root)")}
+                          {t("common.tips.setTheUserSRoleCannotBeRoot")}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -277,15 +277,15 @@ export function UsersMutateDrawer({
                   name='display_name'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Display Name')}</FormLabel>
+                      <FormLabel>{t('usageLogs.fields.displayName')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder={t('Enter display name')}
+                          placeholder={t('users.placeholders.enterDisplayName')}
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('Leave empty to use username')}
+                        {t('users.fields.leaveEmptyToUseUsername')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -297,15 +297,15 @@ export function UsersMutateDrawer({
                   name='password'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Password')}</FormLabel>
+                      <FormLabel>{t('auth.fields.password')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type='password'
                           placeholder={
                             isUpdate
-                              ? t('Leave empty to keep unchanged')
-                              : t('Enter password (min 8 characters)')
+                              ? t('users.fields.leaveEmptyToKeepUnchanged')
+                              : t('users.placeholders.enterPasswordMin8Characters')
                           }
                         />
                       </FormControl>
@@ -318,14 +318,14 @@ export function UsersMutateDrawer({
               {/* Group & Quota Settings (Update only) */}
               {isUpdate && (
                 <SideDrawerSection>
-                  <h3 className='text-sm font-medium'>{t('Group & Quota')}</h3>
+                  <h3 className='text-sm font-medium'>{t('users.fields.groupQuota')}</h3>
 
                   <FormField
                     control={form.control}
                     name='group'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Group')}</FormLabel>
+                        <FormLabel>{t('common.fields.group')}</FormLabel>
                         <Select
                           items={[
                             ...groups.map((group) => ({
@@ -338,7 +338,7 @@ export function UsersMutateDrawer({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t('Select a group')} />
+                              <SelectValue placeholder={t('dynamicRatio.placeholders.selectAGroup')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent alignItemWithTrigger={false}>
@@ -362,7 +362,7 @@ export function UsersMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Remaining Quota')} ({currencyLabel})
+                          {t('keyQuery.fields.remainingQuota')} ({currencyLabel})
                         </FormLabel>
                         <div className='flex gap-2'>
                           <FormControl>
@@ -382,7 +382,7 @@ export function UsersMutateDrawer({
                             onClick={() => setQuotaDialogOpen(true)}
                           >
                             <Pencil className='mr-1 h-4 w-4' />
-                            {t('Adjust Quota')}
+                            {t('users.fields.adjustQuota')}
                           </Button>
                         </div>
                         <FormDescription>
@@ -398,12 +398,12 @@ export function UsersMutateDrawer({
                     name='remark'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Remark')}</FormLabel>
+                        <FormLabel>{t('channels.fields.remark')}</FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
                             placeholder={t(
-                              'Admin notes (only visible to admins)'
+                              'users.tips.adminNotesOnlyVisibleToAdmins'
                             )}
                             rows={3}
                           />
@@ -419,11 +419,11 @@ export function UsersMutateDrawer({
               {isUpdate && (
                 <SideDrawerSection>
                   <h3 className='text-sm font-medium'>
-                    {t('Binding Information')}
+                    {t('users.titles.bindingInformation')}
                   </h3>
                   <p className='text-muted-foreground text-xs'>
                     {t(
-                      'Third-party account bindings (read-only, managed by user in profile settings)'
+                      'users.tips.thirdPartyAccountBindingsReadOnlyManagedByUser'
                     )}
                   </p>
 
@@ -449,10 +449,10 @@ export function UsersMutateDrawer({
           </Form>
           <SheetFooter className={sideDrawerFooterClassName()}>
             <SheetClose render={<Button variant='outline' />}>
-              {t('Close')}
+              {t('common.actions.close')}
             </SheetClose>
             <Button form='user-form' type='submit' disabled={isSubmitting}>
-              {isSubmitting ? t('Saving...') : t('Save Changes')}
+              {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
             </Button>
           </SheetFooter>
         </SheetContent>

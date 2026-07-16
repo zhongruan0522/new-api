@@ -32,7 +32,7 @@ export function useRedemption() {
 
   const redeemCode = useCallback(async (code: string): Promise<boolean> => {
     if (!code || code.trim() === '') {
-      toast.error(i18next.t('Please enter a redemption code'))
+      toast.error(i18next.t('wallet.errors.pleaseEnterARedemptionCode'))
       return false
     }
 
@@ -43,7 +43,7 @@ export function useRedemption() {
       if (response.success && response.data) {
         const quotaAdded = response.data
         toast.success(
-          i18next.t('Redemption successful! Added: {{quota}}', {
+          i18next.t('wallet.status.redemptionSuccessfulAddedQuota', {
             quota: formatQuota(quotaAdded),
           })
         )
@@ -51,10 +51,10 @@ export function useRedemption() {
         return true
       }
 
-      toast.error(response.message || i18next.t('Redemption failed'))
+      toast.error(response.message || i18next.t('wallet.status.redemptionFailed'))
       return false
     } catch (_error) {
-      toast.error(i18next.t('Redemption failed'))
+      toast.error(i18next.t('wallet.status.redemptionFailed'))
       return false
     } finally {
       setRedeeming(false)

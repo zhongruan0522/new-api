@@ -146,13 +146,13 @@ export function ViewLogsDialog({
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Terminal className='h-5 w-5' />
-            {t('Deployment logs')}
+            {t('models.titles.deploymentLogs')}
           </DialogTitle>
         </DialogHeader>
 
         <div className='mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3'>
           <div className='text-muted-foreground text-sm'>
-            {t('Deployment ID')}: {deploymentId}
+            {t('channels.fields.deploymentId')}: {deploymentId}
           </div>
           <div className='grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center'>
             <Button
@@ -169,7 +169,7 @@ export function ViewLogsDialog({
               ) : (
                 <RefreshCcw className='mr-2 h-4 w-4' />
               )}
-              {t('Refresh')}
+              {t('channels.actions.refresh')}
             </Button>
             <Button
               variant='outline'
@@ -178,10 +178,10 @@ export function ViewLogsDialog({
               disabled={!logsText.trim()}
             >
               <Download className='mr-2 h-4 w-4' />
-              {t('Download')}
+              {t('models.actions.download')}
             </Button>
             <div className='col-span-2 flex items-center justify-between gap-2 rounded-md border px-3 py-1.5 sm:col-span-1'>
-              <span className='text-xs'>{t('Auto refresh')}</span>
+              <span className='text-xs'>{t('models.fields.autoRefresh')}</span>
               <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             </div>
           </div>
@@ -190,7 +190,7 @@ export function ViewLogsDialog({
         <div className='mb-3 grid gap-2 sm:grid-cols-2 sm:gap-3'>
           <div className='space-y-1'>
             <div className='text-muted-foreground text-xs'>
-              {t('Container')}
+              {t('models.fields.container')}
             </div>
             <Select
               items={[
@@ -222,10 +222,10 @@ export function ViewLogsDialog({
                 <SelectValue
                   placeholder={
                     isLoadingContainers
-                      ? t('Loading...')
+                      ? t('common.tips.loading')
                       : containers.length === 0
-                        ? t('No containers')
-                        : t('Select')
+                        ? t('models.fields.noContainers')
+                        : t('keys.placeholders.select')
                   }
                 />
               </SelectTrigger>
@@ -250,7 +250,7 @@ export function ViewLogsDialog({
             </Select>
           </div>
           <div className='space-y-1'>
-            <div className='text-muted-foreground text-xs'>{t('Stream')}</div>
+            <div className='text-muted-foreground text-xs'>{t('keyQuery.fields.stream')}</div>
             <Select
               items={[
                 { value: 'stdout', label: 'stdout' },
@@ -267,7 +267,7 @@ export function ViewLogsDialog({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('Select')} />
+                <SelectValue placeholder={t('keys.placeholders.select')} />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -296,14 +296,14 @@ export function ViewLogsDialog({
             </div>
           ) : containers.length === 0 ? (
             <div className='py-8 text-center text-gray-400'>
-              {t('No containers')}
+              {t('models.fields.noContainers')}
             </div>
           ) : !containerId ? (
             <div className='py-8 text-center text-gray-400'>
-              {t('Please select a container')}
+              {t('models.errors.pleaseSelectAContainer')}
             </div>
           ) : !logsText.trim() ? (
-            <div className='py-8 text-center text-gray-400'>{t('No logs')}</div>
+            <div className='py-8 text-center text-gray-400'>{t('models.titles.noLogs')}</div>
           ) : (
             <div className='font-mono text-sm'>
               {logLines.map((line, idx) => (

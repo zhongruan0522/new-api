@@ -24,11 +24,11 @@ export function UserAgreement() {
   const { t } = useTranslation()
   return (
     <LegalDocument
-      title={t('User Agreement')}
+      title={t('layout.fields.userAgreement')}
       queryKey='user-agreement'
       fetchDocument={getUserAgreement}
       emptyMessage={t(
-        'The administrator has not configured a user agreement yet.'
+        'common.tips.administratorHasNotConfiguredAUserAgreementYet'
       )}
     />
   )

@@ -34,7 +34,7 @@ export function ThemeQuickSwitcher() {
           id='theme-switcher-label'
           className='text-muted-foreground text-sm select-none'
         >
-          {t('Theme')}
+          {t('common.fields.theme')}
         </span>
         <div
           role='radiogroup'
@@ -45,7 +45,7 @@ export function ThemeQuickSwitcher() {
             variant='ghost'
             size='icon'
             role='radio'
-            aria-label={t('System')}
+            aria-label={t('common.titles.system')}
             aria-checked={theme === 'system'}
             onClick={() => setTheme('system')}
             className={cn(
@@ -72,7 +72,7 @@ export function ThemeQuickSwitcher() {
             variant='ghost'
             size='icon'
             role='radio'
-            aria-label={t('Light')}
+            aria-label={t('common.fields.light')}
             aria-checked={theme === 'light'}
             onClick={() => setTheme('light')}
             className={cn(
@@ -99,7 +99,7 @@ export function ThemeQuickSwitcher() {
             variant='ghost'
             size='icon'
             role='radio'
-            aria-label={t('Dark')}
+            aria-label={t('common.fields.dark')}
             aria-checked={theme === 'dark'}
             onClick={() => setTheme('dark')}
             className={cn(

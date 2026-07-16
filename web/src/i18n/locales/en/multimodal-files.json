@@ -1,15 +1,15 @@
 {
-  "Converted URL": "Converted URL",
-  "Created At": "Created At",
-  "Delete {{count}} selected file(s)?": "Delete {{count}} selected file(s)?",
-  "Delete file": "Delete file",
-  "Delete selected": "Delete selected",
-  "Delete this multimodal file?": "Delete this multimodal file?",
-  "Deleted {{count}} file(s)": "Deleted {{count}} file(s)",
-  "MIME": "MIME",
-  "Multimodal Files": "Multimodal Files",
-  "No multimodal files": "No multimodal files",
-  "Select file": "Select file",
-  "Select visible files": "Select visible files",
-  "Selected {{selected}} of {{total}}": "Selected {{selected}} of {{total}}"
+  "multimodalFiles.fields.convertedUrl": "Converted URL",
+  "multimodalFiles.status.createdAt": "Created At",
+  "multimodalFiles.actions.deleteCountSelectedFileS": "Delete {{count}} selected file(s)?",
+  "multimodalFiles.actions.deleteFile": "Delete file",
+  "multimodalFiles.actions.deleteSelected": "Delete selected",
+  "multimodalFiles.actions.deleteThisMultimodalFile": "Delete this multimodal file?",
+  "multimodalFiles.status.deletedCountFileS": "Deleted {{count}} file(s)",
+  "multimodalFiles.fields.mime": "MIME",
+  "multimodalFiles.fields.files": "Multimodal Files",
+  "multimodalFiles.fields.noMultimodalFiles": "No multimodal files",
+  "multimodalFiles.placeholders.selectFile": "Select file",
+  "multimodalFiles.placeholders.selectVisibleFiles": "Select visible files",
+  "multimodalFiles.placeholders.selectedSelectedOfTotal": "Selected {{selected}} of {{total}}"
 }

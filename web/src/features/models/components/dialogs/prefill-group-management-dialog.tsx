@@ -155,16 +155,16 @@ export function PrefillGroupManagementDialog({
     try {
       const response = await deletePrefillGroup(deleteState.group.id)
       if (response.success) {
-        toast.success(t('Deleted "{{name}}"', { name: deleteState.group.name }))
+        toast.success(t('common.status.deletedName', { name: deleteState.group.name }))
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
         })
         setDeleteState({ open: false, group: null })
       } else {
-        toast.error(response.message || t('Failed to delete group'))
+        toast.error(response.message || t('models.errors.failedToDeleteGroup'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || t('Failed to delete group'))
+      toast.error((err as Error)?.message || t('models.errors.failedToDeleteGroup'))
     } finally {
       setIsDeleting(false)
     }
@@ -193,11 +193,11 @@ export function PrefillGroupManagementDialog({
               <DialogHeader className='max-w-3xl gap-3 pr-12 text-start sm:pr-0'>
                 <DialogTitle className='flex flex-wrap items-center gap-2 text-xl'>
                   <Layers3 className='text-foreground/80 h-5 w-5' />
-                  {t('Prefill Group Management')}
+                  {t('models.titles.prefillGroupManagement')}
                 </DialogTitle>
                 <DialogDescription className='text-base leading-relaxed sm:text-sm'>
                   {t(
-                    'Create reusable bundles of models, tags, endpoints, and user groups to speed up configuration elsewhere in the console.'
+                    'models.actions.createReusableBundlesOfModelsTagsEndpointsAndUser'
                   )}
                 </DialogDescription>
               </DialogHeader>
@@ -211,7 +211,7 @@ export function PrefillGroupManagementDialog({
                   />
                 }
               >
-                <span className='sr-only'>{t('Close dialog')}</span>
+                <span className='sr-only'>{t('models.actions.closeDialog')}</span>
                 <X className='h-4 w-4' />
               </DialogClose>
             </div>
@@ -220,7 +220,7 @@ export function PrefillGroupManagementDialog({
               <div className='flex flex-wrap items-center gap-2'>
                 <Button size='sm' onClick={onCreateGroup}>
                   <Plus className='mr-2 h-4 w-4' />
-                  {t('New Group')}
+                  {t('models.fields.newGroup')}
                 </Button>
                 <Button
                   size='sm'
@@ -233,7 +233,7 @@ export function PrefillGroupManagementDialog({
                   ) : (
                     <RefreshCcw className='mr-2 h-4 w-4' />
                   )}
-                  {t('Refresh')}
+                  {t('channels.actions.refresh')}
                 </Button>
               </div>
               <StatusBadge
@@ -253,7 +253,7 @@ export function PrefillGroupManagementDialog({
                 <div className='flex flex-col gap-4'>
                   {error && (
                     <Alert variant='destructive'>
-                      <AlertTitle>{t('Unable to load groups')}</AlertTitle>
+                      <AlertTitle>{t('models.errors.unableToLoadGroups')}</AlertTitle>
                       <AlertDescription>
                         {(error as Error).message ||
                           'Please retry or refresh the page.'}
@@ -265,7 +265,7 @@ export function PrefillGroupManagementDialog({
                     <div className='flex flex-col items-center justify-center gap-2 py-16 text-center'>
                       <Loader2 className='text-muted-foreground h-6 w-6 animate-spin' />
                       <p className='text-muted-foreground text-sm'>
-                        {t('Fetching prefill groups...')}
+                        {t('models.tips.fetchingPrefillGroups')}
                       </p>
                     </div>
                   ) : normalizedGroups.length === 0 ? (
@@ -274,16 +274,16 @@ export function PrefillGroupManagementDialog({
                         <Layers3 className='h-6 w-6' />
                       </EmptyMedia>
                       <EmptyHeader>
-                        <EmptyTitle>{t('No prefill groups yet')}</EmptyTitle>
+                        <EmptyTitle>{t('models.fields.noPrefillGroupsYet')}</EmptyTitle>
                         <EmptyDescription>
                           {t(
-                            'Create your first group to reuse model, tag, or endpoint selections anywhere in the dashboard.'
+                            'models.actions.createYourFirstGroupToReuseModelTagOr'
                           )}
                         </EmptyDescription>
                       </EmptyHeader>
                       <EmptyDescription>
                         {t(
-                          'Prefill groups help you keep complex configurations in sync.'
+                          'models.tips.prefillGroupsHelpYouKeepComplexConfigurationsInSync'
                         )}
                       </EmptyDescription>
                     </Empty>
@@ -315,7 +315,7 @@ export function PrefillGroupManagementDialog({
                                 </CardDescription>
                               ) : (
                                  <CardDescription className='text-muted-foreground italic'>
-                                   {t('No description provided')}
+                                   {t('models.tips.noDescriptionProvided')}
                                  </CardDescription>
                               )}
                             </div>
@@ -328,7 +328,7 @@ export function PrefillGroupManagementDialog({
                               >
                                 <Pencil className='h-4 w-4' />
                                 <span className='sr-only'>
-                                  {t('Edit group')}
+                                  {t('models.actions.editGroup')}
                                 </span>
                               </Button>
                               <Button
@@ -339,14 +339,14 @@ export function PrefillGroupManagementDialog({
                               >
                                 <Trash2 className='h-4 w-4' />
                                 <span className='sr-only'>
-                                  {t('Delete group')}
+                                  {t('models.actions.deleteGroup')}
                                 </span>
                               </Button>
                             </div>
                           </CardHeader>
                           <CardContent className='space-y-3'>
                             <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-medium tracking-wide uppercase'>
-                              <span>{t('Items')}</span>
+                              <span>{t('models.fields.items')}</span>
                               <StatusBadge
                                 label={`${parsedItems.length} item${parsedItems.length === 1 ? '' : 's'}`}
                                 variant='neutral'
@@ -376,8 +376,8 @@ export function PrefillGroupManagementDialog({
                             ) : (
                               <p className='text-muted-foreground text-sm'>
                                 {group.type === 'endpoint'
-                                  ? t('No endpoint mappings configured.')
-                                  : t('No items configured yet.')}
+                                  ? t('models.tips.noEndpointMappingsConfigured')
+                                  : t('models.tips.noItemsConfiguredYet')}
                               </p>
                             )}
                           </CardContent>
@@ -390,13 +390,13 @@ export function PrefillGroupManagementDialog({
                         <Table className='min-w-[720px]'>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>{t('Group')}</TableHead>
-                              <TableHead>{t('Type')}</TableHead>
+                              <TableHead>{t('common.fields.group')}</TableHead>
+                              <TableHead>{t('channels.fields.type')}</TableHead>
                               <TableHead className='min-w-[280px]'>
-                                {t('Items')}
+                                {t('models.fields.items')}
                               </TableHead>
                               <TableHead className='w-[120px] text-right'>
-                                {t('Actions')}
+                                {t('channels.fields.actions')}
                               </TableHead>
                             </TableRow>
                           </TableHeader>
@@ -418,7 +418,7 @@ export function PrefillGroupManagementDialog({
                                         </p>
                                       ) : (
                                          <p className='text-muted-foreground text-xs italic'>
-                                           {t('No description provided')}
+                                           {t('models.tips.noDescriptionProvided')}
                                          </p>
                                       )}
                                     </div>
@@ -457,8 +457,8 @@ export function PrefillGroupManagementDialog({
                                       ) : (
                                         <p className='text-muted-foreground text-sm'>
                                           {group.type === 'endpoint'
-                                            ? t('No endpoint mappings configured.')
-                                            : t('No items configured yet.')}
+                                            ? t('models.tips.noEndpointMappingsConfigured')
+                                            : t('models.tips.noItemsConfiguredYet')}
                                         </p>
                                       )}
                                     </div>
@@ -510,16 +510,16 @@ export function PrefillGroupManagementDialog({
       <ConfirmDialog
         open={deleteState.open}
         onOpenChange={(next) => setDeleteState({ open: next, group: null })}
-        title={t('Delete group')}
+        title={t('models.actions.deleteGroup')}
         desc={
           <p>
-            {t('Are you sure you want to delete')}{' '}
+            {t('channels.fields.sureYouWantToDelete')}{' '}
             <span className='font-medium'>{deleteState.group?.name}</span>
-            {t('? This action cannot be undone.')}
+            {t('models.errors.actionCannotBeUndone')}
           </p>
         }
         destructive
-        confirmText={isDeleting ? t('Deleting...') : t('Delete')}
+        confirmText={isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
         isLoading={isDeleting}
         handleConfirm={handleDeleteConfirm}
       />

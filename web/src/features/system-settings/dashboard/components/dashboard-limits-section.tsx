@@ -80,7 +80,7 @@ export function DashboardLimitsSection() {
 
   if (isLoading) {
     return (
-      <SettingsSection title={t('Data Limits')}>
+      <SettingsSection title={t('systemSettings.fields.dataLimits')}>
         <div className="space-y-4">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
@@ -92,10 +92,10 @@ export function DashboardLimitsSection() {
   if (!config) return null
 
   return (
-    <SettingsSection title={t('Data Limits')}>
+    <SettingsSection title={t('systemSettings.fields.dataLimits')}>
       <p className="text-sm text-muted-foreground mb-4">
         {t(
-          'Configure data limits and time range restrictions for dashboard queries'
+          'systemSettings.tips.configureDataLimitsAndTimeRangeRestrictionsForDashboard'
         )}
       </p>
       <SettingsForm onSubmit={handleSubmit}>
@@ -106,7 +106,7 @@ export function DashboardLimitsSection() {
               name="default_time_range_days"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Default Time Range (days)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.tips.defaultTimeRangeDays')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -130,7 +130,7 @@ export function DashboardLimitsSection() {
               name="max_time_range_days"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Maximum Time Range (days)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.tips.maximumTimeRangeDays')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -154,7 +154,7 @@ export function DashboardLimitsSection() {
               name="rankings_model_limit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Rankings Model Limit')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.rankingsModelLimit')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -178,7 +178,7 @@ export function DashboardLimitsSection() {
               name="rankings_vendor_limit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Rankings Vendor Limit')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.rankingsVendorLimit')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -202,7 +202,7 @@ export function DashboardLimitsSection() {
               name="user_analytics_top_n"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('User Analytics Top N')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.userAnalyticsTopN')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

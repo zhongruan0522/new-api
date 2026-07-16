@@ -23,19 +23,19 @@ import { type TFunction } from 'i18next'
 // ============================================================================
 
 export const DURATION_UNITS = [
-  { value: 'year', labelKey: 'years' },
-  { value: 'month', labelKey: 'months' },
-  { value: 'day', labelKey: 'days' },
-  { value: 'hour', labelKey: 'Hours' },
-  { value: 'custom', labelKey: 'Custom (seconds)' },
+  { value: 'year', labelKey: 'subscriptions.fields.years' },
+  { value: 'month', labelKey: 'subscriptions.fields.months' },
+  { value: 'day', labelKey: 'dashboard.fields.days' },
+  { value: 'hour', labelKey: 'channels.fields.hours' },
+  { value: 'custom', labelKey: 'subscriptions.fields.customSeconds' },
 ] as const
 
 export const RESET_PERIODS = [
-  { value: 'never', labelKey: 'No Reset' },
-  { value: 'daily', labelKey: 'Daily' },
-  { value: 'weekly', labelKey: 'Weekly' },
-  { value: 'monthly', labelKey: 'Monthly' },
-  { value: 'custom', labelKey: 'Custom (seconds)' },
+  { value: 'never', labelKey: 'keys.fields.noReset' },
+  { value: 'daily', labelKey: 'dynamicRatio.fields.daily' },
+  { value: 'weekly', labelKey: 'subscriptions.fields.weekly' },
+  { value: 'monthly', labelKey: 'subscriptions.fields.monthly' },
+  { value: 'custom', labelKey: 'subscriptions.fields.customSeconds' },
 ] as const
 
 export function getDurationUnitOptions(t: TFunction) {

@@ -68,11 +68,11 @@ export function AffiliateRewardsCard({
           </div>
           <div className='min-w-0'>
             <h3 className='truncate text-sm font-semibold'>
-              {t('Referral Program')}
+              {t('wallet.fields.referralProgram')}
             </h3>
             <p className='text-muted-foreground line-clamp-1 text-xs'>
               {t(
-                'Earn rewards when your referrals add funds. Transfer accumulated rewards to your balance anytime.'
+                'wallet.tips.earnRewardsWhenYourReferralsAddFundsTransferAccumulated'
               )}
             </p>
           </div>
@@ -80,9 +80,9 @@ export function AffiliateRewardsCard({
 
         <div className='grid grid-cols-3 gap-1.5 text-center'>
           {[
-            [t('Pending'), formatQuota(user?.aff_quota ?? 0)],
-            [t('Total Earned'), formatQuota(user?.aff_history_quota ?? 0)],
-            [t('Invites'), String(user?.aff_count ?? 0)],
+            [t('common.status.pending'), formatQuota(user?.aff_quota ?? 0)],
+            [t('wallet.fields.totalEarned'), formatQuota(user?.aff_history_quota ?? 0)],
+            [t('wallet.fields.invites'), String(user?.aff_count ?? 0)],
           ].map(([label, value]) => (
             <div key={label}>
               <div className='text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase'>
@@ -106,8 +106,8 @@ export function AffiliateRewardsCard({
             variant='outline'
             className='bg-background size-9 shrink-0'
             iconClassName='size-4'
-            tooltip={t('Copy referral link')}
-            aria-label={t('Copy referral link')}
+            tooltip={t('wallet.actions.copyReferralLink')}
+            aria-label={t('wallet.actions.copyReferralLink')}
           />
           {hasRewards && (
             <Button
@@ -116,14 +116,14 @@ export function AffiliateRewardsCard({
               className='h-9 shrink-0 px-3'
               size='sm'
             >
-              {t('Transfer to Balance')}
+              {t('wallet.fields.transferToBalance')}
             </Button>
           )}
         </div>
         {!complianceConfirmed ? (
           <p className='text-muted-foreground text-xs lg:col-span-3'>
             {t(
-              'Referral reward transfer is disabled until the administrator confirms compliance terms.'
+              'wallet.status.referralRewardTransferIsDisabledUntilTheAdministratorConfirms'
             )}
           </p>
         ) : null}

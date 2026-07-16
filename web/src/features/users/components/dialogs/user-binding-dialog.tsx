@@ -101,49 +101,49 @@ const BUILTIN_BINDINGS: ReadonlyArray<{
   {
     key: 'email',
     field: 'email',
-    label: 'Email',
+    label: 'auth.fields.email',
     icon: <Mail className='h-4 w-4' />,
     statusKey: null,
   },
   {
     key: 'github_id',
     field: 'github_id',
-    label: 'GitHub',
+    label: 'profile.fields.gitHub',
     icon: <SiGithub className='h-4 w-4' />,
     statusKey: 'github_oauth',
   },
   {
     key: 'discord_id',
     field: 'discord_id',
-    label: 'Discord',
+    label: 'profile.fields.discord',
     icon: <SiDiscord className='h-4 w-4' />,
     statusKey: 'discord_oauth',
   },
   {
     key: 'wechat_id',
     field: 'wechat_id',
-    label: 'WeChat',
+    label: 'profile.fields.chat',
     icon: <MessageCircle className='h-4 w-4' />,
     statusKey: 'wechat_login',
   },
   {
     key: 'oidc_id',
     field: 'oidc_id',
-    label: 'OIDC',
+    label: 'profile.fields.oidc',
     icon: <Globe className='h-4 w-4' />,
     statusKey: 'oidc_enabled',
   },
   {
     key: 'telegram_id',
     field: 'telegram_id',
-    label: 'Telegram',
+    label: 'profile.fields.telegram',
     icon: <Send className='h-4 w-4' />,
     statusKey: 'telegram_oauth',
   },
   {
     key: 'linux_do_id',
     field: 'linux_do_id',
-    label: 'LinuxDO',
+    label: 'profile.fields.linuxDo',
     icon: <Globe className='h-4 w-4' />,
     statusKey: 'linuxdo_oauth',
   },
@@ -201,7 +201,7 @@ export function UserBindingDialog(props: Props) {
         setStatusInfo(statusRes.data as StatusInfo)
       }
     } catch {
-      toast.error(t('Failed to load'))
+      toast.error(t('users.errors.failedToLoad'))
     } finally {
       setLoading(false)
     }
@@ -301,15 +301,15 @@ export function UserBindingDialog(props: Props) {
       }
       if (res?.success) {
         toast.success(
-          t('Unbound {{provider}}', { provider: unbindTarget.label })
+          t('profile.fields.unboundProvider', { provider: unbindTarget.label })
         )
         await fetchData()
         props.onUnbindSuccess?.()
       } else {
-        toast.error(res?.message || t('Unbind failed'))
+        toast.error(res?.message || t('profile.actions.unbindFailed'))
       }
     } catch {
-      toast.error(t('Unbind failed'))
+      toast.error(t('profile.actions.unbindFailed'))
     } finally {
       setUnbinding(false)
       setUnbindTarget(null)
@@ -323,10 +323,10 @@ export function UserBindingDialog(props: Props) {
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2'>
               <Link2 className='h-5 w-5' />
-              {t('Account Binding Management')}
+              {t('users.titles.accountBindingManagement')}
             </DialogTitle>
             <DialogDescription className='sr-only'>
-              {t('Manage account bindings for this user')}
+              {t('users.tips.manageAccountBindingsForThisUser')}
             </DialogDescription>
           </DialogHeader>
 
@@ -359,12 +359,12 @@ export function UserBindingDialog(props: Props) {
                       ) : (
                         <EyeOff className='h-3.5 w-3.5' />
                       )}
-                      {showBoundOnly ? t('Show All') : t('Bound Only')}
+                      {showBoundOnly ? t('users.fields.showAll') : t('users.fields.boundOnly')}
                     </TooltipTrigger>
                     <TooltipContent>
                       {showBoundOnly
-                        ? t('Show all providers including unbound')
-                        : t('Show only bound providers')}
+                        ? t('users.tips.showAllProvidersIncludingUnbound')
+                        : t('users.fields.showOnlyBoundProviders')}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -376,8 +376,8 @@ export function UserBindingDialog(props: Props) {
                 {displayedBindings.length === 0 ? (
                   <p className='text-muted-foreground py-4 text-center text-sm'>
                     {showBoundOnly
-                      ? t('This user has no bindings')
-                      : t('No providers available')}
+                      ? t('users.fields.userHasNoBindings')
+                      : t('users.fields.noProvidersAvailable')}
                   </p>
                 ) : (
                   <div className='grid grid-cols-1 gap-2 pr-3 lg:grid-cols-2'>
@@ -400,14 +400,14 @@ export function UserBindingDialog(props: Props) {
                               {!binding.isEnabled && (
                                 <StatusBadge
                                   variant='neutral'
-                                  label={t('Disabled')}
+                                  label={t('channels.status.disabled')}
                                   copyable={false}
                                   size='sm'
                                 />
                               )}
                             </div>
                             <p className='text-muted-foreground max-w-[140px] truncate text-xs'>
-                              {binding.isBound ? binding.value : t('Not bound')}
+                              {binding.isBound ? binding.value : t('profile.fields.notBound')}
                             </p>
                           </div>
                         </div>
@@ -428,7 +428,7 @@ export function UserBindingDialog(props: Props) {
               </ScrollArea>
 
               <p className='text-muted-foreground text-xs'>
-                {t('Bound')}: {boundCount} / {allBindings.length}
+                {t('profile.fields.bound')}: {boundCount} / {allBindings.length}
               </p>
             </div>
           )}
@@ -438,14 +438,14 @@ export function UserBindingDialog(props: Props) {
       <ConfirmDialog
         open={!!unbindTarget}
         onOpenChange={(open) => !open && setUnbindTarget(null)}
-        title={t('Confirm Unbind')}
+        title={t('profile.actions.confirmUnbind')}
         desc={t(
-          'Are you sure you want to unbind {{provider}} for this user? The user will no longer be able to log in via this method.',
+          'users.tips.sureYouWantToUnbindProviderForThisUser',
           {
             provider: unbindTarget?.label || '',
           }
         )}
-        confirmText={t('Confirm Unbind')}
+        confirmText={t('profile.actions.confirmUnbind')}
         destructive
         handleConfirm={handleUnbind}
         isLoading={unbinding}

@@ -63,28 +63,28 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
         props.className
       )}
     >
-      <div title={t('Average latency')} className='min-w-0'>
+      <div title={t('pricing.fields.averageLatency')} className='min-w-0'>
         <div className='text-muted-foreground/55 text-[10px] leading-4'>
-          {t('Latency short')}
+          {t('pricing.tips.latencyShort')}
         </div>
         <div className='text-muted-foreground/80 font-mono text-xs leading-4 whitespace-nowrap'>
           {avg_latency_ms > 0 ? formatLatency(avg_latency_ms) : '—'}
         </div>
       </div>
-      <div title={t('Throughput')} className='min-w-0'>
+      <div title={t('pricing.fields.throughput')} className='min-w-0'>
         <div className='text-muted-foreground/55 truncate text-[10px] leading-4'>
-          {t('Throughput short')}
+          {t('pricing.fields.throughputShort')}
         </div>
         <div className='text-muted-foreground/80 font-mono text-xs leading-4 whitespace-nowrap'>
           {formatCompactThroughput(avg_tps)}
         </div>
       </div>
       <div
-        title={`${t('Success rate')}: ${success_rate.toFixed(1)}%`}
+        title={`${t('pricing.status.successRate')}: ${success_rate.toFixed(1)}%`}
         className='min-w-0'
       >
         <div className='text-muted-foreground/55 truncate text-[10px] leading-4'>
-          {t('Status')}
+          {t('channels.fields.status')}
         </div>
         <div className='flex h-4 items-center justify-end gap-0.5'>
           <span className='bg-muted-foreground/10 h-2 w-1 rounded-full' />

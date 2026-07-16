@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 )
@@ -20,14 +21,14 @@ type customVoiceConfirmRequest struct {
 func CustomVoicePreviewHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
 	// 文件从 multipart form 读取。
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "请上传音频文件"})
+		common.ApiErrorI18n(c, i18n.MsgCustomVoiceUploadAudioRequired)
 		return
 	}
 
@@ -55,13 +56,13 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
 	var req customVoiceConfirmRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 
@@ -81,13 +82,13 @@ func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
 func CustomVoiceConfirmHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
 	var req customVoiceConfirmRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 

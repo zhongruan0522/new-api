@@ -66,13 +66,13 @@ export function DataTableBulkActions<TData>({
       if (lines.length > 0) {
         const ok = await copyToClipboard(lines.join('\n'))
         if (ok) {
-          toast.success(t('Copied {{count}} key(s)', { count: lines.length }))
+          toast.success(t('keys.status.copiedCountKeyS', { count: lines.length }))
         } else {
-          toast.error(t('Failed to copy keys'))
+          toast.error(t('keys.errors.failedToCopyKeys'))
         }
       }
     } catch {
-      toast.error(t('Failed to copy keys'))
+      toast.error(t('keys.errors.failedToCopyKeys'))
     } finally {
       setIsCopying(false)
     }
@@ -90,7 +90,7 @@ export function DataTableBulkActions<TData>({
                 className='size-8'
                 onClick={handleBatchCopy}
                 disabled={isCopying}
-                aria-label={t('Copy selected keys')}
+                aria-label={t('keys.actions.copySelectedKeys')}
               />
             }
           >
@@ -101,7 +101,7 @@ export function DataTableBulkActions<TData>({
             )}
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Copy selected keys')}</p>
+            <p>{t('keys.actions.copySelectedKeys')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -113,15 +113,15 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={() => setShowDeleteConfirm(true)}
                 className='size-8'
-                aria-label={t('Delete selected API keys')}
+                aria-label={t('keys.actions.deleteSelectedApiKeys')}
               />
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('Delete selected API keys')}</span>
+            <span className='sr-only'>{t('keys.actions.deleteSelectedApiKeys')}</span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Delete selected API keys')}</p>
+            <p>{t('keys.actions.deleteSelectedApiKeys')}</p>
           </TooltipContent>
         </Tooltip>
       </BulkActionsToolbar>

@@ -60,7 +60,7 @@ export function useHomePageContent(): HomePageContentResult {
         if (!mounted) return
         // eslint-disable-next-line no-console
         console.error('Failed to load home page content:', error)
-        toast.error(i18next.t('Failed to load home page content'))
+        toast.error(i18next.t('home.errors.failedToLoadHomePageContent'))
       } finally {
         if (mounted) {
           setIsLoaded(true)

@@ -90,7 +90,7 @@ export function CheckinCalendarCard({
       if (res.success && res.data) {
         return res.data
       }
-      throw new Error(res.message || t('Failed to fetch checkin status'))
+      throw new Error(res.message || t('profile.errors.failedToFetchCheckinStatus'))
     },
     enabled: checkinEnabled,
     staleTime: 30000,
@@ -146,14 +146,14 @@ export function CheckinCalendarCard({
         const res = await performCheckin(token)
         if (res.success && res.data) {
           toast.success(
-            `${t('Check-in successful! Received')} ${formatQuotaWithCurrency(res.data.quota_awarded)}`
+            `${t('profile.status.checkInSuccessfulReceived')} ${formatQuotaWithCurrency(res.data.quota_awarded)}`
           )
           refetch()
           setTurnstileModalVisible(false)
         } else {
           if (!token && shouldTriggerTurnstile(res.message)) {
             if (!turnstileSiteKey) {
-              toast.error(t('Turnstile is enabled but site key is empty.'))
+              toast.error(t('profile.status.turnstileIsEnabledButSiteKeyIsEmpty'))
               return
             }
             setTurnstileModalVisible(true)
@@ -162,10 +162,10 @@ export function CheckinCalendarCard({
           if (token && shouldTriggerTurnstile(res.message)) {
             setTurnstileWidgetKey((v) => v + 1)
           }
-          toast.error(res.message || t('Check-in failed'))
+          toast.error(res.message || t('profile.status.checkInFailed'))
         }
       } catch (_error) {
-        toast.error(t('Check-in failed'))
+        toast.error(t('profile.status.checkInFailed'))
       } finally {
         setCheckinLoading(false)
       }
@@ -256,10 +256,10 @@ export function CheckinCalendarCard({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('Security Verification')}</DialogTitle>
+            <DialogTitle>{t('profile.fields.securityVerification')}</DialogTitle>
           </DialogHeader>
           <div className='text-muted-foreground text-sm'>
-            {t('Please complete the security check to continue.')}
+            {t('profile.tips.pleaseCompleteTheSecurityCheckToContinue')}
           </div>
           <div className='flex justify-center py-4'>
             <Turnstile
@@ -295,12 +295,12 @@ export function CheckinCalendarCard({
               <div className='min-w-0 flex-1'>
                 <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
                   <h3 className='text-base font-semibold tracking-tight sm:text-lg'>
-                    {t('Daily Check-in')}
+                    {t('profile.fields.dailyCheckIn')}
                   </h3>
                   {checkedToday && (
                     <div className='inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 sm:gap-1.5 sm:px-2.5 sm:text-xs dark:text-emerald-400'>
                       <Sparkles className='h-2.5 w-2.5 sm:h-3 sm:w-3' />
-                      {t('Checked in')}
+                      {t('profile.fields.checkedIn')}
                     </div>
                   )}
                   <span className='text-muted-foreground inline-flex items-center'>
@@ -313,8 +313,8 @@ export function CheckinCalendarCard({
                 </div>
                 <p className='text-muted-foreground mt-1 line-clamp-2 text-xs sm:text-sm'>
                   {checkedToday && todayAward !== undefined
-                    ? `${t('Today')} +${formatQuotaWithCurrency(todayAward)}`
-                    : t('Check in daily to receive random quota rewards')}
+                    ? `${t('profile.fields.today')} +${formatQuotaWithCurrency(todayAward)}`
+                    : t('profile.tips.checkInDailyToReceiveRandomQuotaRewards')}
                 </p>
               </div>
             </Button>
@@ -325,10 +325,10 @@ export function CheckinCalendarCard({
               className='w-full shrink-0 sm:w-auto'
             >
               {checkinLoading
-                ? t('Loading...')
+                ? t('common.tips.loading')
                 : checkedToday
-                  ? t('Checked in')
-                  : t('Check in now')}
+                  ? t('profile.fields.checkedIn')
+                  : t('profile.fields.checkInNow')}
             </Button>
           </div>
         </div>
@@ -342,7 +342,7 @@ export function CheckinCalendarCard({
                   {checkinData?.stats?.total_checkins || 0}
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-[10px] font-medium sm:mt-1 sm:text-xs'>
-                  {t('Total check-ins')}
+                  {t('profile.fields.totalCheckIns')}
                 </div>
               </div>
               <div className='bg-card p-3 text-center sm:p-5'>
@@ -350,7 +350,7 @@ export function CheckinCalendarCard({
                   {formatQuotaWithCurrency(monthlyQuota, { digitsLarge: 0 })}
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-[10px] font-medium sm:mt-1 sm:text-xs'>
-                  {t('This month')}
+                  {t('profile.fields.month')}
                 </div>
               </div>
               <div className='bg-card p-3 text-center sm:p-5'>
@@ -363,7 +363,7 @@ export function CheckinCalendarCard({
                   )}
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-[10px] font-medium sm:mt-1 sm:text-xs'>
-                  {t('Total earned')}
+                  {t('profile.fields.totalEarned')}
                 </div>
               </div>
             </div>
@@ -447,7 +447,7 @@ export function CheckinCalendarCard({
                           <TooltipContent>
                             <div className='text-xs'>
                               <div className='font-medium'>
-                                {t('Checked in')}
+                                {t('profile.fields.checkedIn')}
                               </div>
                               <div className='text-muted-foreground mt-0.5'>
                                 +{formatQuotaWithCurrency(quotaAwarded)}
@@ -464,18 +464,18 @@ export function CheckinCalendarCard({
 
                 {/* Footer hint */}
                 <div className='text-muted-foreground border-t pt-3 text-center text-[11px] sm:pt-4 sm:text-xs'>
-                  {t('You can only check in once per day')}
+                  {t('profile.tips.onlyCheckInOncePerDay')}
                 </div>
 
                 <div className='bg-muted/30 text-muted-foreground rounded-lg border p-3 text-xs'>
                   <ul className='list-disc space-y-1 pl-5'>
                     <li>
-                      {t('Check in daily to receive random quota rewards')}
+                      {t('profile.tips.checkInDailyToReceiveRandomQuotaRewards')}
                     </li>
                     <li>
-                      {t('Rewards will be added directly to your balance')}
+                      {t('profile.tips.rewardsWillBeAddedDirectlyToYourBalance')}
                     </li>
-                    <li>{t('Do not repeat check-in; only once per day')}</li>
+                    <li>{t('profile.tips.doNotRepeatCheckInOnlyOncePerDay')}</li>
                   </ul>
                 </div>
               </div>

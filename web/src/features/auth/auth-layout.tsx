@@ -41,7 +41,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           ) : (
             <img
               src={logo}
-              alt={t('Logo')}
+              alt={t('layout.fields.logo')}
               className='h-8 w-8 rounded-full object-cover'
             />
           )}

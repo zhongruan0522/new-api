@@ -192,7 +192,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -206,7 +206,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
   }
 
   return (
-    <SettingsSection title={t('MiniMax TTS Enhancement')}>
+    <SettingsSection title={t('systemSettings.fields.miniMaxTtsEnhancement')}>
       <Form {...form}>
         <SettingsForm
           className='lg:grid-cols-1'
@@ -224,10 +224,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable TTS Enhancement')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableTtsEnhancement')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'When enabled, model redirect, emotion tag and tone word tag will be applied to MiniMax TTS requests.'
+                      'systemSettings.status.enabledModelRedirectEmotionTagAndToneWordTag'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -246,7 +246,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.model_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Model Redirect')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.modelRedirect')}</FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -256,7 +256,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     toLabel='MiniMax Model'
                     fromPlaceholder='tts-1'
                     toPlaceholder='speech-01-turbo'
-                    jsonPlaceholder={t('{"client-model": "minimax-model"}')}
+                    jsonPlaceholder={t('common.tips.clientModelMinimaxModel')}
                     template={JSON.stringify(
                       {
                         'tts-1': 'speech-01-turbo',
@@ -274,7 +274,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'JSON map of client model name to MiniMax real model name. Example'
+                    'systemSettings.tips.jsonMapOfClientModelNameToMiniMax'
                   )}{' '}
                   {`{ "tts-1": "speech-01-turbo", "tts-1-hd": "speech-01-240228" }`}
                 </FormDescription>
@@ -288,7 +288,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.emotion_pattern'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Emotion Pattern')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.emotionPattern')}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -297,7 +297,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Regex to extract MiniMax voice_setting.emotion from text and strip the surrounding <tts> tags. The emotion attribute is optional: when present its value is captured as emotion; when absent (plain <tts>...</tts>) the tags are still removed and the inner text is kept. Only English punctuation (< > " and parentheses) is matched. The first match wins; when a 2nd capture group exists its text is kept. Default'
+                    'systemSettings.status.regexToExtractMiniMaxVoiceSettingEmotionFrom'
                   )}{' '}
                   {`<tts\\s+emotion="happy">text</tts> -> emotion="happy", text kept; <tts>text</tts> -> tags stripped, text kept`}
                 </FormDescription>
@@ -311,7 +311,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.emotion_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Emotion Redirect')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.emotionRedirect')}</FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -321,7 +321,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     toLabel='MiniMax Emotion'
                     fromPlaceholder='happy'
                     toPlaceholder='happy'
-                    jsonPlaceholder={t('{"tag-value": "minimax-emotion"}')}
+                    jsonPlaceholder={t('common.tips.tagValueMinimaxEmotion')}
                     template={JSON.stringify(
                       { happy: 'happy', sad: 'sad' },
                       null,
@@ -336,7 +336,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'JSON map of emotion tag value to MiniMax voice_setting.emotion. Empty map uses the captured tag value directly; non-empty map uses the mapped value and ignores unmapped tags. Example'
+                    'systemSettings.tips.jsonMapOfEmotionTagValueToMiniMax'
                   )}{' '}
                   {`{ "happy": "happy", "sad": "sad" }`}
                 </FormDescription>
@@ -350,13 +350,13 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.tone_word_pattern'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Tone Word Pattern')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.toneWordPattern')}</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder={`\\(([^()]+)\\)`} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Regex to identify tone word tags in text. Only English half-width parentheses are matched. All matches are replaced in place. Default'
+                    'systemSettings.tips.regexToIdentifyToneWordTagsInTextOnly'
                   )}{' '}
                   {`\\(([^()]+)\\) -> (laugh) (crying)`}
                 </FormDescription>
@@ -370,7 +370,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.tone_word_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Tone Word Redirect')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.toneWordRedirect')}</FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -380,7 +380,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     toLabel='Replacement'
                     fromPlaceholder='laughs'
                     toPlaceholder='笑'
-                    jsonPlaceholder={t('{"tag-value": "replacement"}')}
+                    jsonPlaceholder={t('common.fields.tagValueReplacement')}
                     template={JSON.stringify(
                       { laughs: '笑', crying: '哭' },
                       null,
@@ -395,7 +395,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'JSON map of tone word tag value to replacement. Parentheses are preserved, only content is replaced. If the user passes a tag whose value equals a configured replacement, the whole tag is deleted (not sent upstream). Example'
+                    'systemSettings.status.jsonMapOfToneWordTagValueToReplacement'
                   )}{' '}
                   {`{ "laughs": "笑", "crying": "哭" }`}
                 </FormDescription>
@@ -405,7 +405,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
           />
 
           <div className='mt-8'>
-            <SettingsSection title={t('Custom Voice')}>
+            <SettingsSection title={t('multimodal.fields.customVoice')}>
               <DisabledSettingsNotice
                 enabled={form.watch('minimax.custom_voice_enabled')}
               />
@@ -417,11 +417,11 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
                       <FormLabel>
-                        {t('Enable Custom Voice')}
+                        {t('systemSettings.actions.enableCustomVoice')}
                       </FormLabel>
                       <FormDescription>
                         {t(
-                          'When enabled, users can use the Custom Voice page to upload samples, generate preview audio and confirm voice customization.'
+                          'systemSettings.status.enabledUsersCanUseTheCustomVoicePageTo'
                         )}
                       </FormDescription>
                     </SettingsSwitchContent>
@@ -440,7 +440,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 name='minimax.custom_voice_group'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Custom Voice Group')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.customVoiceGroup')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -449,7 +449,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'User group used by the Custom Voice page. It decides which channels are used for upload/preview and the billing group ratio applied to both preview and confirmation billing.'
+                        'systemSettings.status.userGroupUsedByTheCustomVoicePageIt'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -463,14 +463,14 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {t('Custom Voice Billing Model ID')}
+                      {t('systemSettings.fields.customVoiceBillingModelId')}
                     </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder='音色定制' />
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Model ID charged ONCE when a user confirms voice customization (e.g. 音色定制). It must have a configured Model Price or Model Ratio. This is NOT the preview model: the preview model is chosen by the user on the Custom Voice page and billed per normal TTS usage based on preview text length.'
+                        'systemSettings.errors.modelIdChargedOnceWhenAUserConfirmsVoice'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -484,10 +484,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 render={({ field }) => (
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
-                      <FormLabel>{t('Enable Voice Whitelist')}</FormLabel>
+                      <FormLabel>{t('systemSettings.actions.enableVoiceWhitelist')}</FormLabel>
                       <FormDescription>
                         {t(
-                          'When enabled, only voices marked as allowed in Voice Management (status: created) can be used for TTS. Voice IDs and redirects are managed in Voice Management.'
+                          'systemSettings.status.enabledOnlyVoicesMarkedAsAllowedInVoiceManagement'
                         )}
                       </FormDescription>
                     </SettingsSwitchContent>

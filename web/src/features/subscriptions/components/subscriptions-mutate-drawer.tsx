@@ -153,20 +153,20 @@ export function SubscriptionsMutateDrawer({
       if (isEdit && currentRow?.plan?.id) {
         const res = await updatePlan(currentRow.plan.id, payload)
         if (res.success) {
-          toast.success(t('Updated successfully'))
+          toast.success(t('dynamicRatio.status.updatedSuccessfully'))
           onOpenChange(false)
           triggerRefresh()
         }
       } else {
         const res = await createPlan(payload)
         if (res.success) {
-          toast.success(t('Create succeeded'))
+          toast.success(t('subscriptions.actions.createSucceeded'))
           onOpenChange(false)
           triggerRefresh()
         }
       }
     } catch {
-      toast.error(t('Request failed'))
+      toast.error(t('subscriptions.status.requestFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -179,11 +179,11 @@ export function SubscriptionsMutateDrawer({
     const title = form.getValues('title').trim()
     const priceAmount = Number(form.getValues('price_amount') || 0)
     if (!title) {
-      toast.error(t('Plan title is required'))
+      toast.error(t('subscriptions.errors.planTitleIsRequired'))
       return
     }
     if (priceAmount <= 0) {
-      toast.error(t('Plan price must be greater than zero'))
+      toast.error(t('subscriptions.errors.planPriceMustBeGreaterThanZero'))
       return
     }
     setCreatingPancakeProduct(true)
@@ -219,19 +219,19 @@ export function SubscriptionsMutateDrawer({
           // raw-ID fallback covers the missing label.
         }
         toast.success(
-          `${t('Waffo Pancake product created')}: ${created.product_id}`
+          `${t('subscriptions.status.waffoPancakeProductCreated')}: ${created.product_id}`
         )
       } else {
         const reason = typeof res.data === 'string' ? res.data : undefined
         toast.error(
           reason
-            ? `${t('Waffo Pancake product creation failed')}: ${reason}`
-            : t('Waffo Pancake product creation failed')
+            ? `${t('subscriptions.status.waffoPancakeProductCreationFailed')}: ${reason}`
+            : t('subscriptions.status.waffoPancakeProductCreationFailed')
         )
       }
     } catch (err) {
       toast.error(
-        `${t('Waffo Pancake product creation failed')}: ${err instanceof Error ? err.message : String(err)}`
+        `${t('subscriptions.status.waffoPancakeProductCreationFailed')}: ${err instanceof Error ? err.message : String(err)}`
       )
     } finally {
       setCreatingPancakeProduct(false)
@@ -254,13 +254,13 @@ export function SubscriptionsMutateDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-[600px]')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEdit ? t('Update plan info') : t('Create new subscription plan')}
+            {isEdit ? t('subscriptions.fields.updatePlanInfo') : t('subscriptions.actions.createNewSubscriptionPlan')}
           </SheetTitle>
           <SheetDescription>
             {isEdit
-              ? t('Modify existing subscription plan configuration')
+              ? t('subscriptions.tips.modifyExistingSubscriptionPlanConfiguration')
               : t(
-                  'Fill in the following info to create a new subscription plan'
+                  'subscriptions.actions.fillInTheFollowingInfoToCreateANew'
                 )}
           </SheetDescription>
         </SheetHeader>
@@ -274,7 +274,7 @@ export function SubscriptionsMutateDrawer({
             <SideDrawerSection>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
                 <Settings2 className='h-4 w-4' />
-                {t('Basic Information')}
+                {t('channels.titles.basicInformation')}
               </h3>
 
               <FormField
@@ -282,9 +282,9 @@ export function SubscriptionsMutateDrawer({
                 name='title'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Plan Title')}</FormLabel>
+                    <FormLabel>{t('subscriptions.fields.planTitle')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('e.g. Basic Plan')} />
+                      <Input {...field} placeholder={t('subscriptions.placeholders.eGBasicPlan')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,11 +296,11 @@ export function SubscriptionsMutateDrawer({
                 name='subtitle'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Plan Subtitle')}</FormLabel>
+                    <FormLabel>{t('subscriptions.fields.planSubtitle')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder={t('e.g. Suitable for light usage')}
+                        placeholder={t('subscriptions.placeholders.eGSuitableForLightUsage')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -314,7 +314,7 @@ export function SubscriptionsMutateDrawer({
                   name='price_amount'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Actual Amount')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.actualAmount')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -336,7 +336,7 @@ export function SubscriptionsMutateDrawer({
                   name='total_amount'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Received amount')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.receivedAmount')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -349,7 +349,7 @@ export function SubscriptionsMutateDrawer({
                       </FormControl>
                       <FormDescription>
                         {t(
-                          '0 means unlimited. The value is converted to quota units when saved.'
+                          'subscriptions.tips.value0MeansUnlimitedTheValueIsConvertedToQuota'
                         )}
                       </FormDescription>
                       <FormMessage />
@@ -364,10 +364,10 @@ export function SubscriptionsMutateDrawer({
                   name='upgrade_group'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Upgrade Group')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.upgradeGroup')}</FormLabel>
                       <Select
                         items={[
-                          { value: '__none__', label: t('No Upgrade') },
+                          { value: '__none__', label: t('subscriptions.fields.noUpgrade') },
                           ...groupOptions.map((g) => ({ value: g, label: g })),
                         ]}
                         onValueChange={(v) =>
@@ -377,13 +377,13 @@ export function SubscriptionsMutateDrawer({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('No Upgrade')} />
+                            <SelectValue placeholder={t('subscriptions.fields.noUpgrade')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent alignItemWithTrigger={false}>
                           <SelectGroup>
                             <SelectItem value='__none__'>
-                              {t('No Upgrade')}
+                              {t('subscriptions.fields.noUpgrade')}
                             </SelectItem>
                             {groupOptions.map((g) => (
                               <SelectItem key={g} value={g}>
@@ -403,7 +403,7 @@ export function SubscriptionsMutateDrawer({
                   name='max_purchase_per_user'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Purchase Limit')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.purchaseLimit')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -415,7 +415,7 @@ export function SubscriptionsMutateDrawer({
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('0 means unlimited')}
+                        {t('subscriptions.placeholders.value0MeansUnlimited')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -429,7 +429,7 @@ export function SubscriptionsMutateDrawer({
                   name='sort_order'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Sort Order')}</FormLabel>
+                      <FormLabel>{t('pricing.fields.sortOrder')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -450,7 +450,7 @@ export function SubscriptionsMutateDrawer({
                   render={({ field }) => (
                     <FormItem className={sideDrawerSwitchItemClassName()}>
                       <FormLabel className='!mt-0'>
-                        {t('Enabled Status')}
+                        {t('subscriptions.status.enabledStatus')}
                       </FormLabel>
                       <FormControl>
                         <Switch
@@ -468,7 +468,7 @@ export function SubscriptionsMutateDrawer({
             <SideDrawerSection>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
                 <CalendarClock className='h-4 w-4' />
-                {t('Duration Settings')}
+                {t('subscriptions.titles.durationSettings')}
               </h3>
 
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
@@ -477,7 +477,7 @@ export function SubscriptionsMutateDrawer({
                   name='duration_unit'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Duration Unit')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.durationUnit')}</FormLabel>
                       <Select
                         items={[
                           ...durationUnitOpts.map((o) => ({
@@ -514,7 +514,7 @@ export function SubscriptionsMutateDrawer({
                     name='custom_seconds'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Custom Seconds')}</FormLabel>
+                        <FormLabel>{t('subscriptions.fields.customSeconds714d00')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -535,7 +535,7 @@ export function SubscriptionsMutateDrawer({
                     name='duration_value'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Duration Value')}</FormLabel>
+                        <FormLabel>{t('subscriptions.fields.durationValue')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -558,7 +558,7 @@ export function SubscriptionsMutateDrawer({
             <SideDrawerSection>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
                 <RefreshCw className='h-4 w-4' />
-                {t('Quota Reset')}
+                {t('subscriptions.fields.quotaReset')}
               </h3>
 
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
@@ -567,7 +567,7 @@ export function SubscriptionsMutateDrawer({
                   name='quota_reset_period'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Reset Period')}</FormLabel>
+                      <FormLabel>{t('subscriptions.actions.resetPeriod')}</FormLabel>
                       <Select
                         items={[
                           ...resetPeriodOpts.map((o) => ({
@@ -603,7 +603,7 @@ export function SubscriptionsMutateDrawer({
                   name='quota_reset_custom_seconds'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Custom Seconds')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.customSeconds714d00')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -626,7 +626,7 @@ export function SubscriptionsMutateDrawer({
             <SideDrawerSection>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
                 <CreditCard className='h-4 w-4' />
-                {t('Third-party Payment Config')}
+                {t('subscriptions.fields.thirdPartyPaymentConfig')}
               </h3>
 
               <FormField
@@ -634,7 +634,7 @@ export function SubscriptionsMutateDrawer({
                 name='stripe_price_id'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Stripe Price ID')}</FormLabel>
+                    <FormLabel>{t('subscriptions.fields.stripePriceId')}</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder='price_...' />
                     </FormControl>
@@ -648,7 +648,7 @@ export function SubscriptionsMutateDrawer({
                 name='creem_product_id'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Creem Product ID')}</FormLabel>
+                    <FormLabel>{t('subscriptions.fields.creemProductId')}</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder='prod_...' />
                     </FormControl>
@@ -674,7 +674,7 @@ export function SubscriptionsMutateDrawer({
                   }
                   return (
                     <FormItem>
-                      <FormLabel>{t('Waffo Pancake Product ID')}</FormLabel>
+                      <FormLabel>{t('subscriptions.fields.waffoPancakeProductId')}</FormLabel>
                       <div className='flex gap-2'>
                         <Select
                           items={items}
@@ -683,7 +683,7 @@ export function SubscriptionsMutateDrawer({
                           disabled={items.length === 0}
                         >
                           <SelectTrigger className='w-full flex-1'>
-                            <SelectValue placeholder={t('Select a product')} />
+                            <SelectValue placeholder={t('subscriptions.placeholders.selectAProduct')} />
                           </SelectTrigger>
                           <SelectContent>
                             {items.map((item) => (
@@ -703,13 +703,13 @@ export function SubscriptionsMutateDrawer({
                           className='shrink-0'
                         >
                           {creatingPancakeProduct
-                            ? t('Creating...')
-                            : `+ ${t('Create')}`}
+                            ? t('subscriptions.tips.creating')
+                            : `+ ${t('channels.actions.create')}`}
                         </Button>
                       </div>
                       <FormDescription>
                         {t(
-                          'Creates a Pancake product in the saved store using this plan’s title and price. Requires Waffo Pancake to be fully configured in Payment settings first.'
+                          'subscriptions.status.createsAPancakeProductInTheSavedStoreUsing'
                         )}
                       </FormDescription>
                       <FormMessage />
@@ -722,14 +722,14 @@ export function SubscriptionsMutateDrawer({
         </Form>
         <SheetFooter className={sideDrawerFooterClassName()}>
           <SheetClose render={<Button variant='outline' />}>
-            {t('Close')}
+            {t('common.actions.close')}
           </SheetClose>
           <Button
             form='subscription-form'
             type='submit'
             disabled={isSubmitting}
           >
-            {isSubmitting ? t('Saving...') : t('Save Changes')}
+            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

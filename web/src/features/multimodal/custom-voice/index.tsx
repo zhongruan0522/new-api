@@ -122,11 +122,11 @@ export function CustomVoice() {
 
   const handlePreview = async () => {
     if (!file) {
-      toast.error(t('Please select an audio file'))
+      toast.error(t('multimodal.errors.pleaseSelectAnAudioFile'))
       return
     }
     if (!validateVoiceId(voiceId)) {
-      toast.error(t('Voice ID is invalid'))
+      toast.error(t('multimodal.fields.voiceIdIsInvalid'))
       return
     }
     setPreviewing(true)
@@ -144,12 +144,12 @@ export function CustomVoice() {
       })
       if (res.success && res.data) {
         setPreview(res.data)
-        toast.success(t('Preview audio generated'))
+        toast.success(t('multimodal.fields.previewAudioGenerated'))
       } else {
-        toast.error(res.message || t('Preview failed'))
+        toast.error(res.message || t('multimodal.status.previewFailed'))
       }
     } catch (e) {
-      toast.error(extractApiErrorMessage(e) || t('Preview failed'))
+      toast.error(extractApiErrorMessage(e) || t('multimodal.status.previewFailed'))
     } finally {
       setPreviewing(false)
     }
@@ -161,17 +161,17 @@ export function CustomVoice() {
     try {
       const res = await confirmCustomVoice(preview.voice_id)
       if (res.success) {
-        toast.success(t('Voice customization confirmed'))
+        toast.success(t('multimodal.fields.voiceCustomizationConfirmed'))
         setConfirmDialogOpen(false)
         setConfirmQuote(null)
         setPreview(null)
         setVoiceId('')
         setFile(null)
       } else {
-        toast.error(res.message || t('Confirmation failed'))
+        toast.error(res.message || t('multimodal.status.confirmationFailed'))
       }
     } catch (e) {
-      toast.error(extractApiErrorMessage(e) || t('Confirmation failed'))
+      toast.error(extractApiErrorMessage(e) || t('multimodal.status.confirmationFailed'))
     } finally {
       setConfirming(false)
     }
@@ -188,11 +188,11 @@ export function CustomVoice() {
         setConfirmQuote(res.data)
         setConfirmDialogOpen(true)
       } else {
-        toast.error(res.message || t('Failed to fetch payment price'))
+        toast.error(res.message || t('multimodal.errors.failedToFetchPaymentPrice'))
       }
     } catch (e) {
       toast.error(
-        extractApiErrorMessage(e) || t('Failed to fetch payment price')
+        extractApiErrorMessage(e) || t('multimodal.errors.failedToFetchPaymentPrice')
       )
     } finally {
       setConfirmQuoteLoading(false)
@@ -215,37 +215,37 @@ export function CustomVoice() {
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-auto'>
       <div>
-        <h1 className='mb-2 text-2xl font-semibold'>{t('Custom Voice')}</h1>
+        <h1 className='mb-2 text-2xl font-semibold'>{t('multimodal.fields.customVoice')}</h1>
         <p className='text-muted-foreground'>
-          {t('Customize voice configurations.')}
+          {t('multimodal.tips.customizeVoiceConfigurations')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('Custom Voice')}</CardTitle>
+          <CardTitle>{t('multimodal.fields.customVoice')}</CardTitle>
           <CardDescription>
             {t(
-              'Upload an audio sample, choose a TTS model, enter a voice ID, then generate a preview audio and confirm whether to customize.'
+              'multimodal.actions.uploadAnAudioSampleChooseATtsModelEnter'
             )}
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
           <div className='space-y-2'>
-            <Label>{t('Audio File')}</Label>
+            <Label>{t('multimodal.fields.audioFile')}</Label>
             <Input
               type='file'
               accept='.mp3,.m4a,.wav'
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('Supports mp3, m4a, wav. Duration 10s-5min, max 20MB.')}
+              {t('multimodal.tips.supportsMp3M4aWavDuration10s5minMax20')}
             </p>
           </div>
 
           <div className='grid gap-4 md:grid-cols-2'>
             <div className='space-y-2'>
-              <Label>{t('Voice ID')}</Label>
+              <Label>{t('minimax.fields.voiceId')}</Label>
               <Input
                 value={voiceId}
                 onChange={(e) => setVoiceId(e.target.value)}
@@ -254,13 +254,13 @@ export function CustomVoice() {
               />
               <p className='text-muted-foreground text-xs'>
                 {t(
-                  'Must start with a letter, only letters, numbers, - and _, length 8-256.'
+                  'multimodal.errors.mustStartWithALetterOnlyLettersNumbersAnd'
                 )}
               </p>
             </div>
 
             <div className='space-y-2'>
-              <Label>{t('Preview Model')}</Label>
+              <Label>{t('multimodal.fields.previewModel')}</Label>
               <Select
                 value={effectiveModel}
                 onValueChange={(v) => v && setModel(v)}
@@ -280,24 +280,24 @@ export function CustomVoice() {
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Preview Text')}</Label>
+            <Label>{t('multimodal.fields.previewText')}</Label>
             <Textarea
               value={previewText}
               onChange={(e) => setPreviewText(e.target.value)}
               rows={3}
               maxLength={2000}
-              placeholder={t('Optional preview text')}
+              placeholder={t('multimodal.fields.optionalPreviewText')}
             />
           </div>
 
           {voiceTags && !voiceTags.enabled && (
             <p className='text-muted-foreground text-xs'>
-              {t('TTS enhancement is disabled.')}
+              {t('multimodal.status.ttsEnhancementIsDisabled')}
             </p>
           )}
           {voiceTags?.enabled && !hasTags && (
             <p className='text-muted-foreground text-xs'>
-              {t('No emotion or tone-word tags configured.')}
+              {t('multimodal.tips.noEmotionOrToneWordTagsConfigured')}
             </p>
           )}
           {voiceTags?.enabled && hasTags && (
@@ -305,7 +305,7 @@ export function CustomVoice() {
               {emotionTags.length > 0 && (
                 <div className='space-y-1'>
                   <p className='text-muted-foreground text-xs'>
-                    {t('Emotion tags')}
+                    {t('multimodal.fields.emotionTags')}
                   </p>
                   <div className='flex flex-wrap gap-1.5'>
                     {emotionTags.map((tag) => (
@@ -319,7 +319,7 @@ export function CustomVoice() {
               {toneWordTags.length > 0 && (
                 <div className='space-y-1'>
                   <p className='text-muted-foreground text-xs'>
-                    {t('Tone-word tags (wrap with parentheses)')}
+                    {t('multimodal.tips.toneWordTagsWrapWithParentheses')}
                   </p>
                   <div className='flex flex-wrap gap-1.5'>
                     {toneWordTags.map((tag) => (
@@ -339,19 +339,19 @@ export function CustomVoice() {
                 checked={noiseReduction}
                 onCheckedChange={(v) => setNoiseReduction(v === true)}
               />
-              {t('Noise Reduction')}
+              {t('multimodal.fields.noiseReduction')}
             </label>
             <label className='flex items-center gap-2'>
               <Checkbox
                 checked={volumeNormalization}
                 onCheckedChange={(v) => setVolumeNormalization(v === true)}
               />
-              {t('Volume Normalization')}
+              {t('multimodal.fields.volumeNormalization')}
             </label>
           </div>
 
           <Button onClick={handlePreview} disabled={previewing}>
-            {previewing ? t('Generating...') : t('Generate Preview')}
+            {previewing ? t('channels.tips.generating') : t('multimodal.fields.generatePreview')}
           </Button>
         </CardContent>
       </Card>
@@ -359,7 +359,7 @@ export function CustomVoice() {
       {preview && (
         <Card>
           <CardHeader>
-            <CardTitle>{t('Preview Audio')}</CardTitle>
+            <CardTitle>{t('multimodal.fields.previewAudio')}</CardTitle>
           </CardHeader>
           <CardContent className='space-y-4'>
             {preview.demo_audio ? (
@@ -368,7 +368,7 @@ export function CustomVoice() {
               </audio>
             ) : (
               <p className='text-muted-foreground text-sm'>
-                {t('No preview audio returned.')}
+                {t('multimodal.tips.noPreviewAudioReturned')}
               </p>
             )}
             <Button
@@ -379,8 +379,8 @@ export function CustomVoice() {
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               )}
               {confirmQuoteLoading
-                ? t('Loading payment price...')
-                : t('Confirm Customization')}
+                ? t('multimodal.status.loadingPaymentPrice')
+                : t('multimodal.actions.confirmCustomization')}
             </Button>
           </CardContent>
         </Card>
@@ -392,28 +392,28 @@ export function CustomVoice() {
       >
         <AlertDialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Confirm Customization')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('multimodal.actions.confirmCustomization')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                'Please confirm the voice customization details. After confirmation, the fee will be deducted and the voice will be activated.'
+                'multimodal.tips.pleaseConfirmTheVoiceCustomizationDetailsAfterConfirmationTheFee'
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className='space-y-3 rounded-lg border p-3 text-sm'>
             <div className='flex items-center justify-between gap-4'>
-              <span className='text-muted-foreground'>{t('Voice ID')}</span>
+              <span className='text-muted-foreground'>{t('minimax.fields.voiceId')}</span>
               <span className='font-medium break-all'>{confirmVoiceId}</span>
             </div>
             <div className='flex items-center justify-between gap-4'>
-              <span className='text-muted-foreground'>{t('Payment Price')}</span>
+              <span className='text-muted-foreground'>{t('multimodal.fields.paymentPrice')}</span>
               <span className='font-semibold'>{formattedConfirmPrice}</span>
             </div>
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={confirming}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirm}
@@ -422,7 +422,7 @@ export function CustomVoice() {
               {confirming && (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               )}
-              {confirming ? t('Confirming...') : t('Confirm')}
+              {confirming ? t('multimodal.tips.confirming') : t('common.actions.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

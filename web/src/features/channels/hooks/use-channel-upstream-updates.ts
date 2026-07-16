@@ -69,7 +69,7 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       const normAdd = normalizeModelList(pendingAdd)
       const normRemove = normalizeModelList(pendingRemove)
       if (!record?.id || (normAdd.length === 0 && normRemove.length === 0)) {
-        toast.info(t('No processable upstream model updates for this channel'))
+        toast.info(t('channels.tips.noProcessableUpstreamModelUpdatesForThisChannel'))
         return
       }
       setChannel(record)
@@ -121,13 +121,13 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
         )
         const { success, message, data } = res.data || {}
         if (!success) {
-          toast.error(message || t('Operation failed'))
+          toast.error(message || t('channels.status.operationFailed'))
           return
         }
 
         toast.success(
           t(
-            'Upstream model updates applied: {{added}} added, {{removed}} removed, {{ignored}} ignored this time, {{totalIgnored}} total ignored models',
+            'channels.status.upstreamModelUpdatesAppliedAddedAddedRemovedRemovedIgnored',
             {
               added: data?.added_models?.length || 0,
               removed: data?.removed_models?.length || 0,
@@ -144,7 +144,7 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
           message?: string
         }
         toast.error(
-          err?.response?.data?.message || err?.message || t('Operation failed')
+          err?.response?.data?.message || err?.message || t('channels.status.operationFailed')
         )
       } finally {
         applyRef.current = false
@@ -166,13 +166,13 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       )
       const { success, message, data } = res.data || {}
       if (!success) {
-        toast.error(message || t('Batch processing failed'))
+        toast.error(message || t('channels.status.batchProcessingFailed'))
         return
       }
 
       toast.success(
         t(
-          'Batch upstream model updates applied: {{channels}} channels, {{added}} added, {{removed}} removed, {{fails}} failed',
+          'channels.status.batchUpstreamModelUpdatesAppliedChannelsChannelsAddedAdded',
           {
             channels: data?.processed_channels || 0,
             added: data?.added_models || 0,
@@ -190,7 +190,7 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       toast.error(
         err?.response?.data?.message ||
           err?.message ||
-          t('Batch processing failed')
+          t('channels.status.batchProcessingFailed')
       )
     } finally {
       applyAllRef.current = false
@@ -210,12 +210,12 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
         )
         const { success, message, data } = res.data || {}
         if (!success) {
-          toast.error(message || t('Detection failed'))
+          toast.error(message || t('channels.status.detectionFailed'))
           return
         }
 
         toast.success(
-          t('Detection complete: {{add}} to add, {{remove}} to remove', {
+          t('channels.tips.detectionCompleteAddToAddRemoveToRemove', {
             add: data?.add_models?.length || 0,
             remove: data?.remove_models?.length || 0,
           })
@@ -227,7 +227,7 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
           message?: string
         }
         toast.error(
-          err?.response?.data?.message || err?.message || t('Detection failed')
+          err?.response?.data?.message || err?.message || t('channels.status.detectionFailed')
         )
       } finally {
         detectRef.current = false
@@ -248,13 +248,13 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       )
       const { success, message, data } = res.data || {}
       if (!success) {
-        toast.error(message || t('Batch detection failed'))
+        toast.error(message || t('channels.status.batchDetectionFailed'))
         return
       }
 
       toast.success(
         t(
-          'Batch detection complete: {{channels}} channels, {{add}} to add, {{remove}} to remove, {{fails}} failed',
+          'channels.status.batchDetectionCompleteChannelsChannelsAddToAddRemove',
           {
             channels: data?.processed_channels || 0,
             add: data?.detected_add_models || 0,
@@ -272,7 +272,7 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       toast.error(
         err?.response?.data?.message ||
           err?.message ||
-          t('Batch detection failed')
+          t('channels.status.batchDetectionFailed')
       )
     } finally {
       detectAllRef.current = false

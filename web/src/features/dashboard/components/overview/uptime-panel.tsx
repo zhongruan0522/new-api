@@ -96,13 +96,13 @@ export function UptimePanel() {
       title={
         <span className='flex items-center gap-2'>
           <Activity className='text-muted-foreground/60 size-4' />
-          {t('Uptime')}
+          {t('dashboard.fields.uptime')}
         </span>
       }
-      description={t('Grouped monitor status from Uptime Kuma')}
+      description={t('dashboard.tips.groupedMonitorStatusFromUptimeKuma')}
       loading={loading}
       empty={!groups.length}
-      emptyMessage={t('No uptime monitoring configured')}
+      emptyMessage={t('dashboard.fields.noUptimeMonitoringConfigured')}
       height='h-80'
       contentClassName='p-0'
       headerActions={
@@ -115,7 +115,7 @@ export function UptimePanel() {
         >
           <RotateCw
             className={cn('size-3.5', refreshing && 'animate-spin')}
-            aria-label={t('Refresh')}
+            aria-label={t('channels.actions.refresh')}
           />
         </Button>
       }

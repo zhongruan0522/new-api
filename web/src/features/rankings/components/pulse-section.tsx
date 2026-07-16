@@ -42,12 +42,12 @@ export function PulseSection(props: PulseSectionProps) {
   return (
     <section className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
       <PulseCard
-        title={t('Trending up')}
-        description={t('Models climbing the leaderboard')}
+        title={t('rankings.fields.trendingUp')}
+        description={t('rankings.titles.modelsClimbingTheLeaderboard')}
         icon={<TrendingUp className='size-4 text-emerald-500' />}
       >
         {props.movers.length === 0 ? (
-          <PulseEmpty label={t('No notable climbers right now')} />
+          <PulseEmpty label={t('rankings.fields.noNotableClimbersRightNow')} />
         ) : (
           <ul>
             {props.movers.map((row) => (
@@ -58,12 +58,12 @@ export function PulseSection(props: PulseSectionProps) {
       </PulseCard>
 
       <PulseCard
-        title={t('Trending down')}
-        description={t('Models losing positions')}
+        title={t('rankings.fields.trendingDown')}
+        description={t('rankings.titles.modelsLosingPositions')}
         icon={<TrendingDown className='size-4 text-rose-500' />}
       >
         {props.droppers.length === 0 ? (
-          <PulseEmpty label={t('No notable drops right now')} />
+          <PulseEmpty label={t('rankings.fields.noNotableDropsRightNow')} />
         ) : (
           <ul>
             {props.droppers.map((row) => (

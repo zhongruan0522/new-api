@@ -112,7 +112,7 @@ export function TagBatchEditDialog({
       setNewTag(currentTag)
     } catch (_error: unknown) {
       toast.error(
-        _error instanceof Error ? _error.message : t('Failed to load tag data')
+        _error instanceof Error ? _error.message : t('channels.errors.failedToLoadTagData')
       )
     } finally {
       setIsLoading(false)
@@ -127,7 +127,7 @@ export function TagBatchEditDialog({
       try {
         JSON.parse(modelMapping)
       } catch (_error) {
-        toast.error(t('Model mapping must be valid JSON'))
+        toast.error(t('channels.errors.modelMappingMustBeValidJson'))
         return
       }
     }
@@ -156,7 +156,7 @@ export function TagBatchEditDialog({
 
       // Check if there are any changes
       if (Object.keys(params).length === 1) {
-        toast.warning(t('No changes made'))
+        toast.warning(t('channels.fields.noChangesMade'))
         return
       }
 
@@ -164,15 +164,15 @@ export function TagBatchEditDialog({
         params as unknown as TagOperationParams
       )
       if (response.success) {
-        toast.success(t('Tag updated successfully'))
+        toast.success(t('channels.status.tagUpdatedSuccessfully'))
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
         handleClose()
       } else {
-        toast.error(response.message || t('Failed to update tag'))
+        toast.error(response.message || t('channels.errors.failedToUpdateTag'))
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to update tag')
+        error instanceof Error ? error.message : t('channels.errors.failedToUpdateTag')
       )
     } finally {
       setIsSaving(false)
@@ -193,9 +193,9 @@ export function TagBatchEditDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='max-h-[90vh] max-w-2xl overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>{t('Batch Edit by Tag')}</DialogTitle>
+          <DialogTitle>{t('channels.fields.batchEditByTag')}</DialogTitle>
           <DialogDescription>
-            {t('Edit all channels with tag:')} <strong>{currentTag}</strong>
+            {t('channels.actions.editAllChannelsWithTag')} <strong>{currentTag}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -210,35 +210,35 @@ export function TagBatchEditDialog({
                 <AlertCircle className='h-4 w-4' />
                 <AlertDescription>
                   {t(
-                    'All edits are overwrite operations. Leave fields empty to keep current values unchanged.'
+                    'channels.tips.allEditsAreOverwriteOperationsLeaveFieldsEmptyTo'
                   )}
                 </AlertDescription>
               </Alert>
 
               {/* Tag Name */}
               <div className='space-y-2'>
-                <Label htmlFor='new-tag'>{t('Tag Name')}</Label>
+                <Label htmlFor='new-tag'>{t('channels.fields.tagName')}</Label>
                 <Input
                   id='new-tag'
                   placeholder={t(
-                    'Enter new tag name (leave empty to disband tag)'
+                    'channels.placeholders.enterNewTagNameLeaveEmptyToDisbandTag'
                   )}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   disabled={isSaving}
                 />
                 <p className='text-muted-foreground text-xs'>
-                  {t('Leave empty to disband the tag')}
+                  {t('channels.fields.leaveEmptyToDisbandTheTag')}
                 </p>
               </div>
 
               {/* Models */}
               <div className='space-y-2'>
-                <Label htmlFor='models'>{t('Models')}</Label>
+                <Label htmlFor='models'>{t('channels.titles.models')}</Label>
                 <Textarea
                   id='models'
                   placeholder={t(
-                    'Comma-separated model names (leave empty to keep current)'
+                    'channels.tips.commaSeparatedModelNamesLeaveEmptyToKeepCurrent'
                   )}
                   value={models}
                   onChange={(e) => setModels(e.target.value)}
@@ -247,14 +247,14 @@ export function TagBatchEditDialog({
                 />
                 <p className='text-muted-foreground text-xs'>
                   {t(
-                    'Current models for the longest channel in this tag. May not include all models from all channels.'
+                    'channels.tips.currentModelsForTheLongestChannelInThisTag'
                   )}
                 </p>
               </div>
 
               {/* Model Mapping */}
               <div className='space-y-2'>
-                <Label htmlFor='model-mapping'>{t('Model Mapping')}</Label>
+                <Label htmlFor='model-mapping'>{t('channels.fields.modelMapping')}</Label>
                 <ModelMappingEditor
                   value={modelMapping}
                   onChange={setModelMapping}
@@ -264,7 +264,7 @@ export function TagBatchEditDialog({
 
               {/* Groups */}
               <div className='space-y-2'>
-                <Label htmlFor='groups'>{t('Groups')}</Label>
+                <Label htmlFor='groups'>{t('channels.fields.groups')}</Label>
                 {isLoadingGroups ? (
                   <Skeleton className='h-10 w-full' />
                 ) : (
@@ -273,12 +273,12 @@ export function TagBatchEditDialog({
                     selected={groups}
                     onChange={setGroups}
                     placeholder={t(
-                      'Select groups (leave empty to keep current)'
+                      'channels.placeholders.selectGroupsLeaveEmptyToKeepCurrent'
                     )}
                   />
                 )}
                 <p className='text-muted-foreground text-xs'>
-                  {t('User groups that can access channels with this tag')}
+                  {t('channels.tips.userGroupsThatCanAccessChannelsWithThisTag')}
                 </p>
               </div>
             </div>
@@ -289,11 +289,11 @@ export function TagBatchEditDialog({
                 onClick={handleClose}
                 disabled={isSaving}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('Saving...') : t('Save Changes')}
+                {isSaving ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
               </Button>
             </DialogFooter>
           </>

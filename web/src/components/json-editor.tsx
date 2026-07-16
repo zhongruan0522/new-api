@@ -57,11 +57,11 @@ export function JsonEditor({
 }: JsonEditorProps) {
   const { t } = useTranslation()
   const resolvedEmptyMessage =
-    emptyMessage ?? t('No mappings configured. Click "Add Row" to get started.')
-  const resolvedKeyPlaceholder = keyPlaceholder ?? t('Key')
-  const resolvedValuePlaceholder = valuePlaceholder ?? t('Value')
-  const resolvedKeyLabel = keyLabel ?? t('Key')
-  const resolvedValueLabel = valueLabel ?? t('Value')
+    emptyMessage ?? t('common.tips.noMappingsConfiguredClickAddRowToGetStarted')
+  const resolvedKeyPlaceholder = keyPlaceholder ?? t('common.fields.key')
+  const resolvedValuePlaceholder = valuePlaceholder ?? t('common.fields.value8dce17')
+  const resolvedKeyLabel = keyLabel ?? t('common.fields.key')
+  const resolvedValueLabel = valueLabel ?? t('common.fields.value8dce17')
   const [mode, setMode] = useState<'visual' | 'json'>('visual')
   const [rows, setRows] = useState<EditorRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
@@ -197,12 +197,12 @@ export function JsonEditor({
             {mode === 'visual' ? (
               <>
                 <Code className='mr-2 h-4 w-4' />
-                {t('JSON Mode')}
+                {t('common.fields.jsonMode')}
               </>
             ) : (
               <>
                 <Table className='mr-2 h-4 w-4' />
-                {t('Visual Mode')}
+                {t('common.fields.visualMode')}
               </>
             )}
           </Button>
@@ -215,7 +215,7 @@ export function JsonEditor({
               onClick={handleFillTemplate}
               disabled={disabled}
             >
-              {t('Fill Template')}
+              {t('common.actions.fillTemplate')}
             </Button>
           )}
         </div>
@@ -255,7 +255,7 @@ export function JsonEditor({
                     type='button'
                     variant='ghost'
                     size='icon'
-                    aria-label={t('Delete')}
+                    aria-label={t('common.actions.delete')}
                     onClick={() => handleDeleteRow(row.id)}
                     disabled={disabled}
                     className='h-10 w-10'
@@ -279,7 +279,7 @@ export function JsonEditor({
             className='w-full'
           >
             <Plus className='mr-2 h-4 w-4' />
-            {t('Add Row')}
+            {t('common.actions.addRow')}
           </Button>
         </div>
       ) : (

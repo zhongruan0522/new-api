@@ -165,17 +165,17 @@ export function PrefillGroupFormDrawer({
 
       if (response.success) {
         toast.success(
-          isEdit ? t('Prefill group updated') : t('Prefill group created')
+          isEdit ? t('models.status.prefillGroupUpdated') : t('models.status.prefillGroupCreated')
         )
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
         })
         onClose()
       } else {
-        toast.error(response.message || t('Operation failed'))
+        toast.error(response.message || t('channels.status.operationFailed'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || t('Operation failed'))
+      toast.error((err as Error)?.message || t('channels.status.operationFailed'))
     } finally {
       setIsSaving(false)
     }
@@ -189,12 +189,12 @@ export function PrefillGroupFormDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEdit ? t('Edit Prefill Group') : t('Create Prefill Group')}
+            {isEdit ? t('models.actions.editPrefillGroup') : t('models.actions.createPrefillGroup')}
           </SheetTitle>
           <SheetDescription>
             {isEdit
-              ? t('Update the reusable bundle below.')
-              : t('Capture a reusable bundle of models, tags, or endpoints.')}
+              ? t('models.tips.updateTheReusableBundleBelow')
+              : t('models.tips.captureAReusableBundleOfModelsTagsOrEndpoints')}
           </SheetDescription>
         </SheetHeader>
 
@@ -206,10 +206,10 @@ export function PrefillGroupFormDrawer({
           >
             <SideDrawerSection>
               <div className='flex flex-col gap-1'>
-                <h3 className='text-sm font-semibold'>{t('Group details')}</h3>
+                <h3 className='text-sm font-semibold'>{t('models.titles.groupDetails')}</h3>
                 <p className='text-muted-foreground text-sm'>
                   {t(
-                    'Give the group a recognizable name and optional description.'
+                    'models.tips.giveTheGroupARecognizableNameAndOptionalDescription'
                   )}
                 </p>
               </div>
@@ -219,15 +219,15 @@ export function PrefillGroupFormDrawer({
                 name='name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Group Name')}</FormLabel>
+                    <FormLabel>{t('models.fields.groupName')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('Premium chat models')}
+                        placeholder={t('models.titles.premiumChatModels')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Give this group a recognizable name.')}
+                      {t('models.tips.giveThisGroupARecognizableName')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -239,11 +239,11 @@ export function PrefillGroupFormDrawer({
                 name='description'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Description')}</FormLabel>
+                    <FormLabel>{t('auditLogs.tips.description')}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={t(
-                          'Optional notes about when to use this group'
+                          'models.tips.optionalNotesAboutWhenToUseThisGroup'
                         )}
                         rows={3}
                         {...field}
@@ -251,7 +251,7 @@ export function PrefillGroupFormDrawer({
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Make it easier for teammates to pick the right group.'
+                        'models.tips.makeItEasierForTeammatesToPickTheRight'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -262,9 +262,9 @@ export function PrefillGroupFormDrawer({
 
             <SideDrawerSection>
               <div className='flex flex-col gap-1'>
-                <h3 className='text-sm font-semibold'>{t('Configuration')}</h3>
+                <h3 className='text-sm font-semibold'>{t('models.titles.configuration')}</h3>
                 <p className='text-muted-foreground text-sm'>
-                  {t('Choose the bundle type and define the items inside it.')}
+                  {t('models.placeholders.chooseTheBundleTypeAndDefineTheItemsInside')}
                 </p>
               </div>
 
@@ -273,7 +273,7 @@ export function PrefillGroupFormDrawer({
                 name='type'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Group Type')}</FormLabel>
+                    <FormLabel>{t('models.fields.groupType')}</FormLabel>
                     <Select
                       items={[
                         ...PREFILL_GROUP_TYPES.map((type) => ({
@@ -299,7 +299,7 @@ export function PrefillGroupFormDrawer({
                     >
                       <FormControl>
                         <SelectTrigger className='[&_[data-slot=select-value]_[data-prefill-description]]:hidden'>
-                          <SelectValue placeholder={t('Select a group type')} />
+                          <SelectValue placeholder={t('models.placeholders.selectAGroupType')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -323,7 +323,7 @@ export function PrefillGroupFormDrawer({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {t('Determines how this group is applied elsewhere.')}
+                      {t('models.tips.determinesHowThisGroupIsAppliedElsewhere')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -332,7 +332,7 @@ export function PrefillGroupFormDrawer({
 
               <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
                 <div className='flex items-center gap-2'>
-                  <h4 className='text-sm font-medium'>{t('Project')}</h4>
+                  <h4 className='text-sm font-medium'>{t('models.fields.project')}</h4>
                   <StatusBadge
                     label={meta.label}
                     variant={meta.badge}
@@ -345,7 +345,7 @@ export function PrefillGroupFormDrawer({
                   name='items'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className='sr-only'>{t('Items')}</FormLabel>
+                      <FormLabel className='sr-only'>{t('models.fields.items')}</FormLabel>
                       <FormControl>
                         {selectedType === 'endpoint' ? (
                           <JsonEditor
@@ -353,12 +353,12 @@ export function PrefillGroupFormDrawer({
                             onChange={field.onChange}
                             keyPlaceholder='provider'
                             valuePlaceholder='{"path": "/v1/...","method": "POST"}'
-                            keyLabel={t('Provider')}
-                            valueLabel={t('Endpoint Configuration')}
+                            keyLabel={t('models.fields.provider')}
+                            valueLabel={t('models.titles.endpointConfiguration')}
                             valueType='any'
                             template={ENDPOINT_TEMPLATES}
                             emptyMessage={t(
-                              'Define endpoint mappings for each provider.'
+                              'models.tips.defineEndpointMappingsForEachProvider'
                             )}
                           />
                         ) : (
@@ -367,16 +367,16 @@ export function PrefillGroupFormDrawer({
                               Array.isArray(field.value) ? field.value : []
                             }
                             onChange={field.onChange}
-                            placeholder={t('Enter a value and press Enter')}
+                            placeholder={t('models.placeholders.enterAValueAndPressEnter')}
                           />
                         )}
                       </FormControl>
                       <FormDescription>
                         {selectedType === 'endpoint'
                           ? t(
-                              'Provide a JSON object where each key maps to an endpoint definition.'
+                              'models.tips.provideAJsonObjectWhereEachKeyMapsTo'
                             )
-                          : t('Add each model or tag you want to include.')}
+                          : t('models.actions.addEachModelOrTagYouWantToInclude')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -393,15 +393,15 @@ export function PrefillGroupFormDrawer({
               <Button type='button' variant='outline' disabled={isSaving} />
             }
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </SheetClose>
           <Button type='submit' form='prefill-group-form' disabled={isSaving}>
             {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             {isSaving
-              ? t('Saving...')
+              ? t('channels.tips.saving')
               : isEdit
-                ? t('Save Changes')
-                : t('Create')}
+                ? t('channels.actions.saveChanges')
+                : t('channels.actions.create')}
           </Button>
         </SheetFooter>
       </SheetContent>

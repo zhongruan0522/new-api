@@ -92,7 +92,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           onClick={onReset}
           disabled={isResetting}
         >
-          {t('Reset model ratios')}
+          {t('systemSettings.actions.resetModelRatios')}
         </Button>
         <Button
           type='button'
@@ -100,7 +100,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           onClick={form.handleSubmit(onSave)}
           disabled={isSaving || !isEditorValid}
         >
-          {isSaving ? t('Saving...') : t('Save model prices')}
+          {isSaving ? t('channels.tips.saving') : t('systemSettings.actions.saveModelPrices')}
         </Button>
       </SettingsPageActionsPortal>
       <SettingsForm onSubmit={form.handleSubmit(onSave)}>

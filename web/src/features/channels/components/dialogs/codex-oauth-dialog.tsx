@@ -89,15 +89,15 @@ export function CodexOAuthDialog({
       setState((prev) => ({ ...prev, authorizeUrl: url }))
       try {
         window.open(url, '_blank', 'noopener,noreferrer')
-        toast.success(t('Opened authorization page'))
+        toast.success(t('channels.fields.openedAuthorizationPage'))
       } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('Failed to open authorization page:', error)
-        toast.warning(t('Please manually copy and open the authorization link'))
+        toast.warning(t('channels.tips.pleaseManuallyCopyAndOpenTheAuthorizationLink'))
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('OAuth start failed')
+        error instanceof Error ? error.message : t('channels.status.oauthStartFailed')
       )
     } finally {
       setState((prev) => ({ ...prev, isStarting: false }))
@@ -119,10 +119,10 @@ export function CodexOAuthDialog({
       }
 
       onKeyGenerated(tryPrettyJson(rawKey))
-      toast.success(t('Credential generated'))
+      toast.success(t('channels.fields.credentialGenerated'))
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('OAuth failed'))
+      toast.error(error instanceof Error ? error.message : t('channels.status.oauthFailed'))
     } finally {
       setState((prev) => ({ ...prev, isCompleting: false }))
     }
@@ -132,10 +132,10 @@ export function CodexOAuthDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-2xl'>
         <DialogHeader>
-          <DialogTitle>{t('Codex Authorization')}</DialogTitle>
+          <DialogTitle>{t('channels.fields.codexAuthorization')}</DialogTitle>
           <DialogDescription>
             {t(
-              'Generate a Codex OAuth credential and paste it into the channel key field.'
+              'channels.tips.generateACodexOauthCredentialAndPasteItInto'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -144,7 +144,7 @@ export function CodexOAuthDialog({
           <Alert>
             <AlertDescription>
               {t(
-                '1) Click "Open authorization page" and complete login. 2) Your browser may redirect to localhost (it is OK if the page does not load). 3) Copy the full URL from the address bar and paste it below. 4) Click "Generate credential".'
+                'common.placeholders.value1ClickOpenAuthorizationPageAndCompleteLogin'
               )}
             </AlertDescription>
           </Alert>
@@ -156,7 +156,7 @@ export function CodexOAuthDialog({
               ) : (
                 <ExternalLink className='mr-2 h-4 w-4' />
               )}
-              {t('Open authorization page')}
+              {t('channels.actions.openAuthorizationPage')}
             </Button>
 
             <Button
@@ -167,34 +167,34 @@ export function CodexOAuthDialog({
                 if (!state.authorizeUrl) return
                 await copyToClipboard(state.authorizeUrl)
               }}
-              aria-label={t('Copy authorization link')}
-              title={t('Copy authorization link')}
+              aria-label={t('channels.actions.copyAuthorizationLink')}
+              title={t('channels.actions.copyAuthorizationLink')}
             >
               {copiedText === state.authorizeUrl ? (
                 <Check className='mr-2 h-4 w-4 text-green-600' />
               ) : (
                 <Copy className='mr-2 h-4 w-4' />
               )}
-              {t('Copy authorization link')}
+              {t('channels.actions.copyAuthorizationLink')}
             </Button>
           </div>
 
           <div className='space-y-2'>
-            <div className='text-sm font-medium'>{t('Callback URL')}</div>
+            <div className='text-sm font-medium'>{t('channels.fields.callbackUrl')}</div>
             <Input
               value={state.callbackUrl}
               onChange={(e) =>
                 setState((prev) => ({ ...prev, callbackUrl: e.target.value }))
               }
               placeholder={t(
-                'Paste the full callback URL (includes code & state)'
+                'channels.tips.pasteTheFullCallbackUrlIncludesCodeState'
               )}
               autoComplete='off'
               spellCheck={false}
             />
             <div className='text-muted-foreground text-xs'>
               {t(
-                'Tip: The generated key is a JSON credential including access_token / refresh_token / account_id.'
+                'channels.tips.tipTheGeneratedKeyIsAJsonCredentialIncluding'
               )}
             </div>
           </div>
@@ -207,13 +207,13 @@ export function CodexOAuthDialog({
             onClick={() => onOpenChange(false)}
             disabled={state.isStarting || state.isCompleting}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleComplete} disabled={!canComplete}>
             {state.isCompleting && (
               <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {state.isCompleting ? t('Generating...') : t('Generate credential')}
+            {state.isCompleting ? t('channels.tips.generating') : t('channels.fields.generateCredential')}
           </Button>
         </DialogFooter>
       </DialogContent>

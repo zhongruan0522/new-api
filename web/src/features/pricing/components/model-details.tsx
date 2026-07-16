@@ -101,7 +101,7 @@ function CompactCapabilityList(props: { capabilities: ModelCapability[] }) {
   if (props.capabilities.length === 0) {
     return (
       <span className='text-muted-foreground text-xs'>
-        {t('No capabilities reported for this model.')}
+        {t('pricing.tips.noCapabilitiesReportedForThisModel')}
       </span>
     )
   }
@@ -127,13 +127,13 @@ function CompactModalities(props: { input: Modality[]; output: Modality[] }) {
     <div className='grid gap-2 sm:grid-cols-2'>
       <div className='flex items-center justify-between gap-3 rounded-lg border px-3 py-2'>
         <span className='text-muted-foreground text-xs font-medium'>
-          {t('Input')}
+          {t('pricing.fields.input')}
         </span>
         <ModalityIcons modalities={props.input} />
       </div>
       <div className='flex items-center justify-between gap-3 rounded-lg border px-3 py-2'>
         <span className='text-muted-foreground text-xs font-medium'>
-          {t('Output')}
+          {t('pricing.fields.output')}
         </span>
         <ModalityIcons modalities={props.output} />
       </div>
@@ -151,7 +151,7 @@ function ModelSignalsSection(props: {
   return (
     <section>
       <SectionTitle>
-        {t('Capabilities')} / {t('Supported modalities')}
+        {t('models.fields.capabilities')} / {t('pricing.fields.supportedModalities')}
       </SectionTitle>
       <div className='grid gap-3 rounded-xl border p-3 @2xl/details:grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)]'>
         <CompactCapabilityList capabilities={props.capabilities} />
@@ -200,18 +200,18 @@ function OverviewSummaryGrid(props: { model: PricingModel }) {
     <div className='bg-muted/20 grid overflow-hidden rounded-lg border sm:grid-cols-3 sm:divide-x'>
       <OverviewMetric
         icon={Box}
-        label={t('Groups')}
-        value={groups.length > 0 ? groups.length : t('All')}
+        label={t('channels.fields.groups')}
+        value={groups.length > 0 ? groups.length : t('pricing.fields.all')}
       />
       <OverviewMetric
         icon={Code2}
-        label={t('Endpoints')}
-        value={endpoints.length > 0 ? endpoints.length : t('Default')}
+        label={t('models.fields.endpoints')}
+        value={endpoints.length > 0 ? endpoints.length : t('common.fields.default')}
       />
       <OverviewMetric
         icon={Info}
-        label={t('Billing')}
-        value={isTokenBasedModel(props.model) ? t('Token-based') : t('Per Request')}
+        label={t('pricing.fields.billing')}
+        value={isTokenBasedModel(props.model) ? t('pricing.fields.tokenBased') : t('pricing.fields.perRequest')}
       />
     </div>
   )
@@ -245,9 +245,9 @@ function ModelHeader(props: { model: PricingModel }) {
           value={model.model_name || ''}
           className='size-6'
           iconClassName='size-3'
-          tooltip={t('Copy model name')}
-          successTooltip={t('Copied!')}
-          aria-label={t('Copy model name')}
+          tooltip={t('pricing.actions.copyModelName')}
+          successTooltip={t('common.status.copiedb7c3ca')}
+          aria-label={t('pricing.actions.copyModelName')}
         />
       </div>
       <div className='mt-1 flex flex-wrap items-center gap-1.5 text-xs'>
@@ -257,16 +257,16 @@ function ModelHeader(props: { model: PricingModel }) {
         <span className='text-muted-foreground/30'>·</span>
         <span className='text-muted-foreground/70'>
           {model.quota_type === QUOTA_TYPE_VALUES.TOKEN
-            ? t('Token-based')
-            : t('Per Request')}
+            ? t('pricing.fields.tokenBased')
+            : t('pricing.fields.perRequest')}
         </span>
         {model.billing_mode === 'tiered_expr' && model.billing_expr && (
           <>
             <span className='text-muted-foreground/30'>·</span>
             <span className='rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'>
               {isSpecialExpression
-                ? t('Special billing expression')
-                : t('Dynamic Pricing')}
+                ? t('pricing.fields.specialBillingExpression')
+                : t('pricing.fields.dynamicPricing')}
             </span>
           </>
         )}
@@ -317,15 +317,15 @@ function PriceSection(props: {
   })
 
   const primaryPriceTypes: { label: string; type: PriceType }[] = [
-    { label: t('Input'), type: 'input' },
-    { label: t('Output'), type: 'output' },
+    { label: t('pricing.fields.input'), type: 'input' },
+    { label: t('pricing.fields.output'), type: 'output' },
   ]
 
   if (!props.model.available) {
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
-        <p className='text-muted-foreground/60 italic'>{t('Unpriced')}</p>
+        <SectionTitle>{t('pricing.fields.basePrice')}</SectionTitle>
+        <p className='text-muted-foreground/60 italic'>{t('pricing.fields.unpriced')}</p>
       </section>
     )
   }
@@ -336,27 +336,27 @@ function PriceSection(props: {
     available: boolean
   }[] = [
     {
-      label: t('Cached input'),
+      label: t('pricing.fields.cachedInput'),
       type: 'cache',
       available: props.model.cache_ratio != null,
     },
     {
-      label: t('Cache Write'),
+      label: t('pricing.fields.cacheWrite'),
       type: 'create_cache',
       available: props.model.create_cache_ratio != null,
     },
     {
-      label: t('Image input'),
+      label: t('pricing.fields.imageInput'),
       type: 'image',
       available: props.model.image_ratio != null,
     },
     {
-      label: t('Audio Input'),
+      label: t('pricing.fields.audioInput'),
       type: 'audio_input',
       available: props.model.audio_ratio != null,
     },
     {
-      label: t('Audio Output'),
+      label: t('pricing.fields.audioOutput'),
       type: 'audio_output',
       available:
         props.model.audio_ratio != null &&
@@ -368,17 +368,17 @@ function PriceSection(props: {
     if (dynamicSummary.isSpecialExpression) {
       return (
         <section>
-          <SectionTitle>{t('Base Price')}</SectionTitle>
+          <SectionTitle>{t('pricing.fields.basePrice')}</SectionTitle>
           <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
             <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
-              {t('Special billing expression')}
+              {t('pricing.fields.specialBillingExpression')}
             </div>
             <p className='text-muted-foreground mt-1 text-xs'>
-              {t('Unable to parse structured pricing')}
+              {t('pricing.errors.unableToParseStructuredPricing')}
             </p>
             <div className='mt-3'>
               <div className='text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase'>
-                {t('Raw expression')}
+                {t('pricing.fields.rawExpression')}
               </div>
               <code className='text-muted-foreground bg-background/80 block max-h-28 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-all'>
                 {dynamicSummary.rawExpression}
@@ -391,7 +391,7 @@ function PriceSection(props: {
 
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
+        <SectionTitle>{t('pricing.fields.basePrice')}</SectionTitle>
         {dynamicSummary.primaryEntries.length > 0 ? (
           <div className='grid grid-cols-2 gap-2'>
             {dynamicSummary.primaryEntries.map((entry) => (
@@ -413,7 +413,7 @@ function PriceSection(props: {
           </div>
         ) : (
           <p className='text-muted-foreground text-sm'>
-            {t('Dynamic Pricing')}
+            {t('pricing.fields.dynamicPricing')}
           </p>
         )}
         {dynamicSummary.secondaryEntries.length > 0 && (
@@ -445,10 +445,10 @@ function PriceSection(props: {
   if (!isTokenBased) {
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
+        <SectionTitle>{t('pricing.fields.basePrice')}</SectionTitle>
         <div className='flex items-baseline justify-between'>
           <span className='text-muted-foreground text-sm'>
-            {t('Per Request')}
+            {t('pricing.fields.perRequest')}
           </span>
           <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
             {formatFixedPrice(
@@ -486,7 +486,7 @@ function PriceSection(props: {
 
   return (
     <section>
-      <SectionTitle>{t('Base Price')}</SectionTitle>
+      <SectionTitle>{t('pricing.fields.basePrice')}</SectionTitle>
       <div className='grid grid-cols-2 gap-2'>
         {primaryPriceTypes.map((item) => (
           <div key={item.type} className='bg-muted/20 rounded-lg border p-3'>
@@ -537,7 +537,7 @@ function AutoGroupChain(props: { model: PricingModel; autoGroups: string[] }) {
 
   return (
     <div className='text-muted-foreground mb-3 flex flex-wrap items-center gap-1 text-xs'>
-      <span className='font-medium'>{t('Auto Group Chain')}</span>
+      <span className='font-medium'>{t('pricing.fields.autoGroupChain')}</span>
       <span className='text-muted-foreground/40'>→</span>
       {autoChain.map((g, idx) => (
         <span key={g} className='flex items-center gap-1'>
@@ -579,26 +579,26 @@ function GroupPricingSection(props: {
   const extraPriceTypes = useMemo(() => {
     const types: { label: string; type: PriceType }[] = []
     if (props.model.cache_ratio != null)
-      types.push({ label: t('Cache'), type: 'cache' })
+      types.push({ label: t('pricing.fields.cache'), type: 'cache' })
     if (props.model.create_cache_ratio != null)
-      types.push({ label: t('Cache Write'), type: 'create_cache' })
+      types.push({ label: t('pricing.fields.cacheWrite'), type: 'create_cache' })
     if (props.model.image_ratio != null)
-      types.push({ label: t('Image'), type: 'image' })
+      types.push({ label: t('models.fields.image'), type: 'image' })
     if (props.model.audio_ratio != null)
-      types.push({ label: t('Audio Input'), type: 'audio_input' })
+      types.push({ label: t('pricing.fields.audioInput'), type: 'audio_input' })
     if (
       props.model.audio_ratio != null &&
       props.model.audio_completion_ratio != null
     )
-      types.push({ label: t('Audio Output'), type: 'audio_output' })
+      types.push({ label: t('pricing.fields.audioOutput'), type: 'audio_output' })
     return types
   }, [props.model, t])
 
   if (!props.model.available) {
     return (
       <section>
-        <SectionTitle>{t('Pricing by Group')}</SectionTitle>
-        <p className='text-muted-foreground/60 italic'>{t('Unpriced')}</p>
+        <SectionTitle>{t('pricing.fields.byGroup')}</SectionTitle>
+        <p className='text-muted-foreground/60 italic'>{t('pricing.fields.unpriced')}</p>
       </section>
     )
   }
@@ -606,11 +606,11 @@ function GroupPricingSection(props: {
   if (availableGroups.length === 0) {
     return (
       <section>
-        <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+        <SectionTitle>{t('pricing.fields.byGroup')}</SectionTitle>
         <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
         <p className='text-muted-foreground text-sm'>
           {t(
-            'This model is not available in any group, or no group pricing information is configured.'
+            'pricing.tips.modelIsNotAvailableInAnyGroupOrNo'
           )}
         </p>
       </section>
@@ -626,20 +626,20 @@ function GroupPricingSection(props: {
     if (dynamicTiers.length === 0) {
       return (
         <section>
-          <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+          <SectionTitle>{t('pricing.fields.byGroup')}</SectionTitle>
           <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
           <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
             <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
-              {t('Special billing expression')}
+              {t('pricing.fields.specialBillingExpression')}
             </div>
             <p className='text-muted-foreground mt-1 text-xs'>
               {t(
-                'Group prices cannot be expanded because this expression is not a standard tiered pricing expression.'
+                'pricing.errors.groupPricesCannotBeExpandedBecauseThisExpressionIs'
               )}
             </p>
             <div className='mt-3'>
               <div className='text-muted-foreground mb-1 text-[10px] font-medium tracking-wider uppercase'>
-                {t('Raw expression')}
+                {t('pricing.fields.rawExpression')}
               </div>
               <code className='text-muted-foreground bg-background/80 block max-h-28 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-all'>
                 {props.model.billing_expr}
@@ -668,7 +668,7 @@ function GroupPricingSection(props: {
 
     return (
       <section>
-        <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+        <SectionTitle>{t('pricing.fields.byGroup')}</SectionTitle>
         <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
         <div className='space-y-3'>
           {availableGroups.map((group) => {
@@ -685,7 +685,7 @@ function GroupPricingSection(props: {
                   <Table className='text-sm'>
                     <TableHeader>
                       <TableRow className='hover:bg-transparent'>
-                        <TableHead className={thClass}>{t('Tier')}</TableHead>
+                        <TableHead className={thClass}>{t('pricing.fields.tier')}</TableHead>
                         {priceFields.map((entry) => (
                           <TableHead
                             key={entry.field}
@@ -712,7 +712,7 @@ function GroupPricingSection(props: {
                         return (
                           <TableRow key={`${group}-${tier.label || tierIndex}`}>
                             <TableCell className='text-muted-foreground py-2.5'>
-                              {tier.label || t('Default')}
+                              {tier.label || t('common.fields.default')}
                             </TableCell>
                             {priceFields.map((fieldEntry) => {
                               const entry = entryMap.get(fieldEntry.field)
@@ -735,7 +735,7 @@ function GroupPricingSection(props: {
             )
           })}
           <p className='text-muted-foreground/40 mt-1.5 text-[10px]'>
-            {t('Prices shown per')} {tokenUnitLabel} tokens
+            {t('pricing.fields.pricesShownPer')} {tokenUnitLabel} tokens
           </p>
         </div>
       </section>
@@ -744,21 +744,21 @@ function GroupPricingSection(props: {
 
   return (
     <section>
-      <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+      <SectionTitle>{t('pricing.fields.byGroup')}</SectionTitle>
       <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
       <div className='-mx-4 overflow-x-auto sm:mx-0'>
         <Table className='text-sm'>
           <TableHeader>
             <TableRow className='hover:bg-transparent'>
-              <TableHead className={thClass}>{t('Group')}</TableHead>
-              <TableHead className={thClass}>{t('Ratio')}</TableHead>
+              <TableHead className={thClass}>{t('common.fields.group')}</TableHead>
+              <TableHead className={thClass}>{t('dynamicRatio.fields.ratio794f65')}</TableHead>
               {isTokenBased ? (
                 <>
                   <TableHead className={`${thClass} text-right`}>
-                    {t('Input')}
+                    {t('pricing.fields.input')}
                   </TableHead>
                   <TableHead className={`${thClass} text-right`}>
-                    {t('Output')}
+                    {t('pricing.fields.output')}
                   </TableHead>
                   {extraPriceTypes.map((ep) => (
                     <TableHead
@@ -771,7 +771,7 @@ function GroupPricingSection(props: {
                 </>
               ) : (
                 <TableHead className={`${thClass} text-right`}>
-                  {t('Price')}
+                  {t('pricing.fields.price')}
                 </TableHead>
               )}
             </TableRow>
@@ -850,7 +850,7 @@ function GroupPricingSection(props: {
         </Table>
         {isTokenBased && (
           <p className='text-muted-foreground/40 mt-1.5 px-4 text-[10px] sm:px-0'>
-            {t('Prices shown per')} {tokenUnitLabel} tokens
+            {t('pricing.fields.pricesShownPer')} {tokenUnitLabel} tokens
           </p>
         )}
       </div>
@@ -865,8 +865,8 @@ const TAB_META: Record<
   TabValue,
   { icon: React.ComponentType<{ className?: string }>; labelKey: string }
 > = {
-  overview: { icon: Info, labelKey: 'Overview' },
-  api: { icon: Code2, labelKey: 'API' },
+  overview: { icon: Info, labelKey: 'common.titles.overview' },
+  api: { icon: Code2, labelKey: 'common.fields.api' },
 }
 
 export interface ModelDetailsContentProps {
@@ -915,7 +915,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
           <OverviewSummaryGrid model={props.model} />
 
           <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
-            <SectionTitle>{t('Pricing')}</SectionTitle>
+            <SectionTitle>{t('dashboard.fields.pricing')}</SectionTitle>
             <PriceSection
               model={props.model}
               priceRate={props.priceRate}
@@ -983,7 +983,7 @@ export function ModelDetailsDrawer(props: ModelDetailsDrawerProps) {
       >
         <SheetHeader className='sr-only'>
           <SheetTitle>{props.model.model_name}</SheetTitle>
-          <SheetDescription>{t('Model details')}</SheetDescription>
+          <SheetDescription>{t('pricing.titles.modelDetails')}</SheetDescription>
         </SheetHeader>
         <div className='flex-1 overflow-y-auto px-4 pt-11 pb-5 sm:px-6 sm:pt-12 sm:pb-6'>
           <ModelDetailsContent {...contentProps} />
@@ -1052,13 +1052,13 @@ export function ModelDetails() {
       <PublicLayout>
         <div className='mx-auto max-w-2xl px-4 text-center sm:px-6'>
           <h2 className='mb-1 text-base font-semibold'>
-            {t('Model not found')}
+            {t('pricing.fields.modelNotFound')}
           </h2>
           <p className='text-muted-foreground mb-4 text-sm'>
-            {t("The model you're looking for doesn't exist.")}
+            {t("common.tips.modelYouReLookingForDoesnTExist")}
           </p>
           <Button onClick={handleBack} variant='outline' size='sm'>
-            {t('Back to Models')}
+            {t('pricing.actions.backToModels')}
           </Button>
         </div>
       </PublicLayout>
@@ -1075,7 +1075,7 @@ export function ModelDetails() {
           className='text-muted-foreground hover:text-foreground mb-4 h-auto gap-1 px-0 py-1 text-xs'
         >
           <ArrowLeft className='size-3.5' />
-          {t('Go Back')}
+          {t('common.fields.goBack')}
         </Button>
 
         <ModelDetailsContent

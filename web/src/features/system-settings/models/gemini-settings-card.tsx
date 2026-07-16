@@ -187,7 +187,7 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
     ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -205,7 +205,7 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
   )
 
   return (
-    <SettingsSection title={t('Gemini')}>
+    <SettingsSection title={t('systemSettings.fields.gemini')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -217,13 +217,13 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.safety_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Safety Settings')}</FormLabel>
+                <FormLabel>{t('systemSettings.titles.safetySettings')}</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Provide per-category safety overrides as JSON. Use `default` for fallback values.'
+                    'common.tips.providePerCategorySafetyOverridesAsJsonUseDefault'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -236,13 +236,13 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.version_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Version Overrides')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.versionOverrides')}</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Map model identifiers to Gemini API versions. A `default` entry applies when no specific match is found.'
+                    'common.tips.mapModelIdentifiersToGeminiApiVersionsADefault'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -255,7 +255,7 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.supported_imagine_models'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Supported Imagine Models')}</FormLabel>
+                <FormLabel>{t('systemSettings.titles.supportedImagineModels')}</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={6}
@@ -265,7 +265,7 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Accepts a JSON array of model identifiers that support the Imagine API.'
+                    'systemSettings.tips.acceptsAJsonArrayOfModelIdentifiersThatSupport'
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -280,11 +280,11 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
                   <FormLabel>
-                    {t('Enable FunctionCall thoughtSignature Fill')}
+                    {t('systemSettings.actions.enableFunctionCallThoughtSignatureFill')}
                   </FormLabel>
                   <FormDescription>
                     {t(
-                      'Fill thoughtSignature only for Gemini/Vertex channels using the OpenAI format'
+                      'systemSettings.actions.fillThoughtSignatureOnlyForGeminiVertexChannelsUsing'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -304,10 +304,10 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Remove functionResponse.id field')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.removeFunctionResponseIdField')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Vertex AI does not support functionResponse.id. Enable this to remove the field automatically.'
+                      'systemSettings.tips.vertexAiDoesNotSupportFunctionResponseIdEnable'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>

@@ -187,7 +187,7 @@ export const WebPreviewUrl = ({
       className='h-8 flex-1 text-sm'
       onChange={onChange ?? handleChange}
       onKeyDown={handleKeyDown}
-      placeholder={t('Enter URL...')}
+      placeholder={t('common.placeholders.enterUrl')}
       value={value ?? inputValue}
       {...props}
     />
@@ -213,7 +213,7 @@ export const WebPreviewBody = ({
         className={cn('size-full', className)}
         sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-presentation'
         src={(src ?? url) || undefined}
-        title={t('Preview')}
+        title={t('common.fields.preview')}
         {...props}
       />
       {loading}
@@ -253,7 +253,7 @@ export const WebPreviewConsole = ({
           />
         }
       >
-        {t('Console')}
+        {t('common.titles.console')}
         <ChevronDownIcon
           className={cn(
             'h-4 w-4 transition-transform duration-200',
@@ -269,7 +269,7 @@ export const WebPreviewConsole = ({
       >
         <div className='max-h-48 space-y-1 overflow-y-auto'>
           {logs.length === 0 ? (
-            <p className='text-muted-foreground'>{t('No console output')}</p>
+            <p className='text-muted-foreground'>{t('common.titles.noConsoleOutput')}</p>
           ) : (
             logs.map((log, index) => (
               <div

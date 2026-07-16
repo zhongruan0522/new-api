@@ -105,7 +105,7 @@ function SheetContent({
             }
           >
             <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-            <span className='sr-only'>{t('Close')}</span>
+            <span className='sr-only'>{t('common.actions.close')}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Popup>

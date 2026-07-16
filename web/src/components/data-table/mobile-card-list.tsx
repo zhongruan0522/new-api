@@ -262,8 +262,8 @@ export function MobileCardList<TData>(props: MobileCardListProps<TData>) {
   } = props
   const { t } = useTranslation()
 
-  const resolvedEmptyTitle = emptyTitle ?? t('No Data')
-  const resolvedEmptyDescription = emptyDescription ?? t('No data available')
+  const resolvedEmptyTitle = emptyTitle ?? t('common.fields.noData')
+  const resolvedEmptyDescription = emptyDescription ?? t('common.fields.noDataAvailable')
 
   const hasCompactMeta = table.getVisibleLeafColumns().some((col) => {
     const meta = col.columnDef.meta as MobileColumnMeta | undefined

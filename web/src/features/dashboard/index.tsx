@@ -104,13 +104,13 @@ function ModelChartsFallback() {
 
 const SECTION_META: Record<DashboardSectionId, { titleKey: string }> = {
   overview: {
-    titleKey: 'Overview',
+    titleKey: 'common.titles.overview',
   },
   models: {
-    titleKey: 'Model Call Analytics',
+    titleKey: 'dashboard.titles.modelCallAnalytics',
   },
   users: {
-    titleKey: 'User Analytics',
+    titleKey: 'systemSettings.titles.userAnalytics',
   },
 }
 

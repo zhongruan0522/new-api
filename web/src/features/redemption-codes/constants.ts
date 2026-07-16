@@ -42,17 +42,17 @@ export const REDEMPTION_STATUSES: Record<
   }
 > = {
   [REDEMPTION_STATUS.ENABLED]: {
-    labelKey: 'Unused',
+    labelKey: 'common.status.unused',
     variant: 'success',
     value: REDEMPTION_STATUS.ENABLED,
   },
   [REDEMPTION_STATUS.DISABLED]: {
-    labelKey: 'Disabled',
+    labelKey: 'channels.status.disabled',
     variant: 'neutral',
     value: REDEMPTION_STATUS.DISABLED,
   },
   [REDEMPTION_STATUS.USED]: {
-    labelKey: 'Used',
+    labelKey: 'common.status.used',
     variant: 'neutral',
     value: REDEMPTION_STATUS.USED,
   },
@@ -69,7 +69,7 @@ export function getRedemptionStatusOptions(t: TFunction) {
       value: String(config.value),
     })),
     {
-      label: t('Expired'),
+      label: t('redemptionCodes.status.expired'),
       value: REDEMPTION_FILTER_EXPIRED,
     },
   ]
@@ -92,17 +92,17 @@ export const REDEMPTION_VALIDATION = {
 
 // i18n keys; use t(ERROR_MESSAGES.xxx) when displaying. For form schema with interpolation use getRedemptionFormErrorMessages(t).
 export const ERROR_MESSAGES = {
-  UNEXPECTED: 'An unexpected error occurred',
-  LOAD_FAILED: 'Failed to load redemption codes',
-  SEARCH_FAILED: 'Failed to search redemption codes',
-  CREATE_FAILED: 'Failed to create redemption code',
-  UPDATE_FAILED: 'Failed to update redemption code',
-  DELETE_FAILED: 'Failed to delete redemption code',
-  DELETE_INVALID_FAILED: 'Failed to delete invalid redemption codes',
-  STATUS_UPDATE_FAILED: 'Failed to update redemption code status',
-  NAME_LENGTH_INVALID: 'Name must be between {{min}} and {{max}} characters',
-  COUNT_INVALID: 'Count must be between {{min}} and {{max}}',
-  EXPIRED_TIME_INVALID: 'Expired time cannot be earlier than current time',
+  UNEXPECTED: 'common.fields.unexpectedErrorOccurred',
+  LOAD_FAILED: 'common.errors.failedToLoadRedemptionCodes',
+  SEARCH_FAILED: 'common.errors.failedToSearchRedemptionCodes',
+  CREATE_FAILED: 'common.errors.failedToCreateRedemptionCode',
+  UPDATE_FAILED: 'common.errors.failedToUpdateRedemptionCode',
+  DELETE_FAILED: 'common.errors.failedToDeleteRedemptionCode',
+  DELETE_INVALID_FAILED: 'common.errors.failedToDeleteInvalidRedemptionCodes',
+  STATUS_UPDATE_FAILED: 'common.errors.failedToUpdateRedemptionCodeStatus',
+  NAME_LENGTH_INVALID: 'common.errors.nameMustBeBetweenMinAndMaxCharacters',
+  COUNT_INVALID: 'common.errors.countMustBeBetweenMinAndMax',
+  EXPIRED_TIME_INVALID: 'common.errors.expiredTimeCannotBeEarlierThanCurrentTime',
 } as const
 
 /** For form schema only: returns translated messages with interpolation. */
@@ -125,10 +125,10 @@ export function getRedemptionFormErrorMessages(t: TFunction) {
 // ============================================================================
 
 export const SUCCESS_MESSAGES = {
-  REDEMPTION_CREATED: 'Redemption code(s) created successfully',
-  REDEMPTION_UPDATED: 'Redemption code updated successfully',
-  REDEMPTION_DELETED: 'Redemption code deleted successfully',
-  REDEMPTION_ENABLED: 'Redemption code enabled successfully',
-  REDEMPTION_DISABLED: 'Redemption code disabled successfully',
-  COPY_SUCCESS: 'Copied to clipboard',
+  REDEMPTION_CREATED: 'common.status.redemptionCodeSCreatedSuccessfully',
+  REDEMPTION_UPDATED: 'common.status.redemptionCodeUpdatedSuccessfully',
+  REDEMPTION_DELETED: 'common.status.redemptionCodeDeletedSuccessfully',
+  REDEMPTION_ENABLED: 'common.status.redemptionCodeEnabledSuccessfully',
+  REDEMPTION_DISABLED: 'common.status.redemptionCodeDisabledSuccessfully',
+  COPY_SUCCESS: 'systemSettings.status.copiedToClipboard',
 } as const

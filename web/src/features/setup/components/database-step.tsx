@@ -37,19 +37,19 @@ const DATABASE_META: Record<
   sqlite: {
     label: 'SQLite',
     descriptionKey:
-      'SQLite stores all data in a single file. Make sure that file is persisted when running in containers.',
+      'common.tips.sqliteStoresAllDataInASingleFileMake',
     variant: 'warning',
   },
   mysql: {
     label: 'MySQL',
     descriptionKey:
-      'MySQL is a production-ready relational database. Keep your credentials secure.',
+      'common.tips.mySqlIsAProductionReadyRelationalDatabaseKeep',
     variant: 'success',
   },
   postgres: {
     label: 'PostgreSQL',
     descriptionKey:
-      'PostgreSQL offers advanced reliability and data integrity for production workloads.',
+      'common.tips.postgreSqlOffersAdvancedReliabilityAndDataIntegrityFor',
     variant: 'success',
   },
 }
@@ -60,7 +60,7 @@ function resolveDatabaseMeta(type?: string) {
   return (
     DATABASE_META[normalized] ?? {
       label: type,
-      descriptionKey: 'Custom database driver detected.',
+      descriptionKey: 'common.tips.customDatabaseDriverDetected',
       variant: 'info' as const,
     }
   )
@@ -83,20 +83,20 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
       <div className='bg-card flex items-center justify-between rounded-lg border p-4'>
         <div className='space-y-1'>
           <p className='text-muted-foreground text-sm font-medium'>
-            {t('Detected database')}
+            {t('setup.fields.detectedDatabase')}
           </p>
           <p className='text-foreground text-base font-semibold'>
-            {meta?.label ?? t('Unknown')}
+            {meta?.label ?? t('channels.fields.unknown')}
           </p>
           <p className='text-muted-foreground text-sm'>
             {t(
               meta?.descriptionKey ??
-                'The setup wizard will use this database during initialization.'
+                'setup.tips.setupWizardWillUseThisDatabaseDuringInitialization'
             )}
           </p>
         </div>
         <StatusBadge
-          label={meta?.label ?? t('Unknown')}
+          label={meta?.label ?? t('channels.fields.unknown')}
           variant={meta?.variant ?? 'info'}
           className='cursor-default'
           copyable={false}
@@ -108,23 +108,23 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
         <Alert className='border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/40'>
           <AlertTitle className='flex items-center gap-2'>
             <HardDrive className='size-4 text-amber-500' />
-            {t('Persist your data file')}
+            {t('setup.fields.persistYourDataFile')}
           </AlertTitle>
           <AlertDescription>
             <p>
               {t(
-                'When running in containers or ephemeral environments, ensure the SQLite file is mapped to persistent storage to avoid data loss on restart.'
+                'setup.tips.runningInContainersOrEphemeralEnvironmentsEnsureTheSqlite'
               )}
             </p>
             {isElectron && electronDataDir && (
               <p className='mt-3 rounded-md bg-amber-100/70 px-3 py-2 font-mono text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'>
-                {t('Data directory:')} {electronDataDir}
+                {t('setup.fields.dataDirectory')} {electronDataDir}
               </p>
             )}
             {isElectron && !electronDataDir && (
               <p className='text-muted-foreground mt-3 text-xs'>
                 {t(
-                  'Data is stored locally on this device. Use system backups to keep a safe copy.'
+                  'setup.tips.dataIsStoredLocallyOnThisDeviceUseSystem'
                 )}
               </p>
             )}
@@ -136,11 +136,11 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
         <Alert className='border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40'>
           <AlertTitle className='flex items-center gap-2'>
             <Server className='size-4 text-emerald-500' />
-            {t('MySQL detected')}
+            {t('setup.fields.mySqlDetected')}
           </AlertTitle>
           <AlertDescription>
             {t(
-              'MySQL is production ready. Ensure automated backups and a dedicated user with the minimal required privileges are configured.'
+              'setup.tips.mySqlIsProductionReadyEnsureAutomatedBackupsAnd'
             )}
           </AlertDescription>
         </Alert>
@@ -150,11 +150,11 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
         <Alert className='border-sky-200 bg-sky-50 dark:border-sky-900/60 dark:bg-sky-950/40'>
           <AlertTitle className='flex items-center gap-2'>
             <Server className='size-4 text-sky-500' />
-            {t('PostgreSQL detected')}
+            {t('setup.fields.postgreSqlDetected')}
           </AlertTitle>
           <AlertDescription>
             {t(
-              'PostgreSQL offers strong reliability guarantees. Double check your maintenance window and retention policies before going live.'
+              'setup.tips.postgreSqlOffersStrongReliabilityGuaranteesDoubleCheckYour'
             )}
           </AlertDescription>
         </Alert>

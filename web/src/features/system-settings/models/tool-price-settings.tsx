@@ -40,9 +40,9 @@ const OPTION_KEY = 'tool_billing_setting.rules'
 const CONDITION_MODES = [
   { value: 'eq', label: 'Equals (=)' },
   { value: 'neq', label: 'Not Equals (≠)' },
-  { value: 'prefix', label: 'Prefix' },
-  { value: 'suffix', label: 'Suffix' },
-  { value: 'contains', label: 'Contains' },
+  { value: 'prefix', label: 'models.fields.prefix' },
+  { value: 'suffix', label: 'models.fields.suffix' },
+  { value: 'contains', label: 'models.fields.contains' },
   { value: 'regex', label: 'Regex' },
   { value: 'gt', label: 'Greater Than (>)' },
   { value: 'gte', label: 'Greater or Equal (≥)' },
@@ -177,7 +177,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
     } catch (error) {
       setRows([])
       setJsonText(defaultValue || '[]')
-      setJsonError(error instanceof Error ? error.message : t('Invalid JSON'))
+      setJsonError(error instanceof Error ? error.message : t('systemSettings.errors.invalidJson'))
     }
   }, [defaultValue, t])
 
@@ -196,7 +196,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       try {
         const parsed = JSON.parse(text) as unknown
         if (!Array.isArray(parsed)) {
-          setJsonError(t('JSON must be an array'))
+          setJsonError(t('systemSettings.errors.jsonMustBeAnArray'))
           return
         }
         const rules = parsed.map((item) => normalizeRule(item as ToolBillingRule))
@@ -214,7 +214,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         setNextRowId(nextRows.length + 1)
         setJsonError('')
       } catch (error) {
-        setJsonError(error instanceof Error ? error.message : t('Invalid JSON'))
+        setJsonError(error instanceof Error ? error.message : t('systemSettings.errors.invalidJson'))
       }
     },
     [t]
@@ -329,9 +329,9 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
   const handleCopyJson = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(jsonText)
-      toast.success(t('Copied to clipboard'))
+      toast.success(t('systemSettings.status.copiedToClipboard'))
     } catch {
-      toast.error(t('Failed to copy'))
+      toast.error(t('systemSettings.errors.failedToCopy'))
     }
   }, [jsonText, t])
 
@@ -356,7 +356,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       <Alert>
         <AlertDescription className='space-y-1 text-sm'>
           <div>
-            {t('Configure tool billing rules. Prices are USD per call.')}
+            {t('systemSettings.actions.configureToolBillingRulesPricesAreUsdPerCall')}
           </div>
           <div>
             <code className='bg-muted rounded px-1 py-0.5 text-xs'>
@@ -371,12 +371,12 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
           {editMode === 'visual' ? (
             <Button variant='outline' size='sm' onClick={addRow}>
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add')}
+              {t('channels.actions.add')}
             </Button>
           ) : (
             <Button variant='ghost' size='sm' onClick={handleCopyJson}>
               <Copy className='mr-2 h-4 w-4' />
-              {t('Copy')}
+              {t('channels.actions.copy')}
             </Button>
           )}
         </div>
@@ -384,12 +384,12 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
           {editMode === 'visual' ? (
             <>
               <Code2 className='mr-2 h-4 w-4' />
-              {t('Switch to JSON')}
+              {t('systemSettings.actions.switchToJson')}
             </>
           ) : (
             <>
               <Eye className='mr-2 h-4 w-4' />
-              {t('Switch to Visual')}
+              {t('systemSettings.actions.switchToVisual')}
             </>
           )}
         </Button>
@@ -399,7 +399,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         <div className='space-y-3'>
           {rows.length === 0 ? (
             <div className='text-muted-foreground rounded-md border py-8 text-center text-sm'>
-              {t('No rules configured')}
+              {t('systemSettings.errors.noRulesConfigured')}
             </div>
           ) : (
             rows.map((row) => (
@@ -419,7 +419,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                   </div>
                   <div className='min-w-[140px] flex-1'>
                     <label className='text-muted-foreground mb-1 block text-xs'>
-                      {t('Name')}
+                      {t('channels.fields.name')}
                     </label>
                     <Input
                       value={row.name}
@@ -432,7 +432,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                   </div>
                   <div className='min-w-[120px]'>
                     <label className='text-muted-foreground mb-1 block text-xs'>
-                      {t('Tool type')}
+                      {t('systemSettings.fields.toolType')}
                     </label>
                     <Select
                       value={row.tool_type}
@@ -453,7 +453,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                   </div>
                   <div className='min-w-[100px]'>
                     <label className='text-muted-foreground mb-1 block text-xs'>
-                      {t('Price')}
+                      {t('pricing.fields.price')}
                     </label>
                     <Input
                       type='number'
@@ -474,7 +474,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                           updateRow(row.rowId, 'enabled', checked)
                         }
                       />
-                      {t('Enabled')}
+                      {t('channels.status.enabled')}
                     </label>
                   </div>
                   <div className='flex items-end gap-1'>
@@ -490,7 +490,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                         <ChevronRight className='h-4 w-4' />
                       )}
                       <span className='ml-1 text-xs'>
-                        {t('Conditions')} ({row.conditions?.length ?? 0})
+                        {t('channels.fields.conditions')} ({row.conditions?.length ?? 0})
                       </span>
                     </Button>
                   </div>
@@ -500,7 +500,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       size='icon'
                       className='h-8'
                       onClick={() => removeRow(row.rowId)}
-                      aria-label={t('Delete')}
+                      aria-label={t('common.actions.delete')}
                     >
                       <Trash2 className='text-destructive h-4 w-4' />
                     </Button>
@@ -513,7 +513,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                     {/* Logic 选择器 */}
                     <div className='flex items-center gap-2'>
                       <span className='text-muted-foreground text-xs'>
-                        {t('Match')}:
+                        {t('systemSettings.actions.match')}:
                       </span>
                       <Select
                         value={row.logic || 'AND'}
@@ -533,7 +533,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                         </SelectContent>
                       </Select>
                       <span className='text-muted-foreground text-xs'>
-                        {t('of the following conditions')}
+                        {t('systemSettings.fields.ofTheFollowingConditions')}
                       </span>
                     </div>
 
@@ -588,14 +588,14 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                               updateCondition(row.rowId, ci, 'invert', checked)
                             }
                           />
-                          {t('Invert')}
+                          {t('systemSettings.actions.invert')}
                         </label>
                         <Button
                           variant='ghost'
                           size='icon'
                           className='h-7'
                           onClick={() => removeCondition(row.rowId, ci)}
-                          aria-label={t('Delete')}
+                          aria-label={t('common.actions.delete')}
                         >
                           <Trash2 className='text-destructive h-3.5 w-3.5' />
                         </Button>
@@ -609,7 +609,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       onClick={() => addCondition(row.rowId)}
                     >
                       <Plus className='mr-1 h-3.5 w-3.5' />
-                      {t('Add condition')}
+                      {t('systemSettings.actions.addCondition')}
                     </Button>
                   </div>
                 )}
@@ -637,7 +637,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
             updateOption.isPending || (editMode === 'json' && !!jsonError)
           }
         >
-          {t('Save tool billing rules')}
+          {t('systemSettings.actions.saveToolBillingRules')}
         </Button>
       </div>
     </div>

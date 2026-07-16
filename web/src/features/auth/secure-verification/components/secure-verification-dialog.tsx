@@ -115,7 +115,7 @@ export function SecureVerificationDialog({
                 </div>
                 <p className='text-muted-foreground text-sm'>
                   {t(
-                    'Enable Two-factor Authentication or Passkey in your profile to unlock sensitive operations.'
+                    'auth.actions.enableTwoFactorAuthenticationOrPasskeyInYourProfile'
                   )}
                 </p>
               </div>
@@ -130,18 +130,18 @@ export function SecureVerificationDialog({
                 <TabsList>
                   {methods.has2FA && (
                     <TabsTrigger value='2fa'>
-                      {t('Authenticator code')}
+                      {t('auth.fields.authenticatorCode')}
                     </TabsTrigger>
                   )}
                   {methods.hasPasskey && methods.passkeySupported && (
-                    <TabsTrigger value='passkey'>{t('Passkey')}</TabsTrigger>
+                    <TabsTrigger value='passkey'>{t('auth.fields.passkey')}</TabsTrigger>
                   )}
                 </TabsList>
 
                 <TabsContent value='2fa' className='space-y-3'>
                   <p className='text-muted-foreground text-sm'>
                     {t(
-                      'Enter the 6-digit Time-based One-Time Password or 8-character backup code from your authenticator app.'
+                      'auth.placeholders.enterThe6DigitTimeBasedOneTimePassword'
                     )}
                   </p>
                   <Input
@@ -149,7 +149,7 @@ export function SecureVerificationDialog({
                     maxLength={8}
                     value={state.code}
                     onChange={(event) => onCodeChange(event.target.value)}
-                    placeholder={t('Enter verification code')}
+                    placeholder={t('auth.placeholders.enterVerificationCode')}
                     disabled={state.loading}
                     autoFocus={activeMethod === '2fa'}
                     onKeyDown={(event) => {
@@ -167,11 +167,11 @@ export function SecureVerificationDialog({
                       <KeyRound className='text-primary h-6 w-6' />
                       <div className='text-left text-sm'>
                         <p className='text-foreground font-medium'>
-                          {t('Use your Passkey')}
+                          {t('auth.actions.useYourPasskey')}
                         </p>
                         <p>
                           {t(
-                            'We will prompt your device to confirm using biometrics or your hardware key.'
+                            'auth.tips.promptYourDeviceToConfirmUsingBiometricsOrYour'
                           )}
                         </p>
                       </div>
@@ -179,7 +179,7 @@ export function SecureVerificationDialog({
                   </div>
                   {!methods.passkeySupported && (
                     <p className='text-destructive text-sm'>
-                      {t('This device does not support Passkey verification.')}
+                      {t('auth.tips.deviceDoesNotSupportPasskeyVerification')}
                     </p>
                   )}
                 </TabsContent>
@@ -194,7 +194,7 @@ export function SecureVerificationDialog({
               disabled={state.loading}
               onClick={onCancel}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button
               type='button'
@@ -202,7 +202,7 @@ export function SecureVerificationDialog({
               disabled={availableTabs.length === 0 || verifyDisabled}
             >
               {state.loading && <Loader2 className='h-4 w-4 animate-spin' />}
-              {t('Verify')}
+              {t('auth.actions.verify')}
             </Button>
           </DialogFooter>
         </div>

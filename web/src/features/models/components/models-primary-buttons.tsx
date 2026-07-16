@@ -66,7 +66,7 @@ export function ModelsPrimaryButtons() {
       {/* Create Model */}
       <Button onClick={handleCreateModel} size='sm'>
         <Plus className='h-4 w-4' />
-        {t('Add Model')}
+        {t('models.actions.addModel')}
       </Button>
 
       {/* More Actions */}
@@ -76,14 +76,14 @@ export function ModelsPrimaryButtons() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-56'>
           <DropdownMenuItem onClick={handleMissingModels}>
-            {t('Missing Models')}
+            {t('models.errors.missingModels')}
             <DropdownMenuShortcut>
               <AlertCircle className='h-4 w-4' />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleSync}>
-            {t('Sync Upstream')}
+            {t('models.fields.syncUpstream')}
             <DropdownMenuShortcut>
               <RefreshCw className='h-4 w-4' />
             </DropdownMenuShortcut>
@@ -92,14 +92,14 @@ export function ModelsPrimaryButtons() {
           <DropdownMenuSeparator />
 
           <DropdownMenuItem onClick={handlePrefillGroups}>
-            {t('Prefill Groups')}
+            {t('models.fields.prefillGroups')}
             <DropdownMenuShortcut>
               <List className='h-4 w-4' />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleManageVendors}>
-            {t('Manage Vendors')}
+            {t('models.fields.manageVendors')}
             <DropdownMenuShortcut>
               <Building2 className='h-4 w-4' />
             </DropdownMenuShortcut>

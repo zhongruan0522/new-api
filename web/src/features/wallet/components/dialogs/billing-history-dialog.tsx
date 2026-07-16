@@ -104,9 +104,9 @@ export function BillingHistoryDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-4xl'>
           <DialogHeader>
-            <DialogTitle>{t('Billing History')}</DialogTitle>
+            <DialogTitle>{t('wallet.fields.billingHistory')}</DialogTitle>
             <DialogDescription>
-              {t('View your topup transaction records and payment history')}
+              {t('wallet.actions.viewYourTopupTransactionRecordsAndPaymentHistory')}
             </DialogDescription>
           </DialogHeader>
 
@@ -116,7 +116,7 @@ export function BillingHistoryDialog({
               <div className='relative flex-1'>
                 <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
                 <Input
-                  placeholder={t('Search by order number...')}
+                  placeholder={t('orderQuery.actions.searchByOrderNumber')}
                   value={keyword}
                   onChange={(e) => handleSearch(e.target.value)}
                   className='h-9 pl-10'
@@ -124,10 +124,10 @@ export function BillingHistoryDialog({
               </div>
               <Select
                 items={[
-                  { value: '10', label: t('10 / page') },
-                  { value: '20', label: t('20 / page') },
-                  { value: '50', label: t('50 / page') },
-                  { value: '100', label: t('100 / page') },
+                  { value: '10', label: t('wallet.placeholders.value10Page') },
+                  { value: '20', label: t('wallet.placeholders.value20Page') },
+                  { value: '50', label: t('wallet.placeholders.value50Page') },
+                  { value: '100', label: t('wallet.placeholders.value100Page') },
                 ]}
                 value={pageSize.toString()}
                 onValueChange={(value) =>
@@ -139,10 +139,10 @@ export function BillingHistoryDialog({
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
-                    <SelectItem value='10'>{t('10 / page')}</SelectItem>
-                    <SelectItem value='20'>{t('20 / page')}</SelectItem>
-                    <SelectItem value='50'>{t('50 / page')}</SelectItem>
-                    <SelectItem value='100'>{t('100 / page')}</SelectItem>
+                    <SelectItem value='10'>{t('wallet.placeholders.value10Page')}</SelectItem>
+                    <SelectItem value='20'>{t('wallet.placeholders.value20Page')}</SelectItem>
+                    <SelectItem value='50'>{t('wallet.placeholders.value50Page')}</SelectItem>
+                    <SelectItem value='100'>{t('wallet.placeholders.value100Page')}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -172,12 +172,12 @@ export function BillingHistoryDialog({
               ) : records.length === 0 ? (
                 <div className='text-muted-foreground flex h-[320px] flex-col items-center justify-center text-center sm:h-[400px]'>
                   <p className='text-sm font-medium'>
-                    {t('No billing records found')}
+                    {t('wallet.fields.noBillingRecordsFound')}
                   </p>
                   <p className='mt-1 text-xs'>
                     {keyword
-                      ? t('Try adjusting your search')
-                      : t('Your transaction history will appear here')}
+                      ? t('wallet.fields.tryAdjustingYourSearch')
+                      : t('wallet.tips.transactionHistoryWillAppearHere')}
                   </p>
                 </div>
               ) : (
@@ -210,7 +210,7 @@ export function BillingHistoryDialog({
                               </Button>
                               {isAdmin && record.user_id != null && (
                                 <StatusBadge
-                                  label={`${t('User ID')}: ${record.user_id}`}
+                                  label={`${t('orderQuery.fields.userId')}: ${record.user_id}`}
                                   variant='neutral'
                                   size='sm'
                                   copyText={String(record.user_id)}
@@ -233,7 +233,7 @@ export function BillingHistoryDialog({
                         <div className='mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:grid-cols-3 sm:gap-4'>
                           <div className='space-y-1'>
                             <Label className='text-muted-foreground text-xs'>
-                              {t('Payment Method')}
+                              {t('orderQuery.fields.paymentMethod')}
                             </Label>
                             <div className='text-sm font-medium'>
                               {getPaymentMethodName(record.payment_method, t)}
@@ -241,7 +241,7 @@ export function BillingHistoryDialog({
                           </div>
                           <div className='space-y-1'>
                             <Label className='text-muted-foreground text-xs'>
-                              {t('Amount')}
+                              {t('orderQuery.fields.amount')}
                             </Label>
                             <div className='text-sm font-semibold'>
                               {formatCurrencyFromUSD(record.amount, {
@@ -253,7 +253,7 @@ export function BillingHistoryDialog({
                           </div>
                           <div className='space-y-1'>
                             <Label className='text-muted-foreground text-xs'>
-                              {t('Payment')}
+                              {t('orderQuery.fields.payment')}
                             </Label>
                             <div className='text-sm font-semibold text-red-600'>
                               {formatNumber(record.money)}
@@ -270,7 +270,7 @@ export function BillingHistoryDialog({
                               onClick={() => setConfirmTradeNo(record.trade_no)}
                               disabled={completing}
                             >
-                              {t('Complete Order')}
+                              {t('orderQuery.fields.completeOrder')}
                             </Button>
                           </div>
                         )}
@@ -285,8 +285,8 @@ export function BillingHistoryDialog({
             {!loading && records.length > 0 && (
               <div className='flex flex-col items-center gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between'>
                 <div className='text-muted-foreground text-xs sm:text-sm'>
-                  {t('Showing')} {(page - 1) * pageSize + 1}-
-                  {Math.min(page * pageSize, total)} {t('of')} {total}
+                  {t('models.fields.showing')} {(page - 1) * pageSize + 1}-
+                  {Math.min(page * pageSize, total)} {t('common.fields.valuede04fa')} {total}
                 </div>
                 <div className='flex items-center gap-2'>
                   <Button
@@ -326,22 +326,22 @@ export function BillingHistoryDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Complete Order')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('orderQuery.fields.completeOrder')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                'Are you sure you want to manually complete this order? The user will be credited with the corresponding quota.'
+                'orderQuery.tips.sureYouWantToManuallyCompleteThisOrderThe'
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={completing}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmComplete}
               disabled={completing}
             >
-              {completing ? t('Processing...') : t('Confirm')}
+              {completing ? t('users.status.processing') : t('common.actions.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

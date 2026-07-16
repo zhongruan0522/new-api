@@ -20,6 +20,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/middleware"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay"
@@ -790,7 +791,7 @@ func TestChannel(c *gin.Context) {
 var testAllChannelsLock sync.Mutex
 var testAllChannelsRunning bool = false
 
-func testAllChannels(notify bool) error {
+func testAllChannels(c *gin.Context, notify bool) error {
 	testUserID, err := resolveChannelTestUserID(nil)
 	if err != nil {
 		return err
@@ -799,7 +800,7 @@ func testAllChannels(notify bool) error {
 	testAllChannelsLock.Lock()
 	if testAllChannelsRunning {
 		testAllChannelsLock.Unlock()
-		return errors.New("测试已在运行中")
+		return errors.New(i18n.T(c, i18n.MsgChannelTestAlreadyRunning))
 	}
 	testAllChannelsRunning = true
 	testAllChannelsLock.Unlock()
@@ -836,7 +837,10 @@ func testAllChannels(notify bool) error {
 			// 当错误检查通过，才检查响应时间
 			if common.AutomaticDisableChannelEnabled && !shouldBanChannel {
 				if milliseconds > disableThreshold {
-					err := fmt.Errorf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0)
+					err := fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelResponseTimeExceeded, map[string]any{
+						"Response":  fmt.Sprintf("%.2f", float64(milliseconds)/1000.0),
+						"Threshold": fmt.Sprintf("%.2f", float64(disableThreshold)/1000.0),
+					}))
 					newAPIError = types.NewOpenAIError(err, types.ErrorCodeChannelResponseTimeExceeded, http.StatusRequestTimeout)
 					shouldBanChannel = true
 				}
@@ -864,7 +868,7 @@ func testAllChannels(notify bool) error {
 }
 
 func TestAllChannels(c *gin.Context) {
-	err := testAllChannels(true)
+	err := testAllChannels(c, true)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -893,7 +897,7 @@ func AutomaticallyTestChannels() {
 				time.Sleep(time.Duration(int(math.Round(frequency))) * time.Minute)
 				common.SysLog(fmt.Sprintf("automatically test channels with interval %f minutes", frequency))
 				common.SysLog("automatically testing all channels")
-				_ = testAllChannels(false)
+				_ = testAllChannels(nil, false)
 				common.SysLog("automatically channel test finished")
 				if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
 					break

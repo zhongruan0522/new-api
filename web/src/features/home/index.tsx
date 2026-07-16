@@ -34,7 +34,7 @@ export function Home() {
     return (
       <PublicLayout showMainContainer={false}>
         <main className='flex min-h-screen items-center justify-center'>
-          <div className='text-muted-foreground'>{t('Loading...')}</div>
+          <div className='text-muted-foreground'>{t('common.tips.loading')}</div>
         </main>
       </PublicLayout>
     )
@@ -48,7 +48,7 @@ export function Home() {
             <iframe
               src={content}
               className='h-screen w-full border-none'
-              title={t('Custom Home Page')}
+              title={t('home.fields.customHomePage')}
             />
           ) : (
             <div className='container mx-auto py-8'>

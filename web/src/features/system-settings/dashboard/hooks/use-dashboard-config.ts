@@ -51,7 +51,7 @@ export function useUpdateDashboardConfig() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-config'] })
       queryClient.invalidateQueries({ queryKey: ['status'] })
       queryClient.invalidateQueries({ queryKey: ['system-options'] })
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -72,7 +72,7 @@ export function useResetDashboardConfig() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-config'] })
       queryClient.invalidateQueries({ queryKey: ['status'] })
       queryClient.invalidateQueries({ queryKey: ['system-options'] })
-      toast.success(t('Configuration reset to defaults'))
+      toast.success(t('systemSettings.titles.configurationResetToDefaults'))
     },
     onError: (error: Error) => {
       toast.error(error.message)

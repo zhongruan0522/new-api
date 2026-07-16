@@ -121,7 +121,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
     })
 
   return (
-    <SettingsSection title={t('Quota Settings')}>
+    <SettingsSection title={t('keys.titles.quotaSettings')}>
       <FormNavigationGuard when={isDirty} />
 
       <Form {...form}>
@@ -137,7 +137,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForNewUser'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('New User Quota')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.newUserQuota')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -150,9 +150,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Initial quota given to new users')}
+                    {t('systemSettings.tips.initialQuotaGivenToNewUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -164,7 +164,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='PreConsumedQuota'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Pre-Consumed Quota')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.preConsumedQuota')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -177,9 +177,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota consumed before charging users')}
+                    {t('systemSettings.tips.quotaConsumedBeforeChargingUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -191,7 +191,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForInviter'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Inviter Reward')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.inviterReward')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -204,9 +204,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to users who invite others')}
+                    {t('systemSettings.tips.quotaGivenToUsersWhoInviteOthers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -218,7 +218,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForInvitee'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Invitee Reward')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.inviteeReward')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -231,9 +231,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to invited users')}
+                    {t('systemSettings.titles.quotaGivenToInvitedUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -245,7 +245,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='quota_setting.free_model_pre_consumed_quota'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Pre-Consume for Free Models')}</FormLabel>
+                  <FormLabel>{t('systemSettings.titles.preConsumeForFreeModels')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -258,9 +258,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota pre-consumed for zero-cost models; set 0 to disable.')}
+                    {t('systemSettings.tips.quotaPreConsumedForZeroCostModelsSet0')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -272,15 +272,15 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='general_setting.docs_link'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Documentation Link')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.documentationLink')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('https://docs.example.com')}
+                      placeholder={t('systemSettings.placeholders.urlDocsExampleCom')}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Link to your documentation site')}
+                    {t('systemSettings.fields.linkToYourDocumentationSite')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

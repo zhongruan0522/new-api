@@ -43,15 +43,15 @@ export function DataTableViewOptions<TData>({
           <Button
             variant='outline'
             className='shrink-0'
-            aria-label={t('View')}
+            aria-label={t('common.actions.view')}
           />
         }
       >
-        {t('View')}
+        {t('common.actions.view')}
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-[150px]'>
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{t('Toggle columns')}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('common.fields.toggleColumns')}</DropdownMenuLabel>
           {table
             .getAllColumns()
             .filter(

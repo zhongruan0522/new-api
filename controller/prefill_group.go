@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -29,7 +30,7 @@ func CreatePrefillGroup(c *gin.Context) {
 		return
 	}
 	if g.Name == "" || g.Type == "" {
-		common.ApiErrorMsg(c, "组名称和类型不能为空")
+		common.ApiErrorI18n(c, i18n.MsgPrefillGroupNameTypeRequired)
 		return
 	}
 	// 创建前检查名称
@@ -37,7 +38,7 @@ func CreatePrefillGroup(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "组名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgPrefillGroupNameExists)
 		return
 	}
 
@@ -57,7 +58,7 @@ func UpdatePrefillGroup(c *gin.Context) {
 		return
 	}
 	if g.Id == 0 {
-		common.ApiErrorMsg(c, "缺少组 ID")
+		common.ApiErrorI18n(c, i18n.MsgPrefillGroupMissingID)
 		return
 	}
 	// 查询更新前的原始数据用于审计差异对比
@@ -71,7 +72,7 @@ func UpdatePrefillGroup(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "组名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgPrefillGroupNameExists)
 		return
 	}
 

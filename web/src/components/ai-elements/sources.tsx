@@ -56,7 +56,7 @@ export const SourcesTrigger = ({
       {children ?? (
         <>
           <p className='font-medium'>
-            {t('Used')} {count} {t('sources')}
+            {t('common.status.used')} {count} {t('common.fields.sources')}
           </p>
           <ChevronDownIcon className='h-4 w-4' />
         </>
