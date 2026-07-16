@@ -138,9 +138,11 @@ func TestEvaluateConditions_Gt_NonNumeric(t *testing.T) {
 	conds := []Condition{
 		{Field: "model", Mode: ConditionModeGt, Value: float64(5)},
 	}
-	_, err := EvaluateConditions(conds, map[string]string{"model": "abc"}, ConditionLogicAnd)
-	if err == nil {
-		t.Error("non-numeric actual should error")
+	for _, actual := range []string{"abc", "10abc"} {
+		_, err := EvaluateConditions(conds, map[string]string{"model": actual}, ConditionLogicAnd)
+		if err == nil {
+			t.Errorf("non-numeric actual %q should error", actual)
+		}
 	}
 }
 

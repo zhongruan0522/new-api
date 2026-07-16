@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -209,9 +210,8 @@ func compareNumeric(actual string, target interface{}, operator string) (bool, e
 }
 
 func parseFloat(s string) (float64, bool) {
-	var f float64
-	n, err := fmt.Sscanf(strings.TrimSpace(s), "%g", &f)
-	if err != nil || n != 1 {
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
 		return 0, false
 	}
 	return f, true

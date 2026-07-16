@@ -141,12 +141,16 @@ func InitOptionMap() {
 
 func loadOptionsFromDatabase() {
 	options, _ := AllOption()
+	toolBillingMigrated, migratedToolBillingRules := migrateLegacyToolBillingRulesInOptions(options)
 
 	for _, option := range options {
 		err := updateOptionMap(option.Key, option.Value)
 		if err != nil {
 			common.SysLog("failed to update option map: " + err.Error())
 		}
+	}
+	if toolBillingMigrated {
+		persistMigratedToolBillingRules(migratedToolBillingRules)
 	}
 
 	// One-time migration: if the removed toggle "quota_setting.enable_free_model_pre_consume"
@@ -194,28 +198,38 @@ func loadOptionsFromDatabase() {
 		DB.Model(&migratedOption).Update("value", strconv.FormatBool(derivedEnabled))
 	}
 
-	// One-time migration: tool_billing_setting.rules 旧格式（带 quality/size/model_filter/provider
-	// 字段）自动迁移为新 conditions 格式。检测到旧格式时迁移 DB 中的值并刷新内存配置。
-	for _, option := range options {
-		if option.Key == "tool_billing_setting.rules" && option.Value != "" {
-			migrated, didMigrate, err := operation_setting.MigrateLegacyRules(option.Value)
-			if err != nil {
-				common.SysError("failed to migrate tool_billing_setting.rules: " + err.Error())
-				break
-			}
-			if didMigrate {
-				if err := updateOptionMap("tool_billing_setting.rules", migrated); err != nil {
-					common.SysError("failed to update migrated tool_billing_setting.rules: " + err.Error())
-					break
-				}
-				migratedOption := Option{Key: "tool_billing_setting.rules"}
-				DB.FirstOrCreate(&migratedOption, Option{Key: "tool_billing_setting.rules"})
-				DB.Model(&migratedOption).Update("value", migrated)
-				common.SysLog("migrated tool_billing_setting.rules to conditions format")
-			}
-			break
+}
+
+func migrateLegacyToolBillingRulesInOptions(options []*Option) (bool, string) {
+	for i := range options {
+		if options[i] == nil || options[i].Key != "tool_billing_setting.rules" || options[i].Value == "" {
+			continue
 		}
+		migrated, didMigrate, err := operation_setting.MigrateLegacyRules(options[i].Value)
+		if err != nil {
+			common.SysError("failed to migrate tool_billing_setting.rules: " + err.Error())
+			return false, ""
+		}
+		if !didMigrate {
+			return false, ""
+		}
+		options[i].Value = migrated
+		return true, migrated
 	}
+	return false, ""
+}
+
+func persistMigratedToolBillingRules(migrated string) {
+	migratedOption := Option{Key: "tool_billing_setting.rules"}
+	if err := DB.FirstOrCreate(&migratedOption, Option{Key: "tool_billing_setting.rules"}).Error; err != nil {
+		common.SysError("failed to create migrated tool_billing_setting.rules: " + err.Error())
+		return
+	}
+	if err := DB.Model(&migratedOption).Update("value", migrated).Error; err != nil {
+		common.SysError("failed to persist migrated tool_billing_setting.rules: " + err.Error())
+		return
+	}
+	common.SysLog("migrated tool_billing_setting.rules to conditions format")
 }
 
 func SyncOptions(frequency int) {

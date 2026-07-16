@@ -81,3 +81,53 @@ func TestLoadOptionsMigratesToolBillingRulesAndRefreshesRuntimeConfig(t *testing
 		t.Fatalf("stored option was not migrated to conditions format: %s", stored.Value)
 	}
 }
+
+func TestMigrateLegacyToolBillingRulesInOptionsBeforeRuntimeLoad(t *testing.T) {
+	oldRules := append([]operation_setting.ToolBillingRule(nil), operation_setting.GetToolBillingRules()...)
+	common.OptionMapRWMutex.Lock()
+	oldOptionMap := common.OptionMap
+	common.OptionMap = map[string]string{}
+	common.OptionMapRWMutex.Unlock()
+
+	t.Cleanup(func() {
+		operation_setting.UpdateToolBillingRules(oldRules)
+		common.OptionMapRWMutex.Lock()
+		common.OptionMap = oldOptionMap
+		common.OptionMapRWMutex.Unlock()
+	})
+
+	options := []*Option{{
+		Key: "tool_billing_setting.rules",
+		Value: `[
+			{
+				"id": "legacy_web_search_exact",
+				"name": "Legacy Web Search Exact",
+				"tool_type": "web_search",
+				"billing_mode": "per_call",
+				"price": 0.02,
+				"model_filter": "gpt-4o",
+				"provider": "openai",
+				"enabled": true
+			}
+		]`,
+	}}
+
+	didMigrate, _ := migrateLegacyToolBillingRulesInOptions(options)
+	if !didMigrate {
+		t.Fatal("expected legacy tool billing rules to migrate before runtime load")
+	}
+	if strings.Contains(options[0].Value, "model_filter") || !strings.Contains(options[0].Value, "conditions") {
+		t.Fatalf("option value was not migrated before runtime load: %s", options[0].Value)
+	}
+	if err := updateOptionMap(options[0].Key, options[0].Value); err != nil {
+		t.Fatalf("load migrated tool billing rules: %v", err)
+	}
+
+	_, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gpt-4o-mini",
+		"provider": "openai",
+	})
+	if ok {
+		t.Fatal("legacy exact model_filter should not become an unconditional runtime rule")
+	}
+}
