@@ -887,13 +887,13 @@ type emailBindRequest struct {
 func EmailBind(c *gin.Context) {
 	var req emailBindRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		common.ApiError(c, errors.New("invalid request body"))
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	email := strings.TrimSpace(req.Email)
 	code := strings.TrimSpace(req.Code)
 	if email == "" || code == "" {
-		common.ApiError(c, errors.New("invalid request body"))
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if !common.VerifyCodeWithKey(email, code, common.EmailVerificationPurpose) {

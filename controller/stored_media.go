@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 
@@ -107,11 +108,11 @@ func GetStoredMediaDetail(c *gin.Context) {
 	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
 	id := strings.TrimSpace(c.Param("id"))
 	if id == "" {
-		common.ApiErrorMsg(c, "id is required")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
 		return
 	}
 	if mediaType != "image" && mediaType != "video" {
-		common.ApiErrorMsg(c, "media_type must be image or video")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
 		return
 	}
 
@@ -123,14 +124,14 @@ func GetStoredMediaDetail(c *gin.Context) {
 		meta, err := model.GetStoredImageMetaByID(c.Request.Context(), id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				common.ApiErrorMsg(c, "not found")
+				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.ApiError(c, err)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorMsg(c, "forbidden")
+			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 
@@ -158,14 +159,14 @@ func GetStoredMediaDetail(c *gin.Context) {
 	meta, err := model.GetStoredVideoMetaByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			common.ApiErrorMsg(c, "not found")
+			common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 			return
 		}
 		common.ApiError(c, err)
 		return
 	}
 	if !isAdminUser && meta.UserId != userId {
-		common.ApiErrorMsg(c, "forbidden")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 		return
 	}
 
@@ -192,11 +193,11 @@ func DeleteStoredMedia(c *gin.Context) {
 	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
 	id := strings.TrimSpace(c.Param("id"))
 	if id == "" {
-		common.ApiErrorMsg(c, "id is required")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
 		return
 	}
 	if mediaType != "image" && mediaType != "video" {
-		common.ApiErrorMsg(c, "media_type must be image or video")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
 		return
 	}
 
@@ -211,14 +212,14 @@ func DeleteStoredMedia(c *gin.Context) {
 		meta, metaErr := model.GetStoredImageMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
-				common.ApiErrorMsg(c, "not found")
+				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.ApiError(c, metaErr)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorMsg(c, "forbidden")
+			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 		if isAdminUser {
@@ -230,14 +231,14 @@ func DeleteStoredMedia(c *gin.Context) {
 		meta, metaErr := model.GetStoredVideoMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
-				common.ApiErrorMsg(c, "not found")
+				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.ApiError(c, metaErr)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorMsg(c, "forbidden")
+			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 		if isAdminUser {
@@ -262,7 +263,7 @@ func DeleteStoredMedia(c *gin.Context) {
 func DeleteStoredMediaBatch(c *gin.Context) {
 	req := storedMediaBatchRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.Items) == 0 {
-		common.ApiErrorMsg(c, "invalid params")
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -290,7 +291,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 	}
 
 	if len(imageIDs) == 0 && len(videoIDs) == 0 {
-		common.ApiErrorMsg(c, "no valid ids")
+		common.ApiErrorI18n(c, i18n.MsgStoredMediaNoValidIDs)
 		return
 	}
 

@@ -336,3 +336,11 @@ twofa.admin_disabled: "User 2FA has been forcibly disabled"
 redeem.failed: "Redemption failed, please try again later"
 common.uuid_duplicate: "Please retry, the system generated a duplicate UUID!"
 common.invalid_input: "Invalid input"
+common.invalid_request_body: "Invalid request body"
+
+# Stored media messages
+stored_media.id_required: "id is required"
+stored_media.media_type_invalid: "media_type must be image or video"
+stored_media.not_found: "Resource not found"
+stored_media.forbidden: "You do not have permission to access this resource"
+stored_media.no_valid_ids: "No valid ids"

@@ -115,5 +115,8 @@
   "dashboard.fields.usageAtAGlance": "用量概览",
   "dashboard.titles.usageLogs": "使用日志",
   "dashboard.actions.verifyRoutingWithPlaygroundOrYourClient": "使用 Playground 或你的客户端验证路由",
-  "dashboard.tips.setupGuideIsCollapsedSoUsageStaysInFocus": "设置引导已收起，让用量信息保持在焦点位置。"
+  "dashboard.tips.setupGuideIsCollapsedSoUsageStaysInFocus": "设置引导已收起，让用量信息保持在焦点位置。",
+  "dashboard.errors.getConfigFailed": "获取配置失败",
+  "dashboard.errors.updateConfigFailed": "更新配置失败",
+  "dashboard.errors.resetConfigFailed": "重置配置失败"
 }

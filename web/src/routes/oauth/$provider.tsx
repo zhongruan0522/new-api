@@ -210,8 +210,13 @@ function OAuthCallback() {
         }
         const message = res?.data?.message || i18next.t('channels.status.oauthFailed')
         if (!res?.data?.success && !isBindingFlow) {
-          // When logging in with an already bound GitHub account, backend may return this message
-          if (message === '该 GitHub 账户已被绑定') {
+          // When logging in with an already bound GitHub account, backend may return this message.
+          // Backend returns translated text, so we need to check both locales.
+          const alreadyBoundMessages = [
+            '该 GitHub 账户已被绑定',
+            'This GitHub account is already bound',
+          ]
+          if (alreadyBoundMessages.includes(message)) {
             if (await finalizeLogin()) {
               redirectAfterLogin()
               return

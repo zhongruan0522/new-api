@@ -15,6 +15,7 @@ const (
 	MsgDeprecatedAPI     = "common.deprecated_api"
 	MsgInvalidToken      = "common.invalid_token"
 	MsgNotLoggedIn       = "common.not_logged_in"
+	MsgInvalidRequestBody = "common.invalid_request_body"
 )
 
 // Misc/common API messages
@@ -396,4 +397,13 @@ const (
 	MsgTwoFASessionInvalid       = "twofa.session_invalid"
 	MsgTwoFAAdminForbidden       = "twofa.admin_forbidden"
 	MsgTwoFAAdminDisabled        = "twofa.admin_disabled"
+)
+
+// Stored media related messages
+const (
+	MsgStoredMediaIDRequired      = "stored_media.id_required"
+	MsgStoredMediaMediaTypeInvalid = "stored_media.media_type_invalid"
+	MsgStoredMediaNotFound         = "stored_media.not_found"
+	MsgStoredMediaForbidden        = "stored_media.forbidden"
+	MsgStoredMediaNoValidIDs       = "stored_media.no_valid_ids"
 )

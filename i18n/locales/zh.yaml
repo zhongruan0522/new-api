@@ -337,3 +337,11 @@ twofa.admin_disabled: "用户2FA已被强制禁用"
 redeem.failed: "兑换失败，请稍后重试"
 common.uuid_duplicate: "请重试，系统生成的 UUID 竟然重复了！"
 common.invalid_input: "输入不合法"
+common.invalid_request_body: "请求体格式不正确"
+
+# Stored media messages
+stored_media.id_required: "id 不能为空"
+stored_media.media_type_invalid: "media_type 必须为 image 或 video"
+stored_media.not_found: "资源不存在"
+stored_media.forbidden: "无权访问该资源"
+stored_media.no_valid_ids: "没有有效的 id"

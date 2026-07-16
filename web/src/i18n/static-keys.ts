@@ -650,4 +650,12 @@ export const STATIC_I18N_KEYS = [
   'common.actions.resetToDefault',
   'systemSettings.fields.customSidebarSection',
   'systemSettings.fields.customModule',
+
+  // Plan quota dialog (dynamic plan display names)
+  'channels.fields.planGlmCodingPlan',
+  'channels.fields.planGlmCodingPlanInternational',
+  'channels.fields.planKimiCodingPlan',
+  'channels.fields.planMinimaxCodingPlan',
+  'channels.fields.planMinimaxCodingPlanInternational',
+  'channels.fields.planOllamaCodingPlan',
 ] as const
