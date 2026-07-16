@@ -204,7 +204,10 @@ func loadOptionsFromDatabase() {
 				break
 			}
 			if didMigrate {
-				common.OptionMap["tool_billing_setting.rules"] = migrated
+				if err := updateOptionMap("tool_billing_setting.rules", migrated); err != nil {
+					common.SysError("failed to update migrated tool_billing_setting.rules: " + err.Error())
+					break
+				}
 				migratedOption := Option{Key: "tool_billing_setting.rules"}
 				DB.FirstOrCreate(&migratedOption, Option{Key: "tool_billing_setting.rules"})
 				DB.Model(&migratedOption).Update("value", migrated)

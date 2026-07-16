@@ -2,6 +2,8 @@ package operation_setting
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -173,7 +175,7 @@ func GetToolBillingPrice(toolType string, attrs map[string]string) (float64, boo
 		}
 		ok, err := common.EvaluateConditions(rule.Conditions, attrs, rule.Logic)
 		if err != nil {
-			// 条件求值出错（如无效正则）时跳过该规则，不阻断计费流程。
+			common.SysError(fmt.Sprintf("tool billing rule %s evaluation failed: %v", rule.ID, err))
 			continue
 		}
 		if ok {
@@ -208,15 +210,14 @@ func ValidateToolBillingRules(jsonStr string) error {
 	_ = common.Unmarshal([]byte(jsonStr), &legacyRules)
 
 	for i, rule := range rules {
-		if rule.ID == "" {
+		if strings.TrimSpace(rule.ID) == "" {
 			return fmt.Errorf("rule %d: id is required", i)
 		}
-		if rule.ToolType == "" {
+		if strings.TrimSpace(rule.ToolType) == "" {
 			return fmt.Errorf("rule %d (%s): tool_type is required", i, rule.ID)
 		}
-		rule.ToolType = strings.ToLower(rule.ToolType)
-		if rule.ToolType != "web_search" && rule.ToolType != "image_generation" {
-			return fmt.Errorf("rule %d (%s): unsupported tool_type %q", i, rule.ID, rule.ToolType)
+		if strings.TrimSpace(rule.ToolType) != rule.ToolType {
+			return fmt.Errorf("rule %d (%s): tool_type cannot contain leading or trailing whitespace", i, rule.ID)
 		}
 		if rule.BillingMode != ToolBillingModePerCall {
 			return fmt.Errorf("rule %d (%s): unsupported billing_mode %q, only per_call is supported", i, rule.ID, rule.BillingMode)
@@ -226,29 +227,64 @@ func ValidateToolBillingRules(jsonStr string) error {
 		}
 	}
 
-	// 验证 conditions 中的 mode 合法性
+	// 验证 logic 和 conditions 的合法性，避免运行时静默跳过计费规则。
 	for i, rule := range rules {
+		if !isValidConditionLogic(rule.Logic) {
+			return fmt.Errorf("rule %d (%s): unsupported logic %q", i, rule.ID, rule.Logic)
+		}
 		for j, cond := range rule.Conditions {
-			if cond.Field == "" {
+			if strings.TrimSpace(cond.Field) == "" {
 				return fmt.Errorf("rule %d (%s): condition %d has empty field", i, rule.ID, j)
 			}
+			if strings.TrimSpace(cond.Field) != cond.Field {
+				return fmt.Errorf("rule %d (%s): condition %d field cannot contain leading or trailing whitespace", i, rule.ID, j)
+			}
+			mode := common.ConditionMode(strings.ToLower(string(cond.Mode)))
 			if cond.Mode == "" {
 				return fmt.Errorf("rule %d (%s): condition %d has empty mode", i, rule.ID, j)
 			}
-			if !isValidConditionMode(cond.Mode) {
+			if strings.TrimSpace(string(cond.Mode)) != string(cond.Mode) {
+				return fmt.Errorf("rule %d (%s): condition %d mode cannot contain leading or trailing whitespace", i, rule.ID, j)
+			}
+			if !isValidConditionMode(mode) {
 				return fmt.Errorf("rule %d (%s): condition %d has unsupported mode %q", i, rule.ID, j, cond.Mode)
 			}
-			if cond.Mode == common.ConditionModeRegex {
-				if v, ok := cond.Value.(string); ok {
-					if v == "" {
-						return fmt.Errorf("rule %d (%s): condition %d has empty regex value", i, rule.ID, j)
-					}
+			if mode == common.ConditionModeRegex {
+				v, ok := cond.Value.(string)
+				if !ok {
+					return fmt.Errorf("rule %d (%s): condition %d regex value must be a string", i, rule.ID, j)
+				}
+				if v == "" {
+					return fmt.Errorf("rule %d (%s): condition %d has empty regex value", i, rule.ID, j)
+				}
+				if _, err := regexp.Compile(v); err != nil {
+					return fmt.Errorf("rule %d (%s): condition %d has invalid regex: %w", i, rule.ID, j, err)
+				}
+			}
+			if isNumericConditionMode(mode) {
+				if err := validateConditionNumericValue(cond.Value); err != nil {
+					return fmt.Errorf("rule %d (%s): condition %d has invalid numeric value: %w", i, rule.ID, j, err)
 				}
 			}
 		}
 	}
 
 	return nil
+}
+
+func isValidConditionLogic(logic common.ConditionLogic) bool {
+	if logic == "" {
+		return true
+	}
+	trimmed := strings.TrimSpace(string(logic))
+	if trimmed != string(logic) {
+		return false
+	}
+	switch common.ConditionLogic(strings.ToUpper(trimmed)) {
+	case common.ConditionLogicAnd, common.ConditionLogicOr:
+		return true
+	}
+	return false
 }
 
 func isValidConditionMode(mode common.ConditionMode) bool {
@@ -261,6 +297,31 @@ func isValidConditionMode(mode common.ConditionMode) bool {
 		return true
 	}
 	return false
+}
+
+func isNumericConditionMode(mode common.ConditionMode) bool {
+	switch mode {
+	case common.ConditionModeGt, common.ConditionModeGte, common.ConditionModeLt, common.ConditionModeLte:
+		return true
+	}
+	return false
+}
+
+func validateConditionNumericValue(value interface{}) error {
+	switch v := value.(type) {
+	case float64, float32, int, int64:
+		return nil
+	case string:
+		if strings.TrimSpace(v) == "" {
+			return fmt.Errorf("empty string")
+		}
+		if _, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported value type %T", value)
+	}
 }
 
 // MigrateLegacyRules 检测并迁移旧格式规则（带 quality/size/model_filter/provider 字段）为新 conditions 格式。
@@ -323,11 +384,13 @@ func migrateLegacyRule(legacy toolBillingLegacyRule, current ToolBillingRule) To
 	// model_filter → regex condition
 	if legacy.ModelFilter != "" {
 		regexPattern := modelFilterToRegex(legacy.ModelFilter)
-		conds = append(conds, common.Condition{
-			Field: "model",
-			Mode:  common.ConditionModeRegex,
-			Value: regexPattern,
-		})
+		if regexPattern != "" {
+			conds = append(conds, common.Condition{
+				Field: "model",
+				Mode:  common.ConditionModeRegex,
+				Value: regexPattern,
+			})
+		}
 	}
 
 	// provider → eq condition
@@ -362,42 +425,33 @@ func migrateLegacyRule(legacy toolBillingLegacyRule, current ToolBillingRule) To
 	return current
 }
 
-// modelFilterToRegex 将旧的逗号分隔前缀通配符列表转换为正则表达式。
-// 例如 "o3*,o4*,gpt-5*" → "^(o3|o4|gpt-5)"
+// modelFilterToRegex 将旧的逗号分隔模型过滤列表转换为正则表达式。
+// 带尾部 * 的条目保留前缀匹配语义；不带 * 的条目保留精确匹配语义。
 func modelFilterToRegex(filter string) string {
 	parts := strings.Split(filter, ",")
-	var escaped []string
+	var alternatives []string
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue
 		}
-		// 去掉尾部通配符
-		if strings.HasSuffix(p, "*") {
+		hasWildcard := strings.HasSuffix(p, "*")
+		if hasWildcard {
 			p = p[:len(p)-1]
 		}
 		if p == "" {
+			// 旧格式 "*" 表示不限制模型；迁移时不生成 model condition。
+			return ""
+		}
+		escaped := regexp.QuoteMeta(p)
+		if hasWildcard {
+			alternatives = append(alternatives, escaped)
 			continue
 		}
-		// 转义正则元字符
-		escaped = append(escaped, regexpQuoteMeta(p))
+		alternatives = append(alternatives, escaped+"$")
 	}
-	if len(escaped) == 0 {
+	if len(alternatives) == 0 {
 		return ""
 	}
-	return "^(" + strings.Join(escaped, "|") + ")"
-}
-
-// regexpQuoteMeta 转义字符串中的正则元字符。
-// 使用 regexp.QuoteMeta 但在本地引用以保持与 common 包的依赖隔离。
-func regexpQuoteMeta(s string) string {
-	specials := `\.+*?()|[]{}^$`
-	var b strings.Builder
-	for _, r := range s {
-		if strings.ContainsRune(specials, r) {
-			b.WriteByte('\\')
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
+	return "^(?:" + strings.Join(alternatives, "|") + ")"
 }
