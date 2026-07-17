@@ -42,6 +42,9 @@
 - GPT-5 系列  
   - GPT-5.2-Xhigh
   - GPT-5.4-Xhigh / High
+  - GPT-5.5-High
+
+> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax-M3`、`Kimi-K2.6`、`Kimi-K3`
 
 ## 致谢
 
@@ -51,3 +54,5 @@
 - **[MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
 - **[AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
 - **[Openafw](https://github.com/openafw/openafw)** - 本地AI流量安全过滤方案参考
+- **[zaicontrol[私有仓库]](https://github.com/zhongruan0522/zaicontrol)** - Z.AI套餐查询相关接口
+- **[cc-switch](https://github.com/farion1231/cc-switch)** - Kimi套餐查询相关接口
