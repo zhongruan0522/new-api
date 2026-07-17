@@ -1,7 +1,5 @@
 package ollama
 
-var ModelList = []string{
-	"llama3-7b",
-}
+var ModelList = []string{}
 
 var ChannelName = "ollama"
