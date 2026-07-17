@@ -44,7 +44,8 @@ func GetMiniMaxVoices(c *gin.Context) {
 	params := voiceListQuery(c)
 	result, err := model.ListMiniMaxVoices(params)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("list minimax voices failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -87,7 +88,8 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	// 查重：已存在则提示不合规（不暴露“重复”）。
 	exists, err := model.IsMiniMaxVoiceIdExists(req.VoiceId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("check minimax voice id exists failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if exists {
@@ -111,7 +113,8 @@ func CreateMiniMaxVoice(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("insert minimax voice failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -154,7 +157,8 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("get minimax voice by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -163,7 +167,8 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 	if newVoiceId != "" && newVoiceId != before.VoiceId {
 		exists, derr := model.IsMiniMaxVoiceIdExists(newVoiceId)
 		if derr != nil {
-			common.ApiError(c, derr)
+			common.SysError("check minimax voice id exists failed: " + derr.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if exists {
@@ -186,7 +191,8 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("update minimax voice failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -219,11 +225,13 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("get minimax voice by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if err := model.DeleteMiniMaxVoiceById(id); err != nil {
-		common.ApiError(c, err)
+		common.SysError("delete minimax voice by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(

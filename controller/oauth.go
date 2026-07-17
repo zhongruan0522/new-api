@@ -30,7 +30,8 @@ func GenerateOAuthCode(c *gin.Context) {
 	session.Set("oauth_state", state)
 	err := session.Save()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to save oauth session: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -112,7 +113,8 @@ func HandleOAuth(c *gin.Context) {
 		case *OAuthRegistrationDisabledError:
 			common.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
 		default:
-			common.ApiError(c, err)
+			common.SysError("failed to find or create oauth user: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgUserRegisterFailed)
 		}
 		return
 	}
@@ -168,7 +170,8 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	user := model.User{Id: id.(int)}
 	err = user.FillUserById()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to fill user by id during oauth bind: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// Re-check the authoritative status from DB; the session snapshot may be
@@ -183,7 +186,8 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	provider.SetProviderUserID(&user, oauthUser.ProviderUserID)
 	err = user.Update(false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update user during oauth bind: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -344,7 +348,8 @@ func handleOAuthError(c *gin.Context, err error) {
 	case *oauth.TrustLevelError:
 		common.ApiErrorI18n(c, i18n.MsgOAuthTrustLevelLow)
 	default:
-		common.ApiError(c, err)
+		common.SysError("unhandled oauth error: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 	}
 }
 

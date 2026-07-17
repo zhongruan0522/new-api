@@ -22,7 +22,8 @@ func GetAllTokens(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	tokens, err := model.GetAllUserTokens(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get all user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	total, _ := model.CountUserTokens(userId)
@@ -42,7 +43,8 @@ func SearchTokens(c *gin.Context) {
 
 	tokens, total, err := model.SearchUserTokens(userId, keyword, token, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("search user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -55,12 +57,13 @@ func GetToken(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -74,13 +77,14 @@ func GetToken(c *gin.Context) {
 func GetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -97,7 +101,8 @@ func GetTokenStatus(c *gin.Context) {
 	userId := c.GetInt("id")
 	token, err := model.GetTokenByIds(tokenId, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	snapshot := token.GetQuotaSnapshot()
@@ -166,7 +171,7 @@ func AddToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
@@ -239,7 +244,8 @@ func AddToken(c *gin.Context) {
 	// 检查用户令牌数量是否已达上限
 	count, err := model.CountUserTokens(c.GetInt("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("count user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if int(count) >= maxUserTokens {
@@ -284,7 +290,8 @@ func AddToken(c *gin.Context) {
 	}
 	err = cleanToken.Insert()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("insert token failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
@@ -303,7 +310,8 @@ func DeleteToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	err := model.DeleteTokenById(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("delete token by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
@@ -320,7 +328,7 @@ func UpdateToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
@@ -389,7 +397,8 @@ func UpdateToken(c *gin.Context) {
 
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 保存更新前快照用于审计差异对比
@@ -444,7 +453,8 @@ func UpdateToken(c *gin.Context) {
 	}
 	err = cleanToken.Update()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("update token failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
@@ -468,7 +478,8 @@ func DeleteTokenBatch(c *gin.Context) {
 	userId := c.GetInt("id")
 	count, err := model.BatchDeleteTokens(tokenBatch.Ids, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("batch delete tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
@@ -490,7 +501,8 @@ func GetTokenKeysBatch(c *gin.Context) {
 	for _, id := range tokenBatch.Ids {
 		token, err := model.GetTokenByIds(id, userId)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("get token by ids failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		keys[id] = token.Key
@@ -507,13 +519,14 @@ func GetTokenKeysBatch(c *gin.Context) {
 func ResetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	newKey, err := model.ResetTokenKey(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("reset token key failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})

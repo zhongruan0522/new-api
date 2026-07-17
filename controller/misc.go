@@ -283,7 +283,8 @@ func ResetPassword(c *gin.Context) {
 	password := common.GenerateVerificationCode(12)
 	err = model.ResetUserPasswordByEmail(req.Email, password)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("reset user password by email failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.DeleteKey(req.Email, common.PasswordResetPurpose)

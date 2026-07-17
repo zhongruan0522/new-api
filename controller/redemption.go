@@ -18,7 +18,8 @@ func GetAllRedemptions(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	redemptions, total, err := model.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all redemptions: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -32,7 +33,8 @@ func SearchRedemptions(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	redemptions, total, err := model.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to search redemptions: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -44,12 +46,13 @@ func SearchRedemptions(c *gin.Context) {
 func GetRedemption(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	redemption, err := model.GetRedemptionById(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get redemption by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -64,7 +67,7 @@ func AddRedemption(c *gin.Context) {
 	redemption := model.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if utf8.RuneCountInString(redemption.Name) == 0 || utf8.RuneCountInString(redemption.Name) > 20 {
@@ -127,7 +130,8 @@ func DeleteRedemption(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	err := model.DeleteRedemptionById(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete redemption: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
@@ -143,12 +147,13 @@ func UpdateRedemption(c *gin.Context) {
 	redemption := model.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	cleanRedemption, err := model.GetRedemptionById(redemption.Id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get redemption by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 保存更新前快照用于审计差异对比
@@ -168,7 +173,8 @@ func UpdateRedemption(c *gin.Context) {
 	}
 	err = cleanRedemption.Update()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update redemption: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
@@ -183,7 +189,8 @@ func UpdateRedemption(c *gin.Context) {
 func DeleteInvalidRedemption(c *gin.Context) {
 	rows, err := model.DeleteInvalidRedemptions()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete invalid redemptions: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除无效兑换码", nil, nil)

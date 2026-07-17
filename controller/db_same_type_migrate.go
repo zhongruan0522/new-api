@@ -22,7 +22,8 @@ type dbSameTypeMigrateStartRequest struct {
 func GetDBSameTypeMigrateInfo(c *gin.Context) {
 	info, err := service.GetDBSameTypeMigrateInfo()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get db same type migrate info: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, info)
@@ -45,7 +46,8 @@ func StartDBSameTypeMigrate(c *gin.Context) {
 		Force:        req.Force,
 	})
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to start db same type migrate: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleDB, model.AuditActionUpdate, "启动同类型数据库迁移", nil, req)

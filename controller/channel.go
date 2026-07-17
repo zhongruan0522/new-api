@@ -355,13 +355,14 @@ func shouldSkipFetchModelsHeaderOverride(key string) bool {
 func FetchUpstreamModels(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 
 	channel, err := model.GetChannelById(id, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get channel by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -412,7 +413,8 @@ func FetchUpstreamModels(c *gin.Context) {
 		key = strings.TrimSpace(key)
 		headers, err := buildFetchModelsGeminiHeaders(channel, key)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to build fetch models gemini headers: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 			return
 		}
 		models, err := gemini.FetchGeminiModelsWithHeaders(baseURL, key, channel.GetSetting().Proxy, headers)
@@ -460,13 +462,15 @@ func FetchUpstreamModels(c *gin.Context) {
 
 	headers, err := buildFetchModelsHeaders(channel, key)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to build fetch models headers: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
 	body, err := GetResponseBody("GET", url, channel, headers)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to fetch upstream models: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgChannelParseResponseFailed, map[string]any{"Error": err.Error()})
 		return
 	}
 
@@ -503,7 +507,8 @@ func FetchUpstreamModels(c *gin.Context) {
 func FixChannelsAbilities(c *gin.Context) {
 	success, fails, err := model.FixAbility()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to fix channel abilities: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -632,12 +637,13 @@ func SearchChannels(c *gin.Context) {
 func GetChannel(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := model.GetChannelById(id, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get channel by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if channel != nil {
@@ -657,14 +663,14 @@ func GetChannelKey(c *gin.Context) {
 	userId := c.GetInt("id")
 	channelId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})))
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 
 	// 获取渠道信息（包含密钥）
 	channel, err := model.GetChannelById(channelId, true)
 	if err != nil {
-		common.ApiError(c, fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelGetInfoFailed, map[string]any{"Error": err.Error()})))
+		common.ApiErrorI18n(c, i18n.MsgChannelGetInfoFailed, map[string]any{"Error": err.Error()})
 		return
 	}
 
@@ -793,7 +799,7 @@ func AddChannel(c *gin.Context) {
 	addChannelRequest := AddChannelRequest{}
 	err := c.ShouldBindJSON(&addChannelRequest)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
@@ -874,7 +880,8 @@ func AddChannel(c *gin.Context) {
 	}
 	err = model.BatchInsertChannels(channels)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to batch insert channels: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.ResetProxyClientCache()
@@ -891,7 +898,8 @@ func DeleteChannel(c *gin.Context) {
 	channel := model.Channel{Id: id}
 	err := channel.Delete()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete channel: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -906,7 +914,8 @@ func DeleteChannel(c *gin.Context) {
 func DeleteDisabledChannel(c *gin.Context) {
 	rows, err := model.DeleteDisabledChannel()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete disabled channels: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -940,7 +949,8 @@ func DisableTagChannels(c *gin.Context) {
 	}
 	err = model.DisableChannelByTag(channelTag.Tag)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to disable channels by tag: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -961,7 +971,8 @@ func EnableTagChannels(c *gin.Context) {
 	}
 	err = model.EnableChannelByTag(channelTag.Tag)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to enable channels by tag: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -1002,7 +1013,8 @@ func EditTagChannels(c *gin.Context) {
 	}
 	err = model.EditChannelByTag(channelTag.Tag, channelTag.NewTag, channelTag.ModelMapping, channelTag.Models, channelTag.Groups, channelTag.Priority, channelTag.Weight, channelTag.ParamOverride, channelTag.HeaderOverride)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to edit channels by tag: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -1028,7 +1040,8 @@ func DeleteChannelBatch(c *gin.Context) {
 	}
 	err = model.BatchDeleteChannels(channelBatch.Ids)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to batch delete channels: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -1051,7 +1064,7 @@ func UpdateChannel(c *gin.Context) {
 	channel := PatchChannel{}
 	err := c.ShouldBindJSON(&channel)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
@@ -1187,7 +1200,8 @@ func UpdateChannel(c *gin.Context) {
 	}
 	err = channel.Update()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update channel: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -1391,7 +1405,8 @@ func BatchSetChannelTag(c *gin.Context) {
 	}
 	err = model.BatchSetChannelTag(channelBatch.Ids, channelBatch.Tag)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to batch set channel tag: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.InitChannelCache()
@@ -1534,7 +1549,7 @@ func ManageMultiKeys(c *gin.Context) {
 	request := MultiKeyManageRequest{}
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
@@ -1708,7 +1723,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -1745,7 +1761,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -1770,7 +1787,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -1815,7 +1833,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -1887,7 +1906,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -1953,7 +1973,8 @@ func ManageMultiKeys(c *gin.Context) {
 
 		err = channel.Update()
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update channel: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 

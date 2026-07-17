@@ -732,6 +732,7 @@
   "systemSettings.errors.visitorsMustAuthenticateBeforeAccessingTheRankingsPage": "Visitors must authenticate before accessing the rankings page.",
   "systemSettings.fields.visualEditor": "Visual Editor",
   "systemSettings.tips.visualIndicatorColorForTheApiCard": "Visual indicator color for the API card",
+  "systemSettings.placeholders.voiceCustomization": "Voice Customization",
   "systemSettings.tips.walletManagementAndPersonalPreferences": "Wallet management and personal preferences.",
   "systemSettings.tips.warning": "Warning",
   "systemSettings.titles.webhookConfiguration": "Webhook Configuration",

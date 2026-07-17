@@ -189,7 +189,7 @@ export function SyncWizardDialog({
                           <span className='font-medium'>{option.label}</span>
                           {option.value === 'official' && (
                             <StatusBadge
-                              label='Default'
+                              label={t('models.status.default')}
                               variant='neutral'
                               copyable={false}
                             />

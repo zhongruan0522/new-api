@@ -31,7 +31,8 @@ func GetAllLogs(c *gin.Context) {
 	httpReferer := c.Query("http_referer")
 	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all logs: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -80,7 +81,8 @@ func GetUserLogs(c *gin.Context) {
 
 	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user logs: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	filterHiddenUsageLogFields(logs)
@@ -260,10 +262,8 @@ func GetLogByKey(c *gin.Context) {
 	}
 	logs, err := model.GetLogByTokenId(tokenId)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.SysError("failed to get log by token id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
@@ -305,13 +305,15 @@ func GetLogsStat(c *gin.Context) {
 			qStat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
 		}
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to get quota stat: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
 		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to query rpm tpm: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = model.Stat{
@@ -324,7 +326,8 @@ func GetLogsStat(c *gin.Context) {
 	} else {
 		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to sum used quota: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -370,13 +373,15 @@ func GetLogsSelfStat(c *gin.Context) {
 	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
 		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to get quota stat by user id: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒）
 		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to query rpm tpm: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = model.Stat{
@@ -389,7 +394,8 @@ func GetLogsSelfStat(c *gin.Context) {
 	} else {
 		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to sum used quota: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -459,17 +465,11 @@ func DeleteHistoryLogs(c *gin.Context) {
 	cleanAuditLogs := c.Query("clean_audit_logs") == "true" || c.Query("clean_audit_logs") == "1"
 
 	if endTimestamp == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "end timestamp is required",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if !cleanLogs && !cleanStoredImages && !cleanStoredVideos && !cleanAuditLogs {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "at least one log type must be selected",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -525,7 +525,8 @@ func DeleteHistoryLogs(c *gin.Context) {
 	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, detail, true)
 
 	if firstErr != nil {
-		common.ApiError(c, firstErr)
+		common.SysError("failed to delete history logs: " + firstErr.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

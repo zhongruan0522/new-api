@@ -207,7 +207,8 @@ func Register(c *gin.Context) {
 		cleanUser.Email = user.Email
 	}
 	if err := cleanUser.Insert(inviterId); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to insert user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -257,7 +258,8 @@ func GetAllUsers(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	users, total, err := model.GetAllUsers(pageInfo)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all users: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -284,7 +286,8 @@ func SearchUsers(c *gin.Context) {
 	if keyword != "" && username == "" && displayName == "" && email == "" {
 		users, total, err := model.SearchUsers(keyword, group, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to search users: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		pageInfo.SetTotal(int(total))
@@ -296,7 +299,8 @@ func SearchUsers(c *gin.Context) {
 	// 新的多字段搜索
 	users, total, err := model.SearchUsersAdvanced(username, displayName, email, linuxDoId, githubId, status, role, group, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to search users: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -309,12 +313,13 @@ func SearchUsers(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	myRole := c.GetInt("role")
@@ -334,7 +339,8 @@ func GenerateAccessToken(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// get rand int 28-32
@@ -353,7 +359,8 @@ func GenerateAccessToken(c *gin.Context) {
 	}
 
 	if err := user.Update(false); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update user access token: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -373,12 +380,13 @@ func TransferAffQuota(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	tran := TransferAffQuotaRequest{}
 	if err := c.ShouldBindJSON(&tran); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	err = user.TransferAffQuotaToQuota(tran.Quota)
@@ -393,7 +401,8 @@ func GetAffCode(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if user.AffCode == "" {
@@ -418,7 +427,8 @@ func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
@@ -430,7 +440,8 @@ func GetSelf(c *gin.Context) {
 	// 重新序列化用户设置，确保已移除的字段不会出现在响应中
 	settingJSON, err := common.Marshal(userSetting)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to marshal user setting: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -474,7 +485,8 @@ func GetUserModels(c *gin.Context) {
 	}
 	user, err := model.GetUserCache(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user cache: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	groups := service.GetUserUsableGroups(user.Group)
@@ -514,7 +526,8 @@ func UpdateUser(c *gin.Context) {
 	}
 	originUser, err := model.GetUserById(req.Id, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	quota := originUser.Quota
@@ -552,7 +565,8 @@ func UpdateUser(c *gin.Context) {
 	}
 	updatePassword := updatedUser.Password != ""
 	if err := updatedUser.Edit(updatePassword); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to edit user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(updatedUser.Id)
@@ -597,11 +611,13 @@ func UpdateSelf(c *gin.Context) {
 	}
 	updatePassword, err := checkUpdatePassword(c, user.OriginalPassword, user.Password, cleanUser.Id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to check update password: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if err := cleanUser.Update(updatePassword); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(cleanUser.Id)
@@ -636,12 +652,13 @@ func checkUpdatePassword(c *gin.Context, originalPassword string, newPassword st
 func DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	originUser, err := model.GetUserById(id, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	myRole := c.GetInt("role")
@@ -651,7 +668,8 @@ func DeleteUser(c *gin.Context) {
 	}
 	err = model.HardDeleteUserById(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to hard delete user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(id)
@@ -675,7 +693,8 @@ func DeleteSelf(c *gin.Context) {
 
 	err := model.DeleteUserById(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(id)
@@ -714,7 +733,8 @@ func CreateUser(c *gin.Context) {
 		Role:        user.Role, // 保持管理员设置的角色
 	}
 	if err := cleanUser.Insert(0); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to insert user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -810,7 +830,8 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			if err := model.IncreaseUserQuota(user.Id, req.Value, true); err != nil {
-				common.ApiError(c, err)
+				common.SysError("failed to increase user quota: " + err.Error())
+				common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 				return
 			}
 			user.Quota = originQuota + req.Value
@@ -820,7 +841,8 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			if err := model.DecreaseUserQuota(user.Id, req.Value); err != nil {
-				common.ApiError(c, err)
+				common.SysError("failed to decrease user quota: " + err.Error())
+				common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 				return
 			}
 			user.Quota = originQuota - req.Value
@@ -831,7 +853,8 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("quota", req.Value).Error; err != nil {
-				common.ApiError(c, err)
+				common.SysError("failed to override user quota: " + err.Error())
+				common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 				return
 			}
 			user.Quota = req.Value
@@ -858,7 +881,8 @@ func ManageUser(c *gin.Context) {
 	}
 
 	if err := user.Update(false); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(user.Id)
@@ -907,7 +931,8 @@ func EmailBind(c *gin.Context) {
 	}
 	err := user.FillUserById()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to fill user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// Re-check the authoritative status from DB; the session snapshot may be
@@ -922,7 +947,8 @@ func EmailBind(c *gin.Context) {
 	// no need to check if this email already taken, because we have used verification code to check it
 	err = user.Update(false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update user email: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(user.Id)
@@ -989,7 +1015,7 @@ func TopUp(c *gin.Context) {
 	req := topUpRequest{}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	quota, err := model.Redeem(req.Key, id)
@@ -998,7 +1024,8 @@ func TopUp(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgRedeemFailed)
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("failed to redeem: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -1104,7 +1131,8 @@ func UpdateUserSetting(c *gin.Context) {
 	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 

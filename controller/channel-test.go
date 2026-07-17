@@ -735,14 +735,15 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 func TestChannel(c *gin.Context) {
 	channelId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := model.CacheGetChannel(channelId)
 	if err != nil {
 		channel, err = model.GetChannelById(channelId, true)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to get channel by id: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	}
@@ -756,7 +757,8 @@ func TestChannel(c *gin.Context) {
 	isStream, _ := strconv.ParseBool(c.Query("stream"))
 	testUserID, err := resolveChannelTestUserID(c)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to resolve channel test user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	tik := time.Now()
@@ -870,7 +872,8 @@ func testAllChannels(c *gin.Context, notify bool) error {
 func TestAllChannels(c *gin.Context) {
 	err := testAllChannels(c, true)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to test all channels: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

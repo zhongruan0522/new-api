@@ -344,3 +344,18 @@ stored_media.media_type_invalid: "media_type must be image or video"
 stored_media.not_found: "Resource not found"
 stored_media.forbidden: "You do not have permission to access this resource"
 stored_media.no_valid_ids: "No valid ids"
+
+# Performance messages
+performance.disk_cache_cleared: "Inactive disk cache has been cleared"
+performance.stats_reset: "Statistics have been reset"
+performance.gc_executed: "GC has been executed"
+
+# Rankings messages
+rankings.disabled: "Rankings feature is disabled"
+
+# Top-up messages
+topup.amount_exceed_max: "Top-up amount cannot exceed 10000"
+topup.success_url_untrusted: "Payment success redirect URL is not in the trusted domain list"
+topup.cancel_url_untrusted: "Payment cancel redirect URL is not in the trusted domain list"
+topup.unsupported_channel: "Unsupported payment channel"
+topup.amount_below_min: "Top-up amount cannot be less than {{.Min}}"

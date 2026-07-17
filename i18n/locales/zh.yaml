@@ -345,3 +345,18 @@ stored_media.media_type_invalid: "media_type 必须为 image 或 video"
 stored_media.not_found: "资源不存在"
 stored_media.forbidden: "无权访问该资源"
 stored_media.no_valid_ids: "没有有效的 id"
+
+# Performance messages
+performance.disk_cache_cleared: "不活跃的磁盘缓存已清理"
+performance.stats_reset: "统计信息已重置"
+performance.gc_executed: "GC 已执行"
+
+# Rankings messages
+rankings.disabled: "排行榜功能已禁用"
+
+# Top-up messages
+topup.amount_exceed_max: "充值数量不能大于 10000"
+topup.success_url_untrusted: "支付成功重定向URL不在可信任域名列表中"
+topup.cancel_url_untrusted: "支付取消重定向URL不在可信任域名列表中"
+topup.unsupported_channel: "不支持的支付渠道"
+topup.amount_below_min: "充值数量不能小于 {{.Min}}"

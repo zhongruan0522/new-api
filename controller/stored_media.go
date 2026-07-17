@@ -54,7 +54,8 @@ func GetAllStoredMedia(c *gin.Context) {
 
 	items, total, err := model.GetAllStoredMedia(c.Request.Context(), startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get all stored media failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -83,7 +84,8 @@ func GetSelfStoredMedia(c *gin.Context) {
 
 	items, total, err := model.GetUserStoredMedia(c.Request.Context(), userId, startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get user stored media failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -127,7 +129,8 @@ func GetStoredMediaDetail(c *gin.Context) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
-			common.ApiError(c, err)
+			common.SysError("get stored image meta failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
@@ -137,7 +140,8 @@ func GetStoredMediaDetail(c *gin.Context) {
 
 		img, err := model.GetStoredImageByID(c.Request.Context(), id)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("get stored image failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -162,7 +166,8 @@ func GetStoredMediaDetail(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("get stored video meta failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if !isAdminUser && meta.UserId != userId {
@@ -172,7 +177,8 @@ func GetStoredMediaDetail(c *gin.Context) {
 
 	v, err := model.GetStoredVideoByID(c.Request.Context(), id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get stored video failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -215,7 +221,8 @@ func DeleteStoredMedia(c *gin.Context) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
-			common.ApiError(c, metaErr)
+			common.SysError("get stored image meta failed: " + metaErr.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
@@ -234,7 +241,8 @@ func DeleteStoredMedia(c *gin.Context) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
-			common.ApiError(c, metaErr)
+			common.SysError("get stored video meta failed: " + metaErr.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
@@ -249,7 +257,8 @@ func DeleteStoredMedia(c *gin.Context) {
 	}
 
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("delete stored media failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -307,7 +316,8 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 	if len(imageIDs) > 0 {
 		n, err := model.DeleteStoredImagesByIDs(c.Request.Context(), imageIDs, imgUser)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("batch delete stored images failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		totalDeleted += n
@@ -315,7 +325,8 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 	if len(videoIDs) > 0 {
 		n, err := model.DeleteStoredVideosByIDs(c.Request.Context(), videoIDs, videoUser)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("batch delete stored videos failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		totalDeleted += n

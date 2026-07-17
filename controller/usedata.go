@@ -43,7 +43,8 @@ func GetAllQuotaDates(c *gin.Context) {
 	username := c.Query("username")
 	dates, err := model.GetAllQuotaDates(startTimestamp, endTimestamp, username)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all quota dates: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -69,7 +70,8 @@ func GetQuotaDataGroupByUser(c *gin.Context) {
 	}
 	dates, err := model.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get quota data group by user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -95,7 +97,8 @@ func GetUserQuotaDates(c *gin.Context) {
 	}
 	dates, err := model.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get quota data by user id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -119,7 +122,8 @@ func GetAllMediaConvertStats(c *gin.Context) {
 
 	stats, err := model.GetAllMediaConvertStats(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all media convert stats: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -141,7 +145,8 @@ func RecalculateQuotaData(c *gin.Context) {
 
 	err := model.RecalculateQuotaData(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to recalculate quota data: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.ClearRankingsCache()
@@ -162,7 +167,8 @@ func GetUserMediaConvertStats(c *gin.Context) {
 
 	stats, err := model.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get media convert stats by user id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

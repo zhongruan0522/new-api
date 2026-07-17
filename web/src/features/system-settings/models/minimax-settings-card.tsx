@@ -265,7 +265,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.model_redirect',
                       'minimax.model_redirect'
@@ -327,7 +327,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.emotion_redirect',
                       'minimax.emotion_redirect'
@@ -386,7 +386,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.tone_word_redirect',
                       'minimax.tone_word_redirect'
@@ -466,7 +466,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       {t('systemSettings.fields.customVoiceBillingModelId')}
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder='音色定制' />
+                      <Input {...field} placeholder={t('systemSettings.placeholders.voiceCustomization')} />
                     </FormControl>
                     <FormDescription>
                       {t(

@@ -407,3 +407,24 @@ const (
 	MsgStoredMediaForbidden        = "stored_media.forbidden"
 	MsgStoredMediaNoValidIDs       = "stored_media.no_valid_ids"
 )
+
+// Performance related messages
+const (
+	MsgPerformanceDiskCacheCleared = "performance.disk_cache_cleared"
+	MsgPerformanceStatsReset       = "performance.stats_reset"
+	MsgPerformanceGCExecuted       = "performance.gc_executed"
+)
+
+// Rankings related messages
+const (
+	MsgRankingsDisabled = "rankings.disabled"
+)
+
+// Top-up related messages
+const (
+	MsgTopupAmountExceedMax        = "topup.amount_exceed_max"
+	MsgTopupSuccessUrlUntrusted    = "topup.success_url_untrusted"
+	MsgTopupCancelUrlUntrusted     = "topup.cancel_url_untrusted"
+	MsgTopupUnsupportedChannel     = "topup.unsupported_channel"
+	MsgTopupAmountBelowMin         = "topup.amount_below_min"
+)

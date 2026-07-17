@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
@@ -142,7 +143,8 @@ func ClearDiskCache(c *gin.Context) {
 	// 10 分钟是一个安全的阈值，确保正在进行的请求不会被误删
 	err := common.CleanupOldDiskCacheFiles(10 * time.Minute)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to cleanup old disk cache files: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -150,7 +152,7 @@ func ClearDiskCache(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "不活跃的磁盘缓存已清理",
+		"message": i18n.T(c, i18n.MsgPerformanceDiskCacheCleared),
 	})
 }
 
@@ -162,7 +164,7 @@ func ResetPerformanceStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "统计信息已重置",
+		"message": i18n.T(c, i18n.MsgPerformanceStatsReset),
 	})
 }
 
@@ -174,7 +176,7 @@ func ForceGC(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "GC 已执行",
+		"message": i18n.T(c, i18n.MsgPerformanceGCExecuted),
 	})
 }
 

@@ -52,6 +52,7 @@
   "models.actions.createVendor": "Create Vendor",
   "models.actions.createYourFirstGroupToReuseModelTagOr": "Create your first group to reuse model, tag, or endpoint selections anywhere in the dashboard.",
   "models.fields.dataRetention": "Data retention",
+  "models.status.default": "Default",
   "models.tips.defineApiEndpointsForThisModelJsonFormat": "Define API endpoints for this model (JSON format)",
   "models.tips.defineEndpointMappingsForEachProvider": "Define endpoint mappings for each provider.",
   "models.actions.deleteGroup": "Delete group",

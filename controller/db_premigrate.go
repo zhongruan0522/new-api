@@ -22,7 +22,8 @@ type dbPreMigrateStartRequest struct {
 func GetDBPreMigrateInfo(c *gin.Context) {
 	info, err := service.GetDBPreMigrateInfo()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get db pre migrate info: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, info)
@@ -45,7 +46,8 @@ func StartDBPreMigrate(c *gin.Context) {
 		Force:        req.Force,
 	})
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to start db pre migrate: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleDB, model.AuditActionUpdate, "启动数据库预迁移", nil, req)

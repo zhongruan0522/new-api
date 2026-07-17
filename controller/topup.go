@@ -116,7 +116,7 @@ func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if req.Amount < getMinTopup() {
@@ -279,7 +279,7 @@ func RequestAmount(c *gin.Context) {
 	var req AmountRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -317,7 +317,8 @@ func GetUserTopUps(c *gin.Context) {
 		topups, total, err = model.GetUserTopUps(userId, pageInfo)
 	}
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get user topups failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -342,7 +343,8 @@ func GetAllTopUps(c *gin.Context) {
 		topups, total, err = model.GetAllTopUps(pageInfo)
 	}
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get all topups failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -368,7 +370,8 @@ func AdminCompleteTopUp(c *gin.Context) {
 	defer UnlockOrder(req.TradeNo)
 
 	if err := model.ManualCompleteTopUp(req.TradeNo); err != nil {
-		common.ApiError(c, err)
+		common.SysError("manual complete topup failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, nil)

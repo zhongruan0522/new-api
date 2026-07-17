@@ -342,12 +342,13 @@ func updateChannelBalance(c *gin.Context, channel *model.Channel) (float64, erro
 func UpdateChannelBalance(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := model.CacheGetChannel(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to cache get channel: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if channel.ChannelInfo.IsMultiKey {
@@ -356,7 +357,8 @@ func UpdateChannelBalance(c *gin.Context) {
 	}
 	balance, err := updateChannelBalance(c, channel)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update channel balance: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -400,7 +402,8 @@ func UpdateAllChannelsBalance(c *gin.Context) {
 	// TODO: make it async
 	err := updateAllChannelsBalance()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update all channels balance: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

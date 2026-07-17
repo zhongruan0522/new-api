@@ -264,7 +264,7 @@ export function UpstreamConflictDialog({
           <PopoverContent className='w-[min(90vw,24rem)] space-y-4 text-sm'>
             <div>
               <StatusBadge
-                label='Local'
+                label={t('common.fields.local')}
                 variant='neutral'
                 size='sm'
                 copyable={false}
@@ -276,7 +276,7 @@ export function UpstreamConflictDialog({
             </div>
             <div>
               <StatusBadge
-                label='Upstream'
+                label={t('common.fields.upstream')}
                 variant='info'
                 size='sm'
                 copyable={false}

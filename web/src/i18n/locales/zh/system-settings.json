@@ -732,6 +732,7 @@
   "systemSettings.errors.visitorsMustAuthenticateBeforeAccessingTheRankingsPage": "访客必须先进行身份验证才能访问排行榜页面。",
   "systemSettings.fields.visualEditor": "可视编辑器",
   "systemSettings.tips.visualIndicatorColorForTheApiCard": "API 卡的可视指示器颜色",
+  "systemSettings.placeholders.voiceCustomization": "音色定制",
   "systemSettings.tips.walletManagementAndPersonalPreferences": "钱包管理和个人偏好设置。",
   "systemSettings.tips.warning": "警告",
   "systemSettings.titles.webhookConfiguration": "Webhook 配置",

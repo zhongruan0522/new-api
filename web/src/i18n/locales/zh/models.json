@@ -52,6 +52,7 @@
   "models.actions.createVendor": "创建供应商",
   "models.actions.createYourFirstGroupToReuseModelTagOr": "创建您的第一个分组，以便在仪表板的任何位置重用模型、标签或端点选择。",
   "models.fields.dataRetention": "数据保留",
+  "models.status.default": "默认",
   "models.tips.defineApiEndpointsForThisModelJsonFormat": "为此模型定义 API 端点（JSON 格式）",
   "models.tips.defineEndpointMappingsForEachProvider": "为每个提供商定义端点映射。",
   "models.actions.deleteGroup": "删除分组",

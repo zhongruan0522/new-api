@@ -238,7 +238,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         onOpenChange={setResetPasskeyOpen}
         title={t('users.actions.resetPasskey')}
         desc={`Reset Passkey for ${user.username}? The user will need to register a new Passkey before using passwordless login.`}
-        confirmText='Reset Passkey'
+        confirmText={t('users.actions.resetPasskey')}
         handleConfirm={handleResetPasskey}
       />
 
@@ -247,7 +247,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         onOpenChange={setResetTwoFAOpen}
         title={t('users.actions.resetTwoFactorAuthentication')}
         desc={`Reset 2FA for ${user.username}? The user must set up 2FA again to continue using it.`}
-        confirmText='Reset Two-Factor Authentication'
+        confirmText={t('users.actions.resetTwoFactorAuthentication')}
         handleConfirm={handleResetTwoFA}
       />
 

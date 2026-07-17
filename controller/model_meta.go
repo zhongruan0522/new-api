@@ -21,7 +21,8 @@ func GetAllModelsMeta(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all models: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
@@ -52,7 +53,8 @@ func SearchModelsMeta(c *gin.Context) {
 
 	modelsMeta, total, err := model.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to search models: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
@@ -67,12 +69,13 @@ func GetModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	var m model.Model
 	if err := model.DB.First(&m, id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get model by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	enrichModels([]*model.Model{&m})
@@ -83,7 +86,7 @@ func GetModelMeta(c *gin.Context) {
 func CreateModelMeta(c *gin.Context) {
 	var m model.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.ModelName == "" {
@@ -92,7 +95,8 @@ func CreateModelMeta(c *gin.Context) {
 	}
 	// 名称冲突检查
 	if dup, err := model.IsModelNameDuplicated(0, m.ModelName); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to check model name duplication: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	} else if dup {
 		common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
@@ -100,7 +104,8 @@ func CreateModelMeta(c *gin.Context) {
 	}
 
 	if err := m.Insert(); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to insert model: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshPricing()
@@ -114,7 +119,7 @@ func UpdateModelMeta(c *gin.Context) {
 
 	var m model.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.Id == 0 {
@@ -125,14 +130,16 @@ func UpdateModelMeta(c *gin.Context) {
 	// 查询更新前的原始数据用于审计差异对比
 	var origin model.Model
 	if err := model.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get model origin: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if statusOnly {
 		// 只更新状态，防止误清空其他字段
 		if err := model.DB.Model(&model.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update model status: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
@@ -142,7 +149,8 @@ func UpdateModelMeta(c *gin.Context) {
 	} else {
 		// 名称冲突检查
 		if dup, err := model.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to check model name duplication: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		} else if dup {
 			common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
@@ -150,7 +158,8 @@ func UpdateModelMeta(c *gin.Context) {
 		}
 
 		if err := m.Update(); err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update model: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
@@ -164,11 +173,12 @@ func DeleteModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if err := model.DB.Delete(&model.Model{}, id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete model: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshPricing()

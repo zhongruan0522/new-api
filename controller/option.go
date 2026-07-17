@@ -411,7 +411,8 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		delete(items, req.MapKey)
 		bytes, err := common.Marshal(items)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to marshal option items: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		nextValue = string(bytes)
@@ -434,13 +435,14 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		var err error
 		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
 		if err != nil {
-			common.ApiError(c, err)
+			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	}
 
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(
@@ -500,7 +502,8 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		items[mapKey] = strings.TrimSpace(req.Value)
 		bytes, err := common.Marshal(items)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to marshal option items: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		nextValue = string(bytes)
@@ -539,13 +542,14 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		var err error
 		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
 		if err != nil {
-			common.ApiError(c, err)
+			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	}
 
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(
@@ -813,7 +817,8 @@ func UpdateOption(c *gin.Context) {
 
 	err = model.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if option.Key == "DataExportInterval" {

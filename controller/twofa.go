@@ -38,7 +38,8 @@ func Setup2FA(c *gin.Context) {
 	// 检查用户是否已经启用2FA
 	existing, err := model.GetTwoFAByUserId(userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if existing != nil && existing.IsEnabled {
@@ -49,7 +50,8 @@ func Setup2FA(c *gin.Context) {
 	// 如果存在已禁用的2FA记录，先删除它
 	if existing != nil && !existing.IsEnabled {
 		if err := existing.Delete(); err != nil {
-			common.ApiError(c, err)
+			common.SysError("delete disabled twofa failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		existing = nil // 重置为nil，后续将创建新记录
@@ -58,7 +60,8 @@ func Setup2FA(c *gin.Context) {
 	// 获取用户信息
 	user, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get user by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -98,7 +101,8 @@ func Setup2FA(c *gin.Context) {
 	}
 
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("create or update twofa failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -136,7 +140,8 @@ func Enable2FA(c *gin.Context) {
 	// 获取2FA记录
 	twoFA, err := model.GetTwoFAByUserId(userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if twoFA == nil {
@@ -151,10 +156,7 @@ func Enable2FA(c *gin.Context) {
 	// 验证TOTP验证码
 	cleanCode, err := common.ValidateNumericCode(req.Code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -165,7 +167,8 @@ func Enable2FA(c *gin.Context) {
 
 	// 启用2FA
 	if err := twoFA.Enable(); err != nil {
-		common.ApiError(c, err)
+		common.SysError("enable twofa failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -188,7 +191,8 @@ func Disable2FA(c *gin.Context) {
 	// 获取2FA记录
 	twoFA, err := model.GetTwoFAByUserId(userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if twoFA == nil || !twoFA.IsEnabled {
@@ -210,10 +214,7 @@ func Disable2FA(c *gin.Context) {
 		// 尝试验证备用码
 		isValidBackup, err = twoFA.ValidateBackupCodeAndUpdateUsage(req.Code)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgTwoFACodeInvalid)
 			return
 		}
 	}
@@ -225,7 +226,8 @@ func Disable2FA(c *gin.Context) {
 
 	// 禁用2FA
 	if err := model.DisableTwoFA(userId); err != nil {
-		common.ApiError(c, err)
+		common.SysError("disable twofa failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -241,7 +243,8 @@ func Get2FAStatus(c *gin.Context) {
 
 	twoFA, err := model.GetTwoFAByUserId(userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -284,7 +287,8 @@ func RegenerateBackupCodes(c *gin.Context) {
 	// 获取2FA记录
 	twoFA, err := model.GetTwoFAByUserId(userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if twoFA == nil || !twoFA.IsEnabled {
@@ -295,19 +299,13 @@ func RegenerateBackupCodes(c *gin.Context) {
 	// 验证TOTP验证码
 	cleanCode, err := common.ValidateNumericCode(req.Code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
 	valid, err := twoFA.ValidateTOTPAndUpdateUsage(cleanCode)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiErrorI18n(c, i18n.MsgTwoFACodeInvalid)
 		return
 	}
 	if !valid {
@@ -375,7 +373,8 @@ func Verify2FALogin(c *gin.Context) {
 	// 获取2FA记录
 	twoFA, err := model.GetTwoFAByUserId(user.Id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa by user id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if twoFA == nil || !twoFA.IsEnabled {
@@ -397,10 +396,7 @@ func Verify2FALogin(c *gin.Context) {
 		// 尝试验证备用码
 		isValidBackup, err = twoFA.ValidateBackupCodeAndUpdateUsage(req.Code)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgTwoFACodeInvalid)
 			return
 		}
 	}
@@ -422,7 +418,8 @@ func Verify2FALogin(c *gin.Context) {
 func Admin2FAStats(c *gin.Context) {
 	stats, err := model.GetTwoFAStats()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get twofa stats failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -445,7 +442,8 @@ func AdminDisable2FA(c *gin.Context) {
 	// 检查目标用户权限
 	targetUser, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get user by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -461,7 +459,8 @@ func AdminDisable2FA(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgTwoFANotEnabled)
 			return
 		}
-		common.ApiError(c, err)
+		common.SysError("disable twofa failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
