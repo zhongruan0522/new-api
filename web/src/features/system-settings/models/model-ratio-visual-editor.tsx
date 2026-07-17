@@ -1006,15 +1006,17 @@ export function ModelRatioVisualEditor({
 
                 {selectedRow.mode === 'per-token' && (
                   <div className='space-y-4'>
-                    <PriceInput
-                      label={t('systemSettings.fields.inputPricePer1MTokens')}
-                      value={toInputValue(selectedRow.inputPrice)}
-                      placeholder='2'
-                      onChange={(value) =>
-                        setInputPrice(selectedRow.name, value)
-                      }
-                    />
                     <div className='grid gap-3 sm:grid-cols-2'>
+                      <PriceInput
+                        label={t(
+                          'systemSettings.fields.inputPricePer1MTokens'
+                        )}
+                        value={toInputValue(selectedRow.inputPrice)}
+                        placeholder='2'
+                        onChange={(value) =>
+                          setInputPrice(selectedRow.name, value)
+                        }
+                      />
                       <PriceInput
                         label={t(
                           'systemSettings.fields.completionPricePer1MTokens'
@@ -1032,6 +1034,8 @@ export function ModelRatioVisualEditor({
                           )
                         }
                       />
+                    </div>
+                    <div className='grid gap-3 sm:grid-cols-2'>
                       <PriceInput
                         label={t(
                           'systemSettings.fields.cacheReadPricePer1MTokens'
@@ -1066,6 +1070,8 @@ export function ModelRatioVisualEditor({
                           )
                         }
                       />
+                    </div>
+                    <div className='grid gap-3 sm:grid-cols-2'>
                       <PriceInput
                         label={t(
                           'systemSettings.fields.audioInputPricePer1MTokens'
