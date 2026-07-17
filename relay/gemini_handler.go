@@ -97,6 +97,9 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 		requestBody = body
 	}
 
+	// 通用思维强度解析：adaptor 未设置时从原始请求兜底提取
+	relaycommon.EnsureReasoningEffort(info, info.Request)
+
 	resp, err := adaptor.DoRequest(c, info, requestBody)
 	if err != nil {
 		logger.LogError(c, "Do gemini request failed: "+err.Error())

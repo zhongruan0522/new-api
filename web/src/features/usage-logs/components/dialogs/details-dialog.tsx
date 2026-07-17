@@ -1287,11 +1287,13 @@ export function DetailsDialog(props: DetailsDialogProps) {
                   <StatusBadge
                     label={other.reasoning_effort}
                     variant={
-                      other.reasoning_effort === 'high'
-                        ? 'orange'
+                      other.reasoning_effort === 'max' || other.reasoning_effort === 'xhigh' || other.reasoning_effort === 'high'
+                        ? 'red'
                         : other.reasoning_effort === 'medium'
-                          ? 'yellow'
-                          : 'green'
+                          ? 'orange'
+                          : other.reasoning_effort === 'low' || other.reasoning_effort === 'minimal' || other.reasoning_effort === 'none'
+                            ? 'green'
+                            : 'blue'
                     }
                     size='sm'
                     copyable={false}
