@@ -100,7 +100,9 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           onClick={form.handleSubmit(onSave)}
           disabled={isSaving || !isEditorValid}
         >
-          {isSaving ? t('channels.tips.saving') : t('systemSettings.actions.saveModelPrices')}
+          {isSaving
+            ? t('channels.tips.saving')
+            : t('systemSettings.actions.saveModelPrices')}
         </Button>
       </SettingsPageActionsPortal>
       <SettingsForm onSubmit={form.handleSubmit(onSave)}>
@@ -115,6 +117,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           contextPricing={values.ContextPricing}
           onChange={handleFieldChange}
           onValidityChange={handleValidityChange}
+          isSaving={isSaving}
         />
       </SettingsForm>
     </Form>

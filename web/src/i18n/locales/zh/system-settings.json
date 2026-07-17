@@ -290,6 +290,7 @@
   "systemSettings.errors.failedToRefreshCacheStats": "刷新缓存统计失败",
   "systemSettings.errors.failedToRefreshMigrationJob": "刷新迁移任务失败",
   "systemSettings.errors.failedToResetModelRatios": "重置模型比率失败",
+  "systemSettings.errors.failedToSaveModelPrices": "保存模型价格失败",
   "systemSettings.errors.failedToSave": "保存失败",
   "systemSettings.errors.failedToSaveApiInfo": "保存 API 信息失败",
   "systemSettings.errors.failedToSaveFaq": "保存 FAQ 失败",

@@ -290,6 +290,7 @@
   "systemSettings.errors.failedToRefreshCacheStats": "Failed to refresh cache stats",
   "systemSettings.errors.failedToRefreshMigrationJob": "Failed to refresh migration job",
   "systemSettings.errors.failedToResetModelRatios": "Failed to reset model ratios",
+  "systemSettings.errors.failedToSaveModelPrices": "Failed to save model prices",
   "systemSettings.errors.failedToSave": "Failed to save",
   "systemSettings.errors.failedToSaveApiInfo": "Failed to save API info",
   "systemSettings.errors.failedToSaveFaq": "Failed to save FAQ",

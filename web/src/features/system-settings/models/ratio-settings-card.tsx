@@ -266,6 +266,9 @@ export function RatioSettingsCard({
   const updateOption = useUpdateOption()
   const queryClient = useQueryClient()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  // 模型价格的保存走的是 upsertOptionJsonMapEntry，不会触发 updateOption mutation，
+  // 因此需要一个独立的本地状态来准确反映保存进行中。
+  const [isSavingModelRatios, setIsSavingModelRatios] = useState(false)
 
   const resetMutation = useMutation({
     mutationFn: resetModelRatios,
@@ -275,11 +278,15 @@ export function RatioSettingsCard({
         queryClient.invalidateQueries({ queryKey: ['system-options'] })
         setConfirmOpen(false)
       } else {
-        toast.error(data.message || t('systemSettings.errors.failedToResetModelRatios'))
+        toast.error(
+          data.message || t('systemSettings.errors.failedToResetModelRatios')
+        )
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('systemSettings.errors.failedToResetModelRatios'))
+      toast.error(
+        error.message || t('systemSettings.errors.failedToResetModelRatios')
+      )
     },
   })
 
@@ -421,16 +428,28 @@ export function RatioSettingsCard({
         return
       }
 
-      for (const key of updates) {
-        await updateJsonMapFieldByDiff(
-          key,
-          modelNormalizedDefaults.current[key],
-          normalized[key]
+      setIsSavingModelRatios(true)
+      try {
+        for (const key of updates) {
+          await updateJsonMapFieldByDiff(
+            key,
+            modelNormalizedDefaults.current[key],
+            normalized[key]
+          )
+        }
+        modelNormalizedDefaults.current = normalized
+        await queryClient.invalidateQueries({ queryKey: ['system-options'] })
+        toast.success(t('channels.status.settingsUpdatedSuccessfully'))
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : t('systemSettings.errors.failedToSaveModelPrices')
         )
+        throw error
+      } finally {
+        setIsSavingModelRatios(false)
       }
-      modelNormalizedDefaults.current = normalized
-      await queryClient.invalidateQueries({ queryKey: ['system-options'] })
-      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     [queryClient, t]
   )
@@ -498,7 +517,7 @@ export function RatioSettingsCard({
           form={modelForm}
           onSave={saveModelRatios}
           onReset={handleResetRatios}
-          isSaving={updateOption.isPending}
+          isSaving={isSavingModelRatios}
           isResetting={resetMutation.isPending}
         />
       )
