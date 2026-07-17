@@ -383,7 +383,7 @@ function PriceInput({
     <div className='space-y-1.5'>
       <Label className='text-xs'>{label}</Label>
       <div className='flex'>
-        <span className='border-input bg-muted text-muted-foreground inline-flex h-9 items-center rounded-l-md border border-r-0 px-3 text-sm'>
+        <span className='border-input bg-muted text-muted-foreground inline-flex h-8 items-center rounded-l-md border border-r-0 px-3 text-sm'>
           $
         </span>
         <Input
