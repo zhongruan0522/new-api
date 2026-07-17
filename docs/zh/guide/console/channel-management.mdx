@@ -20,10 +20,17 @@ title: 渠道
 
 | 套餐名称 | 渠道类型选择 | API 地址（填写标识） |
 | --- | --- | --- |
-| GLM Coding Plan | 智谱 GLM 4V | `glm-coding-plan` |
-| GLM Coding Plan (国际版) | 智谱 GLM 4V | `glm-coding-plan-international` |
-| Kimi Coding Plan | Moonshot | `kimi-coding-plan` |
-| Doubao Coding Plan | 字节火山方舟、豆包通用 | 下拉选择`doubao-coding-plan` |
+| 智谱 GLM 官方套餐 | 智谱 GLM 4V | `glm-coding-plan` |
+| 智谱 GLM 国际套餐 | 智谱 GLM 4V | `glm-coding-plan-international` |
+| Kimi 官方套餐 | Moonshot | `kimi-coding-plan` |
+| MiniMax 官方套餐 | MiniMax | `minimax-coding-plan` |
+| MiniMax 国际套餐 | MiniMax | `minimax-coding-plan-international` |
+| Ollama 官方套餐 | Ollama | `ollama-coding-plan` |
+| 小米国内套餐 | 小米 | `xiaomi-coding-plan` |
+| 小米新加坡套餐 | 小米 | `xiaomi-coding-plan-sgp` |
+| 小米荷兰套餐 | 小米 | `xiaomi-coding-plan-ams` |
+
+套餐标识对应的实际上游地址定义在 `constant/channel.go` 的 `ChannelSpecialBases` 中。套餐渠道创建后，可在渠道列表中查询套餐额度使用情况（目前支持 GLM、Kimi、MiniMax）。
 
 # 参数覆盖设置文档
 
