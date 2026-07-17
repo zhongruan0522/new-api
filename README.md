@@ -30,6 +30,9 @@
 
 ### 使用的 AI 模型
 
+<details>
+<summary>Z.AI GLM</summary>
+
 - GLM-5 系列  
   - GLM-5
   - GLM-5.1
@@ -39,10 +42,17 @@
   - GLM-5-Turbo
   - GLM-5V-Turbo
 
+</details>
+
+<details>
+<summary>OpenAI GPT</summary>
+
 - GPT-5 系列  
   - GPT-5.2-Xhigh
   - GPT-5.4-Xhigh / High
   - GPT-5.5-High
+
+</details>
 
 > 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax-M3`、`Kimi-K2.6`、`Kimi-K3`
 
