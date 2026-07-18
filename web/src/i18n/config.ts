@@ -174,4 +174,13 @@ i18n
     },
   })
 
+// Keep <html lang="..."> in sync with the resolved language so browsers
+// don't offer to translate a page whose declared lang differs from the
+// actual content language (e.g. lang="en" with Chinese text → translate popup).
+function syncDocumentLang(lng: string) {
+  document.documentElement.lang = lng
+}
+i18n.on('languageChanged', syncDocumentLang)
+syncDocumentLang(i18n.language)
+
 export default i18n
