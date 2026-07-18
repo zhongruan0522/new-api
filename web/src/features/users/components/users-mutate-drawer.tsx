@@ -362,7 +362,7 @@ export function UsersMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('keyQuery.fields.remainingQuota')} ({currencyLabel})
+                          {t('keyQuery.fields.remainingQuota')} ({t(currencyLabel)})
                         </FormLabel>
                         <div className='flex gap-2'>
                           <FormControl>

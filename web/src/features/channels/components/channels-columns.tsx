@@ -28,7 +28,7 @@ import {
   Shuffle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getCurrencyLabel } from '@/lib/currency'
+import { getCurrencyDisplay } from '@/lib/currency'
 import {
   formatTimestampToDate,
   formatQuota as formatQuotaValue,
@@ -225,8 +225,8 @@ function BalanceCell({ channel }: { channel: Channel }) {
   const balance = channel.balance || 0
   const usedQuota = channel.used_quota || 0
   const [isUpdating, setIsUpdating] = useState(false)
-  const currencyLabel = getCurrencyLabel()
-  const tokenSuffix = currencyLabel === 'Tokens' ? ' Tokens' : ''
+  const { meta: currencyMeta } = getCurrencyDisplay()
+  const tokenSuffix = currencyMeta.kind === 'tokens' ? ' Tokens' : ''
   const withSuffix = (value: string) =>
     tokenSuffix && value !== '-' ? `${value}${tokenSuffix}` : value
 

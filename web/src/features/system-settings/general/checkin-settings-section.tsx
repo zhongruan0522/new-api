@@ -64,7 +64,7 @@ export function CheckinSettingsSection({
 }) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
-  const quotaUnitLabel = getCurrencyLabel()
+  const quotaUnitLabel = t(getCurrencyLabel())
   const displayDefaults = useMemo(
     () => ({
       enabled: defaultValues.enabled,

@@ -143,10 +143,10 @@ export function RedemptionsMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = `${t('keys.fields.quota')} (${currencyLabel})`
+  const quotaLabel = `${t('keys.fields.quota')} (${t(currencyLabel)})`
   const quotaPlaceholder = tokensOnly
     ? t('keys.placeholders.enterQuotaInTokens')
-    : t('keys.placeholders.enterQuotaInCurrency', { currency: currencyLabel })
+    : t('keys.placeholders.enterQuotaInCurrency', { currency: t(currencyLabel) })
 
   return (
     <Sheet
@@ -219,7 +219,7 @@ export function RedemptionsMutateDrawer({
                       {tokensOnly
                         ? t('keys.placeholders.enterTheQuotaAmountInTokens')
                         : t('keys.placeholders.enterTheQuotaAmountInCurrency', {
-                            currency: currencyLabel,
+                            currency: t(currencyLabel),
                           })}
                     </FormDescription>
                     <FormMessage />

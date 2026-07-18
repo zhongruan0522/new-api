@@ -177,7 +177,7 @@ export function SummaryCards() {
     statusCurrencyFlag !== undefined
       ? statusCurrencyFlag
       : currencyEnabledFromStore
-  const currencyLabel = currencyEnabled ? getCurrencyLabel() : 'Tokens'
+  const currencyLabel = currencyEnabled ? getCurrencyLabel() : 'rankings.fields.tokens'
 
   const sparklineData = useMemo(
     () =>

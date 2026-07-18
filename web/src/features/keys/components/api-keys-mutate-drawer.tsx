@@ -251,10 +251,10 @@ export function ApiKeysMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = `${t('keys.fields.quota')} (${currencyLabel})`
+  const quotaLabel = `${t('keys.fields.quota')} (${t(currencyLabel)})`
   const quotaPlaceholder = tokensOnly
     ? t('keys.placeholders.enterQuotaInTokens')
-    : t('keys.placeholders.enterQuotaInCurrency', { currency: currencyLabel })
+    : t('keys.placeholders.enterQuotaInCurrency', { currency: t(currencyLabel) })
   const quotaInputStep = tokensOnly ? 1 : 0.01
   const selectedGroup = form.watch('group')
   const quotaType = form.watch('quota_type')
@@ -533,7 +533,7 @@ export function ApiKeysMutateDrawer({
                         {tokensOnly
                           ? t('keys.placeholders.enterTheQuotaAmountInTokens')
                           : t('keys.placeholders.enterTheQuotaAmountInCurrency', {
-                              currency: currencyLabel,
+                              currency: t(currencyLabel),
                             })}
                       </FormDescription>
                       <FormMessage />
@@ -576,7 +576,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('keys.fields.windowQuota')} ({currencyLabel})
+                          {t('keys.fields.windowQuota')} ({t(currencyLabel)})
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -658,7 +658,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('keys.fields.cycleQuota')} ({currencyLabel})
+                          {t('keys.fields.cycleQuota')} ({t(currencyLabel)})
                         </FormLabel>
                         <FormControl>
                           <Input

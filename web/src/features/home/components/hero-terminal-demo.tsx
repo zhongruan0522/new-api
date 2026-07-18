@@ -165,6 +165,7 @@ const CYCLE_INTERVAL = 4500
 const TRANSITION_MS = 220
 
 export function HeroTerminalDemo() {
+  const { t } = useTranslation()
   const [activeIndex, setActiveIndex] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined)
@@ -232,7 +233,7 @@ export function HeroTerminalDemo() {
                     : 'text-foreground/40 hover:text-foreground/70 border-transparent'
                 )}
               >
-                {item.label}
+                {t(item.label)}
               </button>
             )
           })}

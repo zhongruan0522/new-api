@@ -112,7 +112,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
 
   const placeholder = tokensOnly
     ? t('users.placeholders.enterAmountInTokens')
-    : t('users.placeholders.enterAmountInCurrency', { currency: currencyLabel })
+    : t('users.placeholders.enterAmountInCurrency', { currency: t(currencyLabel) })
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -158,7 +158,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
 
           <div className='space-y-2'>
             <Label>
-              {t('orderQuery.fields.amount')} ({currencyLabel})
+              {t('orderQuery.fields.amount')} ({t(currencyLabel)})
             </Label>
             <Input
               type='number'

@@ -66,7 +66,7 @@ type QuotaSettingsSectionProps = {
 export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
-  const quotaUnitLabel = getCurrencyLabel()
+  const quotaUnitLabel = t(getCurrencyLabel())
   const displayDefaultValues = useMemo(
     () => ({
       ...defaultValues,
