@@ -22,6 +22,12 @@ import { getBgColorClass } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/copy-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { StatusBadge } from '@/components/status-badge'
 import {
   getLatencyColorClass,
@@ -87,7 +93,31 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             />
           )}
           {status.error && (
-            <StatusBadge label={t('dashboard.fields.nA')} variant='neutral' copyable={false} />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <StatusBadge
+                      label={
+                        status.errorReason === 'mixed-content'
+                          ? t('dashboard.errors.latencyMixedContent')
+                          : t('dashboard.errors.latencyUnavailable')
+                      }
+                      variant='neutral'
+                      copyable={false}
+                      className='cursor-help'
+                    />
+                  }
+                />
+                <TooltipContent className='max-w-xs'>
+                  <p>
+                    {status.errorReason === 'mixed-content'
+                      ? t('dashboard.tips.latencyMixedContentTip')
+                      : t('dashboard.tips.latencyUnavailableTip')}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
 

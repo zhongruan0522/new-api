@@ -118,5 +118,9 @@
   "dashboard.tips.setupGuideIsCollapsedSoUsageStaysInFocus": "Your setup guide is collapsed so usage stays in focus.",
   "dashboard.errors.getConfigFailed": "Failed to get configuration",
   "dashboard.errors.updateConfigFailed": "Failed to update configuration",
-  "dashboard.errors.resetConfigFailed": "Failed to reset configuration"
+  "dashboard.errors.resetConfigFailed": "Failed to reset configuration",
+  "dashboard.errors.latencyMixedContent": "Mixed Content",
+  "dashboard.errors.latencyUnavailable": "Unreachable",
+  "dashboard.tips.latencyMixedContentTip": "The page is loaded over HTTPS but the URL uses HTTP, so the browser blocked the request. Change the URL to HTTPS and try again.",
+  "dashboard.tips.latencyUnavailableTip": "The browser couldn't reach this URL (cross-origin, network, or TLS issue). Use the external speed test on the right."
 }

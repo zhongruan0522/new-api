@@ -82,10 +82,18 @@ export interface ApiInfoItem {
   color: string
 }
 
+// LatencyErrorReason 描述测试延时失败时可识别的具体原因。
+// - 'mixed-content': 当前页面是 HTTPS 但配置的 URL 是 HTTP，浏览器会阻止该请求。
+//   这是最常见的可定位原因，预先识别可以给出明确提示而不是笼统的"不可用"。
+// - null: 浏览器仅抛出 TypeError: Failed to fetch，无法进一步区分（CORS、网络不可达、
+//   DNS 解析失败、TLS 错误等都共享同一错误对象），统一归类为"无法访问"。
+export type LatencyErrorReason = 'mixed-content' | null
+
 export interface PingStatus {
   latency: number | null
   testing: boolean
   error: boolean
+  errorReason?: LatencyErrorReason
 }
 
 export type PingStatusMap = Record<string, PingStatus>

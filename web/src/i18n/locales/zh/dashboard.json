@@ -118,5 +118,9 @@
   "dashboard.tips.setupGuideIsCollapsedSoUsageStaysInFocus": "设置引导已收起，让用量信息保持在焦点位置。",
   "dashboard.errors.getConfigFailed": "获取配置失败",
   "dashboard.errors.updateConfigFailed": "更新配置失败",
-  "dashboard.errors.resetConfigFailed": "重置配置失败"
+  "dashboard.errors.resetConfigFailed": "重置配置失败",
+  "dashboard.errors.latencyMixedContent": "混合内容",
+  "dashboard.errors.latencyUnavailable": "无法测试",
+  "dashboard.tips.latencyMixedContentTip": "当前页面为 HTTPS，但目标 URL 是 HTTP，浏览器拦截了请求。请将 URL 改为 HTTPS 后再测试。",
+  "dashboard.tips.latencyUnavailableTip": "浏览器无法访问该地址，常见原因为跨域限制、网络不可达或证书错误。可使用右侧的外部速度测试。"
 }
