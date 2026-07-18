@@ -874,5 +874,10 @@
   "systemSettings.fields.ofTheFollowingConditions": "of the following conditions",
   "systemSettings.actions.invert": "Invert",
   "systemSettings.actions.addCondition": "Add condition",
-  "systemSettings.actions.saveToolBillingRules": "Save tool billing rules"
+  "systemSettings.actions.saveToolBillingRules": "Save tool billing rules",
+  "systemSettings.actions.resetToolBillingRules": "Reset tool billing rules",
+  "systemSettings.actions.resetAllToolBillingRules": "Reset all tool billing rules?",
+  "systemSettings.tips.clearToolBillingRulesAndRestoreDefaults": "This will clear all current tool billing rules and restore the system defaults.",
+  "systemSettings.fields.toolBillingRulesResetSuccessfully": "Tool billing rules reset successfully",
+  "systemSettings.errors.failedToResetToolBillingRules": "Failed to reset tool billing rules"
 }

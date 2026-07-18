@@ -28,6 +28,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   deleteOptionJsonMapEntry,
   resetModelRatios,
+  resetToolBillingRules,
   upsertOptionJsonMapEntry,
 } from '../api'
 import { SettingsSection } from '../components/settings-section'
@@ -266,6 +267,7 @@ export function RatioSettingsCard({
   const updateOption = useUpdateOption()
   const queryClient = useQueryClient()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [toolBillingConfirmOpen, setToolBillingConfirmOpen] = useState(false)
   // 模型价格的保存走的是 upsertOptionJsonMapEntry，不会触发 updateOption mutation，
   // 因此需要一个独立的本地状态来准确反映保存进行中。
   const [isSavingModelRatios, setIsSavingModelRatios] = useState(false)
@@ -286,6 +288,30 @@ export function RatioSettingsCard({
     onError: (error: Error) => {
       toast.error(
         error.message || t('systemSettings.errors.failedToResetModelRatios')
+      )
+    },
+  })
+
+  const resetToolBillingMutation = useMutation({
+    mutationFn: resetToolBillingRules,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(
+          t('systemSettings.fields.toolBillingRulesResetSuccessfully')
+        )
+        queryClient.invalidateQueries({ queryKey: ['system-options'] })
+        setToolBillingConfirmOpen(false)
+      } else {
+        toast.error(
+          data.message ||
+            t('systemSettings.errors.failedToResetToolBillingRules')
+        )
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(
+        error.message ||
+          t('systemSettings.errors.failedToResetToolBillingRules')
       )
     },
   })
@@ -497,6 +523,15 @@ export function RatioSettingsCard({
     resetMutate()
   }, [resetMutate])
 
+  const handleResetToolBillingRules = useCallback(() => {
+    setToolBillingConfirmOpen(true)
+  }, [])
+
+  const { mutate: resetToolBillingMutate } = resetToolBillingMutation
+  const handleConfirmResetToolBilling = useCallback(() => {
+    resetToolBillingMutate()
+  }, [resetToolBillingMutate])
+
   const tabLabels: Record<RatioTabId, string> = {
     models: 'common.fields.modelPrices',
     groups: 'systemSettings.fields.groupRatios',
@@ -532,7 +567,13 @@ export function RatioSettingsCard({
       )
     }
     if (tab === 'tool-prices') {
-      return <ToolPriceSettings defaultValue={toolPricesDefault} />
+      return (
+        <ToolPriceSettings
+          defaultValue={toolPricesDefault}
+          onReset={handleResetToolBillingRules}
+          isResetting={resetToolBillingMutation.isPending}
+        />
+      )
     }
     return null
   }
@@ -569,6 +610,19 @@ export function RatioSettingsCard({
         destructive
         isLoading={resetMutation.isPending}
         handleConfirm={handleConfirmReset}
+        confirmText={t('common.actions.reset')}
+      />
+
+      <ConfirmDialog
+        open={toolBillingConfirmOpen}
+        onOpenChange={setToolBillingConfirmOpen}
+        title={t('systemSettings.actions.resetAllToolBillingRules')}
+        desc={t(
+          'systemSettings.tips.clearToolBillingRulesAndRestoreDefaults'
+        )}
+        destructive
+        isLoading={resetToolBillingMutation.isPending}
+        handleConfirm={handleConfirmResetToolBilling}
         confirmText={t('common.actions.reset')}
       />
     </SettingsSection>

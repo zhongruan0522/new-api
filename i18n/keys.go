@@ -282,7 +282,8 @@ const (
 
 // Pricing related messages
 const (
-	MsgPricingResetModelRatioSuccess = "pricing.reset_model_ratio_success"
+	MsgPricingResetModelRatioSuccess       = "pricing.reset_model_ratio_success"
+	MsgPricingResetToolBillingRulesSuccess = "pricing.reset_tool_billing_rules_success"
 )
 
 // Quota related messages

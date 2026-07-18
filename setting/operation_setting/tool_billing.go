@@ -195,6 +195,18 @@ func UpdateToolBillingRules(rules []ToolBillingRule) {
 	toolBillingSetting.Rules = rules
 }
 
+// DefaultToolBillingRules2JSONString marshals the built-in default rule set
+// (the one used when tool_billing_setting.rules has never been customized)
+// to a JSON string. Used by the reset endpoint to restore defaults.
+func DefaultToolBillingRules2JSONString() string {
+	jsonBytes, err := common.Marshal(ToolBillingSetting{Rules: defaultToolBillingRules()})
+	if err != nil {
+		common.SysError("error marshalling default tool billing rules: " + err.Error())
+		return "[]"
+	}
+	return string(jsonBytes)
+}
+
 // ValidateToolBillingRules validates a JSON string of tool billing rules.
 // 支持新格式（带 conditions）和旧格式（带 quality/size/model_filter/provider），
 // 旧格式会自动迁移为 conditions。

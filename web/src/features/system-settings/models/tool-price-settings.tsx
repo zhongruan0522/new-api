@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { SettingsPageActionsPortal } from '../components/settings-page-context'
 import { useUpdateOption } from '../hooks/use-update-option'
 
 const OPTION_KEY = 'tool_billing_setting.rules'
@@ -149,10 +150,14 @@ function parseInitialRules(rawValue: string | undefined): ToolBillingRule[] {
 
 type ToolPriceSettingsProps = {
   defaultValue: string
+  onReset: () => void
+  isResetting: boolean
 }
 
 export const ToolPriceSettings = memo(function ToolPriceSettings({
   defaultValue,
+  onReset,
+  isResetting,
 }: ToolPriceSettingsProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
@@ -630,16 +635,31 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         </div>
       )}
 
-      <div className='flex justify-end'>
+      <SettingsPageActionsPortal>
         <Button
+          type='button'
+          variant='destructive'
+          size='sm'
+          onClick={onReset}
+          disabled={isResetting || updateOption.isPending}
+        >
+          {t('systemSettings.actions.resetToolBillingRules')}
+        </Button>
+        <Button
+          type='button'
+          size='sm'
           onClick={handleSave}
           disabled={
-            updateOption.isPending || (editMode === 'json' && !!jsonError)
+            updateOption.isPending ||
+            isResetting ||
+            (editMode === 'json' && !!jsonError)
           }
         >
-          {t('systemSettings.actions.saveToolBillingRules')}
+          {updateOption.isPending
+            ? t('channels.tips.saving')
+            : t('systemSettings.actions.saveToolBillingRules')}
         </Button>
-      </div>
+      </SettingsPageActionsPortal>
     </div>
   )
 })

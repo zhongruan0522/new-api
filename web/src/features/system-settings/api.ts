@@ -142,6 +142,13 @@ export async function resetModelRatios() {
   return res.data
 }
 
+export async function resetToolBillingRules() {
+  const res = await api.post<UpdateOptionResponse>(
+    '/api/option/reset_tool_billing_rules'
+  )
+  return res.data
+}
+
 export async function getDatabaseMigrationInfo(mode: DatabaseMigrationMode) {
   const res = await api.get<DatabaseMigrationInfoResponse>(
     `/api/db/${mode}/info`

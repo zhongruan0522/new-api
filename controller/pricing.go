@@ -5,6 +5,7 @@ import (
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
@@ -71,4 +72,21 @@ func ResetModelRatio(c *gin.Context) {
 	}
 	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置模型倍率", nil, nil)
 	common.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
+}
+
+// ResetToolBillingRules restores tool_billing_setting.rules to the built-in
+// default rule set. The dotted key is registered via config.GlobalConfig, so
+// model.UpdateOption takes care of both the DB write and the in-memory refresh.
+func ResetToolBillingRules(c *gin.Context) {
+	defaultStr := operation_setting.DefaultToolBillingRules2JSONString()
+	err := model.UpdateOption("tool_billing_setting.rules", defaultStr)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置工具计费规则", nil, nil)
+	common.ApiSuccessI18n(c, i18n.MsgPricingResetToolBillingRulesSuccess, nil)
 }

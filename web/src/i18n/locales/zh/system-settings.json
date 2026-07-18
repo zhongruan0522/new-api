@@ -874,5 +874,10 @@
   "systemSettings.fields.ofTheFollowingConditions": "以下条件",
   "systemSettings.actions.invert": "反转",
   "systemSettings.actions.addCondition": "添加条件",
-  "systemSettings.actions.saveToolBillingRules": "保存工具计费规则"
+  "systemSettings.actions.saveToolBillingRules": "保存工具计费规则",
+  "systemSettings.actions.resetToolBillingRules": "重置工具计费规则",
+  "systemSettings.actions.resetAllToolBillingRules": "重置所有工具计费规则？",
+  "systemSettings.tips.clearToolBillingRulesAndRestoreDefaults": "这将清空当前所有工具计费规则并恢复为系统默认规则。",
+  "systemSettings.fields.toolBillingRulesResetSuccessfully": "工具计费规则重置成功",
+  "systemSettings.errors.failedToResetToolBillingRules": "重置工具计费规则失败"
 }
