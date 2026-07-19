@@ -287,6 +287,12 @@ func migrateDB() error {
 	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
 	cleanupLegacyChannelJSONColumns()
 
+	// PostgreSQL：把旧版 tokens.model_limits 从 varchar(1024) 迁移为 text，
+	// 避免超过 1024 字符的模型限制字符串写入失败。必须在 AutoMigrate 之前执行。
+	if err := migrateTokenModelLimitsToText(); err != nil {
+		return err
+	}
+
 	err := DB.AutoMigrate(
 		&Channel{},
 		&Ticket{},
@@ -339,6 +345,12 @@ func migrateDBFast() error {
 	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
 	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
 	cleanupLegacyChannelJSONColumns()
+
+	// PostgreSQL：把旧版 tokens.model_limits 从 varchar(1024) 迁移为 text，
+	// 避免超过 1024 字符的模型限制字符串写入失败。必须在 AutoMigrate 之前执行。
+	if err := migrateTokenModelLimitsToText(); err != nil {
+		return err
+	}
 
 	var wg sync.WaitGroup
 
@@ -504,6 +516,39 @@ func alterChannelColumnToTextIfJSON(db *gorm.DB, tableName string, columnName st
 	} else {
 		common.SysLog(fmt.Sprintf("migrated channel column %s.%s from JSON to TEXT", tableName, columnName))
 	}
+}
+
+// migrateTokenModelLimitsToText 把 PostgreSQL 旧库中的 tokens.model_limits 列
+// 从 varchar(1024) 迁移为 text。旧版定义为 varchar(1024)，当模型限制字符串
+// 超过 1024 字符时 PostgreSQL 会写入失败。
+//
+// 仅影响 PostgreSQL；对 MySQL/SQLite 无操作。必须在 AutoMigrate(&Token{}) 之前
+// 执行，以免 AutoMigrate 检测到类型不一致时再触发列类型变更或报错。
+//
+// 幂等：列类型已经是 text 时跳过。
+func migrateTokenModelLimitsToText() error {
+	if !common.UsingPostgreSQL {
+		return nil
+	}
+	var dataType string
+	err := DB.Raw(
+		`SELECT data_type FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1`,
+		"tokens", "model_limits",
+	).Row().Scan(&dataType)
+	if err != nil {
+		// 表或列可能尚不存在（首次初始化），直接跳过，交给 AutoMigrate 创建。
+		return nil
+	}
+	if strings.EqualFold(dataType, "text") {
+		return nil
+	}
+	// 表名/列名来自常量，不拼接外部输入，避免 SQL 注入。
+	stmt := `ALTER TABLE tokens ALTER COLUMN model_limits TYPE text`
+	if err := DB.Exec(stmt).Error; err != nil {
+		return fmt.Errorf("failed to migrate tokens.model_limits to text: %w", err)
+	}
+	common.SysLog("migrated tokens.model_limits to text")
+	return nil
 }
 
 // CleanupLegacyUniqueConstraints 动态查询并删除指定表/列的所有 UNIQUE 约束和已知旧索引。
