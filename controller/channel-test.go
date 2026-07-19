@@ -238,7 +238,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	}
 
 	testPrompt := buildChannelTestPrompt(endpointType, testModel, isTool)
-	if isTool && !supportsChannelTestTool(endpointType, testModel) {
+	if isTool && !supportsChannelTestToolForChannel(channel, endpointType, testModel) {
 		return testResult{
 			context:     c,
 			localErr:    errors.New(channelTestToolNotSupported),
@@ -272,6 +272,16 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	testModel = info.UpstreamModelName
 	// 更新请求中的模型名称
 	request.SetModelName(testModel)
+
+	// 模型映射后的上游模型可能变成 embedding/rerank/compact/nova 等不支持工具的型号,
+	// 这里再校验一次,避免把不兼容的工具测试请求发到上游触发"输入不合规"类错误。
+	if isTool && !supportsChannelTestToolForChannel(channel, endpointType, testModel) {
+		return testResult{
+			context:     c,
+			localErr:    errors.New(channelTestToolNotSupported),
+			newAPIError: types.NewError(errors.New(channelTestToolNotSupported), types.ErrorCodeChannelTestToolUnsupported),
+		}
+	}
 
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	if info.RelayMode == relayconstant.RelayModeResponsesCompact &&
@@ -797,6 +807,50 @@ func supportsChannelTestTool(endpointType string, modelName string) bool {
 	return true
 }
 
+// supportsChannelTestToolForChannel 在 supportsChannelTestTool 基础上叠加 channel/api type 维度判断。
+// 用于避免对未实现 Responses 工具语义转换、或会丢弃 tools 配置的上游发送工具测试请求。
+// 例如 Gemini/Vertex/AWS 当前没有实现 ConvertOpenAIResponsesRequest,AWS Nova 的 Chat 转换会丢弃
+// tools/tool_choice,这些路径如果走工具测试会直接触发上游"输入不合规"类错误,应在本地拒绝。
+func supportsChannelTestToolForChannel(channel *model.Channel, endpointType string, modelName string) bool {
+	if !supportsChannelTestTool(endpointType, modelName) {
+		return false
+	}
+	if channel == nil {
+		return true
+	}
+
+	apiType, _ := common.ChannelType2APIType(channel.Type)
+	normalizedEndpoint := strings.TrimSpace(endpointType)
+	resolvedEndpoint := normalizedEndpoint
+	if resolvedEndpoint == "" {
+		// auto detect: codex / compact 走 Responses 路径,其他走 Chat
+		if strings.Contains(strings.ToLower(modelName), "codex") {
+			resolvedEndpoint = string(constant.EndpointTypeOpenAIResponse)
+		}
+	}
+
+	// Responses 端点只允许已实现工具语义转换的 adaptor
+	if resolvedEndpoint == string(constant.EndpointTypeOpenAIResponse) {
+		switch apiType {
+		case constant.APITypeOpenAI, constant.APITypeAnthropic:
+			return true
+		default:
+			return false
+		}
+	}
+
+	// AWS Bedrock Nova 系列当前 convertToNovaRequest 会丢弃 tools/tool_choice
+	if apiType == constant.APITypeAws && isAwsNovaTestModel(modelName) {
+		return false
+	}
+
+	return true
+}
+
+func isAwsNovaTestModel(modelName string) bool {
+	return strings.Contains(strings.ToLower(modelName), "nova")
+}
+
 func isChannelTestRerankModel(modelName string) bool {
 	return strings.Contains(strings.ToLower(modelName), "rerank")
 }
@@ -920,12 +974,11 @@ func applyChannelTestToolsToChatRequest(request *dto.GeneralOpenAIRequest, testP
 			},
 		},
 	}
-	request.ToolChoice = map[string]any{
-		"type": "function",
-		"function": map[string]any{
-			"name": channelTestToolName,
-		},
-	}
+	// OpenAI Chat 标准同时支持 {"type":"function","function":{"name":"report_result"}} 和 "required",
+	// 但很多 OpenAI 兼容上游(部分代理、第三方网关、国产兼容实现)只接受字符串 tool_choice,
+	// 在只声明一个工具的前提下 "required" 与强制命名工具语义等价,且兼容性更高。
+	// Claude/Gemini adaptor 都正确把 "required" 映射为 anthropic {"type":"any"} 与 gemini mode:"ANY"。
+	request.ToolChoice = "required"
 }
 
 func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest, testPrompt channelTestPrompt) {
@@ -952,10 +1005,9 @@ func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest
 	if err != nil {
 		return
 	}
-	toolChoiceJSON, err := common.Marshal(map[string]any{
-		"type": "function",
-		"name": channelTestToolName,
-	})
+	// OpenAI Responses 同样接受字符串 tool_choice,在只有一个工具时与命名工具等价。
+	// Claude 走 Responses->Chat->Claude 转换时也能正确处理字符串 tool_choice。
+	toolChoiceJSON, err := common.Marshal("required")
 	if err != nil {
 		return
 	}

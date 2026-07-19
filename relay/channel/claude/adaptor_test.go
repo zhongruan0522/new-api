@@ -400,3 +400,37 @@ func buildOpenAIWeatherToolRequest(model string, reasoningEffort string) *dto.Ge
 		},
 	}
 }
+
+
+// TestAdaptorConvertOpenAIRequestRequiredToolChoiceMapsToAny 确保 channel-test 用 string
+// "required" 作为 tool_choice 时,Claude adaptor 会把它映射为 anthropic {"type":"any"},
+// 即强制模型必须调用工具(在只声明一个工具时等价于强制调用该工具)。
+func TestAdaptorConvertOpenAIRequestRequiredToolChoiceMapsToAny(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeAnthropic,
+			UpstreamModelName: "claude-3-5-sonnet",
+		},
+	}
+	request := buildOpenAIWeatherToolRequest("claude-3-5-sonnet", "")
+	request.ToolChoice = "required"
+
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, request)
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+	}
+	choice, ok := converted.ToolChoice.(*dto.ClaudeToolChoice)
+	if !ok {
+		t.Fatalf("tool_choice type = %T, want *dto.ClaudeToolChoice", converted.ToolChoice)
+	}
+	if choice.Type != "any" {
+		t.Fatalf("tool_choice.type = %q, want \"any\" for required tool_choice", choice.Type)
+	}
+	if choice.Name != "" {
+		t.Fatalf("tool_choice.name = %q, want empty for required tool_choice", choice.Name)
+	}
+}
