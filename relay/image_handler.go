@@ -121,10 +121,7 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		usage.(*dto.Usage).PromptTokens = int(request.N)
 	}
 
-	quality := "standard"
-	if request.Quality == "hd" {
-		quality = "hd"
-	}
+	quality := resolveImageQuality(request)
 
 	var logContent []string
 
@@ -142,4 +139,11 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		return apiErr
 	}
 	return nil
+}
+
+func resolveImageQuality(request *dto.ImageRequest) string {
+	if request.Quality != "" {
+		return request.Quality
+	}
+	return "standard"
 }
