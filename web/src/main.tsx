@@ -100,8 +100,12 @@ const queryClient = new QueryClient({
 const router = createRouter({
   routeTree,
   context: { queryClient },
-  defaultPreload: 'intent',
-  defaultPreloadStaleTime: 0,
+  // TanStack Router 1.170.16 has a known bug: preloading routes whose
+  // beforeLoad throws a redirect can access an undefined route state
+  // and crash with "Cannot read properties of undefined (reading '_nonReactive')".
+  // Disable intent-based preloading until we upgrade to a fixed version.
+  // defaultPreload: 'intent',
+  // defaultPreloadStaleTime: 0,
 })
 
 // Register the router instance for type safety
