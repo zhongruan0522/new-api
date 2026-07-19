@@ -68,6 +68,25 @@ func (token *Token) Clean() {
 	token.Key = ""
 }
 
+// MaskTokenKey 将令牌密钥脱敏为等长星号，供列表/详情等接口返回，避免泄露真实 key。
+// 数据库中的 key 不含 sk- 前缀；前端展示时再拼接 sk-。
+func MaskTokenKey(key string) string {
+	if key == "" {
+		return ""
+	}
+	return strings.Repeat("*", len(key))
+}
+
+// GetFullKey 返回数据库中存储的完整密钥（不含 sk- 前缀）。
+func (token *Token) GetFullKey() string {
+	return token.Key
+}
+
+// GetMaskedKey 返回脱敏后的密钥字段值。
+func (token *Token) GetMaskedKey() string {
+	return MaskTokenKey(token.Key)
+}
+
 func (token *Token) GetIpLimits() []string {
 	// delete empty spaces
 	//split with \n

@@ -40,6 +40,8 @@ import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
+// 列表默认展示脱敏 key：sk- + 等长 *（与历史 UI 一致用 12 位星号占位）。
+// 真实密钥仅在复制/查看/新建/重置时通过 /api/token/{id}/key 等接口获取。
 const MASKED_API_KEY = `sk-${'*'.repeat(12)}`
 
 type QuotaLimit = {
@@ -242,10 +244,9 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
   )
 
   const handleCopy = useCallback(async () => {
-    const realKey = resolvedFullKey
+    // 点击复制时再请求真实 key（POST /api/token/{id}/key），列表接口不返回明文。
+    const realKey = resolvedFullKey ?? (await resolveRealKey(apiKey.id))
     if (!realKey) {
-      void resolveRealKey(apiKey.id)
-      toast.info(t('keys.errors.apiKeyIsLoadingPleaseTryAgainInAMoment'))
       return
     }
     const ok = await copyToClipboard(realKey)

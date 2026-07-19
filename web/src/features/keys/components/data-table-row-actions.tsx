@@ -105,12 +105,10 @@ export function DataTableRowActions<TData>({
     [apiKey.id, isRealKeyLoading, resolvedRealKey, resolveRealKey]
   )
 
-  const getCachedRealKey = useCallback(() => {
+  const getRealKeyOnDemand = useCallback(async () => {
     if (resolvedRealKey) return resolvedRealKey
-    void resolveRealKey(apiKey.id)
-    toast.info(t('keys.errors.apiKeyIsLoadingPleaseTryAgainInAMoment'))
-    return null
-  }, [apiKey.id, resolvedRealKey, resolveRealKey, t])
+    return resolveRealKey(apiKey.id)
+  }, [apiKey.id, resolvedRealKey, resolveRealKey])
 
   const handleToggleStatus = async (
     e?: React.MouseEvent<HTMLButtonElement>
@@ -224,7 +222,7 @@ export function DataTableRowActions<TData>({
         <DropdownMenuContent align='end' className='w-[200px]'>
           <DropdownMenuItem
             onClick={async () => {
-              const realKey = getCachedRealKey()
+              const realKey = await getRealKeyOnDemand()
               if (!realKey) return
               const ok = await copyToClipboard(realKey)
               if (ok) {
@@ -241,7 +239,7 @@ export function DataTableRowActions<TData>({
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={async () => {
-              const realKey = getCachedRealKey()
+              const realKey = await getRealKeyOnDemand()
               if (!realKey) return
               const connStr = encodeConnectionString(
                 realKey,
