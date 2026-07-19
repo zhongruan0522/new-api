@@ -330,7 +330,9 @@ export function RuleEditorDialog(props: Props) {
                     placeholder={
                       src.type === 'gjson'
                         ? 'metadata.conversation_id'
-                        : 'user_id'
+                        : src.type === 'request_header'
+                          ? 'X-Conversation-Id'
+                          : 'user_id'
                     }
                     value={
                       src.type === 'gjson' ? src.path || '' : src.key || ''
