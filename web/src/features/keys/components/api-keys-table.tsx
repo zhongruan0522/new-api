@@ -21,7 +21,6 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import {
   type SortingState,
-  type VisibilityState,
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
@@ -47,6 +46,7 @@ import {
   DISABLED_ROW_DESKTOP,
   DISABLED_ROW_MOBILE,
   DataTablePage,
+  usePersistentColumnVisibility,
 } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
 import { getApiKeys, searchApiKeys } from '../api'
@@ -184,7 +184,10 @@ export function ApiKeysTable() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'name', desc: false },
   ])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'api-keys-table',
+    {}
+  )
 
   const {
     globalFilter,

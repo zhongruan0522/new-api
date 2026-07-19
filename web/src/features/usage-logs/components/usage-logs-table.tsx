@@ -36,7 +36,7 @@ import { useIsAdmin } from '@/hooks/use-admin'
 import { useAuthStore } from '@/stores/auth-store'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { DataTablePage } from '@/components/data-table'
+import { DataTablePage, usePersistentColumnVisibility } from '@/components/data-table'
 import {
   DEFAULT_LOGS_DATA,
   LOG_TYPE_ALL_VALUE,
@@ -72,6 +72,11 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const userId = useAuthStore((state) => state.auth.user?.id)
   const isMobile = useMediaQuery('(max-width: 640px)')
   const searchParams = route.useSearch()
+
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'usage-logs-table',
+    {}
+  )
 
   const {
     columnFilters,
@@ -158,11 +163,13 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     columns: columns as ColumnDef<Record<string, unknown>>[],
     state: {
       columnFilters,
+      columnVisibility,
       pagination,
     },
     enableRowSelection: false,
     onPaginationChange,
     onColumnFiltersChange,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),

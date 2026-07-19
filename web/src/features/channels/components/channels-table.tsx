@@ -25,7 +25,6 @@ import {
   getExpandedRowModel,
   type OnChangeFn,
   type SortingState,
-  type VisibilityState,
   type ExpandedState,
   type Row,
 } from '@tanstack/react-table'
@@ -38,6 +37,7 @@ import {
   DISABLED_ROW_DESKTOP,
   DISABLED_ROW_MOBILE,
   DataTablePage,
+  usePersistentColumnVisibility,
 } from '@/components/data-table'
 import { getChannels, searchChannels, getGroups } from '../api'
 import {
@@ -95,10 +95,10 @@ export function ChannelsTable() {
 
   // Table state
   const [sorting, setSorting] = useState<SortingState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    models: false,
-    tag: false,
-  })
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'channels-table',
+    { models: false, tag: false }
+  )
   const [rowSelection, setRowSelection] = useState({})
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
