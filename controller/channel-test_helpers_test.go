@@ -3,6 +3,8 @@ package controller
 import (
 	"strings"
 	"testing"
+
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 func TestBuildChannelTestPromptLength(t *testing.T) {
@@ -41,6 +43,28 @@ func TestExtractChannelTestAITextFromChatResponse(t *testing.T) {
 	text := extractChannelTestAIText(body)
 	if text != "2" {
 		t.Fatalf("unexpected extracted text: %q", text)
+	}
+}
+
+func TestExtractChannelTestAITextFromStreamResponse(t *testing.T) {
+	body := []byte("data: {\"choices\":[{\"delta\":{\"content\":\"2\"}}]}\n\ndata: [DONE]\n\n")
+	text := extractChannelTestAIText(body)
+	if text != "2" {
+		t.Fatalf("unexpected extracted stream text: %q", text)
+	}
+}
+
+func TestChannelTestEmbeddingModelClassification(t *testing.T) {
+	modelName := "text-embed-3-small"
+	if supportsChannelTestTool("", modelName) {
+		t.Fatal("expected auto-detected embed model to be incompatible with tool tests")
+	}
+	if requiresChannelTestTextAnswer("", modelName) {
+		t.Fatal("expected auto-detected embed model to skip text answer validation")
+	}
+	request := buildTestRequest(modelName, "", nil, false, channelTestPrompt{})
+	if _, ok := request.(*dto.EmbeddingRequest); !ok {
+		t.Fatalf("expected embed model to build embedding request, got %T", request)
 	}
 }
 

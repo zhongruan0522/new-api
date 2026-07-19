@@ -131,15 +131,12 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	} else {
 		// 如果没有指定端点类型，使用原有的自动检测逻辑
 
-		if strings.Contains(strings.ToLower(testModel), "rerank") {
+		if isChannelTestRerankModel(testModel) {
 			requestPath = "/v1/rerank"
 		}
 
 		// 先判断是否为 Embedding 模型
-		if strings.Contains(strings.ToLower(testModel), "embedding") ||
-			strings.HasPrefix(testModel, "m3e") || // m3e 系列模型
-			strings.Contains(testModel, "bge-") || // bge 系列模型
-			strings.Contains(testModel, "embed") {
+		if isChannelTestEmbeddingModel(testModel) {
 			requestPath = "/v1/embeddings" // 修改请求路径
 		}
 
@@ -709,7 +706,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 	}
 
 	// 自动检测逻辑（保持原有行为）
-	if strings.Contains(strings.ToLower(model), "rerank") {
+	if isChannelTestRerankModel(model) {
 		return &dto.RerankRequest{
 			Model:     model,
 			Query:     "What is Deep Learning?",
@@ -718,9 +715,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 		}
 	}
 
-	if strings.Contains(strings.ToLower(model), "embedding") ||
-		strings.HasPrefix(model, "m3e") ||
-		strings.Contains(model, "bge-") {
+	if isChannelTestEmbeddingModel(model) {
 		return &dto.EmbeddingRequest{
 			Model: model,
 			Input: []any{"hello world"},
@@ -794,15 +789,28 @@ func supportsChannelTestTool(endpointType string, modelName string) bool {
 		}
 	}
 
-	lowerModel := strings.ToLower(modelName)
-	if strings.Contains(lowerModel, "rerank") ||
-		strings.Contains(lowerModel, "embedding") ||
-		strings.HasPrefix(modelName, "m3e") ||
-		strings.Contains(modelName, "bge-") ||
-		strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix) {
+	if isChannelTestRerankModel(modelName) ||
+		isChannelTestEmbeddingModel(modelName) ||
+		isChannelTestCompactModel(modelName) {
 		return false
 	}
 	return true
+}
+
+func isChannelTestRerankModel(modelName string) bool {
+	return strings.Contains(strings.ToLower(modelName), "rerank")
+}
+
+func isChannelTestEmbeddingModel(modelName string) bool {
+	lowerModelName := strings.ToLower(modelName)
+	return strings.Contains(lowerModelName, "embedding") ||
+		strings.HasPrefix(lowerModelName, "m3e") ||
+		strings.Contains(lowerModelName, "bge-") ||
+		strings.Contains(lowerModelName, "embed")
+}
+
+func isChannelTestCompactModel(modelName string) bool {
+	return strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix)
 }
 
 func buildChannelTestPrompt(endpointType string, modelName string, isTool bool) channelTestPrompt {
@@ -850,12 +858,9 @@ func requiresChannelTestTextAnswer(endpointType string, modelName string) bool {
 		}
 	}
 
-	lowerModel := strings.ToLower(modelName)
-	if strings.Contains(lowerModel, "rerank") ||
-		strings.Contains(lowerModel, "embedding") ||
-		strings.HasPrefix(modelName, "m3e") ||
-		strings.Contains(modelName, "bge-") ||
-		strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix) {
+	if isChannelTestRerankModel(modelName) ||
+		isChannelTestEmbeddingModel(modelName) ||
+		isChannelTestCompactModel(modelName) {
 		return false
 	}
 	return true
@@ -1126,20 +1131,39 @@ func extractChannelTestAIText(respBody []byte) string {
 		return ""
 	}
 
-	if text := extractChannelTestAITextFromJSON(b); text != "" {
-		return text
+	if isChannelTestJSONPayload(b) {
+		if text := extractChannelTestAITextFromJSON(b); text != "" {
+			return text
+		}
 	}
 
+	textFromEvents := extractChannelTestAITextFromEventStream(b)
+	if textFromEvents != "" {
+		return textFromEvents
+	}
+
+	if isChannelTestEventStreamPayload(b) {
+		return ""
+	}
+
+	return strings.TrimSpace(string(b))
+}
+
+func extractChannelTestAITextFromEventStream(eventStreamBytes []byte) string {
 	var builder strings.Builder
-	for _, line := range bytes.Split(b, []byte{'\n'}) {
+	for _, line := range bytes.Split(eventStreamBytes, []byte{'\n'}) {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
+
 		payload := line
 		if bytes.HasPrefix(line, []byte("data:")) {
 			payload = bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+		} else if !isChannelTestJSONPayload(line) {
+			continue
 		}
+
 		if len(payload) == 0 || bytes.Equal(payload, []byte("[DONE]")) {
 			continue
 		}
@@ -1150,9 +1174,24 @@ func extractChannelTestAIText(respBody []byte) string {
 	return strings.TrimSpace(builder.String())
 }
 
+func isChannelTestJSONPayload(payload []byte) bool {
+	trimmedPayload := bytes.TrimSpace(payload)
+	return len(trimmedPayload) > 0 && (trimmedPayload[0] == '{' || trimmedPayload[0] == '[')
+}
+
+func isChannelTestEventStreamPayload(payload []byte) bool {
+	for _, line := range bytes.Split(payload, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if bytes.HasPrefix(line, []byte("data:")) {
+			return true
+		}
+	}
+	return false
+}
+
 func extractChannelTestAITextFromJSON(jsonBytes []byte) string {
-	if len(jsonBytes) == 0 || (jsonBytes[0] != '{' && jsonBytes[0] != '[') {
-		return strings.TrimSpace(string(jsonBytes))
+	if len(jsonBytes) == 0 || !isChannelTestJSONPayload(jsonBytes) {
+		return ""
 	}
 
 	paths := []string{
