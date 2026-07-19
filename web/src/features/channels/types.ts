@@ -141,7 +141,10 @@ export interface ChannelTestResponse {
   success: boolean
   message?: string
   error_code?: string
+  /** Response duration in seconds (backend compatibility field). */
+  time?: number
   data?: {
+    /** Response duration in milliseconds. */
     response_time?: number
     error?: string
   }

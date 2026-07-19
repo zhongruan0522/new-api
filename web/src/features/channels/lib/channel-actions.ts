@@ -209,6 +209,7 @@ export async function handleTestChannel(
     testModel?: string
     endpointType?: string
     stream?: boolean
+    tool?: boolean
     silent?: boolean
   },
   onTestComplete?: (
@@ -218,38 +219,68 @@ export async function handleTestChannel(
     errorCode?: string
   ) => void
 ): Promise<void> {
-  const payload =
-    options && (options.testModel || options.endpointType || options.stream)
-      ? {
-          ...(options.testModel ? { model: options.testModel } : {}),
-          ...(options.endpointType
-            ? { endpoint_type: options.endpointType }
-            : {}),
-          ...(options.stream ? { stream: true } : {}),
-        }
-      : undefined
+  const hasOptions =
+    options &&
+    (options.testModel ||
+      options.endpointType ||
+      options.stream ||
+      options.tool)
+  const payload = hasOptions
+    ? {
+        ...(options.testModel ? { model: options.testModel } : {}),
+        ...(options.endpointType
+          ? { endpoint_type: options.endpointType }
+          : {}),
+        ...(options.stream ? { stream: true } : {}),
+        ...(options.tool ? { tool: true } : {}),
+      }
+    : undefined
 
   try {
     const response = await testChannel(id, payload)
+    const responseTimeMs =
+      response.data?.response_time ??
+      (typeof response.time === 'number'
+        ? Math.round(response.time * 1000)
+        : undefined)
+
     if (response.success) {
       if (!options?.silent) {
         toast.success(i18next.t(SUCCESS_MESSAGES.TESTED))
       }
-      onTestComplete?.(true, response.data?.response_time)
+      onTestComplete?.(true, responseTimeMs)
     } else {
       if (!options?.silent) {
         toast.error(response.message || i18next.t(ERROR_MESSAGES.TEST_FAILED))
       }
-      onTestComplete?.(false, undefined, response.message, response.error_code)
+      onTestComplete?.(
+        false,
+        responseTimeMs,
+        response.message,
+        response.error_code
+      )
     }
   } catch (_error: unknown) {
-    const err = _error as { response?: { data?: { message?: string } } }
+    const err = _error as {
+      response?: {
+        data?: { message?: string; error_code?: string; time?: number }
+      }
+    }
     const errorMsg =
       err?.response?.data?.message || i18next.t(ERROR_MESSAGES.TEST_FAILED)
+    const responseTimeMs =
+      typeof err?.response?.data?.time === 'number'
+        ? Math.round(err.response.data.time * 1000)
+        : undefined
     if (!options?.silent) {
       toast.error(errorMsg)
     }
-    onTestComplete?.(false, undefined, errorMsg)
+    onTestComplete?.(
+      false,
+      responseTimeMs,
+      errorMsg,
+      err?.response?.data?.error_code
+    )
   }
 }
 

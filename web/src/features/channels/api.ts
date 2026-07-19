@@ -183,9 +183,20 @@ export async function batchSetChannelTag(
  */
 export async function testChannel(
   id: number,
-  params?: { model?: string; endpoint_type?: string; stream?: boolean }
+  params?: {
+    model?: string
+    endpoint_type?: string
+    stream?: boolean
+    tool?: boolean
+  }
 ): Promise<ChannelTestResponse> {
-  const res = await api.get(`/api/channel/test/${id}`, { params })
+  const config: ExtendedApiConfig = {
+    params,
+    // Channel test UI already shows its own toast/status; skip the global
+    // business-error interceptor so failures do not toast twice.
+    skipBusinessError: true,
+  }
+  const res = await api.get(`/api/channel/test/${id}`, config)
   return res.data
 }
 

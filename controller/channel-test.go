@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/samber/lo"
 	"github.com/tidwall/gjson"
@@ -35,10 +37,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	channelTestToolName         = "report_result"
+	channelTestToolNotSupported = "不支持工具"
+)
+
 type testResult struct {
 	context     *gin.Context
 	localErr    error
 	newAPIError *types.NewAPIError
+}
+
+type channelTestPrompt struct {
+	// prompt is the user-facing instruction sent to the model.
+	prompt string
+	// expectedAnswer is the integer result of the generated arithmetic problem.
+	// Zero-value is valid only when isTool is true (tool tests do not use arithmetic).
+	expectedAnswer int
+	// isTool indicates the request should force a deterministic tool call.
+	isTool bool
+	// requiresTextAnswer indicates the response body should be validated as arithmetic text.
+	requiresTextAnswer bool
 }
 
 func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointType string) string {
@@ -69,7 +88,7 @@ func resolveChannelTestUserID(c *gin.Context) (int, error) {
 	return rootUser.Id, nil
 }
 
-func testChannel(channel *model.Channel, testUserID int, testModel string, endpointType string, isStream bool) testResult {
+func testChannel(channel *model.Channel, testUserID int, testModel string, endpointType string, isStream bool, isTool bool) testResult {
 	tik := time.Now()
 	var unsupportedTestChannelTypes = []int{
 		constant.ChannelTypeMidjourney,
@@ -221,7 +240,15 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		}
 	}
 
-	request := buildTestRequest(testModel, endpointType, channel, isStream)
+	testPrompt := buildChannelTestPrompt(endpointType, testModel, isTool)
+	if isTool && !supportsChannelTestTool(endpointType, testModel) {
+		return testResult{
+			context:     c,
+			localErr:    errors.New(channelTestToolNotSupported),
+			newAPIError: types.NewError(errors.New(channelTestToolNotSupported), types.ErrorCodeChannelTestToolUnsupported),
+		}
+	}
+	request := buildTestRequest(testModel, endpointType, channel, isStream, testPrompt)
 
 	info, err := relaycommon.GenRelayInfo(c, relayFormat, request, nil)
 
@@ -462,6 +489,13 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 			newAPIError: types.NewOpenAIError(bodyErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError),
 		}
 	}
+	if validateErr := validateChannelTestResponse(respBody, testPrompt); validateErr != nil {
+		return testResult{
+			context:     c,
+			localErr:    validateErr,
+			newAPIError: types.NewError(validateErr, classifyChannelTestValidationError(validateErr, testPrompt)),
+		}
+	}
 	info.SetEstimatePromptTokens(usage.PromptTokens)
 
 	quota := 0
@@ -599,20 +633,28 @@ func detectErrorMessageFromJSONBytes(jsonBytes []byte) string {
 	return message
 }
 
-func buildTestRequest(model string, endpointType string, channel *model.Channel, isStream bool) dto.Request {
-	testResponsesInput := json.RawMessage(`[{"role":"user","content":"hi"}]`)
+func buildTestRequest(model string, endpointType string, channel *model.Channel, isStream bool, testPrompt channelTestPrompt) dto.Request {
+	userPrompt := testPrompt.prompt
+	if strings.TrimSpace(userPrompt) == "" {
+		userPrompt = "hi"
+	}
+	responsesInput, _ := common.Marshal([]map[string]any{
+		{
+			"role":    "user",
+			"content": userPrompt,
+		},
+	})
+	testResponsesInput := json.RawMessage(responsesInput)
 
 	// 根据端点类型构建不同的测试请求
 	if endpointType != "" {
 		switch constant.EndpointType(endpointType) {
 		case constant.EndpointTypeEmbeddings:
-			// 返回 EmbeddingRequest
 			return &dto.EmbeddingRequest{
 				Model: model,
 				Input: []any{"hello world"},
 			}
 		case constant.EndpointTypeImageGeneration:
-			// 返回 ImageRequest
 			return &dto.ImageRequest{
 				Model:  model,
 				Prompt: "a cute cat",
@@ -620,7 +662,6 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 				Size:   "1024x1024",
 			}
 		case constant.EndpointTypeJinaRerank:
-			// 返回 RerankRequest
 			return &dto.RerankRequest{
 				Model:     model,
 				Query:     "What is Deep Learning?",
@@ -628,23 +669,25 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 				TopN:      2,
 			}
 		case constant.EndpointTypeOpenAIResponse:
-			// 返回 OpenAIResponsesRequest
-			return &dto.OpenAIResponsesRequest{
+			req := &dto.OpenAIResponsesRequest{
 				Model:  model,
-				Input:  json.RawMessage(`[{"role":"user","content":"hi"}]`),
+				Input:  testResponsesInput,
 				Stream: isStream,
 			}
+			applyChannelTestToolsToResponsesRequest(req, testPrompt)
+			return req
 		case constant.EndpointTypeOpenAIResponseCompact:
-			// 返回 OpenAIResponsesCompactionRequest
 			return &dto.OpenAIResponsesCompactionRequest{
 				Model: model,
 				Input: testResponsesInput,
 			}
 		case constant.EndpointTypeAnthropic, constant.EndpointTypeGemini, constant.EndpointTypeOpenAI:
-			// 返回 GeneralOpenAIRequest
-			maxTokens := uint(16)
+			maxTokens := uint(32)
 			if constant.EndpointType(endpointType) == constant.EndpointTypeGemini {
 				maxTokens = 3000
+			}
+			if testPrompt.isTool {
+				maxTokens = 128
 			}
 			req := &dto.GeneralOpenAIRequest{
 				Model:  model,
@@ -652,7 +695,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 				Messages: []dto.Message{
 					{
 						Role:    "user",
-						Content: "hi",
+						Content: userPrompt,
 					},
 				},
 				MaxTokens: maxTokens,
@@ -660,6 +703,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 			if isStream {
 				req.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
 			}
+			applyChannelTestToolsToChatRequest(req, testPrompt)
 			return req
 		}
 	}
@@ -674,18 +718,15 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 		}
 	}
 
-	// 先判断是否为 Embedding 模型
 	if strings.Contains(strings.ToLower(model), "embedding") ||
 		strings.HasPrefix(model, "m3e") ||
 		strings.Contains(model, "bge-") {
-		// 返回 EmbeddingRequest
 		return &dto.EmbeddingRequest{
 			Model: model,
 			Input: []any{"hello world"},
 		}
 	}
 
-	// Responses compaction models (must use /v1/responses/compact)
 	if strings.HasSuffix(model, ratio_setting.CompactModelSuffix) {
 		return &dto.OpenAIResponsesCompactionRequest{
 			Model: model,
@@ -693,23 +734,23 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 		}
 	}
 
-	// Responses-only models (e.g. codex series)
 	if strings.Contains(strings.ToLower(model), "codex") {
-		return &dto.OpenAIResponsesRequest{
+		req := &dto.OpenAIResponsesRequest{
 			Model:  model,
-			Input:  json.RawMessage(`[{"role":"user","content":"hi"}]`),
+			Input:  testResponsesInput,
 			Stream: isStream,
 		}
+		applyChannelTestToolsToResponsesRequest(req, testPrompt)
+		return req
 	}
 
-	// Chat/Completion 请求 - 返回 GeneralOpenAIRequest
 	testRequest := &dto.GeneralOpenAIRequest{
 		Model:  model,
 		Stream: isStream,
 		Messages: []dto.Message{
 			{
 				Role:    "user",
-				Content: "hi",
+				Content: userPrompt,
 			},
 		},
 	}
@@ -718,18 +759,483 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 	}
 
 	if strings.HasPrefix(model, "o") {
-		testRequest.MaxCompletionTokens = 16
+		testRequest.MaxCompletionTokens = 32
+		if testPrompt.isTool {
+			testRequest.MaxCompletionTokens = 128
+		}
 	} else if strings.Contains(model, "thinking") {
 		if !strings.Contains(model, "claude") {
-			testRequest.MaxTokens = 50
+			testRequest.MaxTokens = 80
 		}
 	} else if strings.Contains(model, "gemini") {
 		testRequest.MaxTokens = 3000
 	} else {
-		testRequest.MaxTokens = 16
+		testRequest.MaxTokens = 32
+		if testPrompt.isTool {
+			testRequest.MaxTokens = 128
+		}
 	}
+	applyChannelTestToolsToChatRequest(testRequest, testPrompt)
 
 	return testRequest
+}
+
+func supportsChannelTestTool(endpointType string, modelName string) bool {
+	normalizedEndpoint := strings.TrimSpace(endpointType)
+	if normalizedEndpoint != "" {
+		switch constant.EndpointType(normalizedEndpoint) {
+		case constant.EndpointTypeOpenAI,
+			constant.EndpointTypeOpenAIResponse,
+			constant.EndpointTypeAnthropic,
+			constant.EndpointTypeGemini:
+			return true
+		default:
+			return false
+		}
+	}
+
+	lowerModel := strings.ToLower(modelName)
+	if strings.Contains(lowerModel, "rerank") ||
+		strings.Contains(lowerModel, "embedding") ||
+		strings.HasPrefix(modelName, "m3e") ||
+		strings.Contains(modelName, "bge-") ||
+		strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix) {
+		return false
+	}
+	return true
+}
+
+func buildChannelTestPrompt(endpointType string, modelName string, isTool bool) channelTestPrompt {
+	if isTool {
+		if !supportsChannelTestTool(endpointType, modelName) {
+			return channelTestPrompt{isTool: true}
+		}
+		return channelTestPrompt{
+			prompt: "Call the report_result tool exactly once with argument value equal to 42. Do not write any other text outside tool calls.",
+			isTool: true,
+		}
+	}
+
+	if !requiresChannelTestTextAnswer(endpointType, modelName) {
+		return channelTestPrompt{}
+	}
+
+	leftOperand, rightOperand, operator, expectedAnswer := generateChannelTestArithmetic()
+	expression := fmt.Sprintf("%d%s%d", leftOperand, operator, rightOperand)
+	// Keep the instruction between 50 and 100 characters so the model has clear
+	// constraints without overflowing short completion budgets.
+	// Example: "Calculate 12+34. Except private reasoning, reply only the final integer. No text/JSON/Markdown."
+	prompt := fmt.Sprintf(
+		"Calculate %s. Except private reasoning, reply only the final integer. No text/JSON/Markdown.",
+		expression,
+	)
+	return channelTestPrompt{
+		prompt:             prompt,
+		expectedAnswer:     expectedAnswer,
+		requiresTextAnswer: true,
+	}
+}
+
+func requiresChannelTestTextAnswer(endpointType string, modelName string) bool {
+	normalizedEndpoint := strings.TrimSpace(endpointType)
+	if normalizedEndpoint != "" {
+		switch constant.EndpointType(normalizedEndpoint) {
+		case constant.EndpointTypeOpenAI,
+			constant.EndpointTypeOpenAIResponse,
+			constant.EndpointTypeAnthropic,
+			constant.EndpointTypeGemini:
+			return true
+		default:
+			return false
+		}
+	}
+
+	lowerModel := strings.ToLower(modelName)
+	if strings.Contains(lowerModel, "rerank") ||
+		strings.Contains(lowerModel, "embedding") ||
+		strings.HasPrefix(modelName, "m3e") ||
+		strings.Contains(modelName, "bge-") ||
+		strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix) {
+		return false
+	}
+	return true
+}
+
+func generateChannelTestArithmetic() (leftOperand int, rightOperand int, operator string, expectedAnswer int) {
+	// Division is forced to divide evenly so the expected answer stays an integer.
+	switch rand.Intn(4) {
+	case 0:
+		leftOperand = rand.Intn(100) + 1
+		rightOperand = rand.Intn(100) + 1
+		operator = "+"
+		expectedAnswer = leftOperand + rightOperand
+	case 1:
+		leftOperand = rand.Intn(100) + 1
+		rightOperand = rand.Intn(leftOperand) + 1
+		operator = "-"
+		expectedAnswer = leftOperand - rightOperand
+	case 2:
+		leftOperand = rand.Intn(12) + 1
+		rightOperand = rand.Intn(12) + 1
+		operator = "*"
+		expectedAnswer = leftOperand * rightOperand
+	default:
+		rightOperand = rand.Intn(12) + 1
+		expectedAnswer = rand.Intn(12) + 1
+		leftOperand = rightOperand * expectedAnswer
+		if leftOperand > 100 {
+			expectedAnswer = 1 + rand.Intn(max(1, 100/rightOperand))
+			leftOperand = rightOperand * expectedAnswer
+		}
+		operator = "/"
+	}
+	return leftOperand, rightOperand, operator, expectedAnswer
+}
+
+func applyChannelTestToolsToChatRequest(request *dto.GeneralOpenAIRequest, testPrompt channelTestPrompt) {
+	if request == nil || !testPrompt.isTool {
+		return
+	}
+	request.Tools = []dto.ToolCallRequest{
+		{
+			Type: "function",
+			Function: dto.FunctionRequest{
+				Name:        channelTestToolName,
+				Description: "Report the final numeric result for the channel connectivity test.",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"value": map[string]any{
+							"type":        "integer",
+							"description": "Final integer result",
+						},
+					},
+					"required": []string{"value"},
+				},
+			},
+		},
+	}
+	request.ToolChoice = map[string]any{
+		"type": "function",
+		"function": map[string]any{
+			"name": channelTestToolName,
+		},
+	}
+}
+
+func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest, testPrompt channelTestPrompt) {
+	if request == nil || !testPrompt.isTool {
+		return
+	}
+	toolsJSON, err := common.Marshal([]map[string]any{
+		{
+			"type":        "function",
+			"name":        channelTestToolName,
+			"description": "Report the final numeric result for the channel connectivity test.",
+			"parameters": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"value": map[string]any{
+						"type":        "integer",
+						"description": "Final integer result",
+					},
+				},
+				"required": []string{"value"},
+			},
+		},
+	})
+	if err != nil {
+		return
+	}
+	toolChoiceJSON, err := common.Marshal(map[string]any{
+		"type": "function",
+		"name": channelTestToolName,
+	})
+	if err != nil {
+		return
+	}
+	request.Tools = toolsJSON
+	request.ToolChoice = toolChoiceJSON
+}
+
+func validateChannelTestResponse(respBody []byte, testPrompt channelTestPrompt) error {
+	if testPrompt.isTool {
+		if responseHasChannelTestToolCall(respBody) {
+			return nil
+		}
+		originalText := strings.TrimSpace(extractChannelTestAIText(respBody))
+		if originalText == "" {
+			return errors.New(channelTestToolNotSupported)
+		}
+		return fmt.Errorf("%s\n%s", channelTestToolNotSupported, originalText)
+	}
+
+	if !testPrompt.requiresTextAnswer {
+		return nil
+	}
+
+	originalText := strings.TrimSpace(extractChannelTestAIText(respBody))
+	if originalText == "" {
+		return errors.New("empty model response")
+	}
+	if !matchesChannelTestExpectedAnswer(originalText, testPrompt.expectedAnswer) {
+		// Return the raw AI text as the error message so the UI can show it
+		// directly in toast/status instead of structured JSON.
+		return errors.New(originalText)
+	}
+	return nil
+}
+
+func classifyChannelTestValidationError(err error, testPrompt channelTestPrompt) types.ErrorCode {
+	if err == nil {
+		return types.ErrorCodeBadResponseBody
+	}
+	if testPrompt.isTool || strings.Contains(err.Error(), channelTestToolNotSupported) {
+		return types.ErrorCodeChannelTestToolUnsupported
+	}
+	return types.ErrorCodeBadResponseBody
+}
+
+func responseHasChannelTestToolCall(respBody []byte) bool {
+	b := bytes.TrimSpace(respBody)
+	if len(b) == 0 {
+		return false
+	}
+
+	if hasChannelTestToolCallInJSON(b) {
+		return true
+	}
+
+	for _, line := range bytes.Split(b, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		payload := line
+		if bytes.HasPrefix(line, []byte("data:")) {
+			payload = bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+		}
+		if len(payload) == 0 || bytes.Equal(payload, []byte("[DONE]")) {
+			continue
+		}
+		if hasChannelTestToolCallInJSON(payload) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasChannelTestToolCallInJSON(jsonBytes []byte) bool {
+	if len(jsonBytes) == 0 || (jsonBytes[0] != '{' && jsonBytes[0] != '[') {
+		return false
+	}
+
+	// Chat Completions non-stream and stream deltas.
+	for _, path := range []string{
+		"choices.#.message.tool_calls.#.function.name",
+		"choices.#.delta.tool_calls.#.function.name",
+		"choices.0.message.tool_calls.0.function.name",
+		"choices.0.delta.tool_calls.0.function.name",
+	} {
+		result := gjson.GetBytes(jsonBytes, path)
+		if result.Exists() && containsChannelTestToolName(result) {
+			return true
+		}
+	}
+
+	// OpenAI Responses style.
+	for _, path := range []string{
+		"output.#.name",
+		"output.#.type",
+		"item.name",
+		"item.type",
+		"response.output.#.name",
+		"response.output.#.type",
+	} {
+		result := gjson.GetBytes(jsonBytes, path)
+		if !result.Exists() {
+			continue
+		}
+		if containsChannelTestToolName(result) {
+			return true
+		}
+		if result.IsArray() {
+			for _, item := range result.Array() {
+				if strings.Contains(strings.ToLower(item.String()), "function_call") ||
+					strings.Contains(strings.ToLower(item.String()), "tool_call") {
+					// If a function/tool call exists, also require the expected tool name when present.
+					if gjson.GetBytes(jsonBytes, "output.#.name").Exists() ||
+						gjson.GetBytes(jsonBytes, "item.name").Exists() ||
+						gjson.GetBytes(jsonBytes, "response.output.#.name").Exists() {
+						if containsChannelTestToolName(gjson.GetBytes(jsonBytes, "output.#.name")) ||
+							containsChannelTestToolName(gjson.GetBytes(jsonBytes, "item.name")) ||
+							containsChannelTestToolName(gjson.GetBytes(jsonBytes, "response.output.#.name")) {
+							return true
+						}
+						continue
+					}
+					return true
+				}
+			}
+		} else if strings.Contains(strings.ToLower(result.String()), "function_call") ||
+			strings.Contains(strings.ToLower(result.String()), "tool_call") {
+			return true
+		}
+	}
+
+	// Claude style content blocks.
+	contentTypes := gjson.GetBytes(jsonBytes, "content.#.type")
+	if contentTypes.Exists() {
+		for _, item := range contentTypes.Array() {
+			if item.String() == "tool_use" {
+				names := gjson.GetBytes(jsonBytes, "content.#.name")
+				if containsChannelTestToolName(names) {
+					return true
+				}
+			}
+		}
+	}
+
+	// Gemini style function calls.
+	functionNames := gjson.GetBytes(jsonBytes, "candidates.#.content.parts.#.functionCall.name")
+	if containsChannelTestToolName(functionNames) {
+		return true
+	}
+	functionNames = gjson.GetBytes(jsonBytes, "candidates.#.content.parts.#.function_call.name")
+	return containsChannelTestToolName(functionNames)
+}
+
+func containsChannelTestToolName(result gjson.Result) bool {
+	if !result.Exists() {
+		return false
+	}
+	if result.IsArray() {
+		for _, item := range result.Array() {
+			if item.String() == channelTestToolName {
+				return true
+			}
+		}
+		return false
+	}
+	return result.String() == channelTestToolName
+}
+
+func extractChannelTestAIText(respBody []byte) string {
+	b := bytes.TrimSpace(respBody)
+	if len(b) == 0 {
+		return ""
+	}
+
+	if text := extractChannelTestAITextFromJSON(b); text != "" {
+		return text
+	}
+
+	var builder strings.Builder
+	for _, line := range bytes.Split(b, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		payload := line
+		if bytes.HasPrefix(line, []byte("data:")) {
+			payload = bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+		}
+		if len(payload) == 0 || bytes.Equal(payload, []byte("[DONE]")) {
+			continue
+		}
+		if text := extractChannelTestAITextFromJSON(payload); text != "" {
+			builder.WriteString(text)
+		}
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func extractChannelTestAITextFromJSON(jsonBytes []byte) string {
+	if len(jsonBytes) == 0 || (jsonBytes[0] != '{' && jsonBytes[0] != '[') {
+		return strings.TrimSpace(string(jsonBytes))
+	}
+
+	paths := []string{
+		"choices.0.message.content",
+		"choices.0.delta.content",
+		"choices.0.text",
+		"output_text",
+		"output.#.content.#.text",
+		"response.output_text",
+		"response.output.#.content.#.text",
+		"content.0.text",
+		"delta",
+		"text",
+		"candidates.0.content.parts.0.text",
+	}
+
+	var parts []string
+	for _, path := range paths {
+		result := gjson.GetBytes(jsonBytes, path)
+		if !result.Exists() {
+			continue
+		}
+		if result.IsArray() {
+			for _, item := range result.Array() {
+				if text := strings.TrimSpace(item.String()); text != "" {
+					parts = append(parts, text)
+				}
+			}
+			continue
+		}
+		if text := strings.TrimSpace(result.String()); text != "" {
+			parts = append(parts, text)
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(strings.Join(parts, ""))
+}
+
+func matchesChannelTestExpectedAnswer(originalText string, expectedAnswer int) bool {
+	normalized := normalizeChannelTestAnswerText(originalText)
+	expected := strconv.Itoa(expectedAnswer)
+	if normalized == expected {
+		return true
+	}
+	// Accept a bare integer with optional surrounding punctuation only.
+	// Any extra words should fail so the UI surfaces the original AI text.
+	trimmedPunctuation := strings.Trim(normalized, ".,;:!?。；：！？")
+	return trimmedPunctuation == expected
+}
+
+func normalizeChannelTestAnswerText(text string) string {
+	trimmed := strings.TrimSpace(text)
+	trimmed = strings.Trim(trimmed, "`\"'")
+	trimmed = strings.TrimSpace(trimmed)
+	// Collapse whitespace so multi-line answers compare cleanly.
+	var builder strings.Builder
+	previousWasSpace := false
+	for _, character := range trimmed {
+		if unicode.IsSpace(character) {
+			if !previousWasSpace {
+				builder.WriteByte(' ')
+				previousWasSpace = true
+			}
+			continue
+		}
+		builder.WriteRune(character)
+		previousWasSpace = false
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func writeChannelTestJSON(c *gin.Context, success bool, message string, errorCode types.ErrorCode, consumedTime float64) {
+	payload := gin.H{
+		"success": success,
+		"message": message,
+		"time":    consumedTime,
+	}
+	if errorCode != "" {
+		payload["error_code"] = string(errorCode)
+	}
+	c.JSON(http.StatusOK, payload)
 }
 
 func TestChannel(c *gin.Context) {
@@ -747,14 +1253,10 @@ func TestChannel(c *gin.Context) {
 			return
 		}
 	}
-	//defer func() {
-	//	if channel.ChannelInfo.IsMultiKey {
-	//		go func() { _ = channel.SaveChannelInfo() }()
-	//	}
-	//}()
 	testModel := c.Query("model")
 	endpointType := c.Query("endpoint_type")
 	isStream, _ := strconv.ParseBool(c.Query("stream"))
+	isTool, _ := strconv.ParseBool(c.Query("tool"))
 	testUserID, err := resolveChannelTestUserID(c)
 	if err != nil {
 		common.SysError("failed to resolve channel test user: " + err.Error())
@@ -762,13 +1264,13 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	tik := time.Now()
-	result := testChannel(channel, testUserID, testModel, endpointType, isStream)
+	result := testChannel(channel, testUserID, testModel, endpointType, isStream, isTool)
 	if result.localErr != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": result.localErr.Error(),
-			"time":    0.0,
-		})
+		errorCode := types.ErrorCode("")
+		if result.newAPIError != nil {
+			errorCode = result.newAPIError.GetErrorCode()
+		}
+		writeChannelTestJSON(c, false, result.localErr.Error(), errorCode, 0)
 		return
 	}
 	tok := time.Now()
@@ -776,18 +1278,10 @@ func TestChannel(c *gin.Context) {
 	go channel.UpdateResponseTime(milliseconds)
 	consumedTime := float64(milliseconds) / 1000.0
 	if result.newAPIError != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": result.newAPIError.Error(),
-			"time":    consumedTime,
-		})
+		writeChannelTestJSON(c, false, result.newAPIError.Error(), result.newAPIError.GetErrorCode(), consumedTime)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"time":    consumedTime,
-	})
+	writeChannelTestJSON(c, true, "", "", consumedTime)
 }
 
 var testAllChannelsLock sync.Mutex
@@ -825,7 +1319,7 @@ func testAllChannels(c *gin.Context, notify bool) error {
 		for _, channel := range channels {
 			isChannelEnabled := channel.Status == common.ChannelStatusEnabled
 			tik := time.Now()
-			result := testChannel(channel, testUserID, "", "", false)
+			result := testChannel(channel, testUserID, "", "", false, false)
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 

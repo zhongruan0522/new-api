@@ -131,7 +131,15 @@ const STREAM_INCOMPATIBLE_ENDPOINTS = new Set([
   'openai-response-compact',
 ])
 
+const TOOL_INCOMPATIBLE_ENDPOINTS = new Set([
+  'embeddings',
+  'image-generation',
+  'jina-rerank',
+  'openai-response-compact',
+])
+
 const MODEL_PRICE_ERROR_CODE = 'model_price_error'
+const TOOL_NOT_SUPPORTED_ERROR_CODE = 'tool_not_supported'
 const FAILURE_SUMMARY_MAX_LENGTH = 96
 
 type FailureStatusDisplay = {
@@ -169,22 +177,40 @@ function getFailureStatusDisplay({
   fallbackSummary,
   isModelPriceError,
   modelPriceSummary,
+  isToolNotSupported,
+  toolNotSupportedSummary,
 }: {
   errorText?: string
   fallbackSummary: string
   isModelPriceError: boolean
   modelPriceSummary: string
+  isToolNotSupported: boolean
+  toolNotSupportedSummary: string
 }): FailureStatusDisplay {
   const rawError = errorText?.trim()
 
   if (!rawError) {
-    return { summary: fallbackSummary }
+    return {
+      summary: isToolNotSupported ? toolNotSupportedSummary : fallbackSummary,
+    }
   }
 
   if (isModelPriceError) {
     return {
       summary: modelPriceSummary,
       details: rawError === modelPriceSummary ? undefined : rawError,
+    }
+  }
+
+  if (isToolNotSupported) {
+    return {
+      summary: toolNotSupportedSummary,
+      details:
+        rawError === toolNotSupportedSummary ||
+        normalizeInlineError(rawError) ===
+          normalizeInlineError(toolNotSupportedSummary)
+          ? undefined
+          : rawError,
     }
   }
 
@@ -221,6 +247,7 @@ export function ChannelTestDialog({
   const { currentRow } = useChannels()
   const [endpointType, setEndpointType] = useState('auto')
   const [isStreamTest, setIsStreamTest] = useState(false)
+  const [isToolTest, setIsToolTest] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -238,6 +265,7 @@ export function ChannelTestDialog({
   const resetState = useCallback(() => {
     setEndpointType('auto')
     setIsStreamTest(false)
+    setIsToolTest(false)
     setSearchTerm('')
     setTestResults({})
     setRowSelection({})
@@ -255,12 +283,19 @@ export function ChannelTestDialog({
   }, [open, currentRow?.id, resetState])
 
   const streamDisabled = STREAM_INCOMPATIBLE_ENDPOINTS.has(endpointType)
+  const toolDisabled = TOOL_INCOMPATIBLE_ENDPOINTS.has(endpointType)
 
   useEffect(() => {
     if (streamDisabled) {
       setIsStreamTest(false)
     }
   }, [streamDisabled])
+
+  useEffect(() => {
+    if (toolDisabled) {
+      setIsToolTest(false)
+    }
+  }, [toolDisabled])
 
   const modelsValue = currentRow?.models ?? ''
   const defaultTestModel = currentRow?.test_model?.trim()
@@ -323,6 +358,7 @@ export function ChannelTestDialog({
             testModel: model,
             endpointType: endpointType === 'auto' ? undefined : endpointType,
             stream: isStreamTest || undefined,
+            tool: isToolTest || undefined,
             silent,
           },
           (success, responseTime, error, errorCode) => {
@@ -338,7 +374,10 @@ export function ChannelTestDialog({
       } catch (error: unknown) {
         finalResult = {
           status: 'error',
-          error: error instanceof Error ? error.message : t('channels.status.testFailed'),
+          error:
+            error instanceof Error
+              ? error.message
+              : t('channels.status.testFailed'),
         }
         updateTestResult(model, finalResult)
       } finally {
@@ -350,6 +389,7 @@ export function ChannelTestDialog({
       currentRow,
       endpointType,
       isStreamTest,
+      isToolTest,
       markModelTesting,
       t,
       updateTestResult,
@@ -531,18 +571,23 @@ export function ChannelTestDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className='max-h-[90vh] overflow-hidden sm:max-w-3xl'>
+        <DialogContent className='max-h-[90vh] overflow-hidden sm:max-w-5xl'>
           <DialogHeader>
-            <DialogTitle>{t('channels.fields.testChannelConnection')}</DialogTitle>
+            <DialogTitle>
+              {t('channels.fields.testChannelConnection')}
+            </DialogTitle>
             <DialogDescription>
-              {t('channels.fields.testConnectivityFor')} <strong>{currentRow.name}</strong>
+              {t('channels.fields.testConnectivityFor')}{' '}
+              <strong>{currentRow.name}</strong>
             </DialogDescription>
           </DialogHeader>
 
           <div className='max-h-[78vh] space-y-4 overflow-y-auto py-4 pr-1'>
-            <div className='grid gap-4 md:grid-cols-2'>
-              <div className='grid gap-2'>
-                <Label htmlFor='endpoint-type'>{t('channels.fields.endpointType')}</Label>
+            <div className='grid gap-4 lg:grid-cols-3'>
+              <div className='grid min-w-0 gap-2 lg:col-span-1'>
+                <Label htmlFor='endpoint-type'>
+                  {t('channels.fields.endpointType')}
+                </Label>
                 <Select
                   items={[
                     ...endpointTypeOptions.map((option) => {
@@ -553,16 +598,31 @@ export function ChannelTestDialog({
                   value={endpointType}
                   onValueChange={(v) => v !== null && setEndpointType(v)}
                 >
-                  <SelectTrigger id='endpoint-type'>
-                    <SelectValue placeholder={t('channels.fields.autoDetectDefault')} />
+                  <SelectTrigger
+                    id='endpoint-type'
+                    className='h-auto min-h-9 w-full min-w-0 py-2 whitespace-normal'
+                  >
+                    <SelectValue
+                      placeholder={t('channels.fields.autoDetectDefault')}
+                      className='line-clamp-2 text-left break-all whitespace-normal'
+                    />
                   </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
+                  <SelectContent
+                    alignItemWithTrigger={false}
+                    className='max-w-[min(90vw,42rem)]'
+                  >
                     <SelectGroup>
                       {endpointTypeOptions.map((option) => {
                         const itemValue = option.value
                         return (
-                          <SelectItem key={itemValue} value={itemValue}>
-                            {t(option.label)}
+                          <SelectItem
+                            key={itemValue}
+                            value={itemValue}
+                            className='whitespace-normal'
+                          >
+                            <span className='block break-all'>
+                              {t(option.label)}
+                            </span>
                           </SelectItem>
                         )
                       })}
@@ -576,7 +636,9 @@ export function ChannelTestDialog({
                 </p>
               </div>
               <div className='grid gap-2'>
-                <Label htmlFor='stream-toggle'>{t('channels.fields.streamMode')}</Label>
+                <Label htmlFor='stream-toggle'>
+                  {t('channels.fields.streamMode')}
+                </Label>
                 <div className='flex items-center gap-2'>
                   <Switch
                     id='stream-toggle'
@@ -585,11 +647,40 @@ export function ChannelTestDialog({
                     disabled={streamDisabled}
                   />
                   <span className='text-sm'>
-                    {isStreamTest ? t('channels.status.enabled') : t('channels.status.disabled')}
+                    {isStreamTest
+                      ? t('channels.status.enabled')
+                      : t('channels.status.disabled')}
                   </span>
                 </div>
                 <p className='text-muted-foreground text-xs'>
                   {t('channels.actions.enableStreamingModeForTheTestRequest')}
+                </p>
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='tool-toggle'>
+                  {t('channels.fields.toolTest')}
+                </Label>
+                <div className='flex items-center gap-2'>
+                  <Switch
+                    id='tool-toggle'
+                    checked={isToolTest}
+                    onCheckedChange={setIsToolTest}
+                    disabled={toolDisabled}
+                  />
+                  <span className='text-sm'>
+                    {isToolTest
+                      ? t('channels.status.enabled')
+                      : t('channels.status.disabled')}
+                  </span>
+                </div>
+                <p className='text-muted-foreground text-xs'>
+                  {toolDisabled
+                    ? t(
+                        'channels.tips.toolTestIsUnavailableForTheSelectedEndpoint'
+                      )
+                    : t(
+                        'channels.actions.enableToolCallingTestForCompatibleEndpoints'
+                      )}
                 </p>
               </div>
             </div>
@@ -776,22 +867,41 @@ function FailureStatusContent({
   const { t } = useTranslation()
   const errorText = result.error?.trim()
   const isModelPriceError = result.errorCode === MODEL_PRICE_ERROR_CODE
+  const isToolNotSupported =
+    result.errorCode === TOOL_NOT_SUPPORTED_ERROR_CODE
   const modelPriceSummary = t(
     'channels.tips.modelPriceIsNotConfiguredPleaseCompleteModelPricing'
   )
+  const toolNotSupportedSummary = t('channels.status.toolNotSupported')
   const { summary, details } = getFailureStatusDisplay({
     errorText,
     fallbackSummary: t('channels.status.testFailed'),
     isModelPriceError,
     modelPriceSummary,
+    isToolNotSupported,
+    toolNotSupportedSummary,
   })
+  const statusLabel = isToolNotSupported
+    ? toolNotSupportedSummary
+    : t('channels.errors.failed')
 
   return (
     <div className='flex min-w-0 flex-col gap-1.5 text-xs whitespace-normal'>
-      <StatusBadge label={t('channels.errors.failed')} variant='danger' copyable={false} />
-      <p className='text-muted-foreground line-clamp-2 min-w-0 leading-snug wrap-break-word'>
-        {summary}
-      </p>
+      <StatusBadge
+        label={statusLabel}
+        variant={isToolNotSupported ? 'warning' : 'danger'}
+        copyable={false}
+      />
+      {!isToolNotSupported && (
+        <p className='text-muted-foreground line-clamp-2 min-w-0 leading-snug wrap-break-word'>
+          {summary}
+        </p>
+      )}
+      {isToolNotSupported && details && (
+        <p className='text-muted-foreground line-clamp-2 min-w-0 leading-snug wrap-break-word'>
+          {truncateFailureSummary(normalizeInlineError(details))}
+        </p>
+      )}
       <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
         {isModelPriceError && (
           <Button
