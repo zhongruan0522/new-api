@@ -27,8 +27,8 @@ type DisabledSettingsNoticeProps = {
 
 export function DisabledSettingsNotice({
   enabled,
-  title = 'This setting is currently disabled',
-  description = 'If you are reporting a related issue, enable this setting first and retest before confirming whether the issue still exists.',
+  title = 'common.status.settingIsCurrentlyDisabled',
+  description = 'common.tips.ifYouAreReportingARelatedIssueEnableThis',
 }: DisabledSettingsNoticeProps) {
   const { t } = useTranslation()
 

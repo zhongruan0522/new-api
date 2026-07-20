@@ -49,9 +49,6 @@ const quotaSchema = z.object({
   PreConsumedQuota: z.coerce.number().min(0),
   QuotaForInviter: z.coerce.number().min(0),
   QuotaForInvitee: z.coerce.number().min(0),
-  general_setting: z.object({
-    docs_link: z.string(),
-  }),
   quota_setting: z.object({
     free_model_pre_consumed_quota: z.coerce.number().min(0),
   }),
@@ -261,26 +258,6 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     {t('systemSettings.tips.quotaPreConsumedForZeroCostModelsSet0')}
                     {' · '}
                     {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='general_setting.docs_link'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('systemSettings.fields.documentationLink')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('systemSettings.placeholders.urlDocsExampleCom')}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t('systemSettings.fields.linkToYourDocumentationSite')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -209,7 +209,7 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save SSRF settings'
+            saveLabel='common.actions.saveSsrfSettings'
           />
           <FormField
             control={form.control}

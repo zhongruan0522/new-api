@@ -77,7 +77,7 @@ export function NoticeSection({ defaultValue }: NoticeSectionProps) {
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save notice'
+            saveLabel='common.actions.saveNotice'
           />
           <FormField
             control={form.control}

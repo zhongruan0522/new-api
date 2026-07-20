@@ -56,9 +56,6 @@ const BILLING_SECTIONS = [
           PreConsumedQuota: settings.PreConsumedQuota,
           QuotaForInviter: settings.QuotaForInviter,
           QuotaForInvitee: settings.QuotaForInvitee,
-          general_setting: {
-            docs_link: settings['general_setting.docs_link'],
-          },
           quota_setting: {
             free_model_pre_consumed_quota:
               settings['quota_setting.free_model_pre_consumed_quota'],

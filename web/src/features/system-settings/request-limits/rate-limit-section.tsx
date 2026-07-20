@@ -121,7 +121,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save rate limits'
+            saveLabel='common.actions.saveRateLimits'
           />
           <DisabledSettingsNotice enabled={enabled} />
 

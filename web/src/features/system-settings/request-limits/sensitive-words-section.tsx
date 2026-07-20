@@ -85,7 +85,7 @@ export function SensitiveWordsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save sensitive words'
+            saveLabel='common.actions.saveSensitiveWords'
           />
           <div className='space-y-4'>
             <FormField

@@ -296,7 +296,7 @@ export function PaymentSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save payment settings'
+            saveLabel='systemSettings.actions.savePaymentSettings'
           />
 
           <div className='space-y-4'>
@@ -764,6 +764,15 @@ export function PaymentSettingsSection({
               />
             </div>
 
+          </div>
+
+          <Separator />
+
+          <div className='space-y-4'>
+            <div>
+              <h3 className='text-lg font-medium'>{t('systemSettings.fields.cdkRedemption')}</h3>
+            </div>
+
             <div className='grid gap-6 md:grid-cols-3'>
               <FormField
                 control={form.control}
@@ -780,9 +789,6 @@ export function PaymentSettingsSection({
                         }
                       />
                     </FormControl>
-                    <FormDescription>
-                      {t('systemSettings.tips.externalLinkForUsersToPurchaseQuota')}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

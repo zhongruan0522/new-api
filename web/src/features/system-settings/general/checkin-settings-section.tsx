@@ -126,7 +126,7 @@ export function CheckinSettingsSection({
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending || isSubmitting}
             isSaveDisabled={!isDirty}
-            saveLabel='Save check-in settings'
+            saveLabel='common.actions.saveCheckInSettings'
           />
           <DisabledSettingsNotice enabled={enabled} />
 

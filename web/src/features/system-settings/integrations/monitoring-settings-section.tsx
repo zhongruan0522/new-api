@@ -228,7 +228,7 @@ export function MonitoringSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save monitoring rules'
+            saveLabel='common.actions.saveMonitoringRules'
           />
           <DisabledSettingsNotice enabled={autoTestEnabled} />
 

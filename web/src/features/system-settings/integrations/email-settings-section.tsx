@@ -151,7 +151,7 @@ export function EmailSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save SMTP settings'
+            saveLabel='common.actions.saveSmtpSettings'
           />
           <FormField
             control={form.control}

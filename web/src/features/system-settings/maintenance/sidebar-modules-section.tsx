@@ -233,7 +233,7 @@ export function SidebarModulesSection({
             onReset={resetToDefault}
             isSaving={updateOption.isPending}
             resetLabel='Reset to default'
-            saveLabel='Save sidebar modules'
+            saveLabel='common.actions.saveSidebarModules'
           />
           {sections.map(([sectionKey, sectionConfig]) => {
             const sectionInfo = sectionMeta[sectionKey] ?? {

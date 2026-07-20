@@ -56,6 +56,7 @@ import type { Channel, ChannelSortBy } from '../types'
 import { useChannelsColumns } from './channels-columns'
 import { useChannels } from './channels-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
+import { shouldCommitDebouncedSearch } from '../lib/should-commit-debounced-search'
 
 const route = getRouteApi('/_authenticated/channels/')
 
@@ -72,19 +73,6 @@ const EMPTY_STRING_ARRAY: string[] = []
 function isDisabledChannelRow(channel: Channel) {
   return (
     !isTagAggregateRow(channel) && channel.status !== CHANNEL_STATUS.ENABLED
-  )
-}
-
-export function shouldCommitDebouncedSearch(
-  inputValue: string,
-  debouncedValue: string,
-  currentValue: string,
-  isComposing: boolean
-) {
-  return (
-    !isComposing &&
-    debouncedValue === inputValue &&
-    debouncedValue !== currentValue
   )
 }
 

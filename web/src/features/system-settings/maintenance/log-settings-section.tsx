@@ -266,7 +266,7 @@ export function LogSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save log settings'
+            saveLabel='common.actions.saveLogSettings'
           />
           <FormField
             control={form.control}

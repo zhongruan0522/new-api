@@ -226,7 +226,7 @@ export function HeaderNavigationSection({
             onReset={resetToDefault}
             isSaving={updateOption.isPending}
             resetLabel='Reset to default'
-            saveLabel='Save navigation'
+            saveLabel='common.actions.saveNavigation'
           />
           <div className='grid gap-4 md:grid-cols-2'>
             {simpleModules.map((module) => (

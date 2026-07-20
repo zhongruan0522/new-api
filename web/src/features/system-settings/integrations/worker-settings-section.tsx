@@ -111,7 +111,7 @@ export function WorkerSettingsSection({
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save Worker settings'
+            saveLabel='common.actions.saveWorkerSettings'
           />
           <FormField
             control={form.control}

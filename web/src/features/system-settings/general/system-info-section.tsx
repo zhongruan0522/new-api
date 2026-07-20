@@ -54,6 +54,9 @@ const _systemInfoSchema = z.object({
     user_agreement: z.string().optional(),
     privacy_policy: z.string().optional(),
   }),
+  general_setting: z.object({
+    docs_link: z.string().optional(),
+  }),
 })
 
 type SystemInfoFormValues = z.infer<typeof _systemInfoSchema>
@@ -82,6 +85,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
       user_agreement: normalizeValue(defaultValues.legal?.user_agreement),
       privacy_policy: normalizeValue(defaultValues.legal?.privacy_policy),
     },
+    general_setting: {
+      docs_link: normalizeValue(defaultValues.general_setting?.docs_link),
+    },
   }
 
   const systemInfoSchemaWithI18n = z.object({
@@ -96,6 +102,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     legal: z.object({
       user_agreement: z.string().optional(),
       privacy_policy: z.string().optional(),
+    }),
+    general_setting: z.object({
+      docs_link: z.string().optional(),
     }),
   })
 
@@ -166,6 +175,26 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                       {t(
                         'systemSettings.status.publicUrlOfYourServerUsedForOauthCallbacks'
                       )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='general_setting.docs_link'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('systemSettings.fields.documentationLink')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('systemSettings.placeholders.urlDocsExampleCom')}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('systemSettings.fields.linkToYourDocumentationSite')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

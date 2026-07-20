@@ -16,11 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-// Re-export all library functions
-export * from './channel-actions'
-export * from './channel-form'
-export * from './channel-type-config'
-export * from './channel-utils'
-export * from './multi-key-utils'
-export * from './model-mapping-validation'
-export * from './should-commit-debounced-search'
+
+export function shouldCommitDebouncedSearch(
+  inputValue: string,
+  debouncedValue: string,
+  currentValue: string,
+  isComposing: boolean
+): boolean {
+  return (
+    !isComposing &&
+    debouncedValue === inputValue &&
+    debouncedValue !== currentValue
+  )
+}
