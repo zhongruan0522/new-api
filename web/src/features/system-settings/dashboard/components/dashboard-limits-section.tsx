@@ -50,7 +50,7 @@ const limitsSchema = z
     user_analytics_top_n: z.number().min(1).max(100),
   })
   .refine((data) => data.default_time_range_days <= data.max_time_range_days, {
-    message: 'Default time range must not exceed maximum time range',
+    message: 'common.errors.defaultTimeRangeExceedsMax',
     path: ['default_time_range_days'],
   })
 

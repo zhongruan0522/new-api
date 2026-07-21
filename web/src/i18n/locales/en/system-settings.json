@@ -470,6 +470,7 @@
   "systemSettings.fields.pathRegexOnePerLine": "Path Regex (one per line)",
   "systemSettings.fields.paymentGateway": "Payment Gateway",
   "systemSettings.titles.paymentSettings": "Payment Settings",
+  "systemSettings.titles.pricingRatios": "Pricing Ratios",
   "systemSettings.fields.paymentAddress": "Payment address",
   "systemSettings.errors.paymentMethodNameIsRequired": "Payment method name is required",
   "systemSettings.errors.paymentMethodTypeIsRequired": "Payment method type is required",

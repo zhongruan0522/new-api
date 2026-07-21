@@ -48,7 +48,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -57,7 +57,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -66,7 +66,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -75,7 +75,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -84,7 +84,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -93,7 +93,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -102,7 +102,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -111,7 +111,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -123,7 +123,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -132,7 +132,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -141,7 +141,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -150,7 +150,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -164,7 +164,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON array',
+        message: result.message || 'common.errors.invalidJsonArray',
       })
     }
   }),
@@ -174,7 +174,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -260,7 +260,7 @@ export function RatioSettingsCard({
   modelDefaults,
   groupDefaults,
   toolPricesDefault,
-  titleKey = 'Pricing Ratios',
+  titleKey = 'systemSettings.titles.pricingRatios',
   visibleTabs = ['models', 'groups', 'tool-prices'],
 }: RatioSettingsCardProps) {
   const { t } = useTranslation()

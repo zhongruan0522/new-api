@@ -96,7 +96,7 @@ const BILLING_SECTIONS = [
     titleKey: 'common.fields.modelPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
-        titleKey='Model Pricing'
+        titleKey='common.fields.modelPricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_billing_setting.rules']}
@@ -109,7 +109,7 @@ const BILLING_SECTIONS = [
     titleKey: 'common.fields.groupPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
-        titleKey='Group Pricing'
+        titleKey='common.fields.groupPricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_billing_setting.rules']}

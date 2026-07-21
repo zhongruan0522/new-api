@@ -470,6 +470,7 @@
   "systemSettings.fields.pathRegexOnePerLine": "路径正则（每行一个）",
   "systemSettings.fields.paymentGateway": "支付网关",
   "systemSettings.titles.paymentSettings": "支付设置",
+  "systemSettings.titles.pricingRatios": "价格倍率",
   "systemSettings.fields.paymentAddress": "支付地址",
   "systemSettings.errors.paymentMethodNameIsRequired": "支付方式名称不能为空",
   "systemSettings.errors.paymentMethodTypeIsRequired": "支付方式类型为必填项",

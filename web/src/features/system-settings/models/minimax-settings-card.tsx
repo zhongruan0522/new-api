@@ -47,7 +47,7 @@ function jsonMapField(value: string, ctx: z.RefinementCtx) {
   if (!result.valid) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: result.message || 'Invalid JSON',
+      message: result.message || 'common.errors.invalidJson',
     })
   }
 }

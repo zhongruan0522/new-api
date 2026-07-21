@@ -439,7 +439,7 @@ export function JsonArrayEditor({
             disabled={disabled}
           >
             <Plus className='mr-2 h-4 w-4' />
-            {t(addButtonText ?? 'Add Item')}
+            {t(addButtonText ?? 'common.actions.addItem')}
           </Button>
         ) : null}
       </div>
@@ -506,7 +506,7 @@ export function JsonArrayEditor({
             </div>
           ) : (
             <div className='text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm'>
-              {t(emptyText ?? 'No items configured. Click "Add Item" to get started.')}
+              {t(emptyText ?? 'common.tips.noItemsConfiguredClickAddItemToGetStarted')}
             </div>
           )}
           {pageCount > 1 || totalRows > 0 ? (
