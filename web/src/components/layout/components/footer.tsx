@@ -41,11 +41,7 @@ interface FooterProps {
   className?: string
 }
 
-const NEW_API_FOOTER_ATTRIBUTION_KEY = [
-  'footer',
-  'new' + 'api',
-  'projectAttributionSuffix',
-].join('.')
+const PROJECT_ATTRIBUTION_SUFFIX_KEY = 'layout.tips.projectAttributionSuffix'
 
 function FooterLinkItem(props: { link: FooterLink }) {
   const { t } = useTranslation()
@@ -135,7 +131,7 @@ function ProjectAttribution(props: { currentYear: number; inline?: boolean }) {
       >
         {t('layout.fields.newApi')}
       </a>
-      . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
+      . {t(PROJECT_ATTRIBUTION_SUFFIX_KEY)}
     </span>
   )
   if (props.inline) {

@@ -262,7 +262,7 @@ function PresetConfig() {
             key={preset.value}
             value={preset.value}
             className='group flex flex-col items-stretch outline-none'
-            aria-label={t(`preset.${preset.value}`)}
+            aria-label={preset.name}
           >
             <div
               className={cn(
@@ -295,7 +295,7 @@ function PresetConfig() {
               />
             </div>
             <div className='mt-1.5 truncate text-center text-xs'>
-              {t(`preset.${preset.value}`)}
+              {preset.name}
             </div>
           </Item>
         ))}
