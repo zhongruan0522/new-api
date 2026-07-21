@@ -45,16 +45,16 @@ export const AI_MODELS = [
 
 // Hero section - Gateway Features
 export const GATEWAY_FEATURES = [
-  'Cost Tracking',
-  'Model Access',
-  'Guardrails',
-  'Observability',
-  'Budgets',
-  'Load Balancing',
-  'Rate Limiting',
-  'Token Management',
-  'Prompt Caching',
-  'Pass-Through',
+  'home.fields.costTracking',
+  'common.fields.modelAccess',
+  'common.fields.guardrails',
+  'common.fields.observability',
+  'common.fields.budgets',
+  'home.fields.loadBalancing',
+  'home.fields.rateLimiting',
+  'systemSettings.titles.tokenManagement',
+  'common.fields.promptCaching',
+  'common.fields.passThrough',
 ] as const
 
 // Stats section - Default statistics

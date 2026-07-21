@@ -81,18 +81,18 @@ function SectionTitle(props: { children: React.ReactNode }) {
 }
 
 const CAPABILITY_LABEL_KEYS: Record<ModelCapability, string> = {
-  function_calling: 'Function Calling',
-  streaming: 'Streaming',
-  vision: 'Vision',
-  json_mode: 'JSON Mode',
-  structured_output: 'Structured Output',
-  reasoning: 'Reasoning',
-  tools: 'Tools',
-  system_prompt: 'System Prompt',
-  web_search: 'Web Search',
-  code_interpreter: 'Code Interpreter',
-  caching: 'Prompt Caching',
-  embeddings: 'Embeddings',
+  function_calling: 'common.fields.functionCalling',
+  streaming: 'common.fields.streaming',
+  vision: 'common.fields.vision',
+  json_mode: 'common.fields.jsonMode',
+  structured_output: 'common.fields.structuredOutput',
+  reasoning: 'common.fields.reasoning',
+  tools: 'common.fields.tools',
+  system_prompt: 'common.fields.systemPrompt',
+  web_search: 'common.fields.webSearch',
+  code_interpreter: 'common.fields.codeInterpreter',
+  caching: 'common.fields.promptCaching',
+  embeddings: 'pricing.fields.embeddings',
 }
 
 function CompactCapabilityList(props: { capabilities: ModelCapability[] }) {

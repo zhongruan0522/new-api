@@ -69,7 +69,7 @@ type DynamicPricingBreakdownProps = {
 const VAR_LABELS: Record<string, string> = {
   p: 'pricing.fields.input',
   c: 'pricing.fields.output',
-  len: 'Length',
+  len: 'common.fields.length',
 }
 const OP_LABELS: Record<string, string> = {
   '<': '<',
