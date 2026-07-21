@@ -26,6 +26,9 @@ const (
 	MsgMiscEmailSendFailed           = "misc.email_send_failed"
 	MsgMiscPasswordResetLinkInvalid  = "misc.password_reset_link_invalid"
 	MsgMiscUsageLogFieldsParseFailed = "misc.usage_log_fields_parse_failed"
+	MsgMiscServerRunning             = "misc.server_running"
+	MsgMiscEmailDomainWhitelistRejected = "misc.email_domain_whitelist_rejected"
+	MsgMiscMigrated                  = "misc.migrated"
 )
 
 // Dashboard related messages
@@ -79,6 +82,10 @@ const (
 	MsgTokenCycleDaysMin         = "token.cycle_days_min"
 	MsgTokenCycleQuotaPositive   = "token.cycle_quota_positive"
 	MsgTokenInvalidQuotaType     = "token.invalid_quota_type"
+	MsgTokenNoAuthHeader         = "token.no_auth_header"
+	MsgTokenInvalidBearer        = "token.invalid_bearer"
+	MsgTokenAuthorized           = "token.authorized"
+	MsgTokenMaxLimitReached      = "token.max_limit_reached"
 )
 
 // Redemption related messages
@@ -216,6 +223,33 @@ const (
 	MsgChannelOllamaGetModelsFailed      = "channel.ollama_get_models_failed"
 	MsgChannelGeminiGetModelsFailed      = "channel.gemini_get_models_failed"
 	MsgChannelOllamaVersionFailed        = "channel.ollama_version_failed"
+	MsgChannelInvalidRequest             = "channel.invalid_request"
+	MsgChannelFetchModelsFailed          = "channel.fetch_models_failed"
+	MsgChannelInvalidID                  = "channel.invalid_id"
+	MsgChannelInvalidRequestParameters   = "channel.invalid_request_parameters"
+	MsgChannelIdAndModelRequired         = "channel.id_and_model_required"
+	MsgChannelOllamaOnly                 = "channel.ollama_only"
+	MsgChannelPullModelFailed            = "channel.pull_model_failed"
+	MsgChannelPullModelSuccess           = "channel.pull_model_success"
+	MsgChannelDeleteModelFailed          = "channel.delete_model_failed"
+	MsgChannelDeleteModelSuccess         = "channel.delete_model_success"
+	MsgChannelEmpty                      = "channel.empty"
+	MsgChannelInvalidType                = "channel.invalid_type"
+	MsgChannelUnsupportedType            = "channel.unsupported_type"
+	MsgChannelTestToolNotSupported       = "channel.test_tool_not_supported"
+	MsgChannelTestNotSupported           = "channel.test_not_supported"
+	MsgChannelResponsesCompactionOnlyOpenAI = "channel.responses_compaction_only_openai"
+	MsgChannelInvalidApiType             = "channel.invalid_api_type"
+	MsgChannelInvalidEmbeddingRequest    = "channel.invalid_embedding_request"
+	MsgChannelInvalidImageRequest        = "channel.invalid_image_request"
+	MsgChannelInvalidRerankRequest       = "channel.invalid_rerank_request"
+	MsgChannelInvalidResponseRequest     = "channel.invalid_response_request"
+	MsgChannelInvalidResponseCompactionRequest = "channel.invalid_response_compaction_request"
+	MsgChannelInvalidGeneralRequest      = "channel.invalid_general_request"
+	MsgChannelEmptyModelResponse         = "channel.empty_model_response"
+	MsgChannelRuleNameRequired           = "channel.rule_name_required"
+	MsgChannelKeyFpRequired              = "channel.key_fp_required"
+	MsgChannelAutoGroupsNotEnabled       = "channel.auto_groups_not_enabled"
 )
 
 // Relay related messages
@@ -288,7 +322,14 @@ const (
 
 // Quota related messages
 const (
-	MsgQuotaThresholdGtZero = "quota.threshold_gt_zero"
+	MsgQuotaThresholdGtZero      = "quota.threshold_gt_zero"
+	MsgQuotaUserNotEnough        = "quota.user_not_enough"
+	MsgQuotaTokenNotEnough       = "quota.token_not_enough"
+	MsgQuotaNegative             = "quota.negative"
+	MsgQuotaTokenWindowNotEnough = "quota.token_window_not_enough"
+	MsgQuotaTokenCycleNotEnough  = "quota.token_cycle_not_enough"
+	MsgQuotaRelayInfoNil         = "quota.relay_info_nil"
+	MsgQuotaEmptyUsage           = "quota.empty_usage"
 )
 
 // Setting related messages
@@ -328,6 +369,7 @@ const (
 	MsgRedeemFailed  = "redeem.failed"
 	MsgUuidDuplicate = "common.uuid_duplicate"
 	MsgInvalidInput  = "common.invalid_input"
+	MsgCommonGetUserGroupFailed = "common.get_user_group_failed"
 )
 
 // MiniMax TTS related messages
@@ -428,4 +470,28 @@ const (
 	MsgTopupCancelUrlUntrusted     = "topup.cancel_url_untrusted"
 	MsgTopupUnsupportedChannel     = "topup.unsupported_channel"
 	MsgTopupAmountBelowMin         = "topup.amount_below_min"
+	MsgTopupGetGroupFailed         = "topup.get_group_failed"
+	MsgTopupPayAmountTooLow        = "topup.pay_amount_too_low"
+	MsgTopupPaymentMethodNotFound  = "topup.payment_method_not_found"
+	MsgTopupPaymentConfigMissing   = "topup.payment_config_missing"
+	MsgTopupPaymentInitFailed      = "topup.payment_init_failed"
+	MsgTopupOrderCreateFailed      = "topup.order_create_failed"
+	MsgTopupInvalidParams          = "topup.invalid_params"
+	MsgTopupSuccess                = "topup.success"
+	MsgTopupFailed                 = "topup.failed"
+)
+
+// Channel affinity related messages
+const (
+	MsgChannelAffinityRuleNameRequired        = "channel_affinity.rule_name_required"
+	MsgChannelAffinitySettingNotInitialized   = "channel_affinity.setting_not_initialized"
+	MsgChannelAffinityUnknownRuleName           = "channel_affinity.unknown_rule_name"
+	MsgChannelAffinityIncludeRuleNameDisabled   = "channel_affinity.include_rule_name_disabled"
+)
+
+// Billing related messages
+const (
+	MsgBillingRelayInfoNil     = "billing.relay_info_nil"
+	MsgBillingUserQuotaNotEnough = "billing.user_quota_not_enough"
+	MsgBillingPrepaidFailed    = "billing.prepaid_failed"
 )

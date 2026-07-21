@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -142,7 +141,7 @@ func GetTokenUsage(c *gin.Context) {
 	if authHeader == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "No Authorization header",
+			"message": i18n.T(c, i18n.MsgTokenNoAuthHeader),
 		})
 		return
 	}
@@ -151,7 +150,7 @@ func GetTokenUsage(c *gin.Context) {
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "Invalid Bearer token",
+			"message": i18n.T(c, i18n.MsgTokenInvalidBearer),
 		})
 		return
 	}
@@ -170,7 +169,7 @@ func GetTokenUsage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    true,
-		"message": "ok",
+		"message": i18n.T(c, i18n.MsgTokenAuthorized),
 		"data": gin.H{
 			"object":               "token_usage",
 			"name":                 token.Name,
@@ -269,7 +268,7 @@ func AddToken(c *gin.Context) {
 	if int(count) >= maxUserTokens {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": fmt.Sprintf("已达到最大令牌数量限制 (%d)", maxUserTokens),
+			"message": i18n.T(c, i18n.MsgTokenMaxLimitReached, map[string]any{"Max": maxUserTokens}),
 		})
 		return
 	}

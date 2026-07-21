@@ -32,7 +32,7 @@ func TestStatus(c *gin.Context) {
 	httpStats := middleware.GetStats()
 	c.JSON(http.StatusOK, gin.H{
 		"success":    true,
-		"message":    "Server is running",
+		"message":    i18n.T(c, i18n.MsgMiscServerRunning),
 		"http_stats": httpStats,
 	})
 	return
@@ -203,7 +203,7 @@ func SendEmailVerification(c *gin.Context) {
 		if !allowed {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "The administrator has enabled the email domain name whitelist, and your email address is not allowed due to special symbols or it's not in the whitelist.",
+				"message": i18n.T(c, i18n.MsgMiscEmailDomainWhitelistRejected),
 			})
 			return
 		}

@@ -103,5 +103,5 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// 重新加载 OptionMap
 	model.InitOptionMap()
 	common.SysLog("console setting migrated")
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "migrated"})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": i18n.T(c, i18n.MsgMiscMigrated)})
 }

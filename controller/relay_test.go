@@ -14,7 +14,8 @@ func TestShouldRetryNativeEmptyUsageError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	apiErr := service.NewEmptyUsageRetryError(&relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI}})
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	apiErr := service.NewEmptyUsageRetryError(c, &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI}})
 
 	if !shouldRetry(c, apiErr, 1) {
 		t.Fatal("expected native empty usage error to enter automatic retry")

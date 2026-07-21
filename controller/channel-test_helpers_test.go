@@ -2,13 +2,22 @@ package controller
 
 import (
 	"encoding/json"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/model"
 )
+
+func newChannelTestValidateContext() *gin.Context {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	return c
+}
 
 func TestBuildChannelTestPromptLength(t *testing.T) {
 	for i := 0; i < 50; i++ {
@@ -84,6 +93,7 @@ func TestResponseHasChannelTestToolCall(t *testing.T) {
 
 func TestValidateChannelTestResponseToolUnsupported(t *testing.T) {
 	err := validateChannelTestResponse(
+		newChannelTestValidateContext(),
 		[]byte(`{"choices":[{"message":{"content":"hello"}}]}`),
 		channelTestPrompt{isTool: true},
 	)
@@ -100,6 +110,7 @@ func TestValidateChannelTestResponseToolUnsupported(t *testing.T) {
 
 func TestValidateChannelTestResponseArithmeticUsesOriginalText(t *testing.T) {
 	err := validateChannelTestResponse(
+		newChannelTestValidateContext(),
 		[]byte(`{"choices":[{"message":{"content":"I think it is four"}}]}`),
 		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 2},
 	)

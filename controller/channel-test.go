@@ -39,7 +39,7 @@ import (
 
 const (
 	channelTestToolName         = "report_result"
-	channelTestToolNotSupported = "不支持工具"
+	channelTestToolNotSupported = i18n.MsgChannelTestToolNotSupported
 )
 
 type testResult struct {
@@ -95,14 +95,16 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		constant.ChannelTypeMidjourneyPlus,
 		constant.ChannelTypeSunoAPI,
 	}
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = &http.Request{Header: make(http.Header)}
 	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
 		channelTypeName := constant.GetChannelTypeName(channel.Type)
 		return testResult{
-			localErr: fmt.Errorf("%s channel test is not supported", channelTypeName),
+			context:  c,
+			localErr: fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelTestNotSupported, map[string]any{"Type": channelTypeName})),
 		}
 	}
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
 
 	testModel = strings.TrimSpace(testModel)
 	if testModel == "" {
@@ -241,8 +243,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	if isTool && !supportsChannelTestToolForChannel(channel, endpointType, testModel) {
 		return testResult{
 			context:     c,
-			localErr:    errors.New(channelTestToolNotSupported),
-			newAPIError: types.NewError(errors.New(channelTestToolNotSupported), types.ErrorCodeChannelTestToolUnsupported),
+			localErr:    errors.New(i18n.T(c, channelTestToolNotSupported)),
+			newAPIError: types.NewError(errors.New(i18n.T(c, channelTestToolNotSupported)), types.ErrorCodeChannelTestToolUnsupported),
 		}
 	}
 	request := buildTestRequest(testModel, endpointType, channel, isStream, testPrompt)
@@ -278,8 +280,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	if isTool && !supportsChannelTestToolForChannel(channel, endpointType, testModel) {
 		return testResult{
 			context:     c,
-			localErr:    errors.New(channelTestToolNotSupported),
-			newAPIError: types.NewError(errors.New(channelTestToolNotSupported), types.ErrorCodeChannelTestToolUnsupported),
+			localErr:    errors.New(i18n.T(c, channelTestToolNotSupported)),
+			newAPIError: types.NewError(errors.New(i18n.T(c, channelTestToolNotSupported)), types.ErrorCodeChannelTestToolUnsupported),
 		}
 	}
 
@@ -288,16 +290,16 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		apiType != constant.APITypeOpenAI {
 		return testResult{
 			context:     c,
-			localErr:    fmt.Errorf("responses compaction test only supports OpenAI channels, got api type %d", apiType),
-			newAPIError: types.NewError(fmt.Errorf("unsupported api type: %d", apiType), types.ErrorCodeInvalidApiType),
+			localErr:    fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelResponsesCompactionOnlyOpenAI, map[string]any{"Type": apiType})),
+			newAPIError: types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelInvalidApiType, map[string]any{"Type": apiType})), types.ErrorCodeInvalidApiType),
 		}
 	}
 	adaptor := relay.GetAdaptor(apiType)
 	if adaptor == nil {
 		return testResult{
 			context:     c,
-			localErr:    fmt.Errorf("invalid api type: %d, adaptor is nil", apiType),
-			newAPIError: types.NewError(fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.ErrorCodeInvalidApiType),
+			localErr:    fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelInvalidApiType, map[string]any{"Type": apiType})),
+			newAPIError: types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelInvalidApiType, map[string]any{"Type": apiType})), types.ErrorCodeInvalidApiType),
 		}
 	}
 
@@ -327,8 +329,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid embedding request type"),
-				newAPIError: types.NewError(errors.New("invalid embedding request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidEmbeddingRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidEmbeddingRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeImagesGenerations:
@@ -338,8 +340,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid image request type"),
-				newAPIError: types.NewError(errors.New("invalid image request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidImageRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidImageRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeRerank:
@@ -349,8 +351,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid rerank request type"),
-				newAPIError: types.NewError(errors.New("invalid rerank request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidRerankRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidRerankRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeResponses:
@@ -360,8 +362,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid response request type"),
-				newAPIError: types.NewError(errors.New("invalid response request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidResponseRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidResponseRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeResponsesCompact:
@@ -379,8 +381,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		default:
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid response compaction request type"),
-				newAPIError: types.NewError(errors.New("invalid response compaction request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidResponseCompactionRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidResponseCompactionRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	default:
@@ -390,8 +392,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid general request type"),
-				newAPIError: types.NewError(errors.New("invalid general request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New(i18n.T(c, i18n.MsgChannelInvalidGeneralRequest)),
+				newAPIError: types.NewError(errors.New(i18n.T(c, i18n.MsgChannelInvalidGeneralRequest)), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	}
@@ -496,7 +498,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 			newAPIError: types.NewOpenAIError(bodyErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError),
 		}
 	}
-	if validateErr := validateChannelTestResponse(respBody, testPrompt); validateErr != nil {
+	if validateErr := validateChannelTestResponse(c, respBody, testPrompt); validateErr != nil {
 		return testResult{
 			context:     c,
 			localErr:    validateErr,
@@ -1015,16 +1017,16 @@ func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest
 	request.ToolChoice = toolChoiceJSON
 }
 
-func validateChannelTestResponse(respBody []byte, testPrompt channelTestPrompt) error {
+func validateChannelTestResponse(c *gin.Context, respBody []byte, testPrompt channelTestPrompt) error {
 	if testPrompt.isTool {
 		if responseHasChannelTestToolCall(respBody) {
 			return nil
 		}
 		originalText := strings.TrimSpace(extractChannelTestAIText(respBody))
 		if originalText == "" {
-			return errors.New(channelTestToolNotSupported)
+			return errors.New(i18n.T(c, channelTestToolNotSupported))
 		}
-		return fmt.Errorf("%s\n%s", channelTestToolNotSupported, originalText)
+		return fmt.Errorf("%s\n%s", i18n.T(c, channelTestToolNotSupported), originalText)
 	}
 
 	if !testPrompt.requiresTextAnswer {
@@ -1033,7 +1035,7 @@ func validateChannelTestResponse(respBody []byte, testPrompt channelTestPrompt) 
 
 	originalText := strings.TrimSpace(extractChannelTestAIText(respBody))
 	if originalText == "" {
-		return errors.New("empty model response")
+		return errors.New(i18n.T(c, i18n.MsgChannelEmptyModelResponse))
 	}
 	if !matchesChannelTestExpectedAnswer(originalText, testPrompt.expectedAnswer) {
 		// Return the raw AI text as the error message so the UI can show it
@@ -1047,7 +1049,7 @@ func classifyChannelTestValidationError(err error, testPrompt channelTestPrompt)
 	if err == nil {
 		return types.ErrorCodeBadResponseBody
 	}
-	if testPrompt.isTool || strings.Contains(err.Error(), channelTestToolNotSupported) {
+	if testPrompt.isTool {
 		return types.ErrorCodeChannelTestToolUnsupported
 	}
 	return types.ErrorCodeBadResponseBody

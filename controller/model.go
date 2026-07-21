@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay"
 	"github.com/zhongruan0522/new-api/relay/channel/minimax"
@@ -131,7 +132,7 @@ func ListModels(c *gin.Context, modelType int) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "get user group failed",
+				"message": i18n.T(c, i18n.MsgCommonGetUserGroupFailed),
 			})
 			return
 		}

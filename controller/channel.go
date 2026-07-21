@@ -378,7 +378,7 @@ func FetchUpstreamModels(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": fmt.Sprintf("获取Ollama模型失败: %s", err.Error()),
+				"message": i18n.T(c, i18n.MsgChannelOllamaGetModelsFailed, map[string]any{"Error": err.Error()}),
 			})
 			return
 		}
@@ -406,7 +406,7 @@ func FetchUpstreamModels(c *gin.Context) {
 		if apiErr != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": fmt.Sprintf("获取渠道密钥失败: %s", apiErr.Error()),
+				"message": i18n.T(c, i18n.MsgChannelGetKeyFailed, map[string]any{"Error": apiErr.Error()}),
 			})
 			return
 		}
@@ -421,7 +421,7 @@ func FetchUpstreamModels(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": fmt.Sprintf("获取Gemini模型失败: %s", err.Error()),
+				"message": i18n.T(c, i18n.MsgChannelGeminiGetModelsFailed, map[string]any{"Error": err.Error()}),
 			})
 			return
 		}
@@ -712,7 +712,7 @@ func validateTwoFactorAuth(twoFA *model.TwoFA, code string) bool {
 // validateChannel 通用的渠道校验函数
 func validateChannel(c *gin.Context, channel *model.Channel, isAdd bool) error {
 	if channel == nil {
-		return fmt.Errorf("channel cannot be empty")
+		return fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelEmpty))
 	}
 
 	// 校验 channel settings
@@ -731,10 +731,10 @@ func validateChannel(c *gin.Context, channel *model.Channel, isAdd bool) error {
 
 	// 校验渠道类型是否合法（已移除/不支持的渠道类型直接拒绝）
 	if channel.Type == constant.ChannelTypeUnknown {
-		return fmt.Errorf("invalid channel type")
+		return fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelInvalidType))
 	}
 	if _, ok := constant.ChannelTypeNames[channel.Type]; !ok {
-		return fmt.Errorf("unsupported channel type: %d", channel.Type)
+		return fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelUnsupportedType, map[string]any{"Type": channel.Type}))
 	}
 
 	// VertexAI 特殊校验
@@ -1240,7 +1240,7 @@ func FetchModels(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid request",
+			"message": i18n.T(c, i18n.MsgChannelInvalidRequest),
 		})
 		return
 	}
@@ -1361,7 +1361,7 @@ func FetchModels(c *gin.Context) {
 	if response.StatusCode != http.StatusOK {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "Failed to fetch models",
+			"message": i18n.T(c, i18n.MsgChannelFetchModelsFailed),
 		})
 		return
 	}
@@ -1469,7 +1469,7 @@ func GetTagModels(c *gin.Context) {
 func CopyChannel(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "invalid id"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": i18n.T(c, i18n.MsgChannelInvalidID)})
 		return
 	}
 
@@ -2003,7 +2003,7 @@ func OllamaPullModel(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid request parameters",
+			"message": i18n.T(c, i18n.MsgChannelInvalidRequestParameters),
 		})
 		return
 	}
@@ -2011,7 +2011,7 @@ func OllamaPullModel(c *gin.Context) {
 	if req.ChannelID == 0 || req.ModelName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Channel ID and model name are required",
+			"message": i18n.T(c, i18n.MsgChannelIdAndModelRequired),
 		})
 		return
 	}
@@ -2021,7 +2021,7 @@ func OllamaPullModel(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "Channel not found",
+			"message": i18n.T(c, i18n.MsgChannelNotFound),
 		})
 		return
 	}
@@ -2030,7 +2030,7 @@ func OllamaPullModel(c *gin.Context) {
 	if channel.Type != constant.ChannelTypeOllama {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "This operation is only supported for Ollama channels",
+			"message": i18n.T(c, i18n.MsgChannelOllamaOnly),
 		})
 		return
 	}
@@ -2045,14 +2045,14 @@ func OllamaPullModel(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": fmt.Sprintf("Failed to pull model: %s", err.Error()),
+			"message": i18n.T(c, i18n.MsgChannelPullModelFailed, map[string]any{"Error": err.Error()}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": fmt.Sprintf("Model %s pulled successfully", req.ModelName),
+		"message": i18n.T(c, i18n.MsgChannelPullModelSuccess, map[string]any{"Model": req.ModelName}),
 	})
 }
 
@@ -2066,7 +2066,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid request parameters",
+			"message": i18n.T(c, i18n.MsgChannelInvalidRequestParameters),
 		})
 		return
 	}
@@ -2074,7 +2074,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	if req.ChannelID == 0 || req.ModelName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Channel ID and model name are required",
+			"message": i18n.T(c, i18n.MsgChannelIdAndModelRequired),
 		})
 		return
 	}
@@ -2084,7 +2084,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "Channel not found",
+			"message": i18n.T(c, i18n.MsgChannelNotFound),
 		})
 		return
 	}
@@ -2093,7 +2093,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	if channel.Type != constant.ChannelTypeOllama {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "This operation is only supported for Ollama channels",
+			"message": i18n.T(c, i18n.MsgChannelOllamaOnly),
 		})
 		return
 	}
@@ -2128,7 +2128,7 @@ func OllamaPullModelStream(c *gin.Context) {
 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(errorData))
 	} else {
 		successData, _ := json.Marshal(gin.H{
-			"message": fmt.Sprintf("Model %s pulled successfully", req.ModelName),
+			"message": i18n.T(c, i18n.MsgChannelPullModelSuccess, map[string]any{"Model": req.ModelName}),
 		})
 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(successData))
 	}
@@ -2148,7 +2148,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid request parameters",
+			"message": i18n.T(c, i18n.MsgChannelInvalidRequestParameters),
 		})
 		return
 	}
@@ -2156,7 +2156,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	if req.ChannelID == 0 || req.ModelName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Channel ID and model name are required",
+			"message": i18n.T(c, i18n.MsgChannelIdAndModelRequired),
 		})
 		return
 	}
@@ -2166,7 +2166,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "Channel not found",
+			"message": i18n.T(c, i18n.MsgChannelNotFound),
 		})
 		return
 	}
@@ -2175,7 +2175,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	if channel.Type != constant.ChannelTypeOllama {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "This operation is only supported for Ollama channels",
+			"message": i18n.T(c, i18n.MsgChannelOllamaOnly),
 		})
 		return
 	}
@@ -2190,7 +2190,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": fmt.Sprintf("Failed to delete model: %s", err.Error()),
+			"message": i18n.T(c, i18n.MsgChannelDeleteModelFailed, map[string]any{"Error": err.Error()}),
 		})
 		return
 	}
@@ -2198,7 +2198,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": fmt.Sprintf("Model %s deleted successfully", req.ModelName),
+		"message": i18n.T(c, i18n.MsgChannelDeleteModelSuccess, map[string]any{"Model": req.ModelName}),
 	})
 }
 
@@ -2208,7 +2208,7 @@ func OllamaVersion(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid channel id",
+			"message": i18n.T(c, i18n.MsgChannelInvalidID),
 		})
 		return
 	}
@@ -2217,7 +2217,7 @@ func OllamaVersion(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "Channel not found",
+			"message": i18n.T(c, i18n.MsgChannelNotFound),
 		})
 		return
 	}
@@ -2225,7 +2225,7 @@ func OllamaVersion(c *gin.Context) {
 	if channel.Type != constant.ChannelTypeOllama {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "This operation is only supported for Ollama channels",
+			"message": i18n.T(c, i18n.MsgChannelOllamaOnly),
 		})
 		return
 	}
@@ -2240,7 +2240,7 @@ func OllamaVersion(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": fmt.Sprintf("获取Ollama版本失败: %s", err.Error()),
+			"message": i18n.T(c, i18n.MsgChannelOllamaVersionFailed, map[string]any{"Error": err.Error()}),
 		})
 		return
 	}

@@ -112,6 +112,18 @@ func getMinTopup() int64 {
 	return int64(operation_setting.MinTopUp)
 }
 
+func respondTopupError(c *gin.Context, key string, args ...map[string]any) {
+	c.JSON(200, gin.H{"success": false, "message": i18n.T(c, key, args...), "data": nil})
+}
+
+func respondTopupSuccess(c *gin.Context, data any, redirectUrl string) {
+	resp := gin.H{"success": true, "message": i18n.T(c, i18n.MsgTopupSuccess), "data": data}
+	if redirectUrl != "" {
+		resp["url"] = redirectUrl
+	}
+	c.JSON(200, resp)
+}
+
 func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
@@ -120,24 +132,24 @@ func RequestEpay(c *gin.Context) {
 		return
 	}
 	if req.Amount < getMinTopup() {
-		c.JSON(200, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
+		respondTopupError(c, i18n.MsgTopupAmountBelowMin, map[string]any{"Min": getMinTopup()})
 		return
 	}
 
 	id := c.GetInt("id")
 	group, err := model.GetUserGroup(id, true)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "获取用户分组失败"})
+		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
 	}
 	payMoney := getPayMoney(req.Amount, group)
 	if payMoney < 0.01 {
-		c.JSON(200, gin.H{"message": "error", "data": "充值金额过低"})
+		respondTopupError(c, i18n.MsgTopupPayAmountTooLow)
 		return
 	}
 
 	if !operation_setting.ContainsPayMethod(req.PaymentMethod) {
-		c.JSON(200, gin.H{"message": "error", "data": "支付方式不存在"})
+		respondTopupError(c, i18n.MsgTopupPaymentMethodNotFound)
 		return
 	}
 
@@ -148,7 +160,7 @@ func RequestEpay(c *gin.Context) {
 	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
 	client := GetEpayClient()
 	if client == nil {
-		c.JSON(200, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})
+		respondTopupError(c, i18n.MsgTopupPaymentConfigMissing)
 		return
 	}
 	uri, params, err := client.Purchase(&epay.PurchaseArgs{
@@ -161,7 +173,7 @@ func RequestEpay(c *gin.Context) {
 		ReturnUrl:      returnUrl,
 	})
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "拉起支付失败"})
+		respondTopupError(c, i18n.MsgTopupPaymentInitFailed)
 		return
 	}
 	amount := req.Amount
@@ -177,10 +189,10 @@ func RequestEpay(c *gin.Context) {
 	}
 	err = topUp.Insert()
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "创建订单失败"})
+		respondTopupError(c, i18n.MsgTopupOrderCreateFailed)
 		return
 	}
-	c.JSON(200, gin.H{"message": "success", "data": params, "url": uri})
+	respondTopupSuccess(c, params, uri)
 }
 
 // tradeNo lock
@@ -284,21 +296,21 @@ func RequestAmount(c *gin.Context) {
 	}
 
 	if req.Amount < getMinTopup() {
-		c.JSON(200, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
+		respondTopupError(c, i18n.MsgTopupAmountBelowMin, map[string]any{"Min": getMinTopup()})
 		return
 	}
 	id := c.GetInt("id")
 	group, err := model.GetUserGroup(id, true)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "获取用户分组失败"})
+		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
 	}
 	payMoney := getPayMoney(req.Amount, group)
 	if payMoney <= 0.01 {
-		c.JSON(200, gin.H{"message": "error", "data": "充值金额过低"})
+		respondTopupError(c, i18n.MsgTopupPayAmountTooLow)
 		return
 	}
-	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
+	respondTopupSuccess(c, strconv.FormatFloat(payMoney, 'f', 2, 64), "")
 }
 
 func GetUserTopUps(c *gin.Context) {

@@ -563,7 +563,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	// 发生规范转换时，可能是转换导致的 token 统计异常，继续记录消费日志但不触发重试。
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := service.NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+		if apiErr := service.NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费

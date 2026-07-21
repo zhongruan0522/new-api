@@ -44,7 +44,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 		return
 	}
 
-	deleted, err := service.ClearChannelAffinityCacheByRuleName(ruleName)
+	deleted, err := service.ClearChannelAffinityCacheByRuleName(c, ruleName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -72,14 +72,14 @@ func GetChannelAffinityUsageCacheStats(c *gin.Context) {
 	if ruleName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "missing param: rule_name",
+			"message": i18n.T(c, i18n.MsgChannelRuleNameRequired),
 		})
 		return
 	}
 	if keyFp == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "missing param: key_fp",
+			"message": i18n.T(c, i18n.MsgChannelKeyFpRequired),
 		})
 		return
 	}

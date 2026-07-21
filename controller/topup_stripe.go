@@ -48,44 +48,44 @@ type StripeAdaptor struct {
 
 func (*StripeAdaptor) RequestAmount(c *gin.Context, req *StripePayRequest) {
 	if req.Amount < getStripeMinTopup() {
-		c.JSON(200, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getStripeMinTopup())})
+		respondTopupError(c, i18n.MsgTopupAmountBelowMin, map[string]any{"Min": getStripeMinTopup()})
 		return
 	}
 	id := c.GetInt("id")
 	group, err := model.GetUserGroup(id, true)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "获取用户分组失败"})
+		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
 	}
 	payMoney := getStripePayMoney(float64(req.Amount), group)
 	if payMoney <= 0.01 {
-		c.JSON(200, gin.H{"message": "error", "data": "充值金额过低"})
+		respondTopupError(c, i18n.MsgTopupPayAmountTooLow)
 		return
 	}
-	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
+	respondTopupSuccess(c, strconv.FormatFloat(payMoney, 'f', 2, 64), "")
 }
 
 func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	if req.PaymentMethod != PaymentMethodStripe {
-		c.JSON(200, gin.H{"message": "error", "data": i18n.T(c, i18n.MsgTopupUnsupportedChannel)})
+		respondTopupError(c, i18n.MsgTopupUnsupportedChannel)
 		return
 	}
 	if req.Amount < getStripeMinTopup() {
-		c.JSON(200, gin.H{"message": i18n.T(c, i18n.MsgTopupAmountBelowMin, map[string]any{"Min": getStripeMinTopup()}), "data": 10})
+		respondTopupError(c, i18n.MsgTopupAmountBelowMin, map[string]any{"Min": getStripeMinTopup()})
 		return
 	}
 	if req.Amount > 10000 {
-		c.JSON(200, gin.H{"message": i18n.T(c, i18n.MsgTopupAmountExceedMax), "data": 10})
+		respondTopupError(c, i18n.MsgTopupAmountExceedMax)
 		return
 	}
 
 	if req.SuccessURL != "" && common.ValidateRedirectURL(req.SuccessURL) != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": i18n.T(c, i18n.MsgTopupSuccessUrlUntrusted), "data": ""})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgTopupSuccessUrlUntrusted), "data": nil})
 		return
 	}
 
 	if req.CancelURL != "" && common.ValidateRedirectURL(req.CancelURL) != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": i18n.T(c, i18n.MsgTopupCancelUrlUntrusted), "data": ""})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgTopupCancelUrlUntrusted), "data": nil})
 		return
 	}
 
@@ -99,7 +99,7 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	payLink, err := genStripeLink(c, referenceId, user.StripeCustomer, user.Email, req.Amount, req.SuccessURL, req.CancelURL)
 	if err != nil {
 		log.Println("获取Stripe Checkout支付链接失败", err)
-		c.JSON(200, gin.H{"message": "error", "data": "拉起支付失败"})
+		respondTopupError(c, i18n.MsgTopupPaymentInitFailed)
 		return
 	}
 
@@ -115,22 +115,17 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	}
 	err = topUp.Insert()
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "创建订单失败"})
+		respondTopupError(c, i18n.MsgTopupOrderCreateFailed)
 		return
 	}
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data": gin.H{
-			"pay_link": payLink,
-		},
-	})
+	respondTopupSuccess(c, gin.H{"pay_link": payLink}, "")
 }
 
 func RequestStripeAmount(c *gin.Context) {
 	var req StripePayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
+		respondTopupError(c, i18n.MsgTopupInvalidParams)
 		return
 	}
 	stripeAdaptor.RequestAmount(c, &req)
@@ -140,7 +135,7 @@ func RequestStripePay(c *gin.Context) {
 	var req StripePayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
+		respondTopupError(c, i18n.MsgTopupInvalidParams)
 		return
 	}
 	stripeAdaptor.RequestPay(c, &req)
