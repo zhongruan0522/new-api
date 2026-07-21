@@ -490,7 +490,7 @@ export function getCurrencyLabel(): string {
     case 'CNY':
       return 'common.fields.cny'
     case 'CUSTOM':
-      return meta.kind === 'custom' ? meta.symbol : 'Custom'
+      return meta.kind === 'custom' ? meta.symbol : 'common.fields.custom'
     case 'USD':
     default:
       return 'common.fields.usd'

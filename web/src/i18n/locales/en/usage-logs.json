@@ -73,6 +73,8 @@
   "usageLogs.fields.overwritten": "Overwritten",
   "usageLogs.fields.path": "Path",
   "usageLogs.fields.perCallBilling": "Per-call billing",
+  "usageLogs.fields.perTokenSegmentedBilling": "Per-token segmented billing",
+  "usageLogs.fields.perTokenNonSegmentedBilling": "Per-token non-segmented billing",
   "usageLogs.fields.postDelta": "Post Delta",
   "usageLogs.fields.preConsumed": "Pre-consumed",
   "usageLogs.fields.promptEn": "Prompt (EN)",

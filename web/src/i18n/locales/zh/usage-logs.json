@@ -73,6 +73,8 @@
   "usageLogs.fields.overwritten": "已覆盖",
   "usageLogs.fields.path": "路径",
   "usageLogs.fields.perCallBilling": "按次",
+  "usageLogs.fields.perTokenSegmentedBilling": "按 Token 分段计费",
+  "usageLogs.fields.perTokenNonSegmentedBilling": "按 Token 不分段计费",
   "usageLogs.fields.postDelta": "结算差额",
   "usageLogs.fields.preConsumed": "预扣费",
   "usageLogs.fields.promptEn": "提示词 (英文)",

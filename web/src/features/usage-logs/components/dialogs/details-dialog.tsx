@@ -317,7 +317,7 @@ function buildBillingRows(
   const effectiveGroupRatio = getEffectiveGroupRatio(other)
   const groupRatio = effectiveGroupRatio?.value ?? 1
   const dynamicRatio = getDynamicRatio(other)
-  const ratioLabel = effectiveGroupRatio?.labelKey || 'Group Ratio'
+  const ratioLabel = effectiveGroupRatio?.labelKey || 'systemSettings.fields.groupRatio'
   const ratioParts = [`${t(ratioLabel)} ${compactRatio(groupRatio)}x`]
   if (dynamicRatio !== 1) {
     ratioParts.push(`${t('dynamicRatio.fields.ratio')} ${compactRatio(dynamicRatio)}x`)
@@ -537,8 +537,8 @@ function BillingBreakdown(props: {
     summaryRows.push({ label: t('usageLogs.fields.billingMode'), value: t('usageLogs.fields.perCallBilling') })
   } else {
     const modeKey = isContextPricing
-      ? 'Per-token segmented billing'
-      : 'Per-token non-segmented billing'
+      ? 'usageLogs.fields.perTokenSegmentedBilling'
+      : 'usageLogs.fields.perTokenNonSegmentedBilling'
     summaryRows.push({ label: t('usageLogs.fields.billingMode'), value: t(modeKey) })
   }
 
@@ -588,22 +588,22 @@ function BillingBreakdown(props: {
   }
 
   const ratioEntries = [
-    ['Cache Read Ratio', contextPrices?.cache_ratio ?? other.cache_ratio],
+    ['common.fields.cacheReadRatio', contextPrices?.cache_ratio ?? other.cache_ratio],
     [
-      'Cache Creation Ratio',
+      'common.fields.cacheCreationRatio',
       contextPrices?.cache_creation_ratio ?? other.cache_creation_ratio,
     ],
     [
-      'Cache Creation 5m Ratio',
+      'common.fields.cacheCreation5mRatio',
       contextPrices?.cache_creation_ratio_5m ?? other.cache_creation_ratio_5m,
     ],
     [
-      'Cache Creation 1h Ratio',
+      'common.fields.cacheCreation1hRatio',
       contextPrices?.cache_creation_ratio_1h ?? other.cache_creation_ratio_1h,
     ],
-    ['Audio Input Ratio', contextPrices?.audio_ratio ?? other.audio_ratio],
+    ['common.fields.audioInputRatio', contextPrices?.audio_ratio ?? other.audio_ratio],
     [
-      'Audio Output Ratio',
+      'common.fields.audioOutputRatio',
       contextPrices?.audio_completion_ratio ?? other.audio_completion_ratio,
     ],
   ] as const
