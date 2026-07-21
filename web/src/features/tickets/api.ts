@@ -46,19 +46,19 @@ export async function getTickets(params: TicketListParams): Promise<TicketPage> 
       keyword: params.keyword || undefined,
     },
   })
-  return unwrap<TicketPage>(res.data, 'Failed to load tickets')
+  return unwrap<TicketPage>(res.data, 'tickets.errors.failedToLoadTickets')
 }
 
 export async function getTicketDetail(ticketId: number): Promise<TicketDetail> {
   const res = await api.get(`/api/ticket/${ticketId}`)
-  return unwrap<TicketDetail>(res.data, 'Failed to load ticket detail')
+  return unwrap<TicketDetail>(res.data, 'tickets.errors.failedToLoadTicketDetail')
 }
 
 export async function createTicket(
   payload: CreateTicketPayload
 ): Promise<TicketDetail> {
   const res = await api.post('/api/ticket/', payload)
-  return unwrap<TicketDetail>(res.data, 'Failed to create ticket')
+  return unwrap<TicketDetail>(res.data, 'tickets.errors.failedToCreateTicket')
 }
 
 export async function replyTicket(
@@ -67,14 +67,14 @@ export async function replyTicket(
 ): Promise<void> {
   const res = await api.post(`/api/ticket/${ticketId}/reply`, { content })
   if (!res.data?.success) {
-    throw new Error(res.data?.message || 'Failed to send reply')
+    throw new Error(res.data?.message || 'tickets.errors.failedToSendReply')
   }
 }
 
 export async function closeTicket(ticketId: number): Promise<void> {
   const res = await api.post(`/api/ticket/${ticketId}/close`)
   if (!res.data?.success) {
-    throw new Error(res.data?.message || 'Failed to close ticket')
+    throw new Error(res.data?.message || 'tickets.errors.failedToCloseTicket')
   }
 }
 
@@ -83,6 +83,6 @@ export async function reopenTicket(ticketId: number): Promise<void> {
     status: 'pending',
   })
   if (!res.data?.success) {
-    throw new Error(res.data?.message || 'Failed to reopen ticket')
+    throw new Error(res.data?.message || 'tickets.errors.failedToReopenTicket')
   }
 }

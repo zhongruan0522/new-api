@@ -102,7 +102,7 @@ const STATUS_OPTIONS: Array<{
   value: TicketStatusFilter
   label: string
 }> = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'pricing.fields.all' },
   { value: 'pending', label: 'common.status.pending' },
   { value: 'processing', label: 'common.status.processing' },
   { value: 'completed', label: 'common.fields.completed' },
@@ -406,7 +406,7 @@ export function Tickets() {
       setTicketDetail(detail)
       setDetailOpen(true)
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => toast.error(t(error.message)),
   })
 
   const createMutation = useMutation({
@@ -424,7 +424,7 @@ export function Tickets() {
       setDetailOpen(true)
       await refreshTickets()
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => toast.error(t(error.message)),
   })
 
   const replyMutation = useMutation({
@@ -438,7 +438,7 @@ export function Tickets() {
       await refreshTickets()
       detailMutation.mutate(ticketId)
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => toast.error(t(error.message)),
   })
 
   const statusMutation = useMutation({
