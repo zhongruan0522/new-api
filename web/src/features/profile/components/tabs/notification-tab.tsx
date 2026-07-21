@@ -140,7 +140,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
                 />
                 <Icon className='h-4 w-4 sm:h-5 sm:w-5' />
                 <span className='max-w-full truncate text-xs font-medium sm:text-sm'>
-                  {t(method.label)}
+                  {method.isI18nKey ? t(method.label) : method.label}
                 </span>
               </Label>
             )

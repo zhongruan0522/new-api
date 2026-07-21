@@ -26,11 +26,12 @@ For commercial licensing, please contact support@quantumnous.com
 export const DEFAULT_QUOTA_WARNING_THRESHOLD = 500000
 
 /**
- * Notification methods
+ * Notification methods. Email label is an i18n key (resolved via t()).
+ * Webhook / Bark / Gotify are technical proper nouns rendered verbatim.
  */
 export const NOTIFICATION_METHODS = [
-  { value: 'email' as const, label: 'auth.fields.email' },
-  { value: 'webhook' as const, label: 'Webhook' },
-  { value: 'bark' as const, label: 'Bark' },
-  { value: 'gotify' as const, label: 'Gotify' },
+  { value: 'email' as const, label: 'auth.fields.email', isI18nKey: true },
+  { value: 'webhook' as const, label: 'Webhook', isI18nKey: false },
+  { value: 'bark' as const, label: 'Bark', isI18nKey: false },
+  { value: 'gotify' as const, label: 'Gotify', isI18nKey: false },
 ] as const

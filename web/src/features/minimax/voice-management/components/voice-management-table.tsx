@@ -39,14 +39,14 @@ type VoiceManagementTableProps = {
 }
 
 function getVoiceTypeLabelKey(type: string): string {
-  if (type === 'created') return 'Voice Status - Paid'
-  if (type === 'preview') return 'Voice Status - Preview'
+  if (type === 'created') return 'minimax.fields.voiceStatusPaid'
+  if (type === 'preview') return 'minimax.fields.voiceStatusPreview'
   return type || '-'
 }
 
 function getOperatorKindLabelKey(kind: string): string {
-  if (kind === 'admin') return 'Admin'
-  if (kind === 'user') return 'User'
+  if (kind === 'admin') return 'systemSettings.fields.admin'
+  if (kind === 'user') return 'systemSettings.fields.user'
   return kind
 }
 

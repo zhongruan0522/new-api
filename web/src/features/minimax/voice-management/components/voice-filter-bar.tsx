@@ -38,7 +38,7 @@ type VoiceFilterBarProps = {
 }
 
 const TYPE_OPTIONS: Array<{ value: VoiceTypeFilter; labelKey: string }> = [
-  { value: '', labelKey: 'All' },
+  { value: '', labelKey: 'pricing.fields.all' },
   { value: 'created', labelKey: 'minimax.fields.voiceStatusPaid' },
   { value: 'preview', labelKey: 'minimax.fields.voiceStatusPreview' },
 ]
