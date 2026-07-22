@@ -43,21 +43,18 @@ var (
 )
 
 func (topUp *TopUp) Insert() error {
-	var err error
-	err = DB.Create(topUp).Error
+	err := DB.Create(topUp).Error
 	return err
 }
 
 func (topUp *TopUp) Update() error {
-	var err error
-	err = DB.Save(topUp).Error
+	err := DB.Save(topUp).Error
 	return err
 }
 
 func GetTopUpById(id int) *TopUp {
 	var topUp *TopUp
-	var err error
-	err = DB.Where("id = ?", id).First(&topUp).Error
+	err := DB.Where("id = ?", id).First(&topUp).Error
 	if err != nil {
 		return nil
 	}
@@ -66,8 +63,7 @@ func GetTopUpById(id int) *TopUp {
 
 func GetTopUpByTradeNo(tradeNo string) *TopUp {
 	var topUp *TopUp
-	var err error
-	err = DB.Where("trade_no = ?", tradeNo).First(&topUp).Error
+	err := DB.Where("trade_no = ?", tradeNo).First(&topUp).Error
 	if err != nil {
 		return nil
 	}

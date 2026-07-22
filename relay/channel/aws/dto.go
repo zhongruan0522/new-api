@@ -14,20 +14,20 @@ import (
 
 type AwsClaudeRequest struct {
 	// AnthropicVersion should be "bedrock-2023-05-31"
-	AnthropicVersion string              `json:"anthropic_version"`
-	AnthropicBeta    json.RawMessage     `json:"anthropic_beta,omitempty"`
-	System           any                 `json:"system,omitempty"`
-	Messages         []dto.ClaudeMessage `json:"messages"`
-	MaxTokens        uint                `json:"max_tokens,omitempty"`
-	Temperature      *float64            `json:"temperature,omitempty"`
-	TopP             float64             `json:"top_p,omitempty"`
-	TopK             int                 `json:"top_k,omitempty"`
-	StopSequences    []string            `json:"stop_sequences,omitempty"`
-	Tools            any                 `json:"tools,omitempty"`
+	AnthropicVersion  string              `json:"anthropic_version"`
+	AnthropicBeta     json.RawMessage     `json:"anthropic_beta,omitempty"`
+	System            any                 `json:"system,omitempty"`
+	Messages          []dto.ClaudeMessage `json:"messages"`
+	MaxTokens         uint                `json:"max_tokens,omitempty"`
+	Temperature       *float64            `json:"temperature,omitempty"`
+	TopP              float64             `json:"top_p,omitempty"`
+	TopK              int                 `json:"top_k,omitempty"`
+	StopSequences     []string            `json:"stop_sequences,omitempty"`
+	Tools             any                 `json:"tools,omitempty"`
 	ToolChoice        any                 `json:"tool_choice,omitempty"`
 	ContextManagement json.RawMessage     `json:"context_management,omitempty"`
 	Thinking          *dto.Thinking       `json:"thinking,omitempty"`
-	OutputConfig     json.RawMessage     `json:"output_config,omitempty"`
+	OutputConfig      json.RawMessage     `json:"output_config,omitempty"`
 }
 
 func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaudeRequest, error) {
@@ -41,8 +41,7 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
 	// check header anthropic-beta
 	anthropicBetaValues := requestHeader.Get("anthropic-beta")
 	if len(anthropicBetaValues) > 0 {
-		var tempArray []string
-		tempArray = strings.Split(anthropicBetaValues, ",")
+		tempArray := strings.Split(anthropicBetaValues, ",")
 		if len(tempArray) > 0 {
 			betaJson, err := json.Marshal(tempArray)
 			if err != nil {

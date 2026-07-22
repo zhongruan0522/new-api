@@ -169,10 +169,7 @@ func streamUpstreamWithWireConversion(
 	fn upstreamHelperFn,
 ) *types.NewAPIError {
 	base := c.Writer
-	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions{
-		ChatIncludeUsage: opts.ChatIncludeUsage,
-		ToolContext:      opts.ToolContext,
-	})
+	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions(opts))
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponse, types.ErrOptionWithSkipRetry())
 	}

@@ -1150,10 +1150,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	var err *types.NewAPIError
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		err = HandleStreamResponseData(c, info, claudeInfo, data)
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	})
 	if err != nil {
 		return nil, err

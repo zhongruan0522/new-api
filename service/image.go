@@ -125,7 +125,7 @@ func DecodeUrlImageData(imageUrl string) (image.Config, string, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		err = errors.New(fmt.Sprintf("fail to get image from url: %s", response.Status))
+		err = fmt.Errorf("fail to get image from url: %s", response.Status)
 		return image.Config{}, "", err
 	}
 

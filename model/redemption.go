@@ -178,8 +178,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 }
 
 func (redemption *Redemption) Insert() error {
-	var err error
-	err = DB.Create(redemption).Error
+	err := DB.Create(redemption).Error
 	return err
 }
 
@@ -190,14 +189,12 @@ func (redemption *Redemption) SelectUpdate() error {
 
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (redemption *Redemption) Update() error {
-	var err error
-	err = DB.Model(redemption).Select("name", "status", "quota", "redeemed_time", "expired_time").Updates(redemption).Error
+	err := DB.Model(redemption).Select("name", "status", "quota", "redeemed_time", "expired_time").Updates(redemption).Error
 	return err
 }
 
 func (redemption *Redemption) Delete() error {
-	var err error
-	err = DB.Delete(redemption).Error
+	err := DB.Delete(redemption).Error
 	return err
 }
 

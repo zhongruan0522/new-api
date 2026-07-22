@@ -410,7 +410,6 @@ func UpdateAllChannelsBalance(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func AutomaticallyUpdateChannels(frequency int) {

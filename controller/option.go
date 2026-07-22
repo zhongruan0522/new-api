@@ -47,7 +47,6 @@ func GetOptions(c *gin.Context) {
 		"message": "",
 		"data":    options,
 	})
-	return
 }
 
 type optionJsonMapEntry struct {
@@ -856,5 +855,4 @@ func UpdateOption(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }

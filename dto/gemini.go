@@ -118,10 +118,7 @@ func (r *GeminiChatRequest) GetTokenCountMeta() *types.TokenCountMeta {
 }
 
 func (r *GeminiChatRequest) IsStream(c *gin.Context) bool {
-	if c.Query("alt") == "sse" {
-		return true
-	}
-	return false
+	return c.Query("alt") == "sse"
 }
 
 func (r *GeminiChatRequest) SetModelName(modelName string) {

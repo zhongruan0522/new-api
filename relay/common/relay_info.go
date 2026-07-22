@@ -621,23 +621,17 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 
 	// 默认移除 service_tier，除非明确允许（避免额外计费风险）
 	if !channelOtherSettings.AllowServiceTier {
-		if _, exists := data["service_tier"]; exists {
-			delete(data, "service_tier")
-		}
+		delete(data, "service_tier")
 	}
 
 	// 默认允许 store 透传，除非明确禁用（禁用可能影响 Codex 使用）
 	if channelOtherSettings.DisableStore {
-		if _, exists := data["store"]; exists {
-			delete(data, "store")
-		}
+		delete(data, "store")
 	}
 
 	// 默认移除 safety_identifier，除非明确允许（保护用户隐私，避免向 OpenAI 报告用户信息）
 	if !channelOtherSettings.AllowSafetyIdentifier {
-		if _, exists := data["safety_identifier"]; exists {
-			delete(data, "safety_identifier")
-		}
+		delete(data, "safety_identifier")
 	}
 
 	jsonDataAfter, err := common.Marshal(data)

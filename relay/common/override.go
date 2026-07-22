@@ -256,9 +256,7 @@ func processNegativeIndex(data []byte, path string) string {
 		index, _ := strconv.Atoi(negIndex)
 
 		arrayPath := strings.Split(path, negIndex)[0]
-		if strings.HasSuffix(arrayPath, ".") {
-			arrayPath = arrayPath[:len(arrayPath)-1]
-		}
+		arrayPath = strings.TrimSuffix(arrayPath, ".")
 
 		array := gjson.GetBytes(data, arrayPath)
 		if array.IsArray() {

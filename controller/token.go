@@ -47,7 +47,6 @@ func GetAllTokens(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func SearchTokens(c *gin.Context) {
@@ -67,7 +66,6 @@ func SearchTokens(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func GetToken(c *gin.Context) {
@@ -88,7 +86,6 @@ func GetToken(c *gin.Context) {
 		"message": "",
 		"data":    buildMaskedTokenResponse(token),
 	})
-	return
 }
 
 func GetTokenKey(c *gin.Context) {
@@ -319,7 +316,6 @@ func AddToken(c *gin.Context) {
 			"key": key,
 		},
 	})
-	return
 }
 
 func DeleteToken(c *gin.Context) {
@@ -336,7 +332,6 @@ func DeleteToken(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func UpdateToken(c *gin.Context) {

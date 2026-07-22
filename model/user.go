@@ -936,8 +936,5 @@ func UpdateLastLoginAt(id int) error {
 func RootUserExists() bool {
 	var user User
 	err := DB.Where("role = ?", common.RoleRootUser).First(&user).Error
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }

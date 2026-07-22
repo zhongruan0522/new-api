@@ -226,7 +226,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游超时）")
+		logContent += "（可能是上游超时）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -351,7 +351,7 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游出错）")
+		logContent += "（可能是上游出错）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -483,7 +483,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游超时）")
+		logContent += "（可能是上游超时）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, relayInfo.OriginModelName, relayInfo.FinalPreConsumedQuota))
 	} else {

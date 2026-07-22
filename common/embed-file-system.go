@@ -17,10 +17,7 @@ type embedFileSystem struct {
 
 func (e *embedFileSystem) Exists(prefix string, path string) bool {
 	_, err := e.Open(path)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (e *embedFileSystem) Open(name string) (http.File, error) {

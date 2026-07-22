@@ -52,7 +52,6 @@ func GetAllQuotaDates(c *gin.Context) {
 		"message": "",
 		"data":    dates,
 	})
-	return
 }
 
 func GetQuotaDataGroupByUser(c *gin.Context) {
@@ -106,7 +105,6 @@ func GetUserQuotaDates(c *gin.Context) {
 		"message": "",
 		"data":    dates,
 	})
-	return
 }
 
 // GetAllMediaConvertStats 管理员查询所有用户的图片/视频转URL统计

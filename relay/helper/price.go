@@ -220,8 +220,5 @@ func ContainPriceOrRatio(modelName string) bool {
 		return true
 	}
 	_, ok, _ = ratio_setting.GetModelRatio(modelName)
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }

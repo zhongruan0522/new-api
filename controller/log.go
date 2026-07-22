@@ -38,7 +38,6 @@ func GetAllLogs(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func GetUserLogs(c *gin.Context) {
@@ -89,7 +88,6 @@ func GetUserLogs(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 // filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的详情弹窗独有字段数据。
