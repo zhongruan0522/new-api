@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="/web/public/logo.png" alt="New API" width="120" />
+  <img src="/web/public/logo.png" alt="NookMux" width="120" />
 
-  # New API
+  # NookMux
 
   基于 [newapi](https://github.com/QuantumNous/new-api) 的自用定制版 AI API 网关 / 代理项目。
 
-  本项目仅用于个人学习、研究与自用场景，不得用于商业用途，不得使用本项目进行中转、分发、倒卖厂商 Plan 或其他违反上游服务条款的行为。部署或使用本项目即视为已理解并同意相关限制。
+  本项目主要用于个人学习、研究与自用场景。使用、部署或二次分发本项目时，应遵守 AGPL-3.0 许可证、本项目及上游项目的版权声明，并自行确保不违反相关上游服务提供商的服务条款；不得将本项目用于中转、分发、倒卖厂商 Plan 或其他违反第三方服务条款的行为。
 
-  [官方文档](https://docs.newapi.pro/zh/docs) · [DeepWiki](https://deepwiki.com/QuantumNous/new-api)
+  [Zread](https://zread.ai/NookMux/NookMux) · [DeepWiki](https://deepwiki.com/NookMux/NookMux)
 </div>
 
 ---
@@ -26,7 +26,7 @@
 
 - OpenCode
 - Codex
-- CurSor
+- Cursor
 
 ### 使用的 AI 模型
 
