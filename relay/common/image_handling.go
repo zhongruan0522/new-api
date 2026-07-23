@@ -3,7 +3,7 @@ package common
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/dto"
 )
 
 type MediaURLResolver func(rawURL string, mediaContentType string) (resolvedURL string, err error)

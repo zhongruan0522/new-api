@@ -6,7 +6,7 @@ This file is the old version of the payment settings file. If you need to add ne
 package operation_setting
 
 import (
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var PayAddress = ""

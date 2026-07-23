@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestPatchClaudeMessageDeltaUsageDataPreserveUnknownFields(t *testing.T) {

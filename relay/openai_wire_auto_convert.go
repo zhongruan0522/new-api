@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

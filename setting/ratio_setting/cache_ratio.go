@@ -1,7 +1,7 @@
 package ratio_setting
 
 import (
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 )
 
 var defaultCacheRatio = map[string]float64{

@@ -9,7 +9,7 @@ import (
 
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var negativeIndexRegexp = regexp.MustCompile(`\.(-\d+)`)

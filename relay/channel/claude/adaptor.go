@@ -6,11 +6,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/relay/channel"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/relay/channel"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

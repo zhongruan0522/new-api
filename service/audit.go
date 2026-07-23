@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
 // sensitiveFieldSuffixes 字段名包含这些子串（小写匹配）时需要脱敏。

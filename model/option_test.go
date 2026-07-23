@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 	"gorm.io/gorm"
 )
 

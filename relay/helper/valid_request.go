@@ -7,11 +7,11 @@ import (
 	"math"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

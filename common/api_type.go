@@ -1,6 +1,6 @@
 package common
 
-import "github.com/zhongruan0522/new-api/constant"
+import "github.com/NookMux/NookMux/constant"
 
 func ChannelType2APIType(channelType int) (int, bool) {
 	apiType := -1

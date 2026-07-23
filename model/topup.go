@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/logger"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"

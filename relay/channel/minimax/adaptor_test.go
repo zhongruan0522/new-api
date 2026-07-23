@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/setting/model_setting"
 )
 
 // withMiniMaxSettings 临时替换全局 MiniMaxSettings，测试结束自动恢复。

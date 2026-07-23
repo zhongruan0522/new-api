@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/model"
 
 	webauthn "github.com/go-webauthn/webauthn/webauthn"
 )

@@ -1,6 +1,6 @@
 package types
 
-import "github.com/zhongruan0522/new-api/constant"
+import "github.com/NookMux/NookMux/constant"
 
 type RelayFormat string
 

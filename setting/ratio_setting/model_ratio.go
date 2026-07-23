@@ -3,8 +3,8 @@ package ratio_setting
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/types"
 )
 
 // from songquanpeng/one-api

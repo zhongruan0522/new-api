@@ -1,6 +1,6 @@
 package operation_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 type QuotaSetting struct {
 	FreeModelPreConsumedQuota int `json:"free_model_pre_consumed_quota"` // 免费模型预消耗额度（Token 数），0 表示关闭

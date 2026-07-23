@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
 func TestExtractChannelAffinityValueFromRequestHeader(t *testing.T) {

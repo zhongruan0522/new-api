@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func vertexInfo(t *testing.T, baseURL string, apiKey string, apiVersion string, stream bool) *relaycommon.RelayInfo {

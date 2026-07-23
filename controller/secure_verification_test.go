@@ -12,10 +12,10 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/middleware"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/middleware"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/system_setting"
 	"gorm.io/gorm"
 )
 

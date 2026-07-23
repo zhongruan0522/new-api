@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/constant"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
 func streamScannerTestContext(t *testing.T) (*gin.Context, func()) {

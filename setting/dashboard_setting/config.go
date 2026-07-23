@@ -1,7 +1,7 @@
 package dashboard_setting
 
 import (
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 // DashboardConfig 数据仪表板配置结构

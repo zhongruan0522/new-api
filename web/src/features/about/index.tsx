@@ -59,17 +59,17 @@ function EmptyAboutState() {
           <p>
             {t('about.fields.newApiProjectRepository')}{' '}
             <a
-              href='https://github.com/zhongruan0522/new-api'
+              href='https://github.com/NookMux/NookMux'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('about.placeholders.urlGithubComZhongruan0522NewApi')}
+              {t('about.placeholders.urlGithubComNookMuxNookMux')}
             </a>
           </p>
           <p className='text-muted-foreground'>
             <a
-              href='https://github.com/zhongruan0522/new-api'
+              href='https://github.com/NookMux/NookMux'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
@@ -78,12 +78,12 @@ function EmptyAboutState() {
             </a>{' '}
             © {currentYear}{' '}
             <a
-              href='https://github.com/QuantumNous'
+              href='https://github.com/NookMux'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('about.fields.quantumNous')}
+              {t('about.fields.nookMux')}
             </a>{' '}
             {t('about.fields.basedOn')}{' '}
             <a
@@ -107,7 +107,7 @@ function EmptyAboutState() {
           <p className='text-muted-foreground'>
             {t('about.errors.projectMustBeUsedInComplianceWithThe')}{' '}
             <a
-              href='https://github.com/zhongruan0522/new-api/blob/main/LICENSE'
+              href='https://github.com/NookMux/NookMux/blob/main/LICENSE'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/reasonmap"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/reasonmap"
 )
 
 func claudeThinkingBudgetToReasoningEffort(budget int) string {

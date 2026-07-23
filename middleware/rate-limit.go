@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var timeFormat = "2006-01-02T15:04:05.000Z"

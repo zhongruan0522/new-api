@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/middleware"
-	"github.com/zhongruan0522/new-api/model"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/middleware"
+	"github.com/NookMux/NookMux/model"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

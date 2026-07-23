@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
 )
 
 type AwsClaudeRequest struct {

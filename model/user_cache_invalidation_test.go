@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 	"gorm.io/gorm"
 )
 

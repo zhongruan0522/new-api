@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 type MonitorSetting struct {

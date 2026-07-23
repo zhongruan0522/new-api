@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
 // GetCheckinStatus 获取用户签到状态和历史记录

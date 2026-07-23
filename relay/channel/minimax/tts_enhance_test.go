@@ -3,7 +3,7 @@ package minimax
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/model_setting"
 )
 
 // ---------- applyModelRedirect ----------

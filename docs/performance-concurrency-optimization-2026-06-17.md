@@ -47,7 +47,7 @@
 验证：
 
 - `go test ./...`
-- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o new-api`
 - 构建后删除 `new-api` 临时二进制。
 
 ### 2. `96e54b94 perf: cap token cache and trim realtime buffers`
@@ -70,7 +70,7 @@
 验证：
 
 - `go test ./...`
-- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o new-api`
 - 构建后删除 `new-api` 临时二进制。
 
 ### 3. `e605d71f perf: precompress static assets and add allocation benches`
@@ -107,7 +107,7 @@
 - `bun run typecheck`
 - `bun run build`
 - `go test ./...`
-- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o new-api`
 - 构建后删除 `new-api` 临时二进制。
 
 关键证据：

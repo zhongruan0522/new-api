@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/model_setting"
 
 	"github.com/gin-gonic/gin"
 )

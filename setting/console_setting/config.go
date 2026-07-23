@@ -1,8 +1,8 @@
 package console_setting
 
 import (
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 // UsageLogFieldKey 使用日志详情弹窗中可独立控制可见性的字段标识。

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // GLM 套餐查询的 API 端点

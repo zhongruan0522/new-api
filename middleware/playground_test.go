@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/setting"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,6 +1,6 @@
 package model_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 // GrokSettings defines Grok model configuration.
 type GrokSettings struct {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 func ConvertChatCompletionsRequestToResponsesRequest(chatReq *dto.GeneralOpenAIRequest) (*dto.OpenAIResponsesRequest, error) {

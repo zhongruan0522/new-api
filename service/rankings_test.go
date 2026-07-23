@@ -3,8 +3,8 @@ package service
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 )
 
 // TestLimitRankedModelsRespectsLimit 验证 limitRankedModels 在数据量超过 limit 时正确截断。

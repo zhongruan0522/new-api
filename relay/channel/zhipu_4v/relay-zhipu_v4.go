@@ -3,7 +3,7 @@ package zhipu_4v
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/dto"
 )
 
 func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIRequest {

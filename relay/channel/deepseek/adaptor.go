@@ -8,15 +8,15 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/relay/channel"
-	"github.com/zhongruan0522/new-api/relay/channel/claude"
-	"github.com/zhongruan0522/new-api/relay/channel/openai"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/setting/reasoning"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/relay/channel"
+	"github.com/NookMux/NookMux/relay/channel/claude"
+	"github.com/NookMux/NookMux/relay/channel/openai"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/setting/reasoning"
+	"github.com/NookMux/NookMux/types"
 )
 
 type Adaptor struct {

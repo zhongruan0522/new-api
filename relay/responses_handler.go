@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	appconstant "github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	appconstant "github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/model_setting"
 )
 
 // withMiniMaxSettings 临时覆盖全局 MiniMax 设置，函数返回后恢复原值。

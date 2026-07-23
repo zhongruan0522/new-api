@@ -4,13 +4,13 @@ import (
 	"errors"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/types"
 )
 
 type RetryParam struct {

@@ -6,7 +6,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var ModelRequestRateLimitEnabled = false

@@ -7,7 +7,7 @@ import (
 
 	"github.com/andybalholm/brotli"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 )
 
 type readCloser struct {

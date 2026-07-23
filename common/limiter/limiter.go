@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 //go:embed lua/rate_limit.lua

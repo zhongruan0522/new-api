@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 //var claudeHeadersSettings = map[string][]string{}

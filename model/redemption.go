@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/logger"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

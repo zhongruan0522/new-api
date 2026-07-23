@@ -3,10 +3,10 @@ package controller
 import (
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )

@@ -6,19 +6,19 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 )
 
 func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool) error {

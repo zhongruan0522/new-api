@@ -11,7 +11,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )

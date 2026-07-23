@@ -3,7 +3,7 @@ package dto
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

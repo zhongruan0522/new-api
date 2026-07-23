@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 )
 
 // MaxResponseBodyExceededError is returned by ReadResponseBody when the

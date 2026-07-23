@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	channelconstant "github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/relay/channel"
-	"github.com/zhongruan0522/new-api/relay/channel/claude"
-	"github.com/zhongruan0522/new-api/relay/channel/openai"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/types"
+	channelconstant "github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/relay/channel"
+	"github.com/NookMux/NookMux/relay/channel/claude"
+	"github.com/NookMux/NookMux/relay/channel/openai"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

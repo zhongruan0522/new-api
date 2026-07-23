@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/types"
 )
 
 func TestShouldRetryUsesNumericUpstreamErrorCode(t *testing.T) {

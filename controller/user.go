@@ -10,15 +10,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting"
 
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

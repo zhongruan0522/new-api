@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/config"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/performance_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/config"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/performance_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
 )
 
 type Option struct {

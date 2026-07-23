@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )

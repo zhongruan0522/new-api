@@ -1,6 +1,6 @@
 package siliconflow
 
-import "github.com/zhongruan0522/new-api/dto"
+import "github.com/NookMux/NookMux/dto"
 
 type SFTokens struct {
 	InputTokens  int `json:"input_tokens"`

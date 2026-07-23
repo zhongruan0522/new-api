@@ -3,13 +3,13 @@ package helper
 import (
 	"fmt"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

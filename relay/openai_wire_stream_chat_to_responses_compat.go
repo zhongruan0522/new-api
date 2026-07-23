@@ -1,6 +1,6 @@
 package relay
 
-import relaycommon "github.com/zhongruan0522/new-api/relay/common"
+import relaycommon "github.com/NookMux/NookMux/relay/common"
 
 func newChatToResponsesStreamConverter(toolContext ...*relaycommon.OpenAIWireToolContext) openAIWireStreamConverter {
 	return relaycommon.NewChatToResponsesStreamConverter(toolContext...)

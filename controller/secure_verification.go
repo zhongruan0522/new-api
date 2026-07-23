@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
-	passkeysvc "github.com/zhongruan0522/new-api/service/passkey"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	passkeysvc "github.com/NookMux/NookMux/service/passkey"
+	"github.com/NookMux/NookMux/setting/system_setting"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

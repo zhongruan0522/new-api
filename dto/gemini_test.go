@@ -3,7 +3,7 @@ package dto
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 func TestGeminiChatResponseUnmarshalSnakeCaseUsageMetadata(t *testing.T) {

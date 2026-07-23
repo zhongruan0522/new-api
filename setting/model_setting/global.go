@@ -1,7 +1,7 @@
 package model_setting
 
 import (
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 type GlobalSettings struct {

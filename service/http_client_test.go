@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 func TestInitHttpClientAppliesRelayTransportLimits(t *testing.T) {

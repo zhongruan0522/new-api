@@ -15,10 +15,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 )
 
 // 定制音色流程的常量与校验规则。

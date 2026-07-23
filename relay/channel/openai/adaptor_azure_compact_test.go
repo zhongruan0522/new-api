@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/constant"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/NookMux/NookMux/constant"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
 )
 
 func azureInfo(baseURL, apiVersion string, relayMode int) *relaycommon.RelayInfo {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // TestMessageExplicitEmptyReasoningSurvivesJSON ensures that a client sending

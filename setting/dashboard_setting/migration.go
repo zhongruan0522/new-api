@@ -1,10 +1,10 @@
 package dashboard_setting
 
 import (
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/config"
-	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/config"
+	"github.com/NookMux/NookMux/setting/console_setting"
 )
 
 // MigrateFromConsoleSetting 从 console_setting 迁移面板开关到 dashboard_config

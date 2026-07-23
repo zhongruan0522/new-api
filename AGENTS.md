@@ -93,7 +93,7 @@ setting、前端常量和 i18n。
 
 - `go test ./...`
 - `go test ./relay/... ./controller/... ./service/...`
-- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o new-api`
 
 ## 前端规则
 

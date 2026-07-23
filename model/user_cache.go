@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
 
 	"github.com/gin-gonic/gin"
 )

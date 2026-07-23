@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/setting"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/setting"
 )
 
 func CheckSensitiveMessages(messages []dto.Message) ([]string, error) {

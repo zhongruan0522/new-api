@@ -3,9 +3,9 @@ package reasoning
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
 )
 
 // 已知的 effort 级别，跨厂商统一词表。

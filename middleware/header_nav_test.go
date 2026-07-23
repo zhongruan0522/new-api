@@ -10,8 +10,8 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 	"gorm.io/gorm"
 )
 

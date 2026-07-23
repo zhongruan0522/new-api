@@ -3,7 +3,7 @@ package service
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/dto"
 )
 
 // HasGeminiUsageMetadata reports whether Gemini returned any usage payload worth mapping.

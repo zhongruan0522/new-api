@@ -1,6 +1,6 @@
 package common
 
-import "github.com/zhongruan0522/new-api/constant"
+import "github.com/NookMux/NookMux/constant"
 
 const defaultAnonymousRequestBodyLimitKB = 512
 

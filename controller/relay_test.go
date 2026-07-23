@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/types"
 )
 
 func TestShouldRetryNativeEmptyUsageError(t *testing.T) {

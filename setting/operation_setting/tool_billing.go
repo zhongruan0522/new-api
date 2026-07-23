@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 // ToolBillingMode defines how a tool is billed.

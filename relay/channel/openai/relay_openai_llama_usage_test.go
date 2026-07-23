@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/constant"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/types"
 )
 
 func TestOpenaiHandlerCountsLlamaCachedTokensFromTimings(t *testing.T) {

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 	"gorm.io/gorm"
 )
 

@@ -3,9 +3,9 @@ package service
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {

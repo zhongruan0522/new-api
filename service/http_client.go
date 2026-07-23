@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/system_setting"
 
 	"golang.org/x/net/proxy"
 )

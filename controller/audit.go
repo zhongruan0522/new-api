@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
 
 	"github.com/gin-gonic/gin"
 )

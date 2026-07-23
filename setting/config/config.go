@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // ConfigManager 统一管理所有配置

@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // One-shot, versioned data-migration markers.

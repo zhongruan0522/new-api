@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 type OpenAIError struct {

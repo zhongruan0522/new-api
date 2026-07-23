@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/service"
 )
 
 // BodyStorageCleanup 请求体存储清理中间件

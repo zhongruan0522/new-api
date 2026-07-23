@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 // Test assistant history and json_schema mapping because both are required for

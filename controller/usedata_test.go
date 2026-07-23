@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 )
 
 func TestIsUserQuotaRangeTooLongAllowsOneMonthWindow(t *testing.T) {

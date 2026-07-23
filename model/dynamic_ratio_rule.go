@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"gorm.io/gorm"
 )
 

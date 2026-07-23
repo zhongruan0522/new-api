@@ -3,7 +3,7 @@ package operation_setting
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 func TestGetToolBillingPrice_WebSearchOpenAI(t *testing.T) {

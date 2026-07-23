@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 )
 
 func GetRankings(c *gin.Context) {

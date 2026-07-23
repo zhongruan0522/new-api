@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // StoredVideo stores user-provided video bytes for the "multimodal auto convert to URL" feature.

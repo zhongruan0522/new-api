@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/model"
 )
 
 func newChannelTestValidateContext() *gin.Context {

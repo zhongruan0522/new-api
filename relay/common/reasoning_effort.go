@@ -1,8 +1,8 @@
 package common
 
 import (
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/setting/reasoning"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/setting/reasoning"
 )
 
 // EnsureReasoningEffort 确保 RelayInfo.ReasoningEffort 被正确解析和回填。

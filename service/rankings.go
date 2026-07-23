@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 )
 
 const (

@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 // Test reasoning preservation because Responses reasoning items are otherwise

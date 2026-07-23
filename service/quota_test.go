@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/types"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

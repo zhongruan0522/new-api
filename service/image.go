@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 
 	"golang.org/x/image/webp"
 )

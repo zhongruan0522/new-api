@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/model"
 
 	"github.com/gin-gonic/gin"
 )

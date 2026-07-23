@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/zhongruan0522/new-api/controller"
-	"github.com/zhongruan0522/new-api/middleware"
+	"github.com/NookMux/NookMux/controller"
+	"github.com/NookMux/NookMux/middleware"
 
 	// Import oauth package to register providers via init()
-	_ "github.com/zhongruan0522/new-api/oauth"
+	_ "github.com/NookMux/NookMux/oauth"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"

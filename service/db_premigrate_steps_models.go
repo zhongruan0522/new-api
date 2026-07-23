@@ -1,6 +1,6 @@
 package service
 
-import "github.com/zhongruan0522/new-api/model"
+import "github.com/NookMux/NookMux/model"
 
 var dbPreMigrateMainSteps = []dbPreMigrateStep{
 	gormTableCopyStep[model.User]{name: "users", batchSize: dbPreMigrateBatchDefault},

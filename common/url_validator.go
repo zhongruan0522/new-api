@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 )
 
 // ValidateRedirectURL validates that a redirect URL is safe to use.

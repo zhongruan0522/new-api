@@ -1,6 +1,6 @@
 package operation_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 type PaymentSetting struct {
 	AmountOptions  []int           `json:"amount_options"`

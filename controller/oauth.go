@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/oauth"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/oauth"
 	"gorm.io/gorm"
 )
 

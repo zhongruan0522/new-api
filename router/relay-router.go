@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/controller"
-	"github.com/zhongruan0522/new-api/middleware"
-	"github.com/zhongruan0522/new-api/relay"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/controller"
+	"github.com/NookMux/NookMux/middleware"
+	"github.com/NookMux/NookMux/relay"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
