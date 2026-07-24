@@ -14,7 +14,7 @@ import (
 func GetPricing(c *gin.Context) {
 	pricing := model.GetPricing()
 	userId, exists := c.Get("id")
-	usableGroup := map[string]string{}
+	var usableGroup map[string]string
 	groupRatio := map[string]float64{}
 	for s, f := range ratio_setting.GetGroupRatioCopy() {
 		groupRatio[s] = f

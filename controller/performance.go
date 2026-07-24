@@ -105,17 +105,7 @@ func GetPerformanceStats(c *gin.Context) {
 		MonitorDiskThreshold:   monitorConfig.DiskThreshold,
 	}
 
-	// 获取磁盘空间信息
-	// 使用缓存的系统状态，避免频繁调用系统 API
-	systemStatus := common.GetSystemStatus()
-	diskSpaceInfo := common.DiskSpaceInfo{
-		UsedPercent: systemStatus.DiskUsage,
-	}
-	// 如果需要详细信息，可以按需获取，或者扩展 SystemStatus
-	// 这里为了保持接口兼容性，我们仍然调用 GetDiskSpaceInfo，但注意这可能会有性能开销
-	// 考虑到 GetPerformanceStats 是管理接口，频率较低，直接调用是可以接受的
-	// 但为了一致性，我们也可以考虑从 SystemStatus 中获取部分信息
-	diskSpaceInfo = common.GetDiskSpaceInfo()
+	diskSpaceInfo := common.GetDiskSpaceInfo()
 
 	stats := PerformanceStats{
 		CacheStats: cacheStats,

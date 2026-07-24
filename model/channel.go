@@ -406,9 +406,6 @@ func GetChannelById(id int, selectAll bool) (*Channel, error) {
 	if err != nil {
 		return nil, err
 	}
-	if channel == nil {
-		return nil, errors.New("channel not found")
-	}
 	return channel, nil
 }
 

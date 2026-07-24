@@ -252,7 +252,7 @@ func TestStreamScannerHandlerPingSentDuringSlowUpstream(t *testing.T) {
 		setting.PingIntervalSeconds = oldSeconds
 	})
 
-	c, cleanup := streamScannerTestContext(t)
+	_, cleanup := streamScannerTestContext(t)
 	t.Cleanup(cleanup)
 
 	pr, pw := io.Pipe()
@@ -266,7 +266,7 @@ func TestStreamScannerHandlerPingSentDuringSlowUpstream(t *testing.T) {
 	}()
 
 	recorder := httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(recorder)
+	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 
 	resp := &http.Response{Body: pr}
@@ -307,11 +307,11 @@ func TestStreamScannerHandlerPingDisabledByRelayInfo(t *testing.T) {
 		setting.PingIntervalSeconds = oldSeconds
 	})
 
-	c, cleanup := streamScannerTestContext(t)
+	_, cleanup := streamScannerTestContext(t)
 	t.Cleanup(cleanup)
 
 	recorder := httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(recorder)
+	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 
 	resp := &http.Response{

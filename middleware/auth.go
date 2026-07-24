@@ -371,12 +371,11 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		key := c.Request.Header.Get("Authorization")
-		parts := make([]string, 0)
 		if strings.HasPrefix(key, "Bearer ") || strings.HasPrefix(key, "bearer ") {
 			key = strings.TrimSpace(key[7:])
 		}
 		key = strings.TrimPrefix(key, "sk-")
-		parts = strings.Split(key, "-")
+		parts := strings.Split(key, "-")
 		key = parts[0]
 		token, err := model.ValidateUserToken(key)
 		if token != nil {

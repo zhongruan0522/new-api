@@ -242,16 +242,6 @@ func stripHiddenOtherFields(log *model.Log, hiddenFields map[string]bool) {
 	log.Other = common.MapToJsonStr(otherMap)
 }
 
-// Deprecated: SearchAllLogs 已废弃，前端未使用该接口。
-func SearchAllLogs(c *gin.Context) {
-	common.ApiErrorI18n(c, i18n.MsgDeprecatedAPI)
-}
-
-// Deprecated: SearchUserLogs 已废弃，前端未使用该接口。
-func SearchUserLogs(c *gin.Context) {
-	common.ApiErrorI18n(c, i18n.MsgDeprecatedAPI)
-}
-
 func GetLogByKey(c *gin.Context) {
 	tokenId := c.GetInt("token_id")
 	if tokenId == 0 {

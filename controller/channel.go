@@ -812,7 +812,7 @@ func AddChannel(c *gin.Context) {
 	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
 	// 检测套餐渠道
 	addChannelRequest.Channel.DetectPlan()
-	keys := make([]string, 0)
+	var keys []string
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
 		addChannelRequest.Channel.ChannelInfo.IsMultiKey = true
