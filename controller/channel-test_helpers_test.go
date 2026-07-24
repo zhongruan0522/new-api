@@ -359,3 +359,228 @@ func TestResponseHasChannelTestToolCallRequiredChoicePath(t *testing.T) {
 		t.Fatal("expected stream required-choice tool call to be detected")
 	}
 }
+
+func TestIsChannelTestOSeriesModel(t *testing.T) {
+	positive := []string{"o1", "o3", "o4", "o5", "o1-mini", "o3-pro", "o4-mini-high", "O3-MINI"}
+	negative := []string{"", "gpt-4o", "gpt-4o-mini", "openai", "ollama", "o", "oa1", "o100", "o1n"}
+	for _, name := range positive {
+		if !isChannelTestOSeriesModel(name) {
+			t.Fatalf("expected %q to be detected as o-series reasoning model", name)
+		}
+	}
+	for _, name := range negative {
+		if isChannelTestOSeriesModel(name) {
+			t.Fatalf("did not expect %q to be detected as o-series reasoning model", name)
+		}
+	}
+}
+
+func TestIsChannelTestReasoningModel(t *testing.T) {
+	positive := []string{
+		"deepseek-r1", "deepseek-reasoner", "qwq-32b",
+		"gpt-oss:thinking", "gemini-2.5-flash-thinking",
+		"o1-mini", "o3", "qwen-r1",
+	}
+	negative := []string{
+		"", "gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet",
+		"claude-3-7-sonnet-thinking", "glm-5.2",
+	}
+	for _, name := range positive {
+		if !isChannelTestReasoningModel(name) {
+			t.Fatalf("expected %q to be detected as reasoning model", name)
+		}
+	}
+	for _, name := range negative {
+		if isChannelTestReasoningModel(name) {
+			t.Fatalf("did not expect %q to be detected as reasoning model", name)
+		}
+	}
+}
+
+func TestResolveChannelTestTokenBudget(t *testing.T) {
+	cases := []struct {
+		name             string
+		modelName        string
+		endpointType     string
+		isTool           bool
+		wantMaxTokens    uint
+		wantCompletion   uint
+	}{
+		{
+			name:           "plain chat model gets baseline headroom",
+			modelName:      "gpt-4o-mini",
+			endpointType:   string(constant.EndpointTypeOpenAI),
+			wantMaxTokens:  channelTestPlainMaxTokens,
+			wantCompletion: 0,
+		},
+		{
+			name:           "reasoning model gets larger budget",
+			modelName:      "deepseek-r1",
+			endpointType:   string(constant.EndpointTypeOpenAI),
+			wantMaxTokens:  channelTestReasoningMaxTokens,
+			wantCompletion: 0,
+		},
+		{
+			name:           "o-series uses max_completion_tokens",
+			modelName:      "o3-mini",
+			endpointType:   string(constant.EndpointTypeOpenAI),
+			wantMaxTokens:  0,
+			wantCompletion: channelTestReasoningMaxTokens,
+		},
+		{
+			name:           "gemini endpoint keeps generous baseline",
+			modelName:      "gemini-2.0-flash",
+			endpointType:   string(constant.EndpointTypeGemini),
+			wantMaxTokens:  channelTestGeminiMaxTokens,
+			wantCompletion: 0,
+		},
+		{
+			name:           "plain tool test keeps tool budget",
+			modelName:      "gpt-4o-mini",
+			endpointType:   string(constant.EndpointTypeOpenAI),
+			isTool:         true,
+			wantMaxTokens:  channelTestPlainToolMaxTokens,
+			wantCompletion: 0,
+		},
+		{
+			name:           "reasoning tool test gets larger tool budget",
+			modelName:      "deepseek-r1",
+			endpointType:   string(constant.EndpointTypeOpenAI),
+			isTool:         true,
+			wantMaxTokens:  channelTestReasoningToolMaxTokens,
+			wantCompletion: 0,
+		},
+		{
+			name:           "auto-detect plain model baseline",
+			modelName:      "glm-5.2",
+			endpointType:   "",
+			wantMaxTokens:  channelTestPlainMaxTokens,
+			wantCompletion: 0,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			maxTokens, maxCompletion := resolveChannelTestTokenBudget(tc.modelName, tc.endpointType, tc.isTool)
+			if maxTokens != tc.wantMaxTokens {
+				t.Fatalf("maxTokens = %d, want %d", maxTokens, tc.wantMaxTokens)
+			}
+			if maxCompletion != tc.wantCompletion {
+				t.Fatalf("maxCompletionTokens = %d, want %d", maxCompletion, tc.wantCompletion)
+			}
+		})
+	}
+}
+
+func TestBuildTestRequestExplicitOpenAIGivesReasoningModelEnoughTokens(t *testing.T) {
+	// Regression: selecting the OpenAI-Chat endpoint used to hardcode
+	// max_tokens=32, truncating reasoning models mid-thought and producing an
+	// empty content body. Reasoning models must now receive a larger budget
+	// even through the explicit endpoint path.
+	req, ok := buildTestRequest(
+		"deepseek-r1",
+		string(constant.EndpointTypeOpenAI),
+		nil,
+		false,
+		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
+	).(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
+	}
+	if req.MaxTokens < channelTestReasoningMaxTokens {
+		t.Fatalf("reasoning model via explicit OpenAI endpoint got max_tokens=%d, want >= %d",
+			req.MaxTokens, channelTestReasoningMaxTokens)
+	}
+}
+
+func TestBuildTestRequestExplicitOpenAIOSeriesUsesCompletionTokens(t *testing.T) {
+	req, ok := buildTestRequest(
+		"o3-mini",
+		string(constant.EndpointTypeOpenAI),
+		nil,
+		false,
+		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
+	).(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
+	}
+	if req.MaxCompletionTokens == 0 {
+		t.Fatal("o-series via explicit OpenAI endpoint should set max_completion_tokens, got 0")
+	}
+}
+
+func TestBuildTestRequestExplicitOpenAIPlainModelHasBaselineHeadroom(t *testing.T) {
+	// Non-reasoning models that are not detectable by name (like glm-5.2)
+	// must receive more than the old 32-token cap so undetectable reasoning
+	// variants have room to finish simple arithmetic.
+	req, ok := buildTestRequest(
+		"glm-5.2",
+		string(constant.EndpointTypeOpenAI),
+		nil,
+		false,
+		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
+	).(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
+	}
+	if req.MaxTokens <= 32 {
+		t.Fatalf("plain model via explicit OpenAI endpoint got max_tokens=%d, want > 32", req.MaxTokens)
+	}
+}
+
+func TestExtractChannelTestReasoningTextFromChatResponse(t *testing.T) {
+	// Mirrors the user-reported glm-5.2 shape: empty content, reasoning in
+	// reasoning_content, finish_reason=length.
+	body := []byte(`{"choices":[{"finish_reason":"length","index":0,"message":{"content":"","reasoning_content":"step 1: compute 50/5","role":"assistant"}}]}`)
+	text := extractChannelTestReasoningText(body)
+	if text != "step 1: compute 50/5" {
+		t.Fatalf("unexpected reasoning text: %q", text)
+	}
+}
+
+func TestExtractChannelTestReasoningTextFromStreamResponse(t *testing.T) {
+	body := []byte("data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"think\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"ing\"}}]}\n\ndata: [DONE]\n\n")
+	text := extractChannelTestReasoningText(body)
+	if text != "thinking" {
+		t.Fatalf("unexpected accumulated reasoning text: %q", text)
+	}
+}
+
+func TestExtractChannelTestReasoningTextFromReasoningField(t *testing.T) {
+	// Some upstreams use "reasoning" instead of "reasoning_content".
+	body := []byte(`{"choices":[{"message":{"content":"","reasoning":"deduce the answer"}}]}`)
+	text := extractChannelTestReasoningText(body)
+	if text != "deduce the answer" {
+		t.Fatalf("unexpected reasoning field text: %q", text)
+	}
+}
+
+func TestValidateChannelTestResponseReasoningOnly(t *testing.T) {
+	// When content is empty but reasoning exists, the error must explain the
+	// situation instead of the generic "empty model response".
+	body := []byte(`{"choices":[{"finish_reason":"length","index":0,"message":{"content":"","reasoning_content":"I am thinking...","role":"assistant"}}]}`)
+	err := validateChannelTestResponse(
+		newChannelTestValidateContext(),
+		body,
+		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
+	)
+	if err == nil {
+		t.Fatal("expected validation failure for reasoning-only response")
+	}
+	if strings.Contains(err.Error(), "empty") || strings.Contains(err.Error(), "空") {
+		t.Fatalf("should not report generic empty response for reasoning-only body, got %q", err.Error())
+	}
+}
+
+func TestValidateChannelTestResponseTrulyEmpty(t *testing.T) {
+	// No content and no reasoning at all should still produce the generic
+	// empty-response error.
+	body := []byte(`{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"","role":"assistant"}}]}`)
+	err := validateChannelTestResponse(
+		newChannelTestValidateContext(),
+		body,
+		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
+	)
+	if err == nil {
+		t.Fatal("expected validation failure for truly empty response")
+	}
+}

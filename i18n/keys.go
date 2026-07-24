@@ -247,6 +247,7 @@ const (
 	MsgChannelInvalidResponseCompactionRequest = "channel.invalid_response_compaction_request"
 	MsgChannelInvalidGeneralRequest      = "channel.invalid_general_request"
 	MsgChannelEmptyModelResponse         = "channel.empty_model_response"
+	MsgChannelReasoningOnlyResponse      = "channel.reasoning_only_response"
 	MsgChannelRuleNameRequired           = "channel.rule_name_required"
 	MsgChannelKeyFpRequired              = "channel.key_fp_required"
 	MsgChannelAutoGroupsNotEnabled       = "channel.auto_groups_not_enabled"

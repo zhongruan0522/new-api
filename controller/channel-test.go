@@ -691,13 +691,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 				Input: testResponsesInput,
 			}
 		case constant.EndpointTypeAnthropic, constant.EndpointTypeGemini, constant.EndpointTypeOpenAI:
-			maxTokens := uint(32)
-			if constant.EndpointType(endpointType) == constant.EndpointTypeGemini {
-				maxTokens = 3000
-			}
-			if testPrompt.isTool {
-				maxTokens = 128
-			}
+			maxTokens, maxCompletionTokens := resolveChannelTestTokenBudget(model, endpointType, testPrompt.isTool)
 			req := &dto.GeneralOpenAIRequest{
 				Model:  model,
 				Stream: isStream,
@@ -707,7 +701,8 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 						Content: userPrompt,
 					},
 				},
-				MaxTokens: maxTokens,
+				MaxTokens:           maxTokens,
+				MaxCompletionTokens: maxCompletionTokens,
 			}
 			if isStream {
 				req.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
@@ -765,23 +760,9 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 		testRequest.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
 	}
 
-	if strings.HasPrefix(model, "o") {
-		testRequest.MaxCompletionTokens = 32
-		if testPrompt.isTool {
-			testRequest.MaxCompletionTokens = 128
-		}
-	} else if strings.Contains(model, "thinking") {
-		if !strings.Contains(model, "claude") {
-			testRequest.MaxTokens = 80
-		}
-	} else if strings.Contains(model, "gemini") {
-		testRequest.MaxTokens = 3000
-	} else {
-		testRequest.MaxTokens = 32
-		if testPrompt.isTool {
-			testRequest.MaxTokens = 128
-		}
-	}
+	maxTokens, maxCompletionTokens := resolveChannelTestTokenBudget(model, "", testPrompt.isTool)
+	testRequest.MaxTokens = maxTokens
+	testRequest.MaxCompletionTokens = maxCompletionTokens
 	applyChannelTestToolsToChatRequest(testRequest, testPrompt)
 
 	return testRequest
@@ -851,6 +832,106 @@ func supportsChannelTestToolForChannel(channel *model.Channel, endpointType stri
 
 func isAwsNovaTestModel(modelName string) bool {
 	return strings.Contains(strings.ToLower(modelName), "nova")
+}
+
+// Channel test token budgets.
+//
+// max_tokens is a ceiling rather than a target, so these values are
+// deliberately generous: models that finish early stop on their own and the
+// unused budget is never billed. The headroom lets reasoning models finish
+// their chain-of-thought and emit the final answer instead of being truncated
+// mid-thought (which produces an empty content body that fails the test).
+const (
+	channelTestPlainMaxTokens         uint = 10240
+	channelTestPlainToolMaxTokens     uint = 10240
+	channelTestReasoningMaxTokens     uint = 10240
+	channelTestReasoningToolMaxTokens uint = 10240
+	channelTestGeminiMaxTokens        uint = 10240
+)
+
+// isChannelTestOSeriesModel reports whether modelName is an OpenAI o-series
+// reasoning model (o1, o3, o4, o5, o1-mini, o3-pro, ...). These models use
+// max_completion_tokens (which includes reasoning tokens) instead of
+// max_tokens.
+func isChannelTestOSeriesModel(modelName string) bool {
+	lower := strings.ToLower(strings.TrimSpace(modelName))
+	if len(lower) < 2 || lower[0] != 'o' {
+		return false
+	}
+	digit := lower[1]
+	if digit < '1' || digit > '9' {
+		return false
+	}
+	if len(lower) == 2 {
+		return true
+	}
+	separator := lower[2]
+	return separator == '-' || separator == '.' || separator == '_'
+}
+
+// isChannelTestReasoningModel reports whether modelName is a known
+// reasoning/thinking model that needs a larger completion budget for
+// chain-of-thought tokens. Claude is excluded because its extended-thinking
+// budget is managed by the adaptor rather than a plain max_tokens cap.
+func isChannelTestReasoningModel(modelName string) bool {
+	lower := strings.ToLower(strings.TrimSpace(modelName))
+	if lower == "" {
+		return false
+	}
+	if strings.Contains(lower, "claude") {
+		return false
+	}
+	if isChannelTestOSeriesModel(lower) {
+		return true
+	}
+	for _, marker := range []string{"thinking", "reasoner", "reasoning", "qwq"} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	// R1-style names: deepseek-r1, qwen-r1, etc. Match with a leading
+	// separator to reduce false positives on unrelated model names.
+	for _, marker := range []string{"-r1", "_r1", "/r1", "deepseek-r"} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveChannelTestTokenBudget returns the max_tokens / max_completion_tokens
+// pair to use for a chat-completions style channel test. o-series models use
+// max_completion_tokens (which includes reasoning tokens); everything else
+// uses max_tokens.
+func resolveChannelTestTokenBudget(modelName, endpointType string, isTool bool) (maxTokens uint, maxCompletionTokens uint) {
+	normalizedEndpoint := constant.EndpointType(strings.TrimSpace(endpointType))
+	if normalizedEndpoint == constant.EndpointTypeGemini ||
+		strings.Contains(strings.ToLower(modelName), "gemini") {
+		maxTokens = channelTestGeminiMaxTokens
+		return
+	}
+	if isChannelTestOSeriesModel(modelName) {
+		if isTool {
+			maxCompletionTokens = channelTestReasoningToolMaxTokens
+		} else {
+			maxCompletionTokens = channelTestReasoningMaxTokens
+		}
+		return
+	}
+	if isChannelTestReasoningModel(modelName) {
+		if isTool {
+			maxTokens = channelTestReasoningToolMaxTokens
+		} else {
+			maxTokens = channelTestReasoningMaxTokens
+		}
+		return
+	}
+	if isTool {
+		maxTokens = channelTestPlainToolMaxTokens
+	} else {
+		maxTokens = channelTestPlainMaxTokens
+	}
+	return
 }
 
 func isChannelTestRerankModel(modelName string) bool {
@@ -1035,6 +1116,13 @@ func validateChannelTestResponse(c *gin.Context, respBody []byte, testPrompt cha
 
 	originalText := strings.TrimSpace(extractChannelTestAIText(respBody))
 	if originalText == "" {
+		// Content is empty. If the model produced private reasoning instead,
+		// it is a reasoning/thinking model that exhausted its token budget on
+		// chain-of-thought before emitting the final answer — surface a clear,
+		// actionable message instead of the generic "empty response".
+		if reasoningText := strings.TrimSpace(extractChannelTestReasoningText(respBody)); reasoningText != "" {
+			return errors.New(i18n.T(c, i18n.MsgChannelReasoningOnlyResponse))
+		}
 		return errors.New(i18n.T(c, i18n.MsgChannelEmptyModelResponse))
 	}
 	if !matchesChannelTestExpectedAnswer(originalText, testPrompt.expectedAnswer) {
@@ -1282,6 +1370,71 @@ func extractChannelTestAITextFromJSON(jsonBytes []byte) string {
 	}
 	if len(parts) == 0 {
 		return ""
+	}
+	return strings.TrimSpace(strings.Join(parts, ""))
+}
+
+// extractChannelTestReasoningText pulls private chain-of-thought text
+// (reasoning_content / reasoning) from a non-streaming JSON body or an SSE
+// stream. It mirrors extractChannelTestAIText but targets the reasoning
+// fields so validateChannelTestResponse can distinguish a reasoning model
+// that exhausted its token budget (empty content, non-empty reasoning) from
+// a genuinely empty response.
+func extractChannelTestReasoningText(respBody []byte) string {
+	b := bytes.TrimSpace(respBody)
+	if len(b) == 0 {
+		return ""
+	}
+	if isChannelTestJSONPayload(b) {
+		if text := extractChannelTestReasoningTextFromJSON(b); text != "" {
+			return text
+		}
+	}
+	return extractChannelTestReasoningTextFromEventStream(b)
+}
+
+func extractChannelTestReasoningTextFromEventStream(eventStreamBytes []byte) string {
+	var builder strings.Builder
+	for _, line := range bytes.Split(eventStreamBytes, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		payload := line
+		if bytes.HasPrefix(line, []byte("data:")) {
+			payload = bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+		} else if !isChannelTestJSONPayload(line) {
+			continue
+		}
+		if len(payload) == 0 || bytes.Equal(payload, []byte("[DONE]")) {
+			continue
+		}
+		if text := extractChannelTestReasoningTextFromJSON(payload); text != "" {
+			builder.WriteString(text)
+		}
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func extractChannelTestReasoningTextFromJSON(jsonBytes []byte) string {
+	if len(jsonBytes) == 0 || !isChannelTestJSONPayload(jsonBytes) {
+		return ""
+	}
+	paths := []string{
+		"choices.0.message.reasoning_content",
+		"choices.0.message.reasoning",
+		"choices.0.delta.reasoning_content",
+		"choices.0.delta.reasoning",
+	}
+	var parts []string
+	for _, path := range paths {
+		result := gjson.GetBytes(jsonBytes, path)
+		if !result.Exists() {
+			continue
+		}
+		if text := strings.TrimSpace(result.String()); text != "" {
+			parts = append(parts, text)
+		}
 	}
 	return strings.TrimSpace(strings.Join(parts, ""))
 }
