@@ -67,6 +67,7 @@ import {
 } from '../../lib/utils'
 import type { LogOtherData } from '../../types'
 import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
+import type { UsageLogFieldKey } from '../../lib/field-visibility'
 
 function timingTextColorClass(
   variant: 'success' | 'warning' | 'danger'
@@ -824,20 +825,103 @@ function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
   )
 }
 
+export interface UsageLogDetailsVisibility {
+  detailsEnabled: boolean
+  isVisible: (field: UsageLogFieldKey) => boolean
+}
+
 interface DetailsDialogProps {
   log: UsageLog
   isAdmin: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
+  /**
+   * 可选的字段可见性覆盖。未提供时回退到 useUsageLogFieldVisibility，
+   * 即基于登录态 /api/user/self/usage_log_fields 判断。
+   * 密钥用量查询页面使用 TokenAuthReadOnly 的 /api/log/token/usage_log_fields
+   * 注入普通用户可见性，避免在公开页调用登录态接口。
+   */
+  visibilityOverride?: UsageLogDetailsVisibility
+  /**
+   * 内联模式：仅渲染详情主体（不包含 Dialog 外壳与 Header），
+   * 供密钥用量查询页面的折叠行直接嵌入使用。
+   * 此时 open / onOpenChange 被忽略。
+   */
+  inline?: boolean
 }
 
 export function DetailsDialog(props: DetailsDialogProps) {
+  const defaultVisibility = useUsageLogFieldVisibility()
+  const visibility = props.visibilityOverride ?? defaultVisibility
+
+  // 内联模式：直接返回主体，不渲染 Dialog 外壳。
+  if (props.inline) {
+    return <DetailsDialogBody log={props.log} isAdmin={props.isAdmin} visibility={visibility} />
+  }
+
   const { t } = useTranslation()
-  const { isVisible } = useUsageLogFieldVisibility()
+  const typeConfig = getLogTypeConfig(props.log.type)
+  const other = parseLogOther(props.log.other)
+  const isViolation = isViolationFeeLog(other)
+  const isConsume = props.log.type === 2
+  const isTieredBilling =
+    isConsume &&
+    !isViolation &&
+    other?.billing_mode === 'tiered_expr' &&
+    !!other?.expr_b64
+
+  let dialogWidthClass = 'sm:max-w-lg'
+  if (isConsume && !isViolation) {
+    dialogWidthClass = 'sm:max-w-[64rem] lg:max-w-[72rem]'
+  } else if (isTieredBilling) {
+    dialogWidthClass = 'sm:max-w-4xl lg:max-w-5xl'
+  }
+
+  return (
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent
+        className={cn(
+          'min-w-0 overflow-hidden',
+          'max-sm:max-h-[calc(100dvh-1.5rem)] max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)] max-sm:p-4',
+          dialogWidthClass
+        )}
+      >
+        <DialogHeader className='max-sm:gap-1'>
+          <DialogTitle className='flex items-center gap-2 text-base'>
+            {t('usageLogs.titles.logDetails')}
+            <StatusBadge
+              label={t(typeConfig.label)}
+              variant={typeConfig.color as StatusBadgeProps['variant']}
+              size='sm'
+              copyable={false}
+            />
+          </DialogTitle>
+          <DialogDescription className='sr-only'>
+            {t('usageLogs.actions.viewTheCompleteDetailsForThisLogEntry')}
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className='max-h-[70vh] min-w-0 overflow-hidden pr-2 max-sm:max-h-[calc(100dvh-7rem)] sm:pr-4'>
+          <DetailsDialogBody log={props.log} isAdmin={props.isAdmin} visibility={visibility} />
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * 详情主体内容（不含 Dialog 外壳）。
+ * 被 DetailsDialog（弹窗）和密钥用量查询页面的折叠行（inline）共同复用。
+ */
+function DetailsDialogBody(props: {
+  log: UsageLog
+  isAdmin: boolean
+  visibility: UsageLogDetailsVisibility
+}) {
+  const { t } = useTranslation()
+  const { isVisible } = props.visibility
   const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
   const details = props.log.content ?? ''
   const other = parseLogOther(props.log.other)
-  const typeConfig = getLogTypeConfig(props.log.type)
 
   const isViolation = isViolationFeeLog(other)
   const isRefund = props.log.type === 6
@@ -922,39 +1006,8 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const channelChain =
     useChannel && useChannel.length > 0 ? useChannel.join(' → ') : undefined
 
-  let dialogWidthClass = 'sm:max-w-lg'
-  if (isConsume && !isViolation) {
-    dialogWidthClass = 'sm:max-w-[64rem] lg:max-w-[72rem]'
-  } else if (isTieredBilling) {
-    dialogWidthClass = 'sm:max-w-4xl lg:max-w-5xl'
-  }
-
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        className={cn(
-          'min-w-0 overflow-hidden',
-          'max-sm:max-h-[calc(100dvh-1.5rem)] max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)] max-sm:p-4',
-          dialogWidthClass
-        )}
-      >
-        <DialogHeader className='max-sm:gap-1'>
-          <DialogTitle className='flex items-center gap-2 text-base'>
-            {t('usageLogs.titles.logDetails')}
-            <StatusBadge
-              label={t(typeConfig.label)}
-              variant={typeConfig.color as StatusBadgeProps['variant']}
-              size='sm'
-              copyable={false}
-            />
-          </DialogTitle>
-          <DialogDescription className='sr-only'>
-            {t('usageLogs.actions.viewTheCompleteDetailsForThisLogEntry')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className='max-h-[70vh] min-w-0 overflow-hidden pr-2 max-sm:max-h-[calc(100dvh-7rem)] sm:pr-4'>
-          <div className='w-full max-w-full min-w-0 space-y-2.5 overflow-hidden py-1 sm:space-y-3'>
+    <div className='w-full max-w-full min-w-0 space-y-2.5 overflow-hidden py-1 sm:space-y-3'>
             {/* Overview section - key identifiers */}
             <div className='min-w-0 space-y-1'>
               {isVisible('request_id') && props.log.request_id && (
@@ -1538,9 +1591,6 @@ export function DetailsDialog(props: DetailsDialogProps) {
               </div>
             )}
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
   )
 }
 

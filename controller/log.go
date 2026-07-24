@@ -257,20 +257,56 @@ func GetLogByKey(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidToken)
 		return
 	}
-	logs, err := model.GetLogByTokenId(tokenId)
+
+	// 当未传分页参数时，保留旧的"近期日志数组"响应（兼容老前端）。
+	// 传入 p / page_size 任意一个即切换到分页响应。
+	rawPage := c.Query("p")
+	rawPageSize := c.Query("page_size")
+	usePagination := rawPage != "" || rawPageSize != ""
+
+	if !usePagination {
+		logs, err := model.GetLogByTokenId(tokenId)
+		if err != nil {
+			common.SysError("failed to get log by token id: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
+		// GetLogByKey 经 TokenAuthReadOnly 认证，访问者为持有该 token 的普通用户。
+		filterHiddenUsageLogFields(logs)
+		c.JSON(200, gin.H{
+			"success": true,
+			"message": "",
+			"data":    logs,
+		})
+		return
+	}
+
+	// 分页 + 筛选模式：tokenId 由后端从认证上下文强制注入，调用方无法跨 token 查询。
+	pageInfo := common.GetPageQuery(c)
+	logType, _ := strconv.Atoi(c.Query("type"))
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	modelName := c.Query("model_name")
+
+	logs, total, err := model.GetLogsByTokenId(model.GetLogsByTokenIdParams{
+		TokenId:        tokenId,
+		StartTimestamp: startTimestamp,
+		EndTimestamp:   endTimestamp,
+		ModelName:      modelName,
+		LogType:        logType,
+		StartIdx:       pageInfo.GetStartIdx(),
+		Num:            pageInfo.GetPageSize(),
+	})
 	if err != nil {
-		common.SysError("failed to get log by token id: " + err.Error())
+		common.SysError("failed to get logs by token id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
-	// GetLogByKey 经 TokenAuthReadOnly 认证，访问者为持有该 token 的普通用户。
 	filterHiddenUsageLogFields(logs)
-	c.JSON(200, gin.H{
-		"success": true,
-		"message": "",
-		"data":    logs,
-	})
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(logs)
+	common.ApiSuccess(c, pageInfo)
 }
 
 func GetLogsStat(c *gin.Context) {

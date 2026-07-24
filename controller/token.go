@@ -159,6 +159,28 @@ func GetTokenUsage(c *gin.Context) {
 	}
 	snapshot := token.GetQuotaSnapshot()
 
+	// 对齐 quota_type 兼容逻辑：quota_type=0 且非无限额度视为永久限额(1)。
+	// 与 GetQuotaSnapshot / TokenAuthReadOnly 中间件保持一致。
+	effectiveQuotaType := token.QuotaType
+	if effectiveQuotaType == 0 && !token.UnlimitedQuota {
+		effectiveQuotaType = 1
+	}
+
+	// 计算下一次窗口/周期重置时间，避免前端重复实现后端锚点逻辑。
+	// 未启用对应限额类型时保持为 0。
+	windowNextResetTime := int64(0)
+	cycleNextResetTime := int64(0)
+	if effectiveQuotaType == 2 || effectiveQuotaType == 3 {
+		if _, windowEnd := token.GetCurrentWindow(); windowEnd > 0 {
+			windowNextResetTime = windowEnd
+		}
+	}
+	if effectiveQuotaType == 3 {
+		if _, cycleEnd := token.GetCurrentCycle(); cycleEnd > 0 {
+			cycleNextResetTime = cycleEnd
+		}
+	}
+
 	expiredAt := token.ExpiredTime
 	if expiredAt == -1 {
 		expiredAt = 0
@@ -177,6 +199,21 @@ func GetTokenUsage(c *gin.Context) {
 			"model_limits":         token.GetModelLimitsMap(),
 			"model_limits_enabled": token.ModelLimitsEnabled,
 			"expires_at":           expiredAt,
+			// 以下字段为密钥用量查询页面所需，供前端按 KEY 类型展示额度与周期信息。
+			"quota_type":              effectiveQuotaType,
+			"created_time":            token.CreatedTime,
+			"accessed_time":           token.AccessedTime,
+			"window_hours":            token.WindowHours,
+			"window_quota":            token.WindowQuota,
+			"window_used_quota":       token.WindowUsedQuota,
+			"window_start_hour":       token.WindowStartHour,
+			"window_start_time":       token.WindowStartTime,
+			"window_next_reset_time":  windowNextResetTime,
+			"cycle_days":              token.CycleDays,
+			"cycle_quota":             token.CycleQuota,
+			"cycle_used_quota":        token.CycleUsedQuota,
+			"cycle_start_time":        token.CycleStartTime,
+			"cycle_next_reset_time":   cycleNextResetTime,
 		},
 	})
 }

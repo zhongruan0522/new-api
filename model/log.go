@@ -148,6 +148,61 @@ func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 	return logs, err
 }
 
+// GetLogsByTokenIdParams 封装按 token_id 分页查询日志所需的筛选条件。
+// 仅供 TokenAuthReadOnly 只读接口使用：tokenId 由后端从认证上下文强制注入，
+// 调用方无法跨 token 查询。
+type GetLogsByTokenIdParams struct {
+	TokenId         int
+	StartTimestamp  int64
+	EndTimestamp    int64
+	ModelName       string
+	LogType         int
+	StartIdx        int
+	Num             int
+}
+
+// GetLogsByTokenId 按 token_id 分页查询日志，支持时间段、模型筛选。
+// 复用 GetUserLogs 的脱敏/图标填充逻辑，确保与普通用户日志接口返回一致。
+func GetLogsByTokenId(params GetLogsByTokenIdParams) (logs []*Log, total int64, err error) {
+	if params.TokenId <= 0 {
+		return nil, 0, errors.New("token_id is required")
+	}
+
+	tx := LOG_DB.Where("token_id = ?", params.TokenId)
+	if params.LogType != LogTypeUnknown {
+		tx = tx.Where("type = ?", params.LogType)
+	}
+	if params.ModelName != "" {
+		modelNamePattern, patternErr := sanitizeLikePattern(params.ModelName)
+		if patternErr != nil {
+			return nil, 0, patternErr
+		}
+		tx = tx.Where("model_name LIKE ? ESCAPE '!'", modelNamePattern)
+	}
+	if params.StartTimestamp != 0 {
+		tx = tx.Where("created_at >= ?", params.StartTimestamp)
+	}
+	if params.EndTimestamp != 0 {
+		tx = tx.Where("created_at <= ?", params.EndTimestamp)
+	}
+
+	err = tx.Model(&Log{}).Limit(logSearchCountLimit).Count(&total).Error
+	if err != nil {
+		common.SysError("failed to count logs by token id: " + err.Error())
+		return nil, 0, errors.New("查询日志失败")
+	}
+
+	err = tx.Order("id desc").Limit(params.Num).Offset(params.StartIdx).Find(&logs).Error
+	if err != nil {
+		common.SysError("failed to query logs by token id: " + err.Error())
+		return nil, 0, errors.New("查询日志失败")
+	}
+
+	formatUserLogs(logs, params.StartIdx)
+	enrichLogModelIcons(logs)
+	return logs, total, err
+}
+
 func RecordLog(userId int, logType int, content string) {
 	if logType == LogTypeConsume && !common.LogConsumeEnabled {
 		return

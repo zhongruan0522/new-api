@@ -16,180 +16,85 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Copy, Download, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
-  formatCurrencyUSD,
-  formatLogQuota,
+  formatQuota,
   formatTimestampToDate,
-  formatUseTime,
 } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { PublicLayout } from '@/components/layout'
-import { fetchKeyQueryReport } from './api'
-import type { KeyQueryReport, TokenLog } from './types'
+import { fetchKeyUsage } from './api'
+import { KeyInfoCard } from './key-info-card'
+import { KeyQueryLogsTable } from './key-query-logs-table'
+import { KeyQueryError, type KeyUsageData } from './types'
 
-const LOG_TYPE_CONSUME = 2
-const LOG_TYPE_ERROR = 5
-const LOG_TYPE_REFUND = 6
-const UNLIMITED_USD = 100000000
-const EMPTY_LOGS: TokenLog[] = []
-
-function isApiCallLog(record: TokenLog) {
-  return (
-    record.type === LOG_TYPE_CONSUME ||
-    record.type === LOG_TYPE_ERROR ||
-    record.type === LOG_TYPE_REFUND
-  )
-}
-
-function getLogTypeLabel(type: number) {
-  if (type === LOG_TYPE_CONSUME) return 'common.fields.consume'
-  if (type === LOG_TYPE_ERROR) return 'common.errors.error'
-  if (type === LOG_TYPE_REFUND) return 'common.fields.refund'
-  return 'common.fields.other'
-}
-
-function getLogTypeVariant(type: number) {
-  if (type === LOG_TYPE_ERROR) return 'destructive'
-  if (type === LOG_TYPE_REFUND) return 'secondary'
-  if (type === LOG_TYPE_CONSUME) return 'outline'
-  return 'ghost'
-}
-
-function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
-  const headers = Object.keys(rows[0] ?? {})
-  const body = [
-    headers.join(','),
-    ...rows.map((row) =>
-      headers.map((header) => escapeCsvValue(row[header])).join(',')
-    ),
-  ].join('\n')
-  const blob = new Blob([`\uFEFF${body}`], {
-    type: 'text/csv;charset=utf-8;',
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
-function escapeCsvValue(value: unknown) {
-  const text = String(value ?? '')
-  const formulaSafe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
-  const escaped = formulaSafe.replace(/"/g, '""')
-  return /[",\n\r]/.test(escaped) ? `"${escaped}"` : escaped
-}
-
-function copyToClipboard(text: string) {
-  return navigator.clipboard.writeText(text)
-}
-
-function StatBlock(props: { label: string; value: string; muted?: boolean }) {
-  return (
-    <div className='min-w-0 rounded-lg border p-3'>
-      <div className='text-muted-foreground text-xs'>{props.label}</div>
-      <div className={props.muted ? 'text-muted-foreground mt-1' : 'mt-1'}>
-        {props.value}
-      </div>
-    </div>
-  )
+function resolveEffectiveQuotaType(usage: KeyUsageData): number {
+  if (usage.quota_type === 0 && !usage.unlimited_quota) {
+    return 1
+  }
+  return usage.quota_type
 }
 
 export function KeyQuery() {
   const { t } = useTranslation()
   const [key, setKey] = useState('')
-  const [report, setReport] = useState<KeyQueryReport | null>(null)
+  const [confirmedKey, setConfirmedKey] = useState<string | null>(null)
+  const [usage, setUsage] = useState<KeyUsageData | null>(null)
 
   const queryMutation = useMutation({
-    mutationFn: fetchKeyQueryReport,
+    mutationFn: fetchKeyUsage,
     onSuccess: (data) => {
-      setReport(data)
+      setUsage(data)
+      setConfirmedKey(key.trim())
     },
     onError: (error) => {
-      setReport(null)
-      toast.error(error.message)
+      setUsage(null)
+      setConfirmedKey(null)
+      if (error instanceof KeyQueryError) {
+        toast.error(t(error.messageKey))
+      } else {
+        toast.error(error.message)
+      }
     },
   })
-
-  const logs = report?.logs ?? EMPTY_LOGS
-  const balance = report?.subscription.hard_limit_usd ?? null
-  const usage = report ? report.usage.total_usage / 100 : null
-  const expiredTime = report?.subscription.access_until ?? null
-  const isUnlimited = balance === UNLIMITED_USD
-  const totalLogQuota = useMemo(
-    () =>
-      logs.reduce((sum, log) => {
-        if (log.type === LOG_TYPE_CONSUME || log.type === LOG_TYPE_REFUND) {
-          return sum + (log.quota || 0)
-        }
-        return sum
-      }, 0),
-    [logs]
-  )
 
   const runQuery = () => {
     queryMutation.mutate(key)
   }
 
   const copySummary = async () => {
-    if (!report) return
-    const remaining =
-      balance != null && usage != null
-        ? formatCurrencyUSD(balance - usage)
-        : '-'
+    if (!usage) return
+    const quotaType = resolveEffectiveQuotaType(usage)
+    const isUnlimited = quotaType === 0
+    const remaining = isUnlimited
+      ? t('keyQuery.fields.unlimited')
+      : formatQuota(usage.total_available)
+    const used = isUnlimited
+      ? t('keyQuery.fields.unlimited')
+      : formatQuota(usage.total_used)
+
     const summary = [
-      `${t('dashboard.fields.totalQuota')}: ${
-        isUnlimited ? t('keyQuery.fields.unlimited') : formatCurrencyUSD(balance)
-      }`,
-      `${t('keyQuery.status.usedQuota')}: ${usage == null ? '-' : formatCurrencyUSD(usage)}`,
-      `${t('channels.fields.labelWithColon', { label: t('keyQuery.fields.remainingQuota') })} ${isUnlimited ? t('keyQuery.fields.unlimited') : remaining}`,
+      `${t('dashboard.fields.totalQuota')}: ${remaining}`,
+      `${t('keyQuery.status.usedQuota')}: ${used}`,
       `${t('keyQuery.fields.expirationTime')}: ${
-        expiredTime === 0 ? t('keyQuery.fields.never') : formatTimestampToDate(expiredTime ?? 0)
+        usage.expires_at === 0
+          ? t('keyQuery.fields.never')
+          : formatTimestampToDate(usage.expires_at)
       }`,
     ].join('\n')
 
     try {
-      await copyToClipboard(summary)
+      await navigator.clipboard.writeText(summary)
       toast.success(t('common.status.copied'))
     } catch {
       toast.error(t('keyQuery.actions.copyFailed'))
     }
-  }
-
-  const exportLogs = () => {
-    if (logs.length === 0) return
-    downloadCsv(
-      `key-usage-${Date.now()}.csv`,
-      logs.map((log) => ({
-        Time: formatTimestampToDate(log.created_at),
-        Type: getLogTypeLabel(log.type),
-        Model: log.model_name || '-',
-        Duration: log.use_time ? formatUseTime(log.use_time / 1000) : '-',
-        Stream: log.is_stream ? 'yes' : 'no',
-        PromptTokens: log.prompt_tokens || 0,
-        CompletionTokens: log.completion_tokens || 0,
-        Cost: formatLogQuota(log.quota),
-      }))
-    )
   }
 
   return (
@@ -239,151 +144,17 @@ export function KeyQuery() {
                 disabled={queryMutation.isPending}
                 className='sm:w-28'
               >
-                {queryMutation.isPending ? t('channels.tips.querying') : t('keyQuery.titles.query')}
+                {queryMutation.isPending
+                  ? t('channels.tips.querying')
+                  : t('keyQuery.titles.query')}
               </Button>
             </CardContent>
           </Card>
 
-          {report && (
+          {usage && confirmedKey && (
             <>
-              <Card size='sm'>
-                <CardHeader className='border-b'>
-                  <div className='flex items-center justify-between gap-3'>
-                    <CardTitle>{t('keyQuery.titles.information')}</CardTitle>
-                    <Button variant='outline' onClick={copySummary}>
-                      <Copy />
-                      {t('channels.actions.copy')}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-                  <StatBlock
-                    label={t('dashboard.fields.totalQuota')}
-                    value={
-                      isUnlimited ? t('keyQuery.fields.unlimited') : formatCurrencyUSD(balance)
-                    }
-                  />
-                  <StatBlock
-                    label={t('keyQuery.status.usedQuota')}
-                    value={usage == null ? '-' : formatCurrencyUSD(usage)}
-                  />
-                  <StatBlock
-                    label={t('keyQuery.fields.remainingQuota')}
-                    value={
-                      isUnlimited
-                        ? t('keyQuery.fields.unlimited')
-                        : balance == null || usage == null
-                          ? '-'
-                          : formatCurrencyUSD(balance - usage)
-                    }
-                  />
-                  <StatBlock
-                    label={t('keyQuery.fields.expirationTime')}
-                    value={
-                      expiredTime === 0
-                        ? t('keyQuery.fields.never')
-                        : formatTimestampToDate(expiredTime ?? 0)
-                    }
-                  />
-                  <StatBlock
-                    label={t('keyQuery.fields.recentLogCost')}
-                    value={formatLogQuota(totalLogQuota)}
-                  />
-                  <StatBlock
-                    label={t('keyQuery.fields.recentCalls')}
-                    value={`${logs.length}`}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card size='sm'>
-                <CardHeader className='border-b'>
-                  <div className='flex items-center justify-between gap-3'>
-                    <CardTitle>{t('keyQuery.titles.callDetails')}</CardTitle>
-                    <Button
-                      variant='outline'
-                      onClick={exportLogs}
-                      disabled={logs.length === 0}
-                    >
-                      <Download />
-                      {t('keyQuery.actions.exportCsv')}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className='p-0'>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('auditLogs.fields.time')}</TableHead>
-                        <TableHead>{t('channels.fields.type')}</TableHead>
-                        <TableHead>{t('common.fields.model')}</TableHead>
-                        <TableHead>{t('keyQuery.fields.duration')}</TableHead>
-                        <TableHead>{t('keyQuery.fields.prompt')}</TableHead>
-                        <TableHead>{t('keyQuery.fields.completion')}</TableHead>
-                        <TableHead>{t('keyQuery.fields.cost')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {logs.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className='h-24 text-center'>
-                            {t('keyQuery.titles.noTokenLogs')}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        logs.map((log) => (
-                          <TableRow key={log.id}>
-                            <TableCell>
-                              {formatTimestampToDate(log.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={getLogTypeVariant(log.type)}>
-                                {t(getLogTypeLabel(log.type))}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {log.model_name ? (
-                                <Badge variant='outline'>
-                                  {log.model_name}
-                                </Badge>
-                              ) : (
-                                <span className='text-muted-foreground'>-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isApiCallLog(log) && log.use_time
-                                ? formatUseTime(log.use_time / 1000)
-                                : '-'}
-                              {isApiCallLog(log) && (
-                                <Badge variant='secondary' className='ml-2'>
-                                  {log.is_stream
-                                    ? t('keyQuery.fields.stream')
-                                    : t('keyQuery.fields.nonStream')}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isApiCallLog(log) && log.prompt_tokens
-                                ? log.prompt_tokens
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {isApiCallLog(log) && log.completion_tokens
-                                ? log.completion_tokens
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {isApiCallLog(log)
-                                ? formatLogQuota(log.quota)
-                                : '-'}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <KeyInfoCard usage={usage} onCopySummary={copySummary} />
+              <KeyQueryLogsTable rawKey={confirmedKey} />
             </>
           )}
         </main>

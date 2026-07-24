@@ -16,15 +16,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
-import { formatDateStr } from '@/lib/format'
-import type {
-  BillingError,
-  KeyQueryReport,
-  TokenLogResponse,
-  TokenSubscription,
-  TokenUsage,
+import {
+  KeyQueryError,
+  type KeyQueryLog,
+  type KeyQueryLogsLegacyResponse,
+  type KeyQueryLogsParams,
+  type KeyQueryLogsResponse,
+  type KeyQueryUsageLogFieldsResponse,
+  type KeyUsageData,
+  type KeyUsageResponse,
 } from './types'
+
+const KEY_PATTERN = /^sk-[a-zA-Z0-9]{48}$/
+
+interface BackendErrorResponse {
+  success?: boolean
+  message?: string
+  error?: { message?: string; type?: string }
+}
 
 function getTokenHeaders(key: string) {
   return {
@@ -32,51 +41,138 @@ function getTokenHeaders(key: string) {
   }
 }
 
-async function fetchJson<T>(url: string, key: string): Promise<T> {
+function validateKey(rawKey: string): string {
+  const key = rawKey.trim()
+  if (!KEY_PATTERN.test(key)) {
+    throw new KeyQueryError('keyQuery.errors.invalidKeyFormat')
+  }
+  return key
+}
+
+async function fetchJson<T>(
+  url: string,
+  key: string
+): Promise<T> {
   const res = await fetch(url, {
     headers: getTokenHeaders(key),
   })
-  if (!res.ok) {
-    throw new Error('The key is invalid or expired')
+  let data: unknown = null
+  try {
+    data = await res.json()
+  } catch {
+    throw new KeyQueryError(
+      'keyQuery.errors.networkError',
+      'Failed to parse response'
+    )
   }
 
-  const data = (await res.json()) as T & BillingError
-  if (data.error) {
-    throw new Error(data.error.message || 'Key query failed')
+  const errorBody = data as BackendErrorResponse
+  if (!res.ok || errorBody?.error) {
+    const fallback =
+      errorBody?.error?.message || errorBody?.message || 'Key query failed'
+    throw new KeyQueryError('keyQuery.errors.keyInvalidOrExpired', fallback)
   }
-  return data
+  return data as T
 }
 
-export async function fetchKeyQueryReport(
+export async function fetchKeyUsage(rawKey: string): Promise<KeyUsageData> {
+  const key = validateKey(rawKey)
+  const data = await fetchJson<KeyUsageResponse>('/api/usage/token/', key)
+  if (!data?.data) {
+    throw new KeyQueryError(
+      'keyQuery.errors.keyInvalidOrExpired',
+      data?.message
+    )
+  }
+  return data.data
+}
+
+export async function fetchKeyLogs(
+  rawKey: string,
+  params: KeyQueryLogsParams
+): Promise<{ items: KeyQueryLog[]; total: number }> {
+  const key = validateKey(rawKey)
+
+  const queryParams = new URLSearchParams()
+  queryParams.append('p', String(params.page))
+  queryParams.append('page_size', String(params.pageSize))
+  if (params.startTime) {
+    queryParams.append(
+      'start_timestamp',
+      String(Math.floor(params.startTime.getTime() / 1000))
+    )
+  }
+  if (params.endTime) {
+    queryParams.append(
+      'end_timestamp',
+      String(Math.floor(params.endTime.getTime() / 1000))
+    )
+  }
+  if (params.model) {
+    queryParams.append('model_name', params.model)
+  }
+
+  const url = `/api/log/token?${queryParams.toString()}`
+  const data = await fetchJson<KeyQueryLogsResponse>(url, key)
+
+  if (!data?.success) {
+    throw new KeyQueryError(
+      'keyQuery.errors.failedToLoadLogs',
+      data?.message
+    )
+  }
+
+  // 后端在传入分页参数时返回 PageInfo 结构 { page, page_size, total, items }。
+  // 若旧后端未升级，可能回退为数组结构，这里做一次兼容适配。
+  const rawData = data.data as unknown
+  if (Array.isArray(rawData)) {
+    return { items: rawData as KeyQueryLog[], total: rawData.length }
+  }
+
+  const paginated = data.data
+  if (!paginated) {
+    return { items: [], total: 0 }
+  }
+  return { items: paginated.items ?? [], total: paginated.total ?? 0 }
+}
+
+export async function fetchKeyLogsLegacy(
   rawKey: string
-): Promise<KeyQueryReport> {
-  const key = rawKey.trim()
-  if (!/^sk-[a-zA-Z0-9]{48}$/.test(key)) {
-    throw new Error('Invalid key format')
-  }
-
-  const now = new Date()
-  const start = new Date(now.getTime() - 100 * 24 * 60 * 60 * 1000)
-  const startDate = formatDateStr(start)
-  const endDate = formatDateStr(now)
-
-  const subscription = await fetchJson<TokenSubscription>(
-    '/v1/dashboard/billing/subscription',
+): Promise<KeyQueryLog[]> {
+  const key = validateKey(rawKey)
+  const data = await fetchJson<KeyQueryLogsLegacyResponse>(
+    '/api/log/token',
     key
   )
-  const usage = await fetchJson<TokenUsage>(
-    `/v1/dashboard/billing/usage?start_date=${startDate}&end_date=${endDate}`,
+  if (!data?.success) {
+    throw new KeyQueryError(
+      'keyQuery.errors.failedToLoadLogs',
+      data?.message
+    )
+  }
+  return data.data ?? []
+}
+
+export async function fetchKeyUsageLogFields(
+  rawKey: string
+): Promise<{ enabled: boolean; fields: string[] }> {
+  const key = validateKey(rawKey)
+  const data = await fetchJson<KeyQueryUsageLogFieldsResponse>(
+    '/api/log/token/usage_log_fields',
     key
   )
-  const logRes = await fetchJson<TokenLogResponse>('/api/log/token', key)
-
-  if (!logRes.success) {
-    throw new Error(logRes.message || 'Failed to load token logs')
+  if (!data?.success || !data.data) {
+    throw new KeyQueryError(
+      'keyQuery.errors.failedToLoadFieldVisibility',
+      data?.message
+    )
   }
+  return data.data
+}
 
-  return {
-    subscription,
-    usage,
-    logs: logRes.data ?? [],
-  }
+/**
+ * 密钥格式校验（不发起网络请求），供输入框即时反馈使用。
+ */
+export function isValidKeyFormat(rawKey: string): boolean {
+  return KEY_PATTERN.test(rawKey.trim())
 }

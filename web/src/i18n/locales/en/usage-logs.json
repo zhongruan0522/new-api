@@ -108,6 +108,7 @@
   "usageLogs.tips.recordWasWrittenByAPreUpgradeInstanceAnd": "This record was written by a pre-upgrade instance and lacks audit info. Upgrade the instance to record server IP, callback IP, payment method and system version.",
   "usageLogs.fields.week": "This week",
   "usageLogs.fields.timing": "Timing",
+  "usageLogs.fields.tokens": "Tokens",
   "usageLogs.fields.tokenBreakdown": "Token Breakdown",
   "usageLogs.fields.tokenName": "Token Name",
   "usageLogs.fields.topUpAuditInfo": "Top-up Audit Info",

@@ -17,29 +17,51 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export type BillingError = {
-  error?: {
-    message?: string
-    type?: string
-  }
+/**
+ * 与后端 controller.GetTokenUsage 返回结构对齐。
+ *
+ * `object`/`code`/`message` 字段沿用旧版 OpenAI 风格响应，
+ * `data` 内字段为新增的额度类型与周期信息。
+ */
+export interface KeyUsageData {
+  object: 'token_usage'
+  name: string
+  total_granted: number
+  total_used: number
+  total_available: number
+  unlimited_quota: boolean
+  model_limits: Record<string, boolean> | null
+  model_limits_enabled: boolean
+  expires_at: number
+  quota_type: number
+  created_time: number
+  accessed_time: number
+  window_hours: number
+  window_quota: number
+  window_used_quota: number
+  window_start_hour: number
+  window_start_time: number
+  window_next_reset_time: number
+  cycle_days: number
+  cycle_quota: number
+  cycle_used_quota: number
+  cycle_start_time: number
+  cycle_next_reset_time: number
 }
 
-export type TokenSubscription = {
-  object: 'billing_subscription'
-  has_payment_method: boolean
-  soft_limit_usd: number
-  hard_limit_usd: number
-  system_hard_limit_usd: number
-  access_until: number
+export interface KeyUsageResponse {
+  code: boolean
+  message: string
+  data: KeyUsageData
 }
 
-export type TokenUsage = {
-  object: 'list'
-  total_usage: number
-}
-
-export type TokenLog = {
+/**
+ * 使用日志条目，与 usage-logs 的 UsageLog 结构保持兼容，
+ * 方便复用 details-dialog 中的详情主体。
+ */
+export interface KeyQueryLog {
   id: number
+  user_id: number
   created_at: number
   type: number
   content: string
@@ -52,22 +74,63 @@ export type TokenLog = {
   use_time: number
   is_stream: boolean
   channel: number
-  channel_name: string
+  channel_name: string | null
   token_id: number
   group: string
   ip: string
+  ua: string
+  x_title: string
+  http_referer: string
   request_id?: string
+  upstream_request_id?: string
   other: string
+  model_icon: string
 }
 
-export type TokenLogResponse = {
+export interface KeyQueryLogsPaginatedData {
+  items: KeyQueryLog[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface KeyQueryLogsParams {
+  page: number
+  pageSize: number
+  startTime?: Date
+  endTime?: Date
+  model?: string
+}
+
+export interface KeyQueryLogsResponse {
   success: boolean
   message?: string
-  data?: TokenLog[]
+  data?: KeyQueryLogsPaginatedData
 }
 
-export type KeyQueryReport = {
-  subscription: TokenSubscription
-  usage: TokenUsage
-  logs: TokenLog[]
+export interface KeyQueryLogsLegacyResponse {
+  success: boolean
+  message?: string
+  data?: KeyQueryLog[]
+}
+
+/**
+ * 字段可见性响应，与使用日志的 useUsageLogFieldVisibility 期望一致。
+ */
+export interface KeyQueryUsageLogFieldsResponse {
+  success: boolean
+  message?: string
+  data?: {
+    enabled: boolean
+    fields: string[]
+  }
+}
+
+export class KeyQueryError extends Error {
+  readonly messageKey: string
+  constructor(messageKey: string, fallbackMessage?: string) {
+    super(fallbackMessage ?? messageKey)
+    this.name = 'KeyQueryError'
+    this.messageKey = messageKey
+  }
 }
