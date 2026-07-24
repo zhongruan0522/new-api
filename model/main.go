@@ -210,6 +210,10 @@ func InitDB() (err error) {
 func InitLogDB() (err error) {
 	if os.Getenv("LOG_SQL_DSN") == "" {
 		LOG_DB = DB
+		// 日志与主库同库：Log 表已由 migrateDB 的 AutoMigrate 处理，这里仅做数据回填。
+		if common.IsMasterNode {
+			backfillLogClientHeaderColumns()
+		}
 		return
 	}
 	db, err := chooseDB("LOG_SQL_DSN", true)
@@ -237,6 +241,11 @@ func InitLogDB() (err error) {
 		}
 		common.SysLog("database migration started")
 		err = migrateLOGDB()
+		if err != nil {
+			return err
+		}
+		// 独立日志库：AutoMigrate 完成后回填历史日志的客户端请求头列。
+		backfillLogClientHeaderColumns()
 		return err
 	} else {
 		common.FatalLog(err)

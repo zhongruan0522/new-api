@@ -121,6 +121,9 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 			log.RequestId = ""
 			log.UpstreamRequestId = ""
 			log.Ip = ""
+			log.Ua = ""
+			log.XTitle = ""
+			log.HttpReferer = ""
 			stripHiddenOtherFields(log, nil)
 			continue
 		}
@@ -134,6 +137,12 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 		}
 		if hiddenFields[console_setting.UsageLogFieldIPAddress] {
 			log.Ip = ""
+		}
+		// 客户端请求头已独立为顶层列，按 client_headers 开关裁剪
+		if hiddenFields[console_setting.UsageLogFieldClientHeaders] {
+			log.Ua = ""
+			log.XTitle = ""
+			log.HttpReferer = ""
 		}
 		// other JSON 内的字段
 		stripHiddenOtherFields(log, hiddenFields)

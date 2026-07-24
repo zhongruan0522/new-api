@@ -34,6 +34,10 @@ type Log struct {
 	TokenId           int    `json:"token_id" gorm:"default:0;index"`
 	Group             string `json:"group" gorm:"index"`
 	Ip                string `json:"ip" gorm:"index;default:''"`
+	// 客户端请求头，原存于 Other JSON，现独立为列以便检索与裁剪。
+	Ua                string `json:"ua" gorm:"column:ua;default:''"`
+	XTitle            string `json:"x_title" gorm:"column:x_title;default:''"`
+	HttpReferer       string `json:"http_referer" gorm:"column:http_referer;default:''"`
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
 	Other             string `json:"other"`
@@ -190,10 +194,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
 	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
-	if other == nil {
-		other = make(map[string]interface{})
-	}
-	appendConsumeLogClientHeaders(c, other)
+	headers := extractClientHeaders(c)
 	otherStr := common.MapToJsonStr(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
@@ -213,6 +214,9 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		IsStream:          isStream,
 		Group:             group,
 		Ip:                c.ClientIP(),
+		Ua:                headers.ua,
+		XTitle:            headers.xTitle,
+		HttpReferer:       headers.httpReferer,
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 		Other:             otherStr,
@@ -254,12 +258,8 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
 	createdAt := common.GetTimestamp()
 	clientIP := c.ClientIP()
-	other := params.Other
-	if other == nil {
-		other = make(map[string]interface{})
-	}
-	appendConsumeLogClientHeaders(c, other)
-	otherStr := common.MapToJsonStr(other)
+	headers := extractClientHeaders(c)
+	otherStr := common.MapToJsonStr(params.Other)
 	logType := params.LogType
 	if logType == 0 {
 		logType = LogTypeConsume
@@ -282,6 +282,9 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		IsStream:          params.IsStream,
 		Group:             params.Group,
 		Ip:                clientIP,
+		Ua:                headers.ua,
+		XTitle:            headers.xTitle,
+		HttpReferer:       headers.httpReferer,
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 		Other:             otherStr,
@@ -302,30 +305,35 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	})
 }
 
-func appendConsumeLogClientHeaders(c *gin.Context, other map[string]interface{}) {
-	if c == nil || other == nil {
-		return
-	}
+// logClientHeaders holds the three client request headers extracted from the
+// gin context. They are stored in dedicated Log columns (not the Other JSON).
+type logClientHeaders struct {
+	ua          string
+	xTitle      string
+	httpReferer string
+}
 
-	if _, exists := other["http_referer"]; !exists {
-		// Prefer the OpenAI-compatible `HTTP-Referer` header, fall back to standard `Referer`.
-		httpReferer := c.GetHeader("HTTP-Referer")
-		if strings.TrimSpace(httpReferer) == "" {
-			httpReferer = c.GetHeader("Referer")
-		}
-		other["http_referer"] = sanitizeConsumeLogHeaderValue(httpReferer)
+// extractClientHeaders reads the OpenAI-compatible client request headers
+// (User-Agent, X-Title, HTTP-Referer/Referer) from the request context and
+// returns single-line sanitized values. The caller writes them to the
+// dedicated Log columns.
+func extractClientHeaders(c *gin.Context) logClientHeaders {
+	if c == nil {
+		return logClientHeaders{}
 	}
-
-	if _, exists := other["x_title"]; !exists {
-		other["x_title"] = sanitizeConsumeLogHeaderValue(c.GetHeader("X-Title"))
+	// Prefer the OpenAI-compatible `HTTP-Referer` header, fall back to standard `Referer`.
+	httpReferer := c.GetHeader("HTTP-Referer")
+	if strings.TrimSpace(httpReferer) == "" {
+		httpReferer = c.GetHeader("Referer")
 	}
-
-	if _, exists := other["ua"]; !exists {
-		ua := c.GetHeader("User-Agent")
-		if strings.TrimSpace(ua) == "" && c.Request != nil {
-			ua = c.Request.UserAgent()
-		}
-		other["ua"] = sanitizeConsumeLogHeaderValue(ua)
+	ua := c.GetHeader("User-Agent")
+	if strings.TrimSpace(ua) == "" && c.Request != nil {
+		ua = c.Request.UserAgent()
+	}
+	return logClientHeaders{
+		ua:          sanitizeConsumeLogHeaderValue(ua),
+		xTitle:      sanitizeConsumeLogHeaderValue(c.GetHeader("X-Title")),
+		httpReferer: sanitizeConsumeLogHeaderValue(httpReferer),
 	}
 }
 
@@ -356,15 +364,6 @@ func sanitizeLikeLiteral(input string) string {
 	return input
 }
 
-// sanitizeJSONLikeValue extends sanitizeLikeLiteral with backslash escaping
-// for LIKE patterns targeting the JSON-encoded `other` column, where JSON
-// stores `\` as `\\`.
-func sanitizeJSONLikeValue(input string) string {
-	input = sanitizeLikeLiteral(input)
-	input = strings.ReplaceAll(input, `\`, `!\\`)
-	return input
-}
-
 func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, ip string, ua string, xTitle string, httpReferer string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
@@ -392,13 +391,13 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
 	}
 	if ua != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+		tx = tx.Where("logs.ua LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ua)+"%")
 	}
 	if xTitle != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+		tx = tx.Where("logs.x_title LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(xTitle)+"%")
 	}
 	if httpReferer != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
+		tx = tx.Where("logs.http_referer LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -480,13 +479,13 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
 	}
 	if ua != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+		tx = tx.Where("logs.ua LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ua)+"%")
 	}
 	if xTitle != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+		tx = tx.Where("logs.x_title LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(xTitle)+"%")
 	}
 	if httpReferer != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
+		tx = tx.Where("logs.http_referer LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -578,13 +577,13 @@ func buildStatConditions(tx *gorm.DB, filter LogStatFilter, startTimestamp int64
 		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(filter.Ip)+"%")
 	}
 	if filter.Ua != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(filter.Ua)+"%")
+		tx = tx.Where("logs.ua LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(filter.Ua)+"%")
 	}
 	if filter.XTitle != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(filter.XTitle)+"%")
+		tx = tx.Where("logs.x_title LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(filter.XTitle)+"%")
 	}
 	if filter.HttpReferer != "" {
-		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(filter.HttpReferer)+"%")
+		tx = tx.Where("logs.http_referer LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(filter.HttpReferer)+"%")
 	}
 	return tx, nil
 }

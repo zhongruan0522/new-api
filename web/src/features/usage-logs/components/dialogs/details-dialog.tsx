@@ -1067,30 +1067,31 @@ export function DetailsDialog(props: DetailsDialogProps) {
             {/* Client request headers (consume & error logs) */}
             {isVisible('client_headers') &&
               showClientHeaders &&
-              other &&
-              (other.http_referer || other.x_title || other.ua) && (
+              (props.log.http_referer ||
+                props.log.x_title ||
+                props.log.ua) && (
                 <DetailSection
                   icon={<Monitor className='size-3.5' aria-hidden='true' />}
                   label={t('usageLogs.fields.clientRequestHeaders')}
                 >
-                  {other.http_referer && (
+                  {props.log.http_referer && (
                     <DetailRow
                       label='HTTP-Referer'
-                      value={other.http_referer}
+                      value={props.log.http_referer}
                       mono
                     />
                   )}
-                  {other.x_title && (
+                  {props.log.x_title && (
                     <DetailRow
                       label='X-Title'
-                      value={other.x_title}
+                      value={props.log.x_title}
                       mono
                     />
                   )}
-                  {other.ua && (
+                  {props.log.ua && (
                     <DetailRow
                       label='UA'
-                      value={other.ua}
+                      value={props.log.ua}
                       mono
                     />
                   )}
