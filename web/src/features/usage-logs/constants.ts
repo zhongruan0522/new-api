@@ -352,7 +352,7 @@ export const TIMING_LOG_TYPES = [2, 5] as const
 
 /**
  * Log types whose details dialog shows client request headers
- * (ua / x_title / http_referer). Backend writes these headers via
- * appendConsumeLogClientHeaders for both consume and error logs.
+ * (ua / x_title / http_referer). Backend writes these headers to dedicated
+ * Log columns via extractClientHeaders for both consume and error logs.
  */
 export const CLIENT_HEADERS_LOG_TYPES = [2, 5] as const

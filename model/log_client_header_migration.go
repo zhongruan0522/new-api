@@ -10,16 +10,20 @@ import (
 // 删除该 options 行可强制重新执行回填（迁移本身幂等）。
 const logClientHeaderBackfillMarker = "data_migration.log_client_headers.v1.done"
 
+// logClientHeaderKeys 是从 Other JSON 迁移到专用列的客户端请求头键名。
+var logClientHeaderKeys = []string{"ua", "x_title", "http_referer"}
+
 // backfillLogClientHeaderColumns 是一次性数据迁移：
-// 将历史日志存放在 Other JSON 里的 ua / x_title / http_referer 回填到新增的专用列。
+// 将历史日志存放在 Other JSON 里的 ua / x_title / http_referer 回填到新增的专用列，
+// 并从 Other JSON 中移除这些已迁移的键，避免历史行长期双份存储。
 //
 // 背景：这三个客户端请求头原本序列化进 Other 列，现已独立为列作为唯一数据来源。
 // 新写入只写列；历史数据需要从 Other JSON 中提取回填，以便检索与展示。
 //
 // 幂等性：通过 options 表的 data-migration marker 保证只完整执行一次。
-// 迁移按 id 游标分批推进、单条更新；任意批次查询失败时直接返回且不写 marker，
-// 下次启动会重试（迁移本身幂等）。注意 marker 存于主库 DB，日志数据在 LOG_DB，
-// 二者可分离（marker 仅作全局开关）。
+// 迁移按 id 游标分批推进、单条更新。任意批次查询失败，或任意单行更新失败时，
+// 均不写 marker，下次启动会重试未完成的行（迁移本身幂等）。注意 marker 存于
+// 主库 DB，日志数据在 LOG_DB，二者可分离（marker 仅作全局开关）。
 func backfillLogClientHeaderColumns() {
 	if LOG_DB == nil {
 		return
@@ -29,7 +33,8 @@ func backfillLogClientHeaderColumns() {
 	}
 
 	const batchSize = 1000
-	processed := 0
+	updated := 0
+	failed := 0
 	maxId := 0
 	for {
 		type logOtherRow struct {
@@ -58,9 +63,12 @@ func backfillLogClientHeaderColumns() {
 				continue
 			}
 			if uerr := LOG_DB.Model(&Log{}).Where("id = ?", row.Id).Updates(updates).Error; uerr != nil {
+				// 单行更新失败：计数并继续，但最终不写 marker，保证下次启动可重试。
+				failed++
 				common.SysError(fmt.Sprintf("backfillLogClientHeaderColumns: update id=%d failed: %v", row.Id, uerr))
+				continue
 			}
-			processed++
+			updated++
 		}
 
 		maxId = rows[len(rows)-1].Id
@@ -69,26 +77,39 @@ func backfillLogClientHeaderColumns() {
 		}
 	}
 
+	// 仅当所有候选行都成功更新时才写 marker；存在失败时让下次启动补跑。
+	if failed > 0 {
+		common.SysError(fmt.Sprintf("backfillLogClientHeaderColumns: finished with %d rows updated, %d failed; marker not set, will retry next startup", updated, failed))
+		return
+	}
 	markDataMigrationDone(logClientHeaderBackfillMarker)
-	common.SysLog(fmt.Sprintf("backfillLogClientHeaderColumns: completed, %d rows updated", processed))
+	common.SysLog(fmt.Sprintf("backfillLogClientHeaderColumns: completed, %d rows updated", updated))
 }
 
 // extractBackfillUpdates 从 Other JSON 中提取三个客户端请求头的值，
-// 仅返回存在且非空的字段，用于回填到专用列。
+// 回填到专用列，并同时从 Other JSON 中移除这些已迁移的键（写回 other 列），
+// 使历史行的客户端头不再冗余存于两处。仅返回存在且非空的字段。
 func extractBackfillUpdates(otherJSON string) map[string]interface{} {
 	otherMap, err := common.StrToMap(otherJSON)
 	if err != nil || otherMap == nil {
 		return nil
 	}
 	updates := make(map[string]interface{})
-	if v, ok := otherMap["ua"].(string); ok && v != "" {
-		updates["ua"] = v
+	migrated := false
+	for _, key := range logClientHeaderKeys {
+		if v, ok := otherMap[key].(string); ok && v != "" {
+			updates[key] = v
+		}
+		// 无论该键是否有非空值，只要 Other JSON 中存在该键就删除，
+		// 避免空值残留导致以后被认为“未迁移”。
+		if _, exists := otherMap[key]; exists {
+			delete(otherMap, key)
+			migrated = true
+		}
 	}
-	if v, ok := otherMap["x_title"].(string); ok && v != "" {
-		updates["x_title"] = v
-	}
-	if v, ok := otherMap["http_referer"].(string); ok && v != "" {
-		updates["http_referer"] = v
+	// 同步写回清理后的 Other JSON，保证空对象仍存为 "{}"。
+	if migrated {
+		updates["other"] = common.MapToJsonStr(otherMap)
 	}
 	return updates
 }

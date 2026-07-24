@@ -35,9 +35,11 @@ type Log struct {
 	Group             string `json:"group" gorm:"index"`
 	Ip                string `json:"ip" gorm:"index;default:''"`
 	// 客户端请求头，原存于 Other JSON，现独立为列以便检索与裁剪。
-	Ua                string `json:"ua" gorm:"column:ua;default:''"`
-	XTitle            string `json:"x_title" gorm:"column:x_title;default:''"`
-	HttpReferer       string `json:"http_referer" gorm:"column:http_referer;default:''"`
+	// 使用显式 text 类型而非依赖 string+default:''，避免 MySQL 下因带默认值
+	// 被生成为 varchar(191)，导致长 UA/Referer 在严格模式下写入失败或被截断。
+	Ua                string `json:"ua" gorm:"column:ua;type:text"`
+	XTitle            string `json:"x_title" gorm:"column:x_title;type:text"`
+	HttpReferer       string `json:"http_referer" gorm:"column:http_referer;type:text"`
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
 	Other             string `json:"other"`
@@ -195,7 +197,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	requestId := c.GetString(common.RequestIdKey)
 	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
 	headers := extractClientHeaders(c)
-	otherStr := common.MapToJsonStr(other)
+	otherStr := serializeLogOther(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
 		UserId:            userId,
@@ -259,7 +261,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	createdAt := common.GetTimestamp()
 	clientIP := c.ClientIP()
 	headers := extractClientHeaders(c)
-	otherStr := common.MapToJsonStr(params.Other)
+	otherStr := serializeLogOther(params.Other)
 	logType := params.LogType
 	if logType == 0 {
 		logType = LogTypeConsume
@@ -350,6 +352,18 @@ func sanitizeConsumeLogHeaderValue(value string) string {
 		return "-"
 	}
 	return value
+}
+
+// serializeLogOther normalizes the caller-supplied `other` map to a JSON
+// object string. A nil map historically serialized to "{}" (empty object);
+// without normalization json.Marshal(nil) produces the literal "null", which
+// regresses the Other column semantics and complicates downstream parsing.
+// Keep the column storing a JSON object for both nil and empty maps.
+func serializeLogOther(other map[string]interface{}) string {
+	if other == nil {
+		return "{}"
+	}
+	return common.MapToJsonStr(other)
 }
 
 // sanitizeLikeLiteral escapes SQL LIKE wildcards (% and _) and the ESCAPE
