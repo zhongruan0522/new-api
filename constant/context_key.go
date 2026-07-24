@@ -44,6 +44,12 @@ const (
 	ContextKeyAutoGroupIndex      ContextKey = "auto_group_index"
 	ContextKeyAutoGroupRetryIndex ContextKey = "auto_group_retry_index"
 
+	// ContextKeyRequestId is the stdlib context.Context key for the per-request
+	// id. It intentionally uses a typed key (not a bare string) to avoid
+	// cross-package context key collisions, per the Go context guidelines.
+	// The gin-layer request id still uses the string common.RequestIdKey.
+	ContextKeyRequestId ContextKey = "X-Oneapi-Request-Id"
+
 	/* user related keys */
 	ContextKeyUserId      ContextKey = "id"
 	ContextKeyUserSetting ContextKey = "user_setting"

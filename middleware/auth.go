@@ -50,9 +50,9 @@ func clearAndReject(c *gin.Context, session sessions.Session, status int, messag
 func authHelper(c *gin.Context, minRole int) {
 	session := sessions.Default(c)
 	username := session.Get("username")
-	role := session.Get("role")
+	var role interface{}
 	id := session.Get("id")
-	status := session.Get("status")
+	var status interface{}
 	// group 用于写入上下文的最新分组。session/access-token 各分支会从权威来源覆盖。
 	// 不直接复用 session.Get("group")，因为管理员改组后旧 cookie 快照会残留过期分组。
 	var group string
