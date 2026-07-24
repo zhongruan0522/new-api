@@ -41,24 +41,10 @@ type OpenAIUsageDailyCost struct {
 	}
 }
 
-type OpenAICreditGrants struct {
-	Object         string  `json:"object"`
-	TotalGranted   float64 `json:"total_granted"`
-	TotalUsed      float64 `json:"total_used"`
-	TotalAvailable float64 `json:"total_available"`
-}
-
 type OpenAIUsageResponse struct {
 	Object string `json:"object"`
 	//DailyCosts []OpenAIUsageDailyCost `json:"daily_costs"`
 	TotalUsage float64 `json:"total_usage"` // unit: 0.01 dollar
-}
-
-type OpenAISBUsageResponse struct {
-	Msg  string `json:"msg"`
-	Data *struct {
-		Credit string `json:"credit"`
-	} `json:"data"`
 }
 
 type SiliconFlowUsageResponse struct {
@@ -141,44 +127,6 @@ func GetResponseBody(method, url string, channel *model.Channel, headers http.He
 		return nil, err
 	}
 	return body, nil
-}
-
-func updateChannelCloseAIBalance(channel *model.Channel) (float64, error) {
-	url := fmt.Sprintf("%s/dashboard/billing/credit_grants", channel.GetBaseURL())
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-
-	if err != nil {
-		return 0, err
-	}
-	response := OpenAICreditGrants{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(response.TotalAvailable)
-	return response.TotalAvailable, nil
-}
-
-func updateChannelOpenAISBBalance(channel *model.Channel) (float64, error) {
-	url := fmt.Sprintf("https://api.openai-sb.com/sb-api/user/status?api_key=%s", channel.Key)
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-	if err != nil {
-		return 0, err
-	}
-	response := OpenAISBUsageResponse{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	if response.Data == nil {
-		return 0, errors.New(response.Msg)
-	}
-	balance, err := strconv.ParseFloat(response.Data.Credit, 64)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(balance)
-	return balance, nil
 }
 
 func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {

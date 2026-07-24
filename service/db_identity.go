@@ -61,16 +61,3 @@ func getMySQLIdentity(db *gorm.DB) (dbIdentity, error) {
 	}
 	return dbIdentity{Host: h, Port: p, Database: dbName, ServerUUID: serverUUID}, nil
 }
-
-// isSameDBConnection 判断两个数据库连接是否指向同一个数据库
-func isSameDBConnection(src *gorm.DB, dst *gorm.DB, dbType string) (bool, error) {
-	srcID, err := getDBIdentity(src, dbType)
-	if err != nil {
-		return false, fmt.Errorf("获取源库标识失败：%w", err)
-	}
-	dstID, err := getDBIdentity(dst, dbType)
-	if err != nil {
-		return false, fmt.Errorf("获取目标库标识失败：%w", err)
-	}
-	return srcID == dstID, nil
-}

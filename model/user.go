@@ -576,36 +576,6 @@ func IsAdmin(userId int) bool {
 	return user.Role >= common.RoleAdminUser
 }
 
-//// IsUserEnabled checks user status from Redis first, falls back to DB if needed
-//func IsUserEnabled(id int, fromDB bool) (status bool, err error) {
-//	defer func() {
-//		// Update Redis cache asynchronously on successful DB read
-//		if shouldUpdateRedis(fromDB, err) {
-//			common.RelayGo(func() {
-//				if err := updateUserStatusCache(id, status); err != nil {
-//					common.SysError("failed to update user status cache: " + err.Error())
-//				}
-//			})
-//		}
-//	}()
-//	if !fromDB && common.RedisEnabled {
-//		// Try Redis first
-//		status, err := getUserStatusCache(id)
-//		if err == nil {
-//			return status == common.UserStatusEnabled, nil
-//		}
-//		// Don't return error - fall through to DB
-//	}
-//	fromDB = true
-//	var user User
-//	err = DB.Where("id = ?", id).Select("status").Find(&user).Error
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	return user.Status == common.UserStatusEnabled, nil
-//}
-
 func normalizeAccessToken(authorization string) string {
 	authorization = strings.TrimSpace(authorization)
 	if authorization == "" {
@@ -865,24 +835,6 @@ func IncrementMediaConvertedCount(id int, imageCount int, videoCount int) {
 	err := DB.Model(&User{}).Where("id = ?", id).Updates(updates).Error
 	if err != nil {
 		common.SysLog("failed to update user media converted count: " + err.Error())
-	}
-}
-
-func updateUserUsedQuota(id int, quota int) {
-	err := DB.Model(&User{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"used_quota": gorm.Expr("used_quota + ?", quota),
-		},
-	).Error
-	if err != nil {
-		common.SysLog("failed to update user used quota: " + err.Error())
-	}
-}
-
-func updateUserRequestCount(id int, count int) {
-	err := DB.Model(&User{}).Where("id = ?", id).Update("request_count", gorm.Expr("request_count + ?", count)).Error
-	if err != nil {
-		common.SysLog("failed to update user request count: " + err.Error())
 	}
 }
 

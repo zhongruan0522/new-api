@@ -3,10 +3,10 @@ package middleware
 import (
 	"fmt"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/logger"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string, code ...types.ErrorCode) {
@@ -24,14 +24,4 @@ func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string, code
 	})
 	c.Abort()
 	logger.LogError(c.Request.Context(), fmt.Sprintf("user %d | %s", userId, message))
-}
-
-func abortWithMidjourneyMessage(c *gin.Context, statusCode int, code int, description string) {
-	c.JSON(statusCode, gin.H{
-		"description": description,
-		"type":        "new_api_error",
-		"code":        code,
-	})
-	c.Abort()
-	logger.LogError(c.Request.Context(), description)
 }

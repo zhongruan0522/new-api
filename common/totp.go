@@ -3,7 +3,6 @@ package common
 import (
 	"crypto/rand"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -114,14 +113,6 @@ func HashBackupCode(code string) (string, error) {
 // Get2FAIssuer 获取2FA发行者名称
 func Get2FAIssuer() string {
 	return SystemName
-}
-
-// getEnvOrDefault 获取环境变量或默认值
-func getEnvOrDefault(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
 }
 
 // ValidateNumericCode 验证数字验证码格式

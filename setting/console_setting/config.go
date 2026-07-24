@@ -108,20 +108,6 @@ type ConsoleSetting struct {
 	UsageLogFieldsUserEnabled bool `json:"usage_log_fields_user_enabled"`
 }
 
-// defaultUsageLogFields 构造字段可见性配置的默认 JSON 字符串。
-// 格式：{ "<fieldKey>": { "admin": true, "user": false }, ... }
-func defaultUsageLogFields() string {
-	defaults := UsageLogFieldsDefaults()
-	m := make(map[string]interface{}, len(defaults))
-	for _, d := range defaults {
-		m[d.Key] = map[string]interface{}{
-			"admin": d.Admin,
-			"user":  d.User,
-		}
-	}
-	return common.MapToJsonStr(m)
-}
-
 // 默认配置
 var defaultConsoleSetting = ConsoleSetting{
 	ApiInfo:                    "",
