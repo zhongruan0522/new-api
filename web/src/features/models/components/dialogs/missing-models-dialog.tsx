@@ -118,7 +118,7 @@ export function MissingModelsDialog({
         className='flex max-h-[85vh] max-w-2xl flex-col gap-3 p-4'
         initialFocus={!isMobile}
       >
-        <DialogHeader className='flex-shrink-0 text-start'>
+        <DialogHeader className='shrink-0 text-start'>
           <DialogTitle>{t('models.errors.missingModels')}</DialogTitle>
           <DialogDescription>
             {t('models.status.thatAreBeingUsedButNotConfiguredInThe')}
@@ -138,7 +138,7 @@ export function MissingModelsDialog({
           </div>
         ) : (
           <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
-            <div className='flex flex-shrink-0 items-center justify-between gap-3'>
+            <div className='flex shrink-0 items-center justify-between gap-3'>
               <div className='text-muted-foreground text-sm whitespace-nowrap'>
                 {t('models.fields.showing')} {displayStart}-{displayEnd} {t('common.fields.valuede04fa')}{' '}
                 {totalItems}
@@ -171,7 +171,7 @@ export function MissingModelsDialog({
                 </EmptyHeader>
               </Empty>
             ) : (
-              <div className='flex-shrink-0 rounded-lg border'>
+              <div className='shrink-0 rounded-lg border'>
                 <div className='divide-y'>
                   {paginatedModels.map((modelName) => (
                     <div
@@ -187,7 +187,7 @@ export function MissingModelsDialog({
                       </div>
                       <Button
                         size='sm'
-                        className='flex-shrink-0 gap-1'
+                        className='shrink-0 gap-1'
                         onClick={() => handleConfigureModel(modelName)}
                       >
                         <Plus className='h-4 w-4' />

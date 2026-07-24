@@ -391,7 +391,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
 
             {showUnsupportedNotice && (
               <div className='bg-muted/60 text-muted-foreground flex items-start gap-3 rounded-md p-4 text-sm'>
-                <ShieldAlert className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500' />
+                <ShieldAlert className='mt-0.5 h-4 w-4 shrink-0 text-amber-500' />
                 <div>
                   <p className='text-foreground font-medium'>
                     {t('profile.tips.passkeyNotSupportedOnThisDevice')}

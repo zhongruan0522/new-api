@@ -174,7 +174,7 @@ export function UserInfoDialog({
                 <Label className='text-muted-foreground text-xs'>
                   {t('channels.fields.remark')}
                 </Label>
-                <div className='text-sm leading-relaxed font-semibold break-words'>
+                <div className='text-sm leading-relaxed font-semibold wrap-break-word'>
                   {userInfo.remark}
                 </div>
               </div>

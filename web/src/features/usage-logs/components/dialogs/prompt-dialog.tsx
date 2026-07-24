@@ -75,7 +75,7 @@ export function PromptDialog({
                     <Copy className='size-4' />
                   )}
                 </Button>
-                <p className='pr-10 text-sm leading-relaxed break-words whitespace-pre-wrap'>
+                <p className='pr-10 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap'>
                   {prompt || '-'}
                 </p>
               </div>
@@ -101,7 +101,7 @@ export function PromptDialog({
                       <Copy className='size-4' />
                     )}
                   </Button>
-                  <p className='pr-10 text-sm leading-relaxed break-words whitespace-pre-wrap'>
+                  <p className='pr-10 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap'>
                     {promptEn}
                   </p>
                 </div>

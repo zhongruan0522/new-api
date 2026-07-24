@@ -313,10 +313,10 @@ function CopyableField(props: {
   return (
     <div className='flex items-center justify-between gap-2 py-1'>
       <div className='flex min-w-0 items-center gap-2'>
-        <span className='text-muted-foreground flex-shrink-0'>
+        <span className='text-muted-foreground shrink-0'>
           {props.icon}
         </span>
-        <span className='text-muted-foreground flex-shrink-0 text-xs'>
+        <span className='text-muted-foreground shrink-0 text-xs'>
           {props.label}
         </span>
         <span
@@ -330,7 +330,7 @@ function CopyableField(props: {
           type='button'
           variant='ghost'
           size='sm'
-          className='h-6 w-6 flex-shrink-0 p-0'
+          className='h-6 w-6 shrink-0 p-0'
           onClick={() => copyToClipboard(text)}
         >
           {hasCopied ? (
@@ -575,7 +575,7 @@ export function CodexUsageDialog({
                   </Button>
                 </div>
                 <ScrollArea className='max-h-[50vh]'>
-                  <pre className='bg-muted/30 m-0 p-3 text-xs break-words whitespace-pre-wrap'>
+                  <pre className='bg-muted/30 m-0 p-3 text-xs wrap-break-word whitespace-pre-wrap'>
                     {rawJsonText || '-'}
                   </pre>
                 </ScrollArea>

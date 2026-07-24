@@ -983,7 +983,7 @@ export function ModelRatioVisualEditor({
                       <Label
                         key={value}
                         htmlFor={`billing-type-${value}`}
-                        className='border-input bg-background hover:border-primary/40 focus-within:border-primary/50 has-data-[checked]:border-primary has-data-[checked]:ring-primary/20 flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm font-normal transition-colors has-data-[checked]:ring-2'
+                        className='border-input bg-background hover:border-primary/40 focus-within:border-primary/50 has-data-checked:border-primary has-data-checked:ring-primary/20 flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm font-normal transition-colors has-data-checked:ring-2'
                       >
                         <RadioGroupItem
                           id={`billing-type-${value}`}

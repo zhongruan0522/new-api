@@ -114,7 +114,7 @@ type ConflictFieldRow = {
 
 function ValuePreview({ value }: { value: unknown }) {
   return (
-    <pre className='bg-muted/70 text-muted-foreground max-h-32 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-words whitespace-pre-wrap'>
+    <pre className='bg-muted/70 text-muted-foreground max-h-32 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs wrap-break-word whitespace-pre-wrap'>
       {formatValue(value)}
     </pre>
   )
@@ -459,7 +459,7 @@ export function UpstreamConflictDialog({
         initialFocus={!isMobile}
       >
         <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden'>
-          <DialogHeader className='flex-shrink-0 text-start'>
+          <DialogHeader className='shrink-0 text-start'>
             <DialogTitle>{t('models.fields.resolveConflicts')}</DialogTitle>
             <DialogDescription>
               {t(
@@ -640,10 +640,10 @@ export function UpstreamConflictDialog({
             </div>
           )}
         </div>
-        <DialogFooter className='flex-shrink-0'>
+        <DialogFooter className='shrink-0'>
           <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='text-muted-foreground flex flex-1 items-start gap-2 text-xs'>
-              <Info className='h-4 w-4 flex-shrink-0' />
+              <Info className='h-4 w-4 shrink-0' />
               <span>
                 {t(
                   'models.tips.onlySelectedFieldsWillBeOverwrittenYouCanRe'

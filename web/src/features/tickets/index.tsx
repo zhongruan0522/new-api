@@ -218,7 +218,7 @@ function MessageItem({ message }: { message: TicketMessage }) {
       </div>
       <div
         className={cn(
-          'max-w-full rounded-lg px-3 py-2 text-sm leading-6 break-words whitespace-pre-wrap sm:max-w-[78%]',
+          'max-w-full rounded-lg px-3 py-2 text-sm leading-6 wrap-break-word whitespace-pre-wrap sm:max-w-[78%]',
           isAdmin
             ? 'bg-primary/10 text-foreground'
             : 'bg-muted text-foreground'

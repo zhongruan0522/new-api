@@ -275,7 +275,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
                         </div>
                         <Check
                           className={cn(
-                            'h-4 w-4 flex-shrink-0',
+                            'h-4 w-4 shrink-0',
                             selectedModel === model.value
                               ? 'opacity-100'
                               : 'opacity-0'
@@ -305,7 +305,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
               />
             </DrawerTrigger>
             <DrawerContent className='flex max-h-[80vh] min-h-[60vh] flex-col'>
-              <DrawerHeader className='flex-shrink-0 pb-4'>
+              <DrawerHeader className='shrink-0 pb-4'>
                 <DrawerTitle className='flex items-center gap-2 text-left text-lg font-medium'>
                   {t('common.placeholders.selectModel')}
                 </DrawerTitle>

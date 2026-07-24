@@ -137,7 +137,7 @@ export function SyncWizardDialog({
         className='flex max-h-[90vh] w-full flex-col gap-4 p-4 sm:max-w-2xl sm:p-6'
         initialFocus={!isMobile}
       >
-        <DialogHeader className='flex-shrink-0 text-start'>
+        <DialogHeader className='shrink-0 text-start'>
           <DialogTitle>{t('models.titles.syncUpstreamModels')}</DialogTitle>
           <DialogDescription>
             {t('models.tips.synchronizeModelsAndVendorsFromAnUpstreamSource')}
@@ -242,7 +242,7 @@ export function SyncWizardDialog({
           </div>
         </div>
 
-        <DialogFooter className='flex-shrink-0 gap-2 sm:justify-end'>
+        <DialogFooter className='shrink-0 gap-2 sm:justify-end'>
           <Button
             variant='outline'
             onClick={() => onOpenChange(false)}

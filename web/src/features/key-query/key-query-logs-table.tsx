@@ -684,7 +684,7 @@ function LogRow({ row, isExpanded, onToggle, visibility }: LogRowProps) {
                   {t('keyQuery.tips.detailsNotAvailable')}
                 </p>
                 {log.content && (
-                  <p className='mt-2 text-xs whitespace-pre-wrap break-words'>
+                  <p className='mt-2 text-xs whitespace-pre-wrap wrap-break-word'>
                     {log.content}
                   </p>
                 )}

@@ -1837,7 +1837,7 @@ export function ParamOverrideEditorDialog(
             ) : (
               <div className='flex h-full'>
                 {/* Left sidebar */}
-                <div className='flex w-[280px] flex-shrink-0 flex-col border-r'>
+                <div className='flex w-[280px] shrink-0 flex-col border-r'>
                   <div className='flex items-center justify-between border-b px-3 py-2'>
                     <div className='flex items-center gap-2'>
                       <span className='text-sm font-medium'>{t('channels.fields.rules')}</span>
@@ -1940,7 +1940,7 @@ export function ParamOverrideEditorDialog(
                               <div className='flex items-start gap-2'>
                                 <GripVertical
                                   className={cn(
-                                    'text-muted-foreground mt-0.5 h-3.5 w-3.5 flex-shrink-0',
+                                    'text-muted-foreground mt-0.5 h-3.5 w-3.5 shrink-0',
                                     operations.length > 1
                                       ? 'cursor-grab'
                                       : 'cursor-default'

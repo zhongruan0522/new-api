@@ -90,7 +90,7 @@ function DetailRow(props: {
       </span>
       <span
         className={cn(
-          'max-w-full min-w-0 text-xs break-all sm:break-words',
+          'max-w-full min-w-0 text-xs break-all sm:wrap-break-word',
           props.mono && 'font-mono',
           props.muted && 'text-muted-foreground'
         )}
@@ -1182,7 +1182,7 @@ function DetailsDialogBody(props: {
                         className='text-muted-foreground size-3'
                         aria-hidden='true'
                       />
-                      <span className='min-w-0 break-all sm:break-words'>
+                      <span className='min-w-0 break-all sm:wrap-break-word'>
                         {conversionLabel}
                       </span>
                     </div>
@@ -1198,7 +1198,7 @@ function DetailsDialogBody(props: {
                 label={t('usageLogs.fields.rejectReason')}
                 variant='danger'
               >
-                <p className='text-xs break-words'>{other.reject_reason}</p>
+                <p className='text-xs wrap-break-word'>{other.reject_reason}</p>
               </DetailSection>
             )}
 
@@ -1476,7 +1476,7 @@ function DetailsDialogBody(props: {
                   )}
                   {Array.isArray(other.stream_status.errors) &&
                     other.stream_status.errors.length > 0 && (
-                      <pre className='bg-background/60 mt-1 max-h-32 overflow-y-auto rounded border p-2 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                      <pre className='bg-background/60 mt-1 max-h-32 overflow-y-auto rounded border p-2 font-mono text-[11px] leading-relaxed wrap-break-word whitespace-pre-wrap'>
                         {other.stream_status.errors.join('\n')}
                       </pre>
                     )}
@@ -1556,7 +1556,7 @@ function DetailsDialogBody(props: {
                           className='shrink-0 font-medium'
                           copyable={false}
                         />
-                        <span className='min-w-0 font-mono text-[11px] leading-relaxed break-all sm:break-words'>
+                        <span className='min-w-0 font-mono text-[11px] leading-relaxed break-all sm:wrap-break-word'>
                           {parsed.content}
                         </span>
                       </div>
@@ -1584,7 +1584,7 @@ function DetailsDialogBody(props: {
                       <Copy className='size-3' />
                     )}
                   </Button>
-                  <p className='min-w-0 pr-6 text-xs leading-relaxed break-all whitespace-pre-wrap sm:break-words'>
+                  <p className='min-w-0 pr-6 text-xs leading-relaxed break-all whitespace-pre-wrap sm:wrap-break-word'>
                     {details}
                   </p>
                 </div>
