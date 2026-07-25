@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useCallback, useState } from 'react'
 import { type VisibilityState } from '@tanstack/react-table'
 
-const STORAGE_PREFIX = 'new-api:table:column-visibility:'
+const STORAGE_PREFIX = 'nookmux:table:column-visibility:'
 
 export type OnColumnVisibilityChange = (
   updater: VisibilityState | ((prev: VisibilityState) => VisibilityState)

@@ -94,7 +94,7 @@ func GetStatus(c *gin.Context) {
 		"privacy_policy_enabled":    legalSetting.PrivacyPolicy != "",
 		"checkin_enabled":           operation_setting.GetCheckinSetting().Enabled,
 		"version":                   common.Version,
-		"_qn":                       "new-api",
+		"_qn":                       "nookmux",
 	}
 
 	// 根据启用状态注入可选内容（开关读 dashboard_config，内容数据读 console_setting）

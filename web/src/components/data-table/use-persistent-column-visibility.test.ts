@@ -62,7 +62,7 @@ describe('loadVisibilityState', () => {
 
   test('merges user overrides on top of defaults', () => {
     withFakeWindow(() => {
-      const storageKey = 'new-api:table:column-visibility:merge-key'
+      const storageKey = 'nookmux:table:column-visibility:merge-key'
       const defaults = { id: true, name: false, createdAt: true }
       window.localStorage.setItem(
         storageKey,
@@ -77,7 +77,7 @@ describe('loadVisibilityState', () => {
 
   test('ignores malformed persisted values and returns defaults', () => {
     withFakeWindow(() => {
-      const storageKey = 'new-api:table:column-visibility:bad-json-key'
+      const storageKey = 'nookmux:table:column-visibility:bad-json-key'
       const defaults = { id: true }
       window.localStorage.setItem(storageKey, 'not-valid-json')
       const result = loadVisibilityState(storageKey, defaults)
@@ -87,7 +87,7 @@ describe('loadVisibilityState', () => {
 
   test('ignores non-object persisted values and returns defaults', () => {
     withFakeWindow(() => {
-      const storageKey = 'new-api:table:column-visibility:array-key'
+      const storageKey = 'nookmux:table:column-visibility:array-key'
       const defaults = { id: true }
       window.localStorage.setItem(storageKey, JSON.stringify(['id']))
       const result = loadVisibilityState(storageKey, defaults)
