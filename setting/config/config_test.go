@@ -5,6 +5,11 @@ import (
 	"testing"
 )
 
+type testStringSliceConfig struct {
+	Allowed []string `json:"allowed"`
+	Strict  []int    `json:"strict"`
+}
+
 type testNestedConfig struct {
 	Values map[string]string `json:"values"`
 }
@@ -133,5 +138,56 @@ func TestConfigToMapUsesJSONTagNameWithoutOptions(t *testing.T) {
 	}
 	if _, ok := m["untouched"]; ok {
 		t.Fatalf("unexported field should not be exported: %#v", m)
+	}
+}
+
+// TestSetFieldFromStringCoercesNumericStringSlice 保证历史持久化数据里
+// `[]string` 字段曾被写成 JSON 数字数组（例如 allowed_ports 存为 [80,443]）
+// 时不会让整组配置加载失败。数字元素应被无损转成字符串。
+func TestSetFieldFromStringCoercesNumericStringSlice(t *testing.T) {
+	cfg := &testStringSliceConfig{}
+
+	err := UpdateConfigFromMap(cfg, map[string]string{
+		"allowed": `[80,443,8080]`,
+	})
+	if err != nil {
+		t.Fatalf("UpdateConfigFromMap returned error: %v", err)
+	}
+	want := []string{"80", "443", "8080"}
+	if !reflect.DeepEqual(cfg.Allowed, want) {
+		t.Fatalf("allowed mismatch: got %#v, want %#v", cfg.Allowed, want)
+	}
+}
+
+// TestSetFieldFromStringStringSliceAcceptsStringArray 保证正常的字符串数组
+// 仍按原有路径正常加载，不被容错逻辑改写。
+func TestSetFieldFromStringStringSliceAcceptsStringArray(t *testing.T) {
+	cfg := &testStringSliceConfig{}
+
+	err := UpdateConfigFromMap(cfg, map[string]string{
+		"allowed": `["80","443"]`,
+	})
+	if err != nil {
+		t.Fatalf("UpdateConfigFromMap returned error: %v", err)
+	}
+	want := []string{"80", "443"}
+	if !reflect.DeepEqual(cfg.Allowed, want) {
+		t.Fatalf("allowed mismatch: got %#v, want %#v", cfg.Allowed, want)
+	}
+}
+
+// TestSetFieldFromStringKeepsStrictSliceError 保证容错只对 []string 生效：
+// []int 字段传入字符串数组时仍应报错，避免放宽其他类型的校验。
+func TestSetFieldFromStringKeepsStrictSliceError(t *testing.T) {
+	cfg := &testStringSliceConfig{}
+
+	err := UpdateConfigFromMap(cfg, map[string]string{
+		"strict": `["80","443"]`,
+	})
+	if err == nil {
+		t.Fatal("expected error for non-coercible []int field, got nil")
+	}
+	if len(cfg.Strict) != 0 {
+		t.Fatalf("strict should remain zero value on error: got %#v", cfg.Strict)
 	}
 }
