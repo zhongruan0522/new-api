@@ -1,4 +1,4 @@
-# New-API Docker Compose Configuration
+# NookMux Docker Compose Configuration
 #
 # Quick Start:
 #   1. docker-compose up -d
@@ -8,9 +8,9 @@
 # To use an external database (PostgreSQL/MySQL), set SQL_DSN environment variable.
 
 services:
-  new-api:
-    image: calciumion/new-api:latest
-    container_name: new-api
+  nookmux:
+    image: ghcr.io/nookmux/nookmux:latest
+    container_name: nookmux
     restart: always
     command: --log-dir /app/logs
     ports:
@@ -35,7 +35,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - new-api-network
+      - nookmux-network
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
       interval: 30s
@@ -49,7 +49,7 @@ services:
     restart: always
     command: ["redis-server", "--requirepass", "123456"]  # IMPORTANT: Change this password in production!
     networks:
-      - new-api-network
+      - nookmux-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "123456", "ping"]
       interval: 10s
@@ -58,5 +58,5 @@ services:
       start_period: 10s
 
 networks:
-  new-api-network:
+  nookmux-network:
     driver: bridge

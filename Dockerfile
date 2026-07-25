@@ -14,7 +14,7 @@ RUN go mod download
 
 COPY . .
 RUN test -f web/dist/index.html
-RUN go build -ldflags "-s -w -X 'github.com/NookMux/NookMux/common.Version=${COMMIT_HASH}'" -o new-api
+RUN go build -ldflags "-s -w -X 'github.com/NookMux/NookMux/common.Version=${COMMIT_HASH}'" -o NookMux
 
 # alpine:3.21 (~3.5MB). Previous runtime used debian:bookworm-slim with libasan8
 # (AddressSanitizer runtime, ~100MB+ and adds per-allocation overhead).
@@ -29,8 +29,8 @@ FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d650
 #       existing deployments do not become unhealthy after the alpine switch.
 RUN apk add --no-cache ca-certificates tzdata wget && update-ca-certificates
 
-COPY --from=go-builder /build/new-api /new-api
+COPY --from=go-builder /build/NookMux /NookMux
 
 EXPOSE 3000
 WORKDIR /data
-ENTRYPOINT ["/new-api"]
+ENTRYPOINT ["/NookMux"]

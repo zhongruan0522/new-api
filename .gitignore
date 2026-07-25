@@ -10,7 +10,7 @@ logs
 web/dist
 .env
 one-api
-new-api
+NookMux
 /__debug_bin*
 .DS_Store
 tiktoken_cache
