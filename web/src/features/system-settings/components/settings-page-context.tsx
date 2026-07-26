@@ -98,8 +98,8 @@ type SettingsPageFormActionsProps = {
 export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
   const { t } = useTranslation()
   const saveLabel = props.isSaving
-    ? (props.savingLabel ?? 'Saving...')
-    : (props.saveLabel ?? 'Save Changes')
+    ? (props.savingLabel ?? 'common.tips.saving')
+    : (props.saveLabel ?? 'common.actions.saveChanges')
 
   return (
     <SettingsPageActionsPortal>
@@ -112,7 +112,7 @@ export function SettingsPageFormActions(props: SettingsPageFormActionsProps) {
           disabled={props.isResetDisabled || props.isSaving}
         >
           <RotateCcw data-icon='inline-start' />
-          <span>{t(props.resetLabel ?? 'Reset')}</span>
+          <span>{t(props.resetLabel ?? 'common.actions.reset')}</span>
         </Button>
       )}
       <Button
