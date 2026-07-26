@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -60,24 +60,51 @@ import { SettingsSection } from '../components/settings-section'
 import { useResetForm } from '../hooks/use-reset-form'
 import { useUpdateOption } from '../hooks/use-update-option'
 
+/**
+ * Performance form uses nested schema because field names contain dots.
+ * React Hook Form treats dotted names as nested paths internally
+ * (IS_KEY_RE = /^\w*$/), so the schema must mirror that nested structure.
+ */
 const perfSchema = z.object({
-  'performance_setting.disk_cache_enabled': z.boolean(),
-  'performance_setting.disk_cache_threshold_mb': z.coerce.number().min(1),
-  'performance_setting.disk_cache_max_size_mb': z.coerce.number().min(100),
-  'performance_setting.disk_cache_path': z.string().optional(),
-  'performance_setting.monitor_enabled': z.boolean(),
-  'performance_setting.monitor_cpu_threshold': z.coerce.number().min(0),
-  'performance_setting.monitor_memory_threshold': z.coerce
-    .number()
-    .min(0)
-    .max(100),
-  'performance_setting.monitor_disk_threshold': z.coerce
-    .number()
-    .min(0)
-    .max(100),
+  performance_setting: z.object({
+    disk_cache_enabled: z.boolean(),
+    disk_cache_threshold_mb: z.coerce.number().min(1),
+    disk_cache_max_size_mb: z.coerce.number().min(100),
+    disk_cache_path: z.string().optional(),
+    monitor_enabled: z.boolean(),
+    monitor_cpu_threshold: z.coerce.number().min(0),
+    monitor_memory_threshold: z.coerce.number().min(0).max(100),
+    monitor_disk_threshold: z.coerce.number().min(0).max(100),
+  }),
 })
 
-type PerfFormValues = z.infer<typeof perfSchema>
+type PerfFormValues = z.output<typeof perfSchema>
+type PerfFormInput = z.input<typeof perfSchema>
+
+/**
+ * Flat option keys matching the backend system-option key names.
+ * Used to map between the nested form shape and the flat option store.
+ */
+type FlatPerfOptionKey =
+  | 'performance_setting.disk_cache_enabled'
+  | 'performance_setting.disk_cache_threshold_mb'
+  | 'performance_setting.disk_cache_max_size_mb'
+  | 'performance_setting.disk_cache_path'
+  | 'performance_setting.monitor_enabled'
+  | 'performance_setting.monitor_cpu_threshold'
+  | 'performance_setting.monitor_memory_threshold'
+  | 'performance_setting.monitor_disk_threshold'
+
+type FlatPerfValues = {
+  'performance_setting.disk_cache_enabled': boolean
+  'performance_setting.disk_cache_threshold_mb': number
+  'performance_setting.disk_cache_max_size_mb': number
+  'performance_setting.disk_cache_path': string
+  'performance_setting.monitor_enabled': boolean
+  'performance_setting.monitor_cpu_threshold': number
+  'performance_setting.monitor_memory_threshold': number
+  'performance_setting.monitor_disk_threshold': number
+}
 
 function formatBytes(bytes: number, decimals = 2): string {
   if (!bytes || isNaN(bytes)) return '0 Bytes'
@@ -90,9 +117,68 @@ function formatBytes(bytes: number, decimals = 2): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i]
 }
 
+/** Props use flat keys (matching backend option names); the form uses nested shape. */
 interface Props {
-  defaultValues: PerfFormValues
+  defaultValues: FlatPerfValues
 }
+
+const buildFormDefaults = (defaults: Props['defaultValues']): PerfFormInput => ({
+  performance_setting: {
+    disk_cache_enabled: defaults['performance_setting.disk_cache_enabled'],
+    disk_cache_threshold_mb:
+      defaults['performance_setting.disk_cache_threshold_mb'],
+    disk_cache_max_size_mb:
+      defaults['performance_setting.disk_cache_max_size_mb'],
+    disk_cache_path: defaults['performance_setting.disk_cache_path'] ?? '',
+    monitor_enabled: defaults['performance_setting.monitor_enabled'],
+    monitor_cpu_threshold: defaults['performance_setting.monitor_cpu_threshold'],
+    monitor_memory_threshold:
+      defaults['performance_setting.monitor_memory_threshold'],
+    monitor_disk_threshold: defaults['performance_setting.monitor_disk_threshold'],
+  },
+})
+
+const flattenFormValues = (
+  values: PerfFormValues
+): FlatPerfValues => ({
+  'performance_setting.disk_cache_enabled':
+    values.performance_setting.disk_cache_enabled,
+  'performance_setting.disk_cache_threshold_mb':
+    values.performance_setting.disk_cache_threshold_mb,
+  'performance_setting.disk_cache_max_size_mb':
+    values.performance_setting.disk_cache_max_size_mb,
+  'performance_setting.disk_cache_path':
+    values.performance_setting.disk_cache_path ?? '',
+  'performance_setting.monitor_enabled':
+    values.performance_setting.monitor_enabled,
+  'performance_setting.monitor_cpu_threshold':
+    values.performance_setting.monitor_cpu_threshold,
+  'performance_setting.monitor_memory_threshold':
+    values.performance_setting.monitor_memory_threshold,
+  'performance_setting.monitor_disk_threshold':
+    values.performance_setting.monitor_disk_threshold,
+})
+
+const flatDefaultsToBaseline = (
+  defaults: Props['defaultValues']
+): FlatPerfValues => ({
+  'performance_setting.disk_cache_enabled':
+    defaults['performance_setting.disk_cache_enabled'],
+  'performance_setting.disk_cache_threshold_mb':
+    defaults['performance_setting.disk_cache_threshold_mb'],
+  'performance_setting.disk_cache_max_size_mb':
+    defaults['performance_setting.disk_cache_max_size_mb'],
+  'performance_setting.disk_cache_path':
+    defaults['performance_setting.disk_cache_path'] ?? '',
+  'performance_setting.monitor_enabled':
+    defaults['performance_setting.monitor_enabled'],
+  'performance_setting.monitor_cpu_threshold':
+    defaults['performance_setting.monitor_cpu_threshold'],
+  'performance_setting.monitor_memory_threshold':
+    defaults['performance_setting.monitor_memory_threshold'],
+  'performance_setting.monitor_disk_threshold':
+    defaults['performance_setting.monitor_disk_threshold'],
+})
 
 type PerformanceStats = {
   cache_stats?: {
@@ -132,14 +218,21 @@ export function PerformanceSection(props: Props) {
   const updateOption = useUpdateOption()
   const [stats, setStats] = useState<PerformanceStats | null>(null)
 
-  const form = useForm<PerfFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(perfSchema) as any,
-    defaultValues: props.defaultValues,
+  const formDefaults = useMemo(() => buildFormDefaults(props.defaultValues), [
+    props.defaultValues,
+  ])
+
+  const form = useForm<PerfFormInput, unknown, PerfFormValues>({
+    resolver: zodResolver(perfSchema),
+    defaultValues: formDefaults,
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useResetForm(form as any, props.defaultValues)
+  useResetForm(form as any, formDefaults)
+
+  const baselineRef = useRef<FlatPerfValues>(
+    flatDefaultsToBaseline(props.defaultValues)
+  )
 
   const fetchStats = useCallback(async () => {
     try {
@@ -159,21 +252,21 @@ export function PerformanceSection(props: Props) {
   }, [fetchStats])
 
   const onSubmit = async (data: PerfFormValues) => {
-    const entries = Object.entries(data) as [string, unknown][]
-    const updates = entries.filter(
-      ([key, value]) =>
-        value !== (props.defaultValues[key as keyof PerfFormValues] as unknown)
+    const normalized = flattenFormValues(data)
+    const updates = (Object.keys(normalized) as FlatPerfOptionKey[]).filter(
+      (key) => normalized[key] !== baselineRef.current[key]
     )
     if (updates.length === 0) {
       toast.info(t('channels.fields.noChangesToSave'))
       return
     }
-    for (const [key, value] of updates) {
+    for (const key of updates) {
       await updateOption.mutateAsync({
         key,
-        value: value as string | number | boolean,
+        value: normalized[key],
       })
     }
+    baselineRef.current = normalized
     toast.success(t('systemSettings.status.savedSuccessfully'))
     fetchStats()
   }
@@ -216,10 +309,13 @@ export function PerformanceSection(props: Props) {
 
   const diskEnabled = form.watch('performance_setting.disk_cache_enabled')
   const monitorEnabled = form.watch('performance_setting.monitor_enabled')
-  const maxCacheSizeMb = form.watch(
+  const maxCacheSizeMbRaw = form.watch(
     'performance_setting.disk_cache_max_size_mb'
   )
-
+  const maxCacheSizeMb =
+    typeof maxCacheSizeMbRaw === 'number' && Number.isFinite(maxCacheSizeMbRaw)
+      ? maxCacheSizeMbRaw
+      : 0
   const lowDiskSpace =
     diskEnabled &&
     stats?.disk_space_info &&
@@ -244,6 +340,8 @@ export function PerformanceSection(props: Props) {
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
+            saveLabel='common.actions.saveChanges'
+            savingLabel='common.tips.saving'
           />
           {/* Disk Cache Settings */}
           <div>
@@ -287,7 +385,19 @@ export function PerformanceSection(props: Props) {
                       <FormControl>
                         <Input
                           type='number'
-                          {...field}
+                          min={1}
+                          value={
+                            typeof field.value === 'number' &&
+                            Number.isFinite(field.value)
+                              ? field.value
+                              : ''
+                          }
+                          onChange={(event) =>
+                            field.onChange(event.target.valueAsNumber)
+                          }
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                           disabled={!diskEnabled}
                         />
                       </FormControl>
@@ -308,7 +418,19 @@ export function PerformanceSection(props: Props) {
                       <FormControl>
                         <Input
                           type='number'
-                          {...field}
+                          min={100}
+                          value={
+                            typeof field.value === 'number' &&
+                            Number.isFinite(field.value)
+                              ? field.value
+                              : ''
+                          }
+                          onChange={(event) =>
+                            field.onChange(event.target.valueAsNumber)
+                          }
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                           disabled={!diskEnabled}
                         />
                       </FormControl>
@@ -403,7 +525,19 @@ export function PerformanceSection(props: Props) {
                     <FormControl>
                       <Input
                         type='number'
-                        {...field}
+                        min={0}
+                        value={
+                          typeof field.value === 'number' &&
+                          Number.isFinite(field.value)
+                            ? field.value
+                            : ''
+                        }
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
                         disabled={!monitorEnabled}
                       />
                     </FormControl>
@@ -419,7 +553,20 @@ export function PerformanceSection(props: Props) {
                     <FormControl>
                       <Input
                         type='number'
-                        {...field}
+                        min={0}
+                        max={100}
+                        value={
+                          typeof field.value === 'number' &&
+                          Number.isFinite(field.value)
+                            ? field.value
+                            : ''
+                        }
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
                         disabled={!monitorEnabled}
                       />
                     </FormControl>
@@ -435,7 +582,20 @@ export function PerformanceSection(props: Props) {
                     <FormControl>
                       <Input
                         type='number'
-                        {...field}
+                        min={0}
+                        max={100}
+                        value={
+                          typeof field.value === 'number' &&
+                          Number.isFinite(field.value)
+                            ? field.value
+                            : ''
+                        }
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
                         disabled={!monitorEnabled}
                       />
                     </FormControl>
