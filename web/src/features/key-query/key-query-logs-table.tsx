@@ -24,7 +24,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { ChevronDown, Download, Loader2 } from 'lucide-react'
+import { ChevronRight, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   keepPreviousData,
@@ -33,7 +33,6 @@ import {
 import {
   formatLogQuota,
   formatTimestampToDate,
-  formatTokens,
   formatUseTime,
 } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -198,10 +197,10 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
               }}
               aria-label={isOpen ? t('common.fields.collapse') : t('common.fields.expand')}
             >
-              <ChevronDown
+              <ChevronRight
                 className={cn(
                   'size-4 transition-transform duration-200',
-                  isOpen && 'rotate-180'
+                  isOpen && 'rotate-90'
                 )}
               />
             </button>
@@ -316,30 +315,48 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
             log.type === LOG_TYPE_ERROR ||
             log.type === LOG_TYPE_REFUND
           if (!isApiCall) return null
-          return (
-            <div className='text-muted-foreground flex gap-2 text-xs tabular-nums'>
-              <span>
-                {t('keyQuery.fields.prompt')} {formatTokens(log.prompt_tokens)}
-              </span>
-              <span>
-                {t('keyQuery.fields.completion')}{' '}
-                {formatTokens(log.completion_tokens)}
-              </span>
-            </div>
+
+          const promptTokens = log.prompt_tokens || 0
+          const completionTokens = log.completion_tokens || 0
+          if (promptTokens === 0 && completionTokens === 0) {
+            return <span className='text-muted-foreground text-xs'>-</span>
+          }
+
+          const other = parseLogOther(log.other)
+          const cacheReadTokens = other?.cache_tokens || 0
+          const cacheWrite5m = other?.cache_creation_tokens_5m || 0
+          const cacheWrite1h = other?.cache_creation_tokens_1h || 0
+          const hasSplitCache = cacheWrite5m > 0 || cacheWrite1h > 0
+          const cacheWriteTokens = hasSplitCache
+            ? cacheWrite5m + cacheWrite1h
+            : other?.cache_creation_tokens || 0
+          const ordinaryInputTokens = Math.max(
+            promptTokens - cacheReadTokens - cacheWriteTokens,
+            0
           )
-        },
-      },
-      {
-        id: 'channel',
-        header: () => t('channels.fields.channel'),
-        cell: ({ row }) => {
-          const log = row.original
-          if (!log.channel) return null
+
           return (
-            <span className='text-muted-foreground font-mono text-xs'>
-              #{log.channel}
-              {log.channel_name ? ` (${log.channel_name})` : ''}
-            </span>
+            <div className='flex flex-col gap-0.5'>
+              <span className='font-mono text-xs font-medium tabular-nums'>
+                {ordinaryInputTokens.toLocaleString()} /{' '}
+                {completionTokens.toLocaleString()}
+              </span>
+              {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
+                <div className='flex items-center gap-1 text-[11px]'>
+                  {cacheReadTokens > 0 && (
+                    <span className='text-muted-foreground/60'>
+                      {t('pricing.fields.cache')}↓{' '}
+                      {cacheReadTokens.toLocaleString()}
+                    </span>
+                  )}
+                  {cacheWriteTokens > 0 && (
+                    <span className='text-muted-foreground/60'>
+                      ↑ {cacheWriteTokens.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           )
         },
       },
