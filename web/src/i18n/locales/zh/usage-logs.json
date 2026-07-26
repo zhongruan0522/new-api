@@ -108,7 +108,7 @@
   "usageLogs.tips.recordWasWrittenByAPreUpgradeInstanceAnd": "该记录由旧版本实例写入，缺少审计信息，建议将实例升级至最新版本以便记录服务器 IP、回调 IP、支付方式与系统版本等审计字段。",
   "usageLogs.fields.week": "本周",
   "usageLogs.fields.timing": "耗时",
-  "usageLogs.fields.tokens": "Tokens",
+  "usageLogs.fields.tokens": "令牌",
   "usageLogs.fields.tokenBreakdown": "Token 明细",
   "usageLogs.fields.tokenName": "令牌名称",
   "usageLogs.fields.topUpAuditInfo": "充值审计信息",

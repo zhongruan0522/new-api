@@ -59,7 +59,7 @@
   "users.fields.totalInvitationRevenue": "总邀请收入",
   "users.fields.twoFactorAuthenticationReset": "两因素认证已重置",
   "users.tips.updateTheUserByProvidingNecessaryInfo": "通过提供必要信息更新用户。",
-  "users.fields.linuxDoId": "LinuxDo ID",
-  "users.fields.gitHubId": "GitHub ID",
+  "users.fields.linuxDoId": "LinuxDo 账号 ID",
+  "users.fields.gitHubId": "GitHub 账号 ID",
   "users.errors.passwordMustBeBetween8And20Characters": "密码长度必须在 8 到 20 个字符之间"
 }
