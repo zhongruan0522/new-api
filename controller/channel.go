@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -2266,6 +2267,10 @@ func QueryPlanQuota(c *gin.Context) {
 		key := strings.Split(channel.Key, "\n")[0]
 		quotaData, err := service.FetchGlmPlanQuota(key, planName)
 		if err != nil {
+			if errors.Is(err, service.ErrGlmKeyInvalid) {
+				common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+				return
+			}
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
 		}
@@ -2364,6 +2369,10 @@ func QueryGlmUsage(c *gin.Context) {
 	key := strings.Split(channel.Key, "\n")[0]
 	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
 	if err != nil {
+		if errors.Is(err, service.ErrGlmKeyInvalid) {
+			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
 		common.ApiErrorI18n(c, i18n.MsgChannelUsageQueryFailed, map[string]any{"Error": err.Error()})
 		return
 	}
@@ -2399,6 +2408,10 @@ func QueryRiskStatus(c *gin.Context) {
 	key := strings.Split(channel.Key, "\n")[0]
 	result, err := service.CheckGlmRiskStatus(key)
 	if err != nil {
+		if errors.Is(err, service.ErrGlmKeyInvalid) {
+			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
 		common.ApiErrorI18n(c, i18n.MsgChannelRiskCheckFailed, map[string]any{"Error": err.Error()})
 		return
 	}

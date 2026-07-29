@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,34 @@ const (
 	glmSubscriptionPath = "/api/biz/subscription/list?pageSize=10&pageNum=1"
 	glmQuotaLimitPath   = "/api/monitor/usage/quota/limit"
 )
+
+// glmAuthFailureCode 是智谱 biz/monitor 接口在 API Key 无效或认证失败时返回的固定错误码。
+// 智谱在 Key 失效时会返回 {"code":1000,"msg":"Authentication Failed"/"身份验证失败。","success":false}，
+// 且 HTTP 状态码仍为 200，必须从响应体识别，否则会被误判为风控或空数据。
+const glmAuthFailureCode = 1000
+
+// ErrGlmKeyInvalid 表示智谱 API Key 无效或认证失败。
+// Controller 通过 errors.Is 识别该错误，向前端返回明确的「Key 无效」提示，
+// 而不是把空数据当作风控或空白用量展示。
+var ErrGlmKeyInvalid = errors.New("glm api key invalid or authentication failed")
+
+// glmBizResp 智谱 biz/monitor 接口通用响应外壳，用于识别认证失败等业务层错误。
+type glmBizResp struct {
+	Code    int    `json:"code"`
+	Msg     string `json:"msg"`
+	Success bool   `json:"success"`
+}
+
+// isGlmAuthFailure 判断响应体是否为智谱认证失败（Key 无效）。
+// 智谱的 msg 会随 Accept-Language 在 "Authentication Failed" 与 "身份验证失败。" 间切换，
+// 因此以稳定的 code 码作为判定依据，而不是匹配 msg 文案。
+func isGlmAuthFailure(body []byte) bool {
+	var resp glmBizResp
+	if err := common.Unmarshal(body, &resp); err != nil {
+		return false
+	}
+	return resp.Code == glmAuthFailureCode
+}
 
 // GlmPlanQuotaData 聚合了智谱 GLM 套餐的所有可展示信息
 type GlmPlanQuotaData struct {
@@ -205,6 +234,12 @@ func CheckGlmRiskStatus(apiKey string) (*GlmRiskCheckResult, error) {
 		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(body))
 	}
 
+	// 智谱在 Key 无效时仍返回 HTTP 200，但响应体为认证失败（code=1000）。
+	// 此时 data 缺失，必须优先识别为 Key 无效，避免被下面的逻辑误判为「已风控」。
+	if isGlmAuthFailure(body) {
+		return nil, ErrGlmKeyInvalid
+	}
+
 	// 解析响应，期望格式: {"code":200,"msg":"操作成功","data":false,"success":true}
 	var resp struct {
 		Code    int         `json:"code"`
@@ -318,12 +353,22 @@ func fetchGlmAPI(baseURL, path, apiKey string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	if res.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(res.Body)
 		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(body))
 	}
 
-	return io.ReadAll(res.Body)
+	// 智谱在 Key 无效时仍返回 HTTP 200，响应体为认证失败（code=1000）。
+	// 这里返回明确的 Key 无效错误，避免上层把空数据当作用量空白展示。
+	if isGlmAuthFailure(body) {
+		return nil, ErrGlmKeyInvalid
+	}
+
+	return body, nil
 }
 
 // buildGlmPlanQuotaData 将原始 API 返回组装为前端展示结构

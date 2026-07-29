@@ -220,6 +220,7 @@ const (
 	MsgChannelUsageQueryFailed           = "channel.usage_query_failed"
 	MsgChannelRiskUnsupported            = "channel.risk_unsupported"
 	MsgChannelRiskCheckFailed            = "channel.risk_check_failed"
+	MsgChannelKeyInvalid                 = "channel.key_invalid"
 	MsgChannelOllamaGetModelsFailed      = "channel.ollama_get_models_failed"
 	MsgChannelGeminiGetModelsFailed      = "channel.gemini_get_models_failed"
 	MsgChannelOllamaVersionFailed        = "channel.ollama_version_failed"
