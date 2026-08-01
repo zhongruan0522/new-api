@@ -284,12 +284,18 @@ type TFunction = (key: string, options?: { value?: number | string }) => string
 
 /**
  * Format response time in milliseconds to human-readable.
+ * Values are rounded to at most 2 decimal places to avoid noisy precision
+ * (e.g. 970.6666666666666ms → 970.67ms).
  * Pass `t` from useTranslation() for i18n (e.g. "Not tested", "{{value}}ms", "{{value}}s").
  */
 export function formatResponseTime(timeMs: number, t?: TFunction): string {
   if (timeMs === 0) return t ? t('channels.fields.notTested') : 'Not tested'
-  if (timeMs < 1000)
-    return t ? t('channels.fields.valueMs', { value: timeMs }) : `${timeMs}ms`
+  if (timeMs < 1000) {
+    const roundedMs = Math.round(timeMs * 100) / 100
+    return t
+      ? t('channels.fields.valueMs', { value: roundedMs })
+      : `${roundedMs}ms`
+  }
   return t
     ? t('channels.fields.valueS', { value: (timeMs / 1000).toFixed(2) })
     : `${(timeMs / 1000).toFixed(2)}s`
