@@ -2642,7 +2642,7 @@ export function ChannelMutateDrawer({
                               value={field.value || 'both'}
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className='w-44'>
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
