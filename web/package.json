@@ -87,7 +87,7 @@
     "prettier-plugin-tailwindcss": "^0.8.0",
     "shadcn": "^4.14.0",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.61.1"
+    "typescript-eslint": "^8.65.0"
   },
   "overrides": {
     "brace-expansion": "5.0.6",
