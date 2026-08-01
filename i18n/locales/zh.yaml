@@ -223,6 +223,11 @@ channel.reasoning_only_response: "模型仅返回了思考内容（reasoning）�
 channel.rule_name_required: "缺少参数 rule_name"
 channel.key_fp_required: "缺少参数 key_fp"
 channel.auto_groups_not_enabled: "自动分组未启用"
+channel.proxy_empty: "代理地址不能为空"
+channel.proxy_invalid: "代理地址格式不正确：{{.Error}}"
+channel.proxy_request_failed: "代理连接失败：{{.Error}}"
+channel.proxy_unexpected_status: "IP 服务返回异常状态码：{{.Status}}"
+channel.proxy_empty_response: "IP 服务返回空响应"
 relay.retry_get_channel_failed: "获取分组 {{.Group}} 下模型 {{.Model}} 的可用渠道失败（retry）: {{.Error}}"
 relay.retry_channel_not_found: "分组 {{.Group}} 下模型 {{.Model}} 的可用渠道不存在（retry）"
 

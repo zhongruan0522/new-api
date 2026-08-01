@@ -163,6 +163,20 @@ export interface FetchModelsResponse {
   data?: unknown[]
 }
 
+export type ProxyTestStatus = 'success' | 'invalid' | 'failed'
+
+export interface ProxyTestResultData {
+  status: ProxyTestStatus
+  ip?: string
+  message?: string
+}
+
+export interface ProxyTestResponse {
+  success: boolean
+  message?: string
+  data?: ProxyTestResultData
+}
+
 export interface CopyChannelResponse {
   success: boolean
   message?: string

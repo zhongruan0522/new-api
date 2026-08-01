@@ -51,6 +51,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -112,6 +113,7 @@ import {
   getChannelKey,
   getGroups,
   getPrefillGroups,
+  testProxy,
   updateChannel,
 } from '../../api'
 import {
@@ -147,7 +149,7 @@ import {
   collectInvalidStatusCodeEntries,
   collectNewDisallowedStatusCodeRedirects,
 } from '../../lib/status-code-risk-guard'
-import type { Channel } from '../../types'
+import type { Channel, ProxyTestResultData } from '../../types'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
 import {
   MissingModelsConfirmationDialog,
@@ -265,6 +267,10 @@ export function ChannelMutateDrawer({
     ((action: MissingModelsAction) => void) | null
   >(null)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
+  const [proxyTestLoading, setProxyTestLoading] = useState(false)
+  const [proxyTestResult, setProxyTestResult] = useState<ProxyTestResultData | null>(
+    null
+  )
 
   const isEditing = Boolean(currentRow)
   const channelId = currentRow?.id ?? null
@@ -612,6 +618,30 @@ export function ChannelMutateDrawer({
     },
     [currentModelsArray, form]
   )
+
+  const handleTestProxy = useCallback(async () => {
+    const proxyValue = (form.getValues('proxy') || '').trim()
+    setProxyTestLoading(true)
+    try {
+      const response = await testProxy(proxyValue)
+      if (response.success && response.data) {
+        setProxyTestResult(response.data)
+      } else {
+        setProxyTestResult({
+          status: 'failed',
+          message: response.message || t('channels.errors.proxyTestFailed'),
+        })
+      }
+    } catch (error) {
+      const detail = getErrorMessage(error)
+      setProxyTestResult({
+        status: 'failed',
+        message: detail || t('channels.errors.proxyTestFailed'),
+      })
+    } finally {
+      setProxyTestLoading(false)
+    }
+  }, [form, t])
 
   // Handle fetching models from upstream
   const handleFetchModels = useCallback(async () => {
@@ -2683,12 +2713,51 @@ export function ChannelMutateDrawer({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('channels.fields.proxyAddress')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t('channels.fields.socks5UserPassHostPort')}
-                              {...field}
-                            />
-                          </FormControl>
+                          <div className='flex items-start gap-[2%]'>
+                            <FormControl>
+                              <Input
+                                className='min-w-0 flex-1'
+                                placeholder={t('channels.fields.socks5UserPassHostPort')}
+                                {...field}
+                                onChange={(event) => {
+                                  field.onChange(event)
+                                  setProxyTestResult(null)
+                                }}
+                              />
+                            </FormControl>
+                            <Button
+                              type='button'
+                              variant='outline'
+                              className='w-[18%] min-w-fit'
+                              onClick={handleTestProxy}
+                              disabled={proxyTestLoading}
+                            >
+                              {proxyTestLoading ? (
+                                <Loader2 className='size-4 animate-spin' />
+                              ) : (
+                                t('channels.actions.testProxy')
+                              )}
+                            </Button>
+                          </div>
+                          {proxyTestResult && (
+                            <p
+                              className={cn(
+                                'text-xs font-medium',
+                                proxyTestResult.status === 'success' &&
+                                  'text-emerald-600 dark:text-emerald-400',
+                                proxyTestResult.status === 'invalid' &&
+                                  'text-amber-600 dark:text-amber-400',
+                                proxyTestResult.status === 'failed' &&
+                                  'text-red-600 dark:text-red-400'
+                              )}
+                            >
+                              {proxyTestResult.status === 'success'
+                                ? t('channels.status.proxyTestIpIs', {
+                                    ip: proxyTestResult.ip,
+                                  })
+                                : proxyTestResult.message}
+                            </p>
+                          )}
                           <FormDescription>
                             {t(
                               'channels.tips.networkProxyForThisChannelSupportsSocks5Protocol'

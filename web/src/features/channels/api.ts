@@ -34,6 +34,7 @@ import type {
   GetChannelsResponse,
   MultiKeyManageParams,
   MultiKeyStatusResponse,
+  ProxyTestResponse,
   GlmRiskResponse,
   GlmUsageParams,
   PlanQuotaResponse,
@@ -207,6 +208,17 @@ export async function updateChannelBalance(
   id: number
 ): Promise<ChannelBalanceResponse> {
   const res = await api.get(`/api/channel/update_balance/${id}`)
+  return res.data
+}
+
+/**
+ * Test proxy connectivity by resolving the exit IP through the given proxy URL.
+ */
+export async function testProxy(
+  proxy: string
+): Promise<ProxyTestResponse> {
+  const config: ExtendedApiConfig = { skipBusinessError: true }
+  const res = await api.post('/api/channel/test_proxy', { proxy }, config)
   return res.data
 }
 

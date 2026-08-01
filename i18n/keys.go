@@ -252,6 +252,11 @@ const (
 	MsgChannelRuleNameRequired           = "channel.rule_name_required"
 	MsgChannelKeyFpRequired              = "channel.key_fp_required"
 	MsgChannelAutoGroupsNotEnabled       = "channel.auto_groups_not_enabled"
+	MsgChannelProxyEmpty                 = "channel.proxy_empty"
+	MsgChannelProxyInvalid               = "channel.proxy_invalid"
+	MsgChannelProxyRequestFailed         = "channel.proxy_request_failed"
+	MsgChannelProxyUnexpectedStatus      = "channel.proxy_unexpected_status"
+	MsgChannelProxyEmptyResponse         = "channel.proxy_empty_response"
 )
 
 // Relay related messages

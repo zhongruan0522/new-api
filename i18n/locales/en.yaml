@@ -222,6 +222,11 @@ channel.reasoning_only_response: "Model produced reasoning but no final answer â
 channel.rule_name_required: "Missing parameter: rule_name"
 channel.key_fp_required: "Missing parameter: key_fp"
 channel.auto_groups_not_enabled: "Auto groups is not enabled"
+channel.proxy_empty: "Proxy address cannot be empty"
+channel.proxy_invalid: "Invalid proxy address format: {{.Error}}"
+channel.proxy_request_failed: "Proxy connection failed: {{.Error}}"
+channel.proxy_unexpected_status: "IP service returned unexpected status code: {{.Status}}"
+channel.proxy_empty_response: "IP service returned an empty response"
 relay.retry_get_channel_failed: "Failed to get available channel for group {{.Group}} and model {{.Model}} (retry): {{.Error}}"
 relay.retry_channel_not_found: "No available channel for group {{.Group}} and model {{.Model}} (retry)"
 
