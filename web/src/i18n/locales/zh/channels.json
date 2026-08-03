@@ -612,5 +612,6 @@
   "channels.titles.planMcpToolLimit": "MCP 工具限额",
   "channels.tips.planMonthlyReset": "每月1号重置",
   "channels.fields.planUsed": "已用",
-  "channels.fields.planRemaining": "剩余"
+  "channels.fields.planRemaining": "剩余",
+  "channels.types.custom": "自定义渠道"
 }

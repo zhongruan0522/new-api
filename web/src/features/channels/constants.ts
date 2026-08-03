@@ -27,7 +27,7 @@ export const CHANNEL_TYPES = {
   3: 'Azure',
   4: 'Ollama',
   6: 'Xiaomi',
-  8: 'Custom',
+  8: 'channels.types.custom',
   14: 'Anthropic',
   20: 'OpenRouter',
   24: 'Gemini',

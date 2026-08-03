@@ -612,5 +612,6 @@
   "channels.titles.planMcpToolLimit": "MCP Tool Limit",
   "channels.tips.planMonthlyReset": "Resets on the 1st of each month",
   "channels.fields.planUsed": "Used",
-  "channels.fields.planRemaining": "Remaining"
+  "channels.fields.planRemaining": "Remaining",
+  "channels.types.custom": "Custom Channel"
 }

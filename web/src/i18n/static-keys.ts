@@ -355,6 +355,7 @@ export const STATIC_I18N_KEYS = [
 
   // Usage logs — constants-driven labels
   'channels.fields.unknown',
+  'channels.types.custom',
   'pricing.fields.recharge',
   'common.fields.consume',
   'common.fields.manage',
