@@ -851,6 +851,7 @@ interface DetailsDialogProps {
 }
 
 export function DetailsDialog(props: DetailsDialogProps) {
+  const { t } = useTranslation()
   const defaultVisibility = useUsageLogFieldVisibility()
   const visibility = props.visibilityOverride ?? defaultVisibility
 
@@ -859,7 +860,6 @@ export function DetailsDialog(props: DetailsDialogProps) {
     return <DetailsDialogBody log={props.log} isAdmin={props.isAdmin} visibility={visibility} />
   }
 
-  const { t } = useTranslation()
   const typeConfig = getLogTypeConfig(props.log.type)
   const other = parseLogOther(props.log.other)
   const isViolation = isViolationFeeLog(other)

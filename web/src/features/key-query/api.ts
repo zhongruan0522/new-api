@@ -56,7 +56,7 @@ async function fetchJson<T>(
   const res = await fetch(url, {
     headers: getTokenHeaders(key),
   })
-  let data: unknown = null
+  let data: unknown
   try {
     data = await res.json()
   } catch {
