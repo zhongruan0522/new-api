@@ -432,10 +432,13 @@ export function MultimodalFiles() {
                   total,
                 })}
               </div>
-              <div className='flex items-center gap-2'>
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={(value) => {
+             <div className='flex items-center gap-2'>
+                <span className='text-muted-foreground hidden whitespace-nowrap text-sm sm:inline'>
+                  {t('common.fields.rowsPerPage')}
+                </span>
+               <Select
+                 value={String(pageSize)}
+                 onValueChange={(value) => {
                     const next = Number(value)
                     if (Number.isFinite(next)) {
                       setPageSize(next)

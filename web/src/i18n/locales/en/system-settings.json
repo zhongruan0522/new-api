@@ -817,7 +817,6 @@
   "systemSettings.fields.linuxDoClientId": "Linux DO Client ID",
   "systemSettings.fields.linuxDoClientSecret": "Linux DO Client Secret",
   "systemSettings.fields.linuxDoMinimumTrustLevel": "Linux DO Minimum Trust Level",
-  "systemSettings.status.countPage": "{{count}} / page",
   "systemSettings.status.countAnnouncementsDeletedClickSaveSettingsToApply": "{{count}} announcements deleted. Click \"Save Settings\" to apply.",
   "systemSettings.status.countApiEntriesDeletedClickSaveSettingsToApply": "{{count}} API entries deleted. Click \"Save Settings\" to apply.",
   "systemSettings.status.countFaqsDeletedClickSaveSettingsToApply": "{{count}} FAQs deleted. Click \"Save Settings\" to apply.",

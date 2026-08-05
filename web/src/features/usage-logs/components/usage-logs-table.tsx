@@ -86,9 +86,9 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     ensurePageInRange,
   } = useTableUrlState({
     search: route.useSearch(),
-    navigate: route.useNavigate(),
-    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 20 : 100 },
-    globalFilter: { enabled: false },
+   navigate: route.useNavigate(),
+    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
+   globalFilter: { enabled: false },
     columnFilters: [
       {
         columnId: 'created_at',

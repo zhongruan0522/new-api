@@ -24,6 +24,14 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   deleteOptionJsonMapEntry,
@@ -65,7 +73,8 @@ type MappingRow = {
   isNew?: boolean
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50]
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const DEFAULT_MODEL_MAPPING_PAGE_SIZE = 20
 
 function formatJsonForEditor(value: string) {
   const trimmed = value.trim()
@@ -100,7 +109,7 @@ export function ModelMappingEditor({
   const [rows, setRows] = useState<MappingRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
+  const [pageSize, setPageSize] = useState(DEFAULT_MODEL_MAPPING_PAGE_SIZE)
   const nextRowIdRef = useRef(0)
   // Tracks the last JSON string we pushed up via onChange. The external-sync
   // effect uses this to ignore echoes of our own changes, which would otherwise
@@ -594,24 +603,29 @@ export function ModelMappingEditor({
                     count: totalRows,
                   })}
                 </span>
-                <div className='flex items-center gap-2'>
-                  <span>{t('common.fields.rowsPerPage')}</span>
-                  <select
-                    className='border-input bg-background h-8 rounded-md border px-2 text-sm'
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value))
-                      setPageIndex(0)
-                    }}
-                    disabled={disabled}
-                  >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+               <div className='flex items-center gap-2'>
+                 <span>{t('common.fields.rowsPerPage')}</span>
+                 <Select
+                   value={String(pageSize)}
+                   onValueChange={(value) => {
+                     setPageSize(Number(value))
+                     setPageIndex(0)
+                   }}
+                 >
+                   <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent alignItemWithTrigger={false}>
+                     <SelectGroup>
+                       {PAGE_SIZE_OPTIONS.map((size) => (
+                         <SelectItem key={size} value={String(size)}>
+                           {size}
+                         </SelectItem>
+                       ))}
+                     </SelectGroup>
+                   </SelectContent>
+                 </Select>
+               </div>
               </div>
               <div className='flex items-center gap-2'>
                 <Button

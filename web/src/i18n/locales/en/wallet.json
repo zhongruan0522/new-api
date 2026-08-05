@@ -1,9 +1,5 @@
 {
   "wallet.fields.countDaysRemaining": "{{count}} days remaining",
-  "wallet.placeholders.value10Page": "10 / page",
-  "wallet.placeholders.value100Page": "100 / page",
-  "wallet.placeholders.value20Page": "20 / page",
-  "wallet.placeholders.value50Page": "50 / page",
   "wallet.status.active": "active",
   "wallet.actions.addFunds": "Add Funds",
   "wallet.fields.adminAccessRequired": "Admin access required",

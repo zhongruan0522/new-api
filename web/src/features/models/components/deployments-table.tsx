@@ -72,9 +72,9 @@ export function DeploymentsTable() {
     pagination: {
       pageKey: 'dPage',
       pageSizeKey: 'dPageSize',
-      defaultPage: 1,
-      defaultPageSize: isMobile ? 8 : 10,
-    },
+     defaultPage: 1,
+     defaultPageSize: isMobile ? 10 : 20,
+   },
     globalFilter: { enabled: true, key: 'dFilter' },
     columnFilters: [
       { columnId: 'status', searchKey: 'dStatus', type: 'array' },

@@ -135,7 +135,7 @@ export function UpstreamConflictDialog({
   const [search, setSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(20)
   const [pageIndex, setPageIndex] = useState(0)
 
   useEffect(() => {
@@ -569,32 +569,32 @@ export function UpstreamConflictDialog({
                         <span className='hidden sm:inline'>
                           {t('common.fields.rowsPerPage')}
                         </span>
-                        <Select
-                          items={[
-                            ...[5, 10, 20, 50].map((size) => ({
-                              value: String(size),
-                              label: size,
-                            })),
-                          ]}
-                          value={String(pageSize)}
-                          onValueChange={(value) => {
-                            setPageSize(Number(value))
-                            setPageIndex(0)
-                          }}
-                        >
-                          <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              {[5, 10, 20, 50].map((size) => (
-                                <SelectItem key={size} value={String(size)}>
-                                  {size}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                       <Select
+                         items={[
+                            ...[10, 20, 50, 100].map((size) => ({
+                             value: String(size),
+                             label: size,
+                           })),
+                         ]}
+                         value={String(pageSize)}
+                         onValueChange={(value) => {
+                           setPageSize(Number(value))
+                           setPageIndex(0)
+                         }}
+                       >
+                         <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent alignItemWithTrigger={false}>
+                           <SelectGroup>
+                              {[10, 20, 50, 100].map((size) => (
+                               <SelectItem key={size} value={String(size)}>
+                                 {size}
+                               </SelectItem>
+                             ))}
+                           </SelectGroup>
+                         </SelectContent>
+                       </Select>
                       </div>
                       <div className='flex items-center gap-1'>
                         <Button

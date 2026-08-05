@@ -817,7 +817,6 @@
   "systemSettings.fields.linuxDoClientId": "Linux DO 客户端 ID",
   "systemSettings.fields.linuxDoClientSecret": "Linux DO 客户端密钥",
   "systemSettings.fields.linuxDoMinimumTrustLevel": "Linux DO 最低信任等级",
-  "systemSettings.status.countPage": "每页 {{count}} 条",
   "systemSettings.status.countAnnouncementsDeletedClickSaveSettingsToApply": "已删除 {{count}} 条公告。点击“保存设置”后生效。",
   "systemSettings.status.countApiEntriesDeletedClickSaveSettingsToApply": "已删除 {{count}} 条 API 条目。点击“保存设置”后生效。",
   "systemSettings.status.countFaqsDeletedClickSaveSettingsToApply": "已删除 {{count}} 条 FAQ。点击“保存设置”后生效。",

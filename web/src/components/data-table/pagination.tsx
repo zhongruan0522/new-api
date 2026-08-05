@@ -62,10 +62,13 @@ export function DataTablePagination<TData>({
             total: totalPages,
           })}
         </div>
-        <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+       <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+          <p className='hidden text-sm font-medium sm:block'>
+            {t('common.fields.rowsPerPage')}
+          </p>
           <Select
             items={[
-              ...[10, 20, 30, 40, 50, 100].map((pageSize) => ({
+              ...[10, 20, 50, 100].map((pageSize) => ({
                 value: `${pageSize}`,
                 label: pageSize,
               })),
@@ -80,7 +83,7 @@ export function DataTablePagination<TData>({
             </SelectTrigger>
             <SelectContent side='top' alignItemWithTrigger={false}>
               <SelectGroup>
-                {[10, 20, 30, 40, 50, 100].map((pageSize) => (
+                {[10, 20, 50, 100].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>
@@ -88,9 +91,6 @@ export function DataTablePagination<TData>({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <p className='hidden text-sm font-medium sm:block'>
-            {t('common.fields.rowsPerPage')}
-          </p>
         </div>
       </div>
 

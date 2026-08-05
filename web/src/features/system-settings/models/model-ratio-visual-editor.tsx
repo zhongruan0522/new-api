@@ -28,6 +28,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -98,7 +106,7 @@ type ModelRow = {
   contextTiers?: ContextTier[]
 }
 
-const PAGE_SIZE_OPTIONS = [20, 50, 100]
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 const numberInputPattern = /^(\d+(\.\d*)?|\.\d*)?$/
 type ContextTierPriceField = Exclude<
   keyof ContextTier,
@@ -417,7 +425,7 @@ export function ModelRatioVisualEditor({
   const { t } = useTranslation()
   const [searchText, setSearchText] = useState('')
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(20)
   const [selectedName, setSelectedName] = useState<string>('')
   const [customModelName, setCustomModelName] = useState('')
 
@@ -881,21 +889,30 @@ export function ModelRatioVisualEditor({
               <div className='text-muted-foreground text-xs'>
                 {t('keys.titles.countModels', { count: filteredRows.length })}
               </div>
-              <div className='flex flex-wrap items-center gap-2'>
-                <select
-                  className='border-input bg-background h-8 rounded-md border px-2 text-sm'
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value))
-                    setPageIndex(0)
-                  }}
-                >
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
+             <div className='flex flex-wrap items-center gap-2'>
+               <span className='text-muted-foreground whitespace-nowrap text-xs'>
+                 {t('common.fields.rowsPerPage')}
+               </span>
+               <Select
+                 value={String(pageSize)}
+                 onValueChange={(value) => {
+                   setPageSize(Number(value))
+                   setPageIndex(0)
+                 }}
+               >
+                 <SelectTrigger className='h-8 w-[70px]'>
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent alignItemWithTrigger={false}>
+                   <SelectGroup>
+                     {PAGE_SIZE_OPTIONS.map((size) => (
+                       <SelectItem key={size} value={String(size)}>
+                         {size}
+                       </SelectItem>
+                     ))}
+                   </SelectGroup>
+                 </SelectContent>
+               </Select>
                 <Button
                   type='button'
                   variant='outline'

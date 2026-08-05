@@ -95,7 +95,7 @@ import type {
   TicketType,
 } from './types'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 20
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 const STATUS_OPTIONS: Array<{
@@ -791,10 +791,13 @@ export function Tickets() {
                 <div className='text-muted-foreground'>
                   {t('dashboard.fields.total')}: {total}
                 </div>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={(value) => {
+               <div className='flex flex-wrap items-center gap-2'>
+                  <span className='text-muted-foreground whitespace-nowrap'>
+                    {t('common.fields.rowsPerPage')}
+                  </span>
+                 <Select
+                   value={String(pageSize)}
+                   onValueChange={(value) => {
                       setPageSize(Number(value))
                       setPage(1)
                     }}

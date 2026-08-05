@@ -121,31 +121,34 @@ export function BillingHistoryDialog({
                   onChange={(e) => handleSearch(e.target.value)}
                   className='h-9 pl-10'
                 />
-              </div>
-              <Select
-                items={[
-                  { value: '10', label: t('wallet.placeholders.value10Page') },
-                  { value: '20', label: t('wallet.placeholders.value20Page') },
-                  { value: '50', label: t('wallet.placeholders.value50Page') },
-                  { value: '100', label: t('wallet.placeholders.value100Page') },
-                ]}
-                value={pageSize.toString()}
-                onValueChange={(value) =>
-                  value !== null && handlePageSizeChange(parseInt(value))
-                }
-              >
-                <SelectTrigger className='h-9 w-[92px] sm:w-32'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  <SelectGroup>
-                    <SelectItem value='10'>{t('wallet.placeholders.value10Page')}</SelectItem>
-                    <SelectItem value='20'>{t('wallet.placeholders.value20Page')}</SelectItem>
-                    <SelectItem value='50'>{t('wallet.placeholders.value50Page')}</SelectItem>
-                    <SelectItem value='100'>{t('wallet.placeholders.value100Page')}</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+             </div>
+             <span className='text-muted-foreground hidden whitespace-nowrap text-sm sm:inline'>
+               {t('common.fields.rowsPerPage')}
+             </span>
+            <Select
+              items={[
+                  { value: '10', label: '10' },
+                  { value: '20', label: '20' },
+                  { value: '50', label: '50' },
+                  { value: '100', label: '100' },
+               ]}
+               value={pageSize.toString()}
+               onValueChange={(value) =>
+                 value !== null && handlePageSizeChange(parseInt(value))
+               }
+             >
+               <SelectTrigger className='h-9 w-[92px] sm:w-32'>
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent alignItemWithTrigger={false}>
+                 <SelectGroup>
+                    <SelectItem value='10'>10</SelectItem>
+                    <SelectItem value='20'>20</SelectItem>
+                    <SelectItem value='50'>50</SelectItem>
+                    <SelectItem value='100'>100</SelectItem>
+                 </SelectGroup>
+               </SelectContent>
+             </Select>
             </div>
 
             {/* Records List */}

@@ -146,28 +146,33 @@ export function OrderQuery() {
                     placeholder={t('orderQuery.actions.searchByOrderNumber')}
                     onChange={(event) => handleSearch(event.target.value)}
                   />
+               </div>
+                <div className='flex items-center gap-2'>
+                  <span className='text-muted-foreground hidden whitespace-nowrap text-sm sm:inline'>
+                    {t('common.fields.rowsPerPage')}
+                  </span>
+                 <Select
+                   value={String(pageSize)}
+                   onValueChange={(value) => {
+                     const next = Number(value)
+                     if (Number.isFinite(next)) handlePageSizeChange(next)
+                   }}
+                 >
+                   <SelectTrigger className='w-28'>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectGroup>
+                       {PAGE_SIZE_OPTIONS.map((size) => (
+                         <SelectItem key={size} value={String(size)}>
+                           {size}
+                         </SelectItem>
+                       ))}
+                     </SelectGroup>
+                   </SelectContent>
+                 </Select>
                 </div>
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={(value) => {
-                    const next = Number(value)
-                    if (Number.isFinite(next)) handlePageSizeChange(next)
-                  }}
-                >
-                  <SelectTrigger className='w-28'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {PAGE_SIZE_OPTIONS.map((size) => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+             </div>
 
               <div className='overflow-x-auto rounded-lg border'>
                 <Table>

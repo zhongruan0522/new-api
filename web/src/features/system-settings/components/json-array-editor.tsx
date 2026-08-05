@@ -23,6 +23,14 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   deleteOptionJsonArrayEntry,
@@ -53,7 +61,8 @@ type ArrayRow = {
   isNew?: boolean
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50]
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const DEFAULT_JSON_ARRAY_PAGE_SIZE = 20
 
 function formatJsonForEditor(value: string) {
   const trimmed = value.trim()
@@ -99,7 +108,7 @@ export function JsonArrayEditor({
   const [rows, setRows] = useState<ArrayRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
+  const [pageSize, setPageSize] = useState(DEFAULT_JSON_ARRAY_PAGE_SIZE)
   const nextRowIdRef = useRef(0)
   const emittedValueRef = useRef<string | null>(null)
 
@@ -514,22 +523,30 @@ export function JsonArrayEditor({
               <div className='text-muted-foreground'>
                 {t('dashboard.fields.total')}: {totalRows}
               </div>
-              <div className='flex items-center gap-2'>
-                <select
-                  className='border-input bg-background rounded-md border px-2 py-1'
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value))
-                    setPageIndex(0)
-                  }}
-                  disabled={disabled}
-                >
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>
-                      {t('systemSettings.status.countPage', { count: size })}
-                    </option>
-                  ))}
-                </select>
+             <div className='flex items-center gap-2'>
+               <span className='text-muted-foreground whitespace-nowrap'>
+                 {t('common.fields.rowsPerPage')}
+               </span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value))
+                  setPageIndex(0)
+                }}
+              >
+                 <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
+                  <SelectValue />
+                </SelectTrigger>
+                 <SelectContent alignItemWithTrigger={false}>
+                   <SelectGroup>
+                     {PAGE_SIZE_OPTIONS.map((size) => (
+                       <SelectItem key={size} value={String(size)}>
+                         {size}
+                       </SelectItem>
+                     ))}
+                   </SelectGroup>
+                 </SelectContent>
+               </Select>
                 <Button
                   type='button'
                   variant='outline'

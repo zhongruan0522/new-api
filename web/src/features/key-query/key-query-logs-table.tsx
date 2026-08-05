@@ -39,6 +39,14 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -581,28 +589,35 @@ function SimplePagination(props: {
         >
           {t('common.actions.previous')}
         </Button>
-        <Button
-          variant='outline'
-          size='sm'
-          className='h-7 px-2'
-          onClick={() => props.onPageChange(props.page + 1)}
-          disabled={props.page >= totalPages}
+       <Button
+         variant='outline'
+         size='sm'
+         className='h-7 px-2'
+         onClick={() => props.onPageChange(props.page + 1)}
+         disabled={props.page >= totalPages}
+       >
+         {t('common.actions.next')}
+       </Button>
+        <span className='whitespace-nowrap'>
+          {t('common.fields.rowsPerPage')}
+        </span>
+        <Select
+          value={String(props.pageSize)}
+          onValueChange={(value) => props.onPageSizeChange(Number(value))}
         >
-          {t('common.actions.next')}
-        </Button>
-        <select
-          className='border-input bg-background h-7 rounded-md border px-1 text-xs'
-          value={props.pageSize}
-          onChange={(event) =>
-            props.onPageSizeChange(Number(event.target.value))
-          }
-        >
-          {[10, 20, 30, 50, 100].map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className='h-7 w-[64px]'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            <SelectGroup>
+              {[10, 20, 50, 100].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )

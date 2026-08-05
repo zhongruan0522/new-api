@@ -1,9 +1,5 @@
 {
   "wallet.fields.countDaysRemaining": "剩余 {{count}} 天",
-  "wallet.placeholders.value10Page": "10 条/页",
-  "wallet.placeholders.value100Page": "100 条/页",
-  "wallet.placeholders.value20Page": "20 条/页",
-  "wallet.placeholders.value50Page": "50 条/页",
   "wallet.status.active": "活跃",
   "wallet.actions.addFunds": "添加资金",
   "wallet.fields.adminAccessRequired": "需要管理员权限",
