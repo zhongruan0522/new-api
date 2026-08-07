@@ -28,7 +28,7 @@ import {
   Shuffle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getCurrencyLabel } from '@/lib/currency'
+import { getCurrencyDisplay } from '@/lib/currency'
 import {
   formatTimestampToDate,
   formatQuota as formatQuotaValue,
@@ -134,9 +134,9 @@ function PriorityCell({ channel }: { channel: Channel }) {
         <ConfirmDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
-          title={t('Confirm Batch Update')}
+          title={t('channels.actions.confirmBatchUpdate')}
           desc={`This will update the priority to ${pendingValue} for all ${channelCount} channel(s) with tag "${tag}". Continue?`}
-          confirmText={t('Update')}
+          confirmText={t('channels.fields.update')}
           handleConfirm={() => {
             if (pendingValue !== null) {
               handleUpdateTagField(tag, 'priority', pendingValue, queryClient)
@@ -189,9 +189,9 @@ function WeightCell({ channel }: { channel: Channel }) {
         <ConfirmDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
-          title={t('Confirm Batch Update')}
+          title={t('channels.actions.confirmBatchUpdate')}
           desc={`This will update the weight to ${pendingValue} for all ${channelCount} channel(s) with tag "${tag}". Continue?`}
-          confirmText={t('Update')}
+          confirmText={t('channels.fields.update')}
           handleConfirm={() => {
             if (pendingValue !== null) {
               handleUpdateTagField(tag, 'weight', pendingValue, queryClient)
@@ -225,8 +225,8 @@ function BalanceCell({ channel }: { channel: Channel }) {
   const balance = channel.balance || 0
   const usedQuota = channel.used_quota || 0
   const [isUpdating, setIsUpdating] = useState(false)
-  const currencyLabel = getCurrencyLabel()
-  const tokenSuffix = currencyLabel === 'Tokens' ? ' Tokens' : ''
+  const { meta: currencyMeta } = getCurrencyDisplay()
+  const tokenSuffix = currencyMeta.kind === 'tokens' ? ' Tokens' : ''
   const withSuffix = (value: string) =>
     tokenSuffix && value !== '-' ? `${value}${tokenSuffix}` : value
 
@@ -273,7 +273,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('labelWithColon', { label: t('Used') })} {usedDisplay}
+              {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {usedDisplay}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -282,7 +282,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
             render={
               <StatusBadge
                 label={
-                  isUpdating ? t('Updating...') : remainingDisplay
+                  isUpdating ? t('channels.status.updating') : remainingDisplay
                 }
                 variant={isUpdating ? 'neutral' : variant}
                 size='sm'
@@ -294,9 +294,9 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('labelWithColon', { label: t('Remaining') })} {remainingDisplay}
+              {t('channels.fields.labelWithColon', { label: t('channels.fields.remaining') })} {remainingDisplay}
             </p>
-            <p>{t('Click to update balance')}</p>
+            <p>{t('channels.fields.clickToUpdateBalance')}</p>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -318,7 +318,7 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label={t('Select all')}
+          aria-label={t('channels.placeholders.selectAll')}
         />
       ),
       cell: ({ row }) => {
@@ -333,7 +333,7 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label={t('Select row')}
+            aria-label={t('channels.placeholders.selectRow')}
           />
         )
       },
@@ -345,9 +345,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // ID column
     {
       accessorKey: 'id',
-      meta: { label: t('ID'), mobileHidden: true },
+      meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('ID')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
       ),
       cell: ({ row }) => {
         const id = row.getValue('id') as number
@@ -359,9 +359,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Name column
     {
       accessorKey: 'name',
-      meta: { label: t('Name'), mobileTitle: true },
+      meta: { label: t('channels.fields.name'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Name')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
       ),
       cell: ({ row }) => {
         const isTagRow = isTagAggregateRow(row.original)
@@ -419,12 +419,12 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                     <Tooltip>
                       <TooltipTrigger
                         render={
-                          <AlertTriangle className='h-3.5 w-3.5 flex-shrink-0 text-amber-500' />
+                          <AlertTriangle className='h-3.5 w-3.5 shrink-0 text-amber-500' />
                         }
                       ></TooltipTrigger>
                       <TooltipContent side='top'>
                         {t(
-                          'Request body pass-through is enabled. The request body will be sent directly to the upstream without any conversion.'
+                          'channels.status.requestBodyPassThroughIsEnabledTheRequestBody'
                         )}
                       </TooltipContent>
                     </Tooltip>
@@ -465,15 +465,15 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Type column
     {
       accessorKey: 'type',
-      meta: { label: t('Type') },
-      header: t('Type'),
+      meta: { label: t('channels.fields.type') },
+      header: t('channels.fields.type'),
       cell: ({ row }) => {
         const isTagRow = isTagAggregateRow(row.original)
 
         if (isTagRow) {
           return (
             <StatusBadge
-              label={t('Tag Aggregate')}
+              label={t('channels.fields.tagAggregate')}
               variant='blue'
               size='sm'
               copyable={false}
@@ -493,8 +493,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
           multiKeyMode === 'random' ? Shuffle : ListOrdered
         const multiKeyTooltip =
           multiKeyMode === 'random'
-            ? t('Multi-key: Random rotation')
-            : t('Multi-key: Polling rotation')
+            ? t('channels.fields.multiKeyRandomRotation')
+            : t('channels.fields.multiKeyPollingRotation')
 
         const ionetMeta = parseIonetMeta(channel.other_info)
         const isIonet = ionetMeta?.source === 'ionet'
@@ -557,15 +557,15 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                   <TooltipContent side='top'>
                     <div className='max-w-xs space-y-1'>
                       <div className='text-xs'>
-                        {t('From IO.NET deployment')}
+                        {t('channels.tips.ioNetDeployment')}
                       </div>
                       {deploymentId && (
                         <div className='text-muted-foreground font-mono text-xs'>
-                          {t('Deployment ID')}: {deploymentId}
+                          {t('channels.fields.deploymentId')}: {deploymentId}
                         </div>
                       )}
                       <div className='text-muted-foreground text-xs'>
-                        {t('Click to open deployment')}
+                        {t('channels.fields.clickToOpenDeployment')}
                       </div>
                     </div>
                   </TooltipContent>
@@ -586,8 +586,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Status column
     {
       accessorKey: 'status',
-      meta: { label: t('Status'), mobileBadge: true },
-      header: t('Status'),
+      meta: { label: t('channels.fields.status'), mobileBadge: true },
+      header: t('channels.fields.status'),
       cell: ({ row }) => {
         const isTagRow = isTagAggregateRow(row.original)
         const status = row.getValue('status') as number
@@ -669,12 +669,12 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                     <div className='space-y-1 text-xs'>
                       {statusReason && (
                         <div>
-                          {t('labelWithColon', { label: t('Reason') })} {statusReason}
+                          {t('channels.fields.labelWithColon', { label: t('channels.fields.reason') })} {statusReason}
                         </div>
                       )}
                       {statusTime && (
                         <div>
-                          {t('labelWithColon', { label: t('Time') })} {statusTime}
+                          {t('channels.fields.labelWithColon', { label: t('auditLogs.fields.time') })} {statusTime}
                         </div>
                       )}
                     </div>
@@ -708,8 +708,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Models column
     {
       accessorKey: 'models',
-      meta: { label: t('Models'), mobileHidden: true },
-      header: t('Models'),
+      meta: { label: t('channels.titles.models'), mobileHidden: true },
+      header: t('channels.titles.models'),
       cell: ({ row }) => {
         const models = row.getValue('models') as string
         const modelArray = parseModelsList(models)
@@ -753,8 +753,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Group column
     {
       accessorKey: 'group',
-      meta: { label: t('Groups'), mobileHidden: true },
-      header: t('Groups'),
+      meta: { label: t('channels.fields.groups'), mobileHidden: true },
+      header: t('channels.fields.groups'),
       cell: ({ row }) => {
         const group = row.getValue('group') as string
         const groupArray = parseGroupsList(group)
@@ -794,8 +794,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Tag column
     {
       accessorKey: 'tag',
-      meta: { label: t('Tag'), mobileHidden: true },
-      header: t('Tag'),
+      meta: { label: t('channels.fields.tag'), mobileHidden: true },
+      header: t('channels.fields.tag'),
       cell: ({ row }) => {
         const tag = row.getValue('tag') as string | null
         if (!tag)
@@ -810,9 +810,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Priority column
     {
       accessorKey: 'priority',
-      meta: { label: t('Priority'), mobileHidden: true },
+      meta: { label: t('channels.fields.priority'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Priority')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.priority')} />
       ),
       cell: ({ row }) => <PriorityCell channel={row.original} />,
       size: 100,
@@ -821,8 +821,8 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Weight column
     {
       accessorKey: 'weight',
-      meta: { label: t('Weight'), mobileHidden: true },
-      header: t('Weight'),
+      meta: { label: t('channels.fields.weight'), mobileHidden: true },
+      header: t('channels.fields.weight'),
       cell: ({ row }) => <WeightCell channel={row.original} />,
       size: 90,
       enableSorting: false,
@@ -831,9 +831,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Balance column (Used/Remaining)
     {
       accessorKey: 'balance',
-      meta: { label: t('Used / Remaining') },
+      meta: { label: t('channels.status.usedRemaining') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Used / Remaining')} />
+        <DataTableColumnHeader column={column} title={t('channels.status.usedRemaining')} />
       ),
       cell: ({ row }) => <BalanceCell channel={row.original} />,
       size: 180,
@@ -842,9 +842,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Response Time column
     {
       accessorKey: 'response_time',
-      meta: { label: t('Response'), mobileHidden: true },
+      meta: { label: t('channels.fields.response'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Response')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.response')} />
       ),
       cell: ({ row }) => {
         const responseTime = row.getValue('response_time') as number
@@ -865,9 +865,9 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
     // Test Time column
     {
       accessorKey: 'test_time',
-      meta: { label: t('Last Tested'), mobileHidden: true },
+      meta: { label: t('channels.fields.lastTested'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Last Tested')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.lastTested')} />
       ),
       cell: ({ row }) => {
         const testTime = row.getValue('test_time') as number

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 )
 
 type RerankRequest struct {

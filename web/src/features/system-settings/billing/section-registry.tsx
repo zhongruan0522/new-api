@@ -48,7 +48,7 @@ const getGroupDefaults = (settings: BillingSettings) => ({
 const BILLING_SECTIONS = [
   {
     id: 'quota',
-    titleKey: 'Quota Settings',
+    titleKey: 'keys.titles.quotaSettings',
     build: (settings: BillingSettings) => (
       <QuotaSettingsSection
         defaultValues={{
@@ -56,10 +56,6 @@ const BILLING_SECTIONS = [
           PreConsumedQuota: settings.PreConsumedQuota,
           QuotaForInviter: settings.QuotaForInviter,
           QuotaForInvitee: settings.QuotaForInvitee,
-          TopUpLink: settings.TopUpLink,
-          general_setting: {
-            docs_link: settings['general_setting.docs_link'],
-          },
           quota_setting: {
             free_model_pre_consumed_quota:
               settings['quota_setting.free_model_pre_consumed_quota'],
@@ -70,7 +66,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'payment',
-    titleKey: 'Payment Settings',
+    titleKey: 'systemSettings.titles.paymentSettings',
     build: (settings: BillingSettings) => (
       <PaymentSettingsSection
         defaultValues={{
@@ -89,6 +85,7 @@ const BILLING_SECTIONS = [
           StripeUnitPrice: settings.StripeUnitPrice,
           StripeMinTopUp: settings.StripeMinTopUp,
           StripePromotionCodesEnabled: settings.StripePromotionCodesEnabled,
+          TopUpLink: settings.TopUpLink,
         }}
         serverAddress={settings.ServerAddress}
       />
@@ -96,10 +93,10 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'model-pricing',
-    titleKey: 'Model Pricing',
+    titleKey: 'common.fields.modelPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
-        titleKey='Model Pricing'
+        titleKey='common.fields.modelPricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_billing_setting.rules']}
@@ -109,10 +106,10 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'group-pricing',
-    titleKey: 'Group Pricing',
+    titleKey: 'common.fields.groupPricing',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
-        titleKey='Group Pricing'
+        titleKey='common.fields.groupPricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_billing_setting.rules']}
@@ -122,7 +119,7 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'checkin',
-    titleKey: 'Check-in Rewards',
+    titleKey: 'common.fields.checkInRewards',
     build: (settings: BillingSettings) => (
       <CheckinSettingsSection
         defaultValues={{

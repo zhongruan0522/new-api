@@ -38,9 +38,9 @@ type VoiceFilterBarProps = {
 }
 
 const TYPE_OPTIONS: Array<{ value: VoiceTypeFilter; labelKey: string }> = [
-  { value: '', labelKey: 'All' },
-  { value: 'created', labelKey: 'Voice Status - Paid' },
-  { value: 'preview', labelKey: 'Voice Status - Preview' },
+  { value: '', labelKey: 'pricing.fields.all' },
+  { value: 'created', labelKey: 'minimax.fields.voiceStatusPaid' },
+  { value: 'preview', labelKey: 'minimax.fields.voiceStatusPreview' },
 ]
 
 function updateFilter(
@@ -59,7 +59,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end'>
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
-            {t('Start Time')}
+            {t('dashboard.actions.startTime')}
           </Label>
           <Input
             className='h-8 min-w-0 text-sm leading-5'
@@ -75,7 +75,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
 
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
-            {t('End Time')}
+            {t('dashboard.fields.endTime')}
           </Label>
           <Input
             className='h-8 min-w-0 text-sm leading-5'
@@ -91,7 +91,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
 
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
-            {t('Type')}
+            {t('channels.fields.type')}
           </Label>
           <Select
             value={props.filters.type || 'all'}
@@ -120,13 +120,13 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
 
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
-            {t('Operator ID')}
+            {t('minimax.fields.operatorId')}
           </Label>
           <Input
             className='h-8 min-w-0 text-sm leading-5'
             inputMode='numeric'
             min={1}
-            placeholder={t('Operator ID')}
+            placeholder={t('minimax.fields.operatorId')}
             type='number'
             value={props.filters.operatorId}
             onChange={(event) =>
@@ -139,11 +139,11 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
 
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
-            {t('Voice ID')}
+            {t('minimax.fields.voiceId')}
           </Label>
           <Input
             className='h-8 min-w-0 font-mono text-sm leading-5'
-            placeholder={t('Filter by voice ID, not redirect ID')}
+            placeholder={t('minimax.actions.filterByVoiceIdNotRedirectId')}
             value={props.filters.voiceId}
             onChange={(event) =>
               props.onFiltersChange(
@@ -160,7 +160,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
             onClick={props.onReset}
             disabled={!props.hasActiveFilters || props.isSearching}
           >
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
           <Button
             type='button'
@@ -168,7 +168,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
             disabled={props.isSearching}
           >
             {props.isSearching && <Loader2 className='animate-spin' />}
-            {t('Search')}
+            {t('common.actions.search')}
           </Button>
         </div>
       </div>

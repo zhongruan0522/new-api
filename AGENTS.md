@@ -30,6 +30,7 @@ service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.m
 - [model/AGENTS.md](model/AGENTS.md)
 - [setting/AGENTS.md](setting/AGENTS.md)
 - [relay/AGENTS.md](relay/AGENTS.md)
+- [i18n/AGENTS.md](i18n/AGENTS.md)
 
 文档:
 
@@ -53,6 +54,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `setting/`: 系统、运营、模型、倍率、性能、审计等配置。
 - `common/`: JSON、缓存、环境变量、静态文件服务、安全工具。
 - `relay/`: AI 请求中继、协议转换、供应商适配。
+- `i18n/`: 后端 API 响应消息多语言翻译。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild。
 
 ## 全局工作规则
@@ -78,6 +80,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
 - relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
 - relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。
+- 后端 API 响应消息的多语言翻译遵守 [i18n/AGENTS.md](i18n/AGENTS.md)：用户可见提示走 `i18n.Msg*` 常量，不要硬编码中英文字符串。
 
 ### 审计日志
 
@@ -90,7 +93,7 @@ setting、前端常量和 i18n。
 
 - `go test ./...`
 - `go test ./relay/... ./controller/... ./service/...`
-- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux`
 
 ## 前端规则
 

@@ -323,17 +323,17 @@ export function CreateDeploymentDrawer({
     },
     onSuccess: (data) => {
       if (data?.success) {
-        toast.success(t('Deployment created successfully'))
+        toast.success(t('models.status.deploymentCreatedSuccessfully'))
         queryClient.invalidateQueries({
           queryKey: deploymentsQueryKeys.lists(),
         })
         onOpenChange(false)
         return
       }
-      toast.error(data?.message || t('Failed to create deployment'))
+      toast.error(data?.message || t('models.errors.failedToCreateDeployment'))
     },
     onError: (err: Error) => {
-      toast.error(err.message || t('Failed to create deployment'))
+      toast.error(err.message || t('models.errors.failedToCreateDeployment'))
     },
   })
 
@@ -384,9 +384,9 @@ export function CreateDeploymentDrawer({
     >
       <SheetContent className={sideDrawerContentClassName('sm:max-w-[600px]')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
-          <SheetTitle>{t('Create deployment')}</SheetTitle>
+          <SheetTitle>{t('models.actions.createDeployment')}</SheetTitle>
           <SheetDescription>
-            {t('Configure and deploy a new container instance.')}
+            {t('models.tips.configureAndDeployANewContainerInstance')}
           </SheetDescription>
         </SheetHeader>
 
@@ -401,7 +401,7 @@ export function CreateDeploymentDrawer({
             {/* Basic Configuration */}
             <SideDrawerSection>
               <h3 className='text-sm font-medium'>
-                {t('Basic Configuration')}
+                {t('models.titles.basicConfiguration')}
               </h3>
 
               <FormField
@@ -409,18 +409,18 @@ export function CreateDeploymentDrawer({
                 name='resource_private_name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Container name')}</FormLabel>
+                    <FormLabel>{t('models.fields.containerName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('Enter a name')} {...field} />
+                      <Input placeholder={t('keys.placeholders.enterAName')} {...field} />
                     </FormControl>
                     {open && field.value?.trim() ? (
                       <div className='text-muted-foreground text-xs'>
                         {isCheckingName
-                          ? t('Checking name...')
+                          ? t('models.tips.checkingName')
                           : nameAvailable === true
-                            ? t('Name is available')
+                            ? t('models.fields.nameIsAvailable')
                             : nameAvailable === false
-                              ? t('Name is not available')
+                              ? t('models.fields.nameIsNotAvailable')
                               : ''}
                       </div>
                     ) : null}
@@ -434,7 +434,7 @@ export function CreateDeploymentDrawer({
                 name='image_url'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Image')}</FormLabel>
+                    <FormLabel>{t('models.fields.image')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -447,7 +447,7 @@ export function CreateDeploymentDrawer({
             {/* Resource Configuration */}
             <SideDrawerSection>
               <h3 className='text-sm font-medium'>
-                {t('Resource Configuration')}
+                {t('models.titles.resourceConfiguration')}
               </h3>
 
               <div className='grid gap-4 sm:grid-cols-2'>
@@ -456,7 +456,7 @@ export function CreateDeploymentDrawer({
                   name='hardware_id'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Hardware type')}</FormLabel>
+                      <FormLabel>{t('models.fields.hardwareType')}</FormLabel>
                       <Select
                         items={[
                           ...hardwareOptions.map((opt) => ({
@@ -470,7 +470,7 @@ export function CreateDeploymentDrawer({
                       >
                         <FormControl>
                           <SelectTrigger className='w-full'>
-                            <SelectValue placeholder={t('Select')} />
+                            <SelectValue placeholder={t('keys.placeholders.select')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent alignItemWithTrigger={false}>
@@ -494,7 +494,7 @@ export function CreateDeploymentDrawer({
                 name='location_ids'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Deployment location')}</FormLabel>
+                    <FormLabel>{t('models.fields.deploymentLocation')}</FormLabel>
                     <FormControl>
                       <MultiSelect
                         options={locationOptions}
@@ -505,8 +505,8 @@ export function CreateDeploymentDrawer({
                         }}
                         placeholder={
                           isLoadingReplicas
-                            ? t('Loading...')
-                            : t('Select locations')
+                            ? t('common.tips.loading')
+                            : t('models.placeholders.selectLocations')
                         }
                         className={
                           isLoadingReplicas || !hardwareId
@@ -526,7 +526,7 @@ export function CreateDeploymentDrawer({
                   name='gpus_per_container'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('GPU count')}</FormLabel>
+                      <FormLabel>{t('models.fields.gpuCount')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -548,7 +548,7 @@ export function CreateDeploymentDrawer({
                   name='replica_count'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Replica count')}</FormLabel>
+                      <FormLabel>{t('models.fields.replicaCount')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -572,7 +572,7 @@ export function CreateDeploymentDrawer({
                   name='duration_hours'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Duration (hours)')}</FormLabel>
+                      <FormLabel>{t('models.fields.durationHours')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -594,7 +594,7 @@ export function CreateDeploymentDrawer({
                   name='traffic_port'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Port')}</FormLabel>
+                      <FormLabel>{t('models.fields.port')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -615,9 +615,9 @@ export function CreateDeploymentDrawer({
 
             {/* Price Estimation */}
             <SideDrawerSection>
-              <h3 className='text-sm font-medium'>{t('Price estimation')}</h3>
+              <h3 className='text-sm font-medium'>{t('models.fields.priceEstimation')}</h3>
               <p className='text-muted-foreground text-xs'>
-                {t('Price estimation description')}
+                {t('models.tips.priceEstimationDescription')}
               </p>
 
               <FormField
@@ -625,7 +625,7 @@ export function CreateDeploymentDrawer({
                 name='currency'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Billing currency')}</FormLabel>
+                    <FormLabel>{t('models.fields.billingCurrency')}</FormLabel>
                     <Select
                       items={[
                         { value: 'usdc', label: 'USDC' },
@@ -636,7 +636,7 @@ export function CreateDeploymentDrawer({
                     >
                       <FormControl>
                         <SelectTrigger className='w-full'>
-                          <SelectValue placeholder={t('Select')} />
+                          <SelectValue placeholder={t('keys.placeholders.select')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -654,10 +654,10 @@ export function CreateDeploymentDrawer({
             {/* Advanced Configuration */}
             <SideDrawerSection>
               <h3 className='text-sm font-medium'>
-                {t('Advanced Configuration')}
+                {t('models.titles.advancedConfiguration')}
               </h3>
               <p className='text-muted-foreground text-xs'>
-                {t('Optional settings for advanced container configuration.')}
+                {t('models.tips.optionalSettingsForAdvancedContainerConfiguration')}
               </p>
 
               <div className='flex flex-col gap-4'>
@@ -668,7 +668,7 @@ export function CreateDeploymentDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Entrypoint (space separated)')}
+                          {t('models.fields.entrypointSpaceSeparated')}
                         </FormLabel>
                         <FormControl>
                           <Input placeholder='bash -lc' {...field} />
@@ -683,7 +683,7 @@ export function CreateDeploymentDrawer({
                     name='args'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Args (space separated)')}</FormLabel>
+                        <FormLabel>{t('models.fields.argsSpaceSeparated')}</FormLabel>
                         <FormControl>
                           <Input placeholder='--foo bar' {...field} />
                         </FormControl>
@@ -698,7 +698,7 @@ export function CreateDeploymentDrawer({
                   name='env_json'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Environment variables (JSON)')}</FormLabel>
+                      <FormLabel>{t('models.fields.environmentVariablesJson')}</FormLabel>
                       <FormControl>
                         <Textarea
                           className='min-h-24 font-mono text-xs'
@@ -717,7 +717,7 @@ export function CreateDeploymentDrawer({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        {t('Secret environment variables (JSON)')}
+                        {t('models.tips.secretEnvironmentVariablesJson')}
                       </FormLabel>
                       <FormControl>
                         <Textarea
@@ -737,7 +737,7 @@ export function CreateDeploymentDrawer({
                     name='registry_username'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Registry username')}</FormLabel>
+                        <FormLabel>{t('models.fields.registryUsername')}</FormLabel>
                         <FormControl>
                           <Input autoComplete='off' {...field} />
                         </FormControl>
@@ -751,7 +751,7 @@ export function CreateDeploymentDrawer({
                     name='registry_secret'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Registry secret')}</FormLabel>
+                        <FormLabel>{t('models.fields.registrySecret')}</FormLabel>
                         <FormControl>
                           <Input
                             type='password'
@@ -771,14 +771,14 @@ export function CreateDeploymentDrawer({
 
         <SheetFooter className={sideDrawerFooterClassName()}>
           <SheetClose render={<Button variant='outline' />}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </SheetClose>
           <Button
             form='deployment-form'
             type='submit'
             disabled={createMutation.isPending}
           >
-            {createMutation.isPending ? t('Submitting...') : t('Create')}
+            {createMutation.isPending ? t('models.tips.submitting') : t('channels.actions.create')}
           </Button>
         </SheetFooter>
       </SheetContent>

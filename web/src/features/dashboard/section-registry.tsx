@@ -25,17 +25,17 @@ import { createSectionRegistry } from '@/features/system-settings/utils/section-
 const DASHBOARD_SECTIONS = [
   {
     id: 'overview',
-    titleKey: 'Overview',
+    titleKey: 'common.titles.overview',
     build: () => null,
   },
   {
     id: 'models',
-    titleKey: 'Model Call Analytics',
+    titleKey: 'dashboard.titles.modelCallAnalytics',
     build: () => null,
   },
   {
     id: 'users',
-    titleKey: 'User Analytics',
+    titleKey: 'systemSettings.titles.userAnalytics',
     adminOnly: true,
     build: () => null,
   },

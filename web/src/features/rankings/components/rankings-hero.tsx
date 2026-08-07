@@ -21,11 +21,11 @@ import { cn } from '@/lib/utils'
 import type { RankingPeriod } from '../types'
 
 const PERIODS: { id: RankingPeriod; labelKey: string }[] = [
-  { id: 'today', labelKey: 'Today' },
-  { id: 'week', labelKey: 'Week' },
-  { id: 'month', labelKey: 'Month' },
-  { id: 'year', labelKey: 'Year' },
-  { id: 'all', labelKey: 'All-time' },
+  { id: 'today', labelKey: 'profile.fields.today' },
+  { id: 'week', labelKey: 'common.fields.week' },
+  { id: 'month', labelKey: 'common.fields.month' },
+  { id: 'year', labelKey: 'common.fields.year' },
+  { id: 'all', labelKey: 'common.fields.allTime' },
 ]
 
 type RankingsHeroProps = {
@@ -44,14 +44,14 @@ export function RankingsHero(props: RankingsHeroProps) {
     <section className='space-y-5'>
       <div className='space-y-2'>
         <p className='text-muted-foreground text-xs font-medium tracking-widest uppercase'>
-          {t('Leaderboards')}
+          {t('rankings.fields.leaderboards')}
         </p>
         <h1 className='text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.15] font-bold tracking-tight'>
-          {t('Rankings')}
+          {t('rankings.titles.value')}
         </h1>
         <p className='text-muted-foreground/80 max-w-2xl text-sm'>
           {t(
-            'Discover the most-used models and rising vendors on the platform, updated from live usage data.'
+            'rankings.status.discoverTheMostUsedModelsAndRisingVendorsOn'
           )}
         </p>
       </div>
@@ -59,7 +59,7 @@ export function RankingsHero(props: RankingsHeroProps) {
       {/* Underline tabs for period — clean and unobtrusive. */}
       <div
         role='tablist'
-        aria-label={t('Time Range')}
+        aria-label={t('dynamicRatio.fields.timeRange')}
         className='border-border/60 flex items-center border-b'
       >
         {PERIODS.map((p) => {

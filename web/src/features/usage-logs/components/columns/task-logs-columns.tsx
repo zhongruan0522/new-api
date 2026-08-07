@@ -77,7 +77,7 @@ function AudioPreviewCell({ log }: { log: TaskLog }) {
       >
         <Music className='text-muted-foreground size-3' />
         <span className='text-foreground leading-snug group-hover:underline'>
-          {t('Click to preview audio')}
+          {t('usageLogs.fields.clickToPreviewAudio')}
         </span>
       </button>
       <AudioPreviewDialog
@@ -95,7 +95,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
     {
       accessorKey: 'submit_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Submit Time')} />
+        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitTime')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -116,15 +116,15 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
           </div>
         )
       },
-      meta: { label: t('Submit Time') },
+      meta: { label: t('usageLogs.actions.submitTime') },
     },
   ]
 
   if (isAdmin) {
-    columns.push(createChannelColumn<TaskLog>({ headerLabel: t('Channel') }), {
+    columns.push(createChannelColumn<TaskLog>({ headerLabel: t('channels.fields.channel') }), {
       id: 'user',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('User')} />
+        <DataTableColumnHeader column={column} title={t('systemSettings.fields.user')} />
       ),
       cell: function UserCell({ row }) {
         const { sensitiveVisible, setSelectedUserId, setUserInfoDialogOpen } =
@@ -161,7 +161,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
           </button>
         )
       },
-      meta: { label: t('User'), mobileHidden: true },
+      meta: { label: t('systemSettings.fields.user'), mobileHidden: true },
     })
   }
 
@@ -169,7 +169,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
     {
       accessorKey: 'task_id',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Task ID')} />
+        <DataTableColumnHeader column={column} title={t('systemSettings.fields.taskId')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -191,19 +191,19 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
           </div>
         )
       },
-      meta: { label: t('Task ID'), mobileTitle: true },
+      meta: { label: t('systemSettings.fields.taskId'), mobileTitle: true },
     },
     createDurationColumn<TaskLog>({
       submitTimeKey: 'submit_time',
       finishTimeKey: 'finish_time',
       unit: 'seconds',
-      headerLabel: t('Duration'),
+      headerLabel: t('keyQuery.fields.duration'),
       warningThresholdSec: 300,
     }),
     {
       accessorKey: 'status',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Status')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
       ),
       cell: ({ row }) => {
         const status = row.getValue('status') as string
@@ -216,13 +216,13 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
           />
         )
       },
-      meta: { label: t('Status') },
+      meta: { label: t('channels.fields.status') },
     },
-    createProgressColumn<TaskLog>({ headerLabel: t('Progress') }),
+    createProgressColumn<TaskLog>({ headerLabel: t('systemSettings.fields.progress') }),
     {
       accessorKey: 'fail_reason',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Details')} />
+        <DataTableColumnHeader column={column} title={t('auditLogs.titles.details')} />
       ),
       cell: function DetailsCell({ row }) {
         const log = row.original
@@ -264,7 +264,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
               rel='noopener noreferrer'
               className='text-foreground text-xs hover:underline'
             >
-              {t('Click to preview video')}
+              {t('usageLogs.fields.clickToPreviewVideo')}
             </a>
           )
         }
@@ -279,7 +279,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
               type='button'
               className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
               onClick={() => setDialogOpen(true)}
-              title={t('Click to view full error message')}
+              title={t('usageLogs.tips.clickToViewFullErrorMessage')}
             >
               <span className='truncate leading-snug text-red-600 group-hover:underline dark:text-red-400'>
                 {failReason}
@@ -293,7 +293,7 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
           </>
         )
       },
-      meta: { label: t('Details') },
+      meta: { label: t('auditLogs.titles.details') },
       size: 200,
       maxSize: 220,
     }

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 
 	"github.com/gin-gonic/gin"
 )

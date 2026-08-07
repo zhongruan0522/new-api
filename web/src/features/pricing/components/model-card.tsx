@@ -155,13 +155,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
               {!props.model.available ? (
                 <span className='text-muted-foreground/60 italic'>
-                  {t('Unpriced')}
+                  {t('pricing.fields.unpriced')}
                 </span>
               ) : dynamicSummary ? (
                 dynamicSummary.isSpecialExpression ? (
                   <span className='min-w-0'>
                     <span className='text-amber-700 dark:text-amber-300'>
-                      {t('Special billing expression')}
+                      {t('pricing.fields.specialBillingExpression')}
                     </span>
                     <code className='text-muted-foreground/70 mt-0.5 line-clamp-1 block font-mono text-[11px] break-all'>
                       {dynamicSummary.rawExpression}
@@ -184,7 +184,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   </>
                 ) : (
                   <span className='text-muted-foreground text-xs'>
-                    {t('Dynamic Pricing')}
+                    {t('pricing.fields.dynamicPricing')}
                   </span>
                 )
               ) : isTokenBased && hasContextPricing ? (
@@ -197,7 +197,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                       <span className='text-muted-foreground/60'>
                         {formatTokenRange(tier.min_tokens, tier.max_tokens)}
                       </span>{' '}
-                      {t('In')}{' '}
+                      {t('pricing.fields.in')}{' '}
                       <span className='text-foreground font-mono font-semibold'>
                         {computeTierPrice(
                           tier.model_ratio,
@@ -215,7 +215,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               ) : isTokenBased ? (
                 <>
                   <span className='text-muted-foreground whitespace-nowrap'>
-                    {t('Input')}{' '}
+                    {t('pricing.fields.input')}{' '}
                     <span className='text-foreground font-mono font-semibold'>
                       {formatPrice(
                         props.model,
@@ -229,7 +229,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                     /{tokenUnitLabel}
                   </span>
                   <span className='text-muted-foreground whitespace-nowrap'>
-                    {t('Output')}{' '}
+                    {t('pricing.fields.output')}{' '}
                     <span className='text-foreground font-mono font-semibold'>
                       {formatPrice(
                         props.model,
@@ -244,7 +244,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   </span>
                   {hasCachedPrice && (
                     <span className='text-muted-foreground/60 whitespace-nowrap'>
-                      {t('Cached')}{' '}
+                      {t('pricing.fields.cached')}{' '}
                       <span className='font-mono'>
                         {formatPrice(
                           props.model,
@@ -268,7 +268,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                       usdExchangeRate
                     )}
                   </span>{' '}
-                  / {t('Request')}
+                  / {t('home.fields.request')}
                 </span>
               )}
             </div>
@@ -281,14 +281,14 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             onClick={props.onClick}
             className='text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5'
           >
-            {t('Details')}
+            {t('auditLogs.titles.details')}
             <ChevronRight className='size-3.5' />
           </button>
           <button
             type='button'
             onClick={handleCopy}
             className='text-muted-foreground hover:text-foreground hover:bg-muted rounded-md border p-1.5 transition-colors'
-            title={t('Copy')}
+            title={t('channels.actions.copy')}
           >
             <Copy className='size-3.5' />
           </button>
@@ -297,7 +297,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
 
       {/* Description */}
       <p className='text-muted-foreground mt-2 line-clamp-1 flex-1 text-[13px] leading-relaxed sm:mt-4 sm:line-clamp-2 sm:min-h-[2.5rem]'>
-        {props.model.description || t('No description available.')}
+        {props.model.description || t('pricing.tips.noDescriptionAvailable')}
       </p>
 
       {/* Footer: left metadata and right performance summary share row alignment */}
@@ -305,15 +305,15 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
           {primaryGroup && (
             <span className='text-muted-foreground text-xs font-medium'>
-              {primaryGroup} {t('Groups')}
+              {primaryGroup} {t('channels.fields.groups')}
             </span>
           )}
           <span className='text-muted-foreground text-xs font-medium'>
-            {isTokenBased ? t('Token-based') : t('Per Request')}
+            {isTokenBased ? t('pricing.fields.tokenBased') : t('pricing.fields.perRequest')}
           </span>
           {isDynamicPricing && (
             <StatusBadge
-              label={t('Dynamic Pricing')}
+              label={t('pricing.fields.dynamicPricing')}
               variant='warning'
               copyable={false}
               size='sm'
@@ -321,7 +321,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           )}
           {hasContextPricing && (
             <StatusBadge
-              label={t('Tiered Pricing')}
+              label={t('pricing.fields.tieredPricing')}
               variant='info'
               copyable={false}
               size='sm'

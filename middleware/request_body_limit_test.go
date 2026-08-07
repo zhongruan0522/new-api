@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 )
 
 func TestAnonymousRequestBodyLimitRejectsOversizedBody(t *testing.T) {

@@ -167,7 +167,7 @@ export function StatusBadge({
         className
       )}
       onClick={handleClick}
-      title={copyable ? t('Click to copy: {{text}}', { text: copyText || label || '' }) : undefined}
+      title={copyable ? t('common.fields.clickToCopyText', { text: copyText || label || '' }) : undefined}
       {...props}
     >
       {Icon && <Icon className='size-3.5 shrink-0' />}
@@ -236,23 +236,23 @@ export function StatusBadgeList<T>(props: StatusBadgeListProps<T>) {
 export const statusPresets = {
   active: {
     variant: 'success' as const,
-    label: 'Active',
+    label: 'subscriptions.status.active',
   },
   inactive: {
     variant: 'neutral' as const,
-    label: 'Inactive',
+    label: 'common.status.inactive',
   },
   invited: {
     variant: 'info' as const,
-    label: 'Invited',
+    label: 'users.fields.invited',
   },
   suspended: {
     variant: 'danger' as const,
-    label: 'Suspended',
+    label: 'common.fields.suspended',
   },
   pending: {
     variant: 'warning' as const,
-    label: 'Pending',
+    label: 'common.status.pending',
     pulse: true,
   },
 } as const

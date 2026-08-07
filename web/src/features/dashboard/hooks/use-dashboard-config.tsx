@@ -44,37 +44,37 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
   return [
     {
       key: 'count',
-      title: t('Total Count'),
-      description: t('Statistical count'),
+      title: t('dashboard.fields.totalCount'),
+      description: t('dashboard.fields.statisticalCount'),
       icon: Hash,
       getValue: (stat) => stat?.rpm ?? 0,
     },
     {
       key: 'quota',
-      title: t('Total Quota'),
-      description: t('Statistical quota'),
+      title: t('dashboard.fields.totalQuota'),
+      description: t('dashboard.fields.statisticalQuota'),
       icon: Coins,
       getValue: (stat) => stat?.quota ?? 0,
     },
     {
       key: 'tokens',
-      title: t('Total Tokens'),
-      description: t('Statistical tokens'),
+      title: t('dashboard.fields.totalTokens'),
+      description: t('dashboard.fields.statisticalTokens'),
       icon: Layers,
       getValue: (stat) => stat?.tpm ?? 0,
     },
     {
       key: 'avgRpm',
-      title: t('Average RPM'),
-      description: t('Requests per minute'),
+      title: t('dashboard.fields.averageRpm'),
+      description: t('dashboard.fields.requestsPerMinute'),
       icon: Gauge,
       getValue: (stat, timeRangeMinutes = 1) =>
         safeDivide(stat?.rpm ?? 0, timeRangeMinutes),
     },
     {
       key: 'avgTpm',
-      title: t('Average TPM'),
-      description: t('Tokens per minute'),
+      title: t('dashboard.fields.averageTpm'),
+      description: t('dashboard.fields.tokensPerMinute'),
       icon: Zap,
       getValue: (stat, timeRangeMinutes = 1) =>
         safeDivide(stat?.tpm ?? 0, timeRangeMinutes),
@@ -94,27 +94,27 @@ export function useSummaryCardsConfig(totals: {
   return [
     {
       key: 'todayUsage',
-      title: t('Last 24h usage'),
+      title: t('dashboard.fields.last24hUsage'),
       value: totals.todayUsageDisplay,
       description: totals.currencyEnabled
-        ? `${t('Consumed in the last 24 hours')} (${totals.currencyLabel})`
-        : t('Consumed in the last 24 hours'),
+        ? `${t('dashboard.fields.consumedInTheLast24Hours')} (${t(totals.currencyLabel)})`
+        : t('dashboard.fields.consumedInTheLast24Hours'),
       icon: Flame,
     },
     {
       key: 'usage',
-      title: t('Historical Usage'),
+      title: t('dashboard.fields.historicalUsage'),
       value: totals.usedDisplay,
       description: totals.currencyEnabled
-        ? `${t('Total consumed')} (${totals.currencyLabel})`
-        : t('Total consumed quota'),
+        ? `${t('dashboard.fields.totalConsumed')} (${t(totals.currencyLabel)})`
+        : t('dashboard.fields.totalConsumedQuota'),
       icon: TrendingUp,
     },
     {
       key: 'requests',
-      title: t('Request Count'),
+      title: t('dashboard.fields.requestCount'),
       value: totals.requestCountDisplay,
-      description: t('Total requests made'),
+      description: t('dashboard.fields.totalRequestsMade'),
       icon: Activity,
     },
   ]

@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 
 	"gorm.io/gorm"
 )

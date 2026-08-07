@@ -31,10 +31,10 @@ export const DEFAULT_PAGE_SIZE = 20
 
 export function getNameRuleOptions(t: TFunction) {
   return [
-    { label: t('Exact Match'), value: 0 as NameRule },
-    { label: t('Prefix Match'), value: 1 as NameRule },
-    { label: t('Contains Match'), value: 2 as NameRule },
-    { label: t('Suffix Match'), value: 3 as NameRule },
+    { label: t('models.fields.exactMatch'), value: 0 as NameRule },
+    { label: t('models.fields.prefixMatch'), value: 1 as NameRule },
+    { label: t('models.fields.containsMatch'), value: 2 as NameRule },
+    { label: t('models.fields.suffixMatch'), value: 3 as NameRule },
   ] as const
 }
 
@@ -43,24 +43,24 @@ export function getNameRuleConfig(
 ): Record<NameRule, { label: string; color: string; description: string }> {
   return {
     0: {
-      label: t('Exact'),
+      label: t('models.fields.exact'),
       color: 'green',
-      description: t('Match model name exactly'),
+      description: t('models.fields.matchModelNameExactly'),
     },
     1: {
-      label: t('Prefix'),
+      label: t('models.fields.prefix'),
       color: 'blue',
-      description: t('Match models starting with this name'),
+      description: t('models.tips.matchModelsStartingWithThisName'),
     },
     2: {
-      label: t('Contains'),
+      label: t('models.fields.contains'),
       color: 'orange',
-      description: t('Match models containing this name'),
+      description: t('models.tips.matchModelsContainingThisName'),
     },
     3: {
-      label: t('Suffix'),
+      label: t('models.fields.suffix'),
       color: 'purple',
-      description: t('Match models ending with this name'),
+      description: t('models.tips.matchModelsEndingWithThisName'),
     },
   }
 }
@@ -71,9 +71,9 @@ export function getNameRuleConfig(
 
 export function getModelStatusOptions(t: TFunction) {
   return [
-    { label: t('All Status'), value: 'all' },
-    { label: t('Enabled'), value: 'enabled' },
-    { label: t('Disabled'), value: 'disabled' },
+    { label: t('channels.fields.allStatus'), value: 'all' },
+    { label: t('channels.status.enabled'), value: 'enabled' },
+    { label: t('channels.status.disabled'), value: 'disabled' },
   ] as const
 }
 
@@ -81,8 +81,8 @@ export function getModelStatusConfig(
   t: TFunction
 ): Record<ModelStatus, { label: string; variant: 'success' | 'neutral' }> {
   return {
-    1: { label: t('Enabled'), variant: 'success' },
-    0: { label: t('Disabled'), variant: 'neutral' },
+    1: { label: t('channels.status.enabled'), variant: 'success' },
+    0: { label: t('channels.status.disabled'), variant: 'neutral' },
   }
 }
 
@@ -92,9 +92,9 @@ export function getModelStatusConfig(
 
 export function getSyncStatusOptions(t: TFunction) {
   return [
-    { label: t('All Sync Status'), value: 'all' },
-    { label: t('Official Sync'), value: 'yes' },
-    { label: t('No Sync'), value: 'no' },
+    { label: t('models.fields.allSyncStatus'), value: 'all' },
+    { label: t('models.fields.officialSync'), value: 'yes' },
+    { label: t('models.fields.noSync'), value: 'no' },
   ] as const
 }
 
@@ -104,13 +104,13 @@ export function getSyncStatusOptions(t: TFunction) {
 
 export function getDeploymentStatusOptions(t: TFunction) {
   return [
-    { label: t('All Status'), value: 'all' },
-    { label: t('Running'), value: 'running' },
-    { label: t('Completed'), value: 'completed' },
-    { label: t('Failed'), value: 'failed' },
-    { label: t('Deployment requested'), value: 'deployment requested' },
-    { label: t('Termination requested'), value: 'termination requested' },
-    { label: t('Destroyed'), value: 'destroyed' },
+    { label: t('channels.fields.allStatus'), value: 'all' },
+    { label: t('common.fields.running73989d'), value: 'running' },
+    { label: t('common.fields.completed'), value: 'completed' },
+    { label: t('channels.errors.failed'), value: 'failed' },
+    { label: t('models.fields.deploymentRequested'), value: 'deployment requested' },
+    { label: t('models.fields.terminationRequested'), value: 'termination requested' },
+    { label: t('models.fields.destroyed'), value: 'destroyed' },
   ] as const
 }
 
@@ -122,17 +122,17 @@ export function getDeploymentStatusConfig(t: TFunction): Record<
   }
 > {
   return {
-    running: { label: t('Running'), variant: 'success' },
-    completed: { label: t('Completed'), variant: 'success' },
-    failed: { label: t('Failed'), variant: 'danger' },
-    error: { label: t('Failed'), variant: 'danger' },
-    destroyed: { label: t('Destroyed'), variant: 'danger' },
+    running: { label: t('common.fields.running73989d'), variant: 'success' },
+    completed: { label: t('common.fields.completed'), variant: 'success' },
+    failed: { label: t('channels.errors.failed'), variant: 'danger' },
+    error: { label: t('channels.errors.failed'), variant: 'danger' },
+    destroyed: { label: t('models.fields.destroyed'), variant: 'danger' },
     'deployment requested': {
-      label: t('Deployment requested'),
+      label: t('models.fields.deploymentRequested'),
       variant: 'warning',
     },
     'termination requested': {
-      label: t('Termination requested'),
+      label: t('models.fields.terminationRequested'),
       variant: 'warning',
     },
   }
@@ -146,8 +146,8 @@ export function getQuotaTypeConfig(
   t: TFunction
 ): Record<number, { label: string; color: string }> {
   return {
-    0: { label: t('Usage-based'), color: 'violet' },
-    1: { label: t('Per-call'), color: 'teal' },
+    0: { label: t('models.fields.usageBased'), color: 'violet' },
+    1: { label: t('models.fields.perCall'), color: 'teal' },
   }
 }
 
@@ -174,24 +174,24 @@ export const ENDPOINT_TEMPLATES: Record<
 
 export function getSyncLocaleOptions(t: TFunction) {
   return [
-    { label: t('Chinese'), value: 'zh' },
-    { label: t('English'), value: 'en' },
-    { label: t('Japanese'), value: 'ja' },
+    { label: t('models.fields.chinese'), value: 'zh' },
+    { label: t('models.fields.english'), value: 'en' },
+    { label: t('models.fields.japanese'), value: 'ja' },
   ] as const
 }
 
 export function getSyncSourceOptions(t: TFunction) {
   return [
     {
-      label: t('Official Repository'),
+      label: t('models.fields.officialRepository'),
       value: 'official' as SyncSource,
-      description: t('Sync from the public upstream metadata repository.'),
+      description: t('models.tips.syncFromThePublicUpstreamMetadataRepository'),
       disabled: false,
     },
     {
-      label: t('Configuration File'),
+      label: t('models.titles.configurationFile'),
       value: 'config' as SyncSource,
-      description: t('Upload or reference a local configuration file.'),
+      description: t('models.actions.uploadOrReferenceALocalConfigurationFile'),
       disabled: true,
     },
   ] as const

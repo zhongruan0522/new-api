@@ -3,9 +3,9 @@ package model
 import (
 	"encoding/json"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/types"
 )
 
 func preferChannelsByRequestFormat(channels []*Channel, preferredAPIType int, relayFormat types.RelayFormat) []*Channel {

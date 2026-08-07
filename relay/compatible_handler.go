@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/shopspring/decimal"
 
@@ -259,7 +259,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 		// apply param override
 		if len(info.ParamOverride) > 0 {
-			jsonData, err = relaycommon.ApplyParamOverride(jsonData, info.ParamOverride, relaycommon.BuildParamOverrideContext(info))
+			jsonData, err = relaycommon.ApplyParamOverrideWithRelayInfo(jsonData, info)
 			if err != nil {
 				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 			}
@@ -276,6 +276,9 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		info.UpstreamRequestBodySize = size
 		requestBody = body
 	}
+
+	// 通用思维强度解析：adaptor 未设置时从原始请求兜底提取
+	relaycommon.EnsureReasoningEffort(info, info.Request)
 
 	var httpResp *http.Response
 	resp, err := adaptor.DoRequest(c, info, requestBody)
@@ -389,7 +392,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	if relayInfo.ResponsesUsageInfo != nil {
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
 			// 优先使用可配置价格，回退到硬编码常量
-			if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+			if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "openai"}); ok {
 				webSearchPrice = pricePerCall
 				dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
 					Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
@@ -409,7 +412,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		if searchContextSize == "" {
 			searchContextSize = "medium"
 		}
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "openai"}); ok {
 			webSearchPrice = pricePerCall
 			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
 				Mul(dGroupRatio).Mul(dQuotaPerUnit)
@@ -426,7 +429,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var claudeWebSearchPrice float64
 	claudeWebSearchCallCount := ctx.GetInt("claude_web_search_requests")
 	if claudeWebSearchCallCount > 0 {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "claude", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "claude"}); ok {
 			claudeWebSearchPrice = pricePerCall
 			dClaudeWebSearchQuota = decimal.NewFromFloat(claudeWebSearchPrice).
 				Mul(decimal.NewFromInt(int64(claudeWebSearchCallCount))).
@@ -444,7 +447,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var geminiWebSearchPrice float64
 	geminiWebSearchCallCount := ctx.GetInt("gemini_web_search_requests")
 	if geminiWebSearchCallCount > 0 {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "gemini", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "gemini"}); ok {
 			geminiWebSearchPrice = pricePerCall
 			dGeminiWebSearchQuota = decimal.NewFromFloat(geminiWebSearchPrice).
 				Mul(decimal.NewFromInt(int64(geminiWebSearchCallCount))).
@@ -471,8 +474,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var dImageGenerationCallQuota decimal.Decimal
 	var imageGenerationCallPrice float64
 	if ctx.GetBool("image_generation_call") {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("image_generation", modelName, "openai",
-			ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size")); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("image_generation", map[string]string{
+			"model":    modelName,
+			"provider": "openai",
+			"quality":  ctx.GetString("image_generation_call_quality"),
+			"size":     ctx.GetString("image_generation_call_size"),
+		}); ok {
 			imageGenerationCallPrice = pricePerCall
 		} else {
 			imageGenerationCallPrice = operation_setting.GetGPTImage1PriceOnceCall(ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size"))
@@ -556,7 +563,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	// 发生规范转换时，可能是转换导致的 token 统计异常，继续记录消费日志但不触发重试。
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := service.NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+		if apiErr := service.NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费

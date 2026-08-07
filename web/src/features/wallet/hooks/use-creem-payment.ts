@@ -37,14 +37,14 @@ export function useCreemPayment() {
 
       if (isApiSuccess(response) && response.data?.checkout_url) {
         window.open(response.data.checkout_url, '_blank')
-        toast.success(i18next.t('Redirecting to Creem checkout...'))
+        toast.success(i18next.t('wallet.status.redirectingToCreemCheckout'))
         return true
       }
 
-      toast.error(response.message || i18next.t('Payment request failed'))
+      toast.error(response.message || i18next.t('subscriptions.status.paymentRequestFailed'))
       return false
     } catch (_error) {
-      toast.error(i18next.t('Payment request failed'))
+      toast.error(i18next.t('subscriptions.status.paymentRequestFailed'))
       return false
     } finally {
       setProcessing(false)

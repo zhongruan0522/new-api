@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -50,9 +50,9 @@ func clearAndReject(c *gin.Context, session sessions.Session, status int, messag
 func authHelper(c *gin.Context, minRole int) {
 	session := sessions.Default(c)
 	username := session.Get("username")
-	role := session.Get("role")
+	var role interface{}
 	id := session.Get("id")
-	status := session.Get("status")
+	var status interface{}
 	// group 用于写入上下文的最新分组。session/access-token 各分支会从权威来源覆盖。
 	// 不直接复用 session.Get("group")，因为管理员改组后旧 cookie 快照会残留过期分组。
 	var group string
@@ -371,12 +371,11 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		key := c.Request.Header.Get("Authorization")
-		parts := make([]string, 0)
 		if strings.HasPrefix(key, "Bearer ") || strings.HasPrefix(key, "bearer ") {
 			key = strings.TrimSpace(key[7:])
 		}
 		key = strings.TrimPrefix(key, "sk-")
-		parts = strings.Split(key, "-")
+		parts := strings.Split(key, "-")
 		key = parts[0]
 		token, err := model.ValidateUserToken(key)
 		if token != nil {
@@ -404,7 +403,7 @@ func TokenAuth() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "无法解析客户端 IP 地址")
 				return
 			}
-			if common.IsIpInCIDRList(ip, allowIps) == false {
+			if !common.IsIpInCIDRList(ip, allowIps) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", types.ErrorCodeAccessDenied)
 				return
 			}

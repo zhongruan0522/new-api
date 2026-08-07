@@ -1,15 +1,14 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/model_setting"
 )
 
 // customVoiceConfirmRequest 确认定制请求体。
@@ -22,14 +21,14 @@ type customVoiceConfirmRequest struct {
 func CustomVoicePreviewHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
 	// 文件从 multipart form 读取。
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "请上传音频文件"})
+		common.ApiErrorI18n(c, i18n.MsgCustomVoiceUploadAudioRequired)
 		return
 	}
 
@@ -53,48 +52,43 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 	})
 }
 
-// CustomVoicePreviewAudioHandler 用户侧：代理转发 30 分钟内有效的试听音频。
-func CustomVoicePreviewAudioHandler(c *gin.Context) {
+// CustomVoiceConfirmQuoteHandler 用户侧：确认定制前查询本次应扣额度，不执行扣费。
+func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
-	recordId, err := strconv.ParseInt(c.Param("record_id"), 10, 64)
-	if err != nil || recordId <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的试听记录"})
+	var req customVoiceConfirmRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 
-	audio, err := service.GetCustomVoicePreviewAudio(userId, recordId)
+	result, err := service.CustomVoiceConfirmQuote(c, userId, req.VoiceId)
 	if err != nil {
-		if errors.Is(err, service.ErrCustomVoiceDemoAudioExpired) {
-			c.JSON(http.StatusGone, gin.H{"success": false, "message": "试听音频已过缓存期限"})
-			return
-		}
-		if errors.Is(err, service.ErrCustomVoiceDemoAudioNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "试听音频不存在"})
-			return
-		}
-		c.JSON(http.StatusBadGateway, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return
 	}
-
-	c.Data(http.StatusOK, audio.ContentType, audio.Data)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
 }
 
 // CustomVoiceConfirmHandler 用户侧：确认定制。扣费并把记录从“试听中”转为“已创建”。
 func CustomVoiceConfirmHandler(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": i18n.T(c, i18n.MsgCustomVoiceNotLoggedIn)})
 		return
 	}
 
 	var req customVoiceConfirmRequest
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
 

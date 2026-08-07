@@ -65,7 +65,7 @@ export function LegalConsent({
         className='text-muted-foreground items-start gap-1 text-left text-xs leading-5 font-normal'
       >
         <span>
-          {t('I have read and agree to the')}{' '}
+          {t('auth.fields.iHaveReadAndAgreeToThe')}{' '}
           {hasUserAgreement && (
             <a
               href='/user-agreement'
@@ -73,7 +73,7 @@ export function LegalConsent({
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('User Agreement')}
+              {t('layout.fields.userAgreement')}
             </a>
           )}
           {hasUserAgreement && hasPrivacyPolicy && ' and the '}
@@ -84,7 +84,7 @@ export function LegalConsent({
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('Privacy Policy')}
+              {t('layout.fields.privacyPolicy')}
             </a>
           )}
           .

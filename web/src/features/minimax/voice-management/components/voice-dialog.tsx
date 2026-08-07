@@ -48,13 +48,13 @@ export function VoiceDialog(props: VoiceDialogProps) {
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
           <DialogTitle>
-            {props.editing ? t('Edit Voice') : t('Add Voice')}
+            {props.editing ? t('minimax.actions.editVoice') : t('minimax.actions.addVoice')}
           </DialogTitle>
         </DialogHeader>
 
         <div className='space-y-4'>
           <div className='space-y-2'>
-            <Label>{t('Voice ID')}</Label>
+            <Label>{t('minimax.fields.voiceId')}</Label>
             <Input
               className='font-mono'
               value={props.form.voice_id}
@@ -63,7 +63,7 @@ export function VoiceDialog(props: VoiceDialogProps) {
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Type')}</Label>
+            <Label>{t('channels.fields.type')}</Label>
             <Select
               value={props.form.type || 'created'}
               onValueChange={(value) =>
@@ -75,20 +75,20 @@ export function VoiceDialog(props: VoiceDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value='created'>
-                  {t('Voice Status - Paid')}
+                  {t('minimax.fields.voiceStatusPaid')}
                 </SelectItem>
                 <SelectItem value='preview'>
-                  {t('Voice Status - Preview')}
+                  {t('minimax.fields.voiceStatusPreview')}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Redirect ID')}</Label>
+            <Label>{t('minimax.fields.redirectId')}</Label>
             <Input
               className='font-mono'
-              placeholder={t('Leave empty to send voice ID upstream')}
+              placeholder={t('minimax.tips.leaveEmptyToSendVoiceIdUpstream')}
               value={props.form.redirect_id || ''}
               onChange={(event) =>
                 updateForm({ redirect_id: event.target.value })
@@ -104,15 +104,15 @@ export function VoiceDialog(props: VoiceDialogProps) {
               }
             />
             <span>
-              <span className='block font-medium'>{t('Allowed for TTS')}</span>
+              <span className='block font-medium'>{t('minimax.fields.allowedForTts')}</span>
               <span className='text-muted-foreground'>
-                {t('Only paid voices with TTS enabled can pass the whitelist.')}
+                {t('minimax.status.onlyPaidVoicesWithTtsEnabledCanPassThe')}
               </span>
             </span>
           </label>
 
           <div className='space-y-2'>
-            <Label>{t('Remark')}</Label>
+            <Label>{t('channels.fields.remark')}</Label>
             <Input
               value={props.form.remark || ''}
               onChange={(event) => updateForm({ remark: event.target.value })}
@@ -126,10 +126,10 @@ export function VoiceDialog(props: VoiceDialogProps) {
             onClick={() => props.onOpenChange(false)}
             disabled={props.isSubmitting}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={props.onSubmit} disabled={props.isSubmitting}>
-            {props.isSubmitting ? t('Saving...') : t('Save')}
+            {props.isSubmitting ? t('channels.tips.saving') : t('channels.actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,19 +1,21 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/console_setting"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/console_setting"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,7 +47,6 @@ func GetOptions(c *gin.Context) {
 		"message": "",
 		"data":    options,
 	})
-	return
 }
 
 type optionJsonMapEntry struct {
@@ -83,6 +84,22 @@ type OptionJsonMapUpsertRequest struct {
 	Value     string `json:"value"`
 }
 
+var pricingJsonMapOptionKeys = map[string]struct{}{
+	"ModelPrice":           {},
+	"ModelRatio":           {},
+	"CacheRatio":           {},
+	"CreateCacheRatio":     {},
+	"CompletionRatio":      {},
+	"AudioRatio":           {},
+	"AudioCompletionRatio": {},
+	"ContextPricing":       {},
+}
+
+func isPricingJsonMapOptionKey(key string) bool {
+	_, ok := pricingJsonMapOptionKeys[key]
+	return ok
+}
+
 func isSensitiveOptionKey(key string) bool {
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
@@ -105,14 +122,14 @@ func GetOptionValue(c *gin.Context) {
 	if key == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "缺少配置项 key",
+			"message": i18n.T(c, i18n.MsgOptionKeyRequired),
 		})
 		return
 	}
 	if isSensitiveOptionKey(key) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
-			"message": "该配置项不允许读取",
+			"message": i18n.T(c, i18n.MsgOptionReadForbidden),
 		})
 		return
 	}
@@ -120,7 +137,7 @@ func GetOptionValue(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "配置项不存在",
+			"message": i18n.T(c, i18n.MsgOptionNotFound),
 		})
 		return
 	}
@@ -138,7 +155,7 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	if !model_setting.IsMiniMaxStringMapOption(key) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "不支持的 JSON 映射配置项",
+			"message": i18n.T(c, i18n.MsgOptionJSONMapUnsupported),
 		})
 		return nil, "", false
 	}
@@ -148,13 +165,50 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	}
 	items := map[string]string{}
 	if err := common.UnmarshalJsonStr(value, &items); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "JSON 映射配置解析失败: " + err.Error(),
-		})
+		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 		return nil, "", false
 	}
 	return items, value, true
+}
+
+func readPricingJsonMapOption(c *gin.Context, key string) (map[string]json.RawMessage, string, bool) {
+	if !isPricingJsonMapOptionKey(key) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": i18n.T(c, i18n.MsgOptionJSONMapUnsupported),
+		})
+		return nil, "", false
+	}
+	value, ok := readOptionValue(key)
+	if !ok || strings.TrimSpace(value) == "" {
+		value = "{}"
+	}
+	items := map[string]json.RawMessage{}
+	if err := common.UnmarshalJsonStr(value, &items); err != nil {
+		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+		return nil, "", false
+	}
+	return items, value, true
+}
+
+func validatePricingJsonMapOption(key string, value string) error {
+	if key == "ContextPricing" {
+		return ratio_setting.ValidateContextPricing(value)
+	}
+	values := map[string]float64{}
+	return common.UnmarshalJsonStr(value, &values)
+}
+
+func marshalPricingJsonMapOption(key string, items map[string]json.RawMessage) (string, error) {
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		return "", err
+	}
+	nextValue := string(bytes)
+	if err := validatePricingJsonMapOption(key, nextValue); err != nil {
+		return "", err
+	}
+	return nextValue, nil
 }
 
 // readMiniMaxStringArrayOption 仅用于兼容旧的 JSON 数组配置读取。
@@ -164,7 +218,7 @@ func readMiniMaxStringArrayOption(c *gin.Context, key string) ([]string, string,
 	if key != "minimax.voice_whitelist" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "不支持的 JSON 数组配置项",
+			"message": i18n.T(c, i18n.MsgOptionJSONArrayUnsupported),
 		})
 		return nil, "", false
 	}
@@ -174,10 +228,8 @@ func readMiniMaxStringArrayOption(c *gin.Context, key string) ([]string, string,
 
 func GetOptionJsonMap(c *gin.Context) {
 	key := c.Query("key")
-	items, _, ok := readMiniMaxStringMapOption(c, key)
-	if !ok {
-		return
-	}
+	var entries []optionJsonMapEntry
+	var total int
 
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
@@ -191,28 +243,65 @@ func GetOptionJsonMap(c *gin.Context) {
 		pageSize = 100
 	}
 
-	keys := make([]string, 0, len(items))
-	for itemKey := range items {
-		keys = append(keys, itemKey)
-	}
-	sort.Strings(keys)
+	keyword := strings.TrimSpace(c.Query("keyword"))
 
-	total := len(keys)
-	start := (page - 1) * pageSize
-	if start > total {
-		start = total
-	}
-	end := start + pageSize
-	if end > total {
-		end = total
-	}
-
-	entries := make([]optionJsonMapEntry, 0, end-start)
-	for _, itemKey := range keys[start:end] {
-		entries = append(entries, optionJsonMapEntry{
-			Key:   itemKey,
-			Value: items[itemKey],
-		})
+	if model_setting.IsMiniMaxStringMapOption(key) {
+		items, _, ok := readMiniMaxStringMapOption(c, key)
+		if !ok {
+			return
+		}
+		keys := make([]string, 0, len(items))
+		for itemKey := range items {
+			if keyword == "" || strings.Contains(itemKey, keyword) || strings.Contains(items[itemKey], keyword) {
+				keys = append(keys, itemKey)
+			}
+		}
+		sort.Strings(keys)
+		total = len(keys)
+		start := (page - 1) * pageSize
+		if start > total {
+			start = total
+		}
+		end := start + pageSize
+		if end > total {
+			end = total
+		}
+		entries = make([]optionJsonMapEntry, 0, end-start)
+		for _, itemKey := range keys[start:end] {
+			entries = append(entries, optionJsonMapEntry{
+				Key:   itemKey,
+				Value: items[itemKey],
+			})
+		}
+	} else {
+		items, _, ok := readPricingJsonMapOption(c, key)
+		if !ok {
+			return
+		}
+		keys := make([]string, 0, len(items))
+		for itemKey, itemValue := range items {
+			value := string(itemValue)
+			if keyword == "" || strings.Contains(itemKey, keyword) || strings.Contains(value, keyword) {
+				keys = append(keys, itemKey)
+			}
+		}
+		sort.Strings(keys)
+		total = len(keys)
+		start := (page - 1) * pageSize
+		if start > total {
+			start = total
+		}
+		end := start + pageSize
+		if end > total {
+			end = total
+		}
+		entries = make([]optionJsonMapEntry, 0, end-start)
+		for _, itemKey := range keys[start:end] {
+			entries = append(entries, optionJsonMapEntry{
+				Key:   itemKey,
+				Value: string(items[itemKey]),
+			})
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -278,7 +367,7 @@ func DeleteOptionJsonArrayEntry(c *gin.Context) {
 	// 保留路由以兼容旧前端，但所有写入统一返回“已迁移”提示。
 	c.JSON(http.StatusOK, gin.H{
 		"success": false,
-		"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+		"message": i18n.T(c, i18n.MsgOptionMigratedToVoiceManagement),
 	})
 }
 
@@ -286,7 +375,7 @@ func UpsertOptionJsonArrayEntry(c *gin.Context) {
 	// 同上：音色白名单已迁移，写入不再支持。
 	c.JSON(http.StatusOK, gin.H{
 		"success": false,
-		"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+		"message": i18n.T(c, i18n.MsgOptionMigratedToVoiceManagement),
 	})
 }
 
@@ -295,48 +384,66 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "无效的参数",
+			"message": i18n.T(c, i18n.MsgOptionInvalidParams),
 		})
 		return
 	}
 	if strings.TrimSpace(req.MapKey) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "映射键不能为空",
+			"message": i18n.T(c, i18n.MsgOptionMapKeyRequired),
 		})
 		return
 	}
-	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
-	if !ok {
-		return
-	}
-	if _, exists := items[req.MapKey]; !exists {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "映射项不存在",
-		})
-		return
+	var beforeValue, nextValue string
+	if model_setting.IsMiniMaxStringMapOption(req.Key) {
+		items, value, ok := readMiniMaxStringMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+		if _, exists := items[req.MapKey]; !exists {
+			common.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
+			return
+		}
+
+		delete(items, req.MapKey)
+		bytes, err := common.Marshal(items)
+		if err != nil {
+			common.SysError("failed to marshal option items: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		nextValue = string(bytes)
+		if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
+			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			return
+		}
+	} else {
+		items, value, ok := readPricingJsonMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+		if _, exists := items[req.MapKey]; !exists {
+			common.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
+			return
+		}
+
+		delete(items, req.MapKey)
+		var err error
+		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
+		if err != nil {
+			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+			return
+		}
 	}
 
-	delete(items, req.MapKey)
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "MiniMax 设置失败: " + err.Error(),
-		})
-		return
-	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,
@@ -356,7 +463,7 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "无效的参数",
+			"message": i18n.T(c, i18n.MsgOptionInvalidParams),
 		})
 		return
 	}
@@ -366,53 +473,84 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 	if mapKey == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "映射键不能为空",
+			"message": i18n.T(c, i18n.MsgOptionMapKeyRequired),
 		})
 		return
 	}
 
-	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
-	if !ok {
-		return
-	}
+	var beforeValue, nextValue string
+	if model_setting.IsMiniMaxStringMapOption(req.Key) {
+		items, value, ok := readMiniMaxStringMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
 
-	if oldMapKey != "" && oldMapKey != mapKey {
-		if _, exists := items[oldMapKey]; !exists {
-			c.JSON(http.StatusOK, gin.H{
+		if oldMapKey != "" && oldMapKey != mapKey {
+			if _, exists := items[oldMapKey]; !exists {
+				common.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
+				return
+			}
+			if _, exists := items[mapKey]; exists {
+				common.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
+				return
+			}
+			delete(items, oldMapKey)
+		}
+
+		items[mapKey] = strings.TrimSpace(req.Value)
+		bytes, err := common.Marshal(items)
+		if err != nil {
+			common.SysError("failed to marshal option items: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		nextValue = string(bytes)
+		if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
+			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			return
+		}
+	} else {
+		items, value, ok := readPricingJsonMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+
+		if oldMapKey != "" && oldMapKey != mapKey {
+			if _, exists := items[oldMapKey]; !exists {
+				common.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
+				return
+			}
+			if _, exists := items[mapKey]; exists {
+				common.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
+				return
+			}
+			delete(items, oldMapKey)
+		}
+
+		rawValue := json.RawMessage(strings.TrimSpace(req.Value))
+		if len(rawValue) == 0 || !json.Valid(rawValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
-				"message": "原映射项不存在",
+				"message": i18n.T(c, i18n.MsgOptionMapValueJSONRequired),
 			})
 			return
 		}
-		if _, exists := items[mapKey]; exists {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "映射键已存在",
-			})
+		items[mapKey] = rawValue
+		var err error
+		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
+		if err != nil {
+			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 			return
 		}
-		delete(items, oldMapKey)
 	}
 
-	items[mapKey] = strings.TrimSpace(req.Value)
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "MiniMax 设置失败: " + err.Error(),
-		})
-		return
-	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,
@@ -453,7 +591,7 @@ func UpdateOption(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "无效的参数",
+			"message": i18n.T(c, i18n.MsgOptionInvalidParams),
 		})
 		return
 	}
@@ -471,7 +609,7 @@ func UpdateOption(c *gin.Context) {
 		// Removed legacy features: do not allow recreating these options via API.
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "该配置已移除",
+			"message": i18n.T(c, i18n.MsgOptionRemoved),
 		})
 		return
 	}
@@ -479,7 +617,7 @@ func UpdateOption(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "配置值必须是字符串、布尔值或数字",
+			"message": i18n.T(c, i18n.MsgOptionValueTypeInvalid),
 		})
 		return
 	}
@@ -487,34 +625,22 @@ func UpdateOption(c *gin.Context) {
 	switch option.Key {
 	case "GitHubOAuthEnabled":
 		if option.Value == "true" && common.GitHubClientId == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 GitHub OAuth，请先填入 GitHub Client Id 以及 GitHub Client Secret！",
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionGitHubOAuthConfigRequired)
 			return
 		}
 	case "LinuxDOOAuthEnabled":
 		if option.Value == "true" && common.LinuxDOClientId == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 LinuxDO OAuth，请先填入 LinuxDO Client Id 以及 LinuxDO Client Secret！",
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionLinuxDOOAuthConfigRequired)
 			return
 		}
 	case "EmailDomainRestrictionEnabled":
 		if option.Value == "true" && len(common.EmailDomainWhitelist) == 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用邮箱域名限制，请先填入限制的邮箱域名！",
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionEmailDomainRequired)
 			return
 		}
 	case "TurnstileCheckEnabled":
 		if option.Value == "true" && common.TurnstileSiteKey == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 Turnstile 校验，请先填入 Turnstile 校验相关配置信息！",
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionTurnstileConfigRequired)
 
 			return
 		}
@@ -530,37 +656,25 @@ func UpdateOption(c *gin.Context) {
 	case "AudioRatio":
 		err = ratio_setting.UpdateAudioRatioByJSONString(option.Value.(string))
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "音频倍率设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionAudioRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "AudioCompletionRatio":
 		err = ratio_setting.UpdateAudioCompletionRatioByJSONString(option.Value.(string))
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "音频补全倍率设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionAudioCompletionRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "CreateCacheRatio":
 		err = ratio_setting.UpdateCreateCacheRatioByJSONString(option.Value.(string))
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "缓存创建倍率设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionCreateCacheRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "ContextPricing":
 		err = ratio_setting.UpdateContextPricingByJSONString(option.Value.(string))
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "分段计费设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionContextPricingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "ModelRequestRateLimitGroup":
@@ -588,6 +702,28 @@ func UpdateOption(c *gin.Context) {
 				"success": false,
 				"message": err.Error(),
 			})
+			return
+		}
+	case "RetryTimes":
+		// RetryTimes must be a non-negative integer strictly less than 100.
+		retryValue, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
+		if parseErr != nil || retryValue < 0 || retryValue >= 100 {
+			common.ApiErrorI18n(c, i18n.MsgOptionRetryTimesRange)
+			return
+		}
+		// When enabling retry the count must be positive; allow 0 only when retry is disabled.
+		if common.AutomaticRetryEnabled && retryValue <= 0 {
+			common.ApiErrorI18n(c, i18n.MsgOptionRetryTimesPositiveWhenEnable)
+			return
+		}
+	case "AutomaticRetryEnabled":
+		if option.Value != "true" && option.Value != "false" {
+			common.ApiErrorI18n(c, i18n.MsgOptionRetryEnabledMustBool)
+			return
+		}
+		// Turning retry on requires a positive RetryTimes.
+		if option.Value == "true" && common.RetryTimes <= 0 {
+			common.ApiErrorI18n(c, i18n.MsgOptionRetryEnableNeedsPositive)
 			return
 		}
 	case "SidebarModulesAdmin":
@@ -638,37 +774,37 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "tool_billing_setting.rules":
+		// 旧格式（带 quality/size/model_filter/provider 字段）自动迁移为新 conditions 格式
+		migrated, didMigrate, migrateErr := operation_setting.MigrateLegacyRules(option.Value.(string))
+		if migrateErr != nil {
+			common.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesParseFailed, map[string]any{"Error": migrateErr.Error()})
+			return
+		}
+		if didMigrate {
+			option.Value = migrated
+		}
 		err = operation_setting.ValidateToolBillingRules(option.Value.(string))
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "工具计费规则设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesSetFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.model_redirect", "minimax.emotion_redirect",
 		"minimax.tone_word_redirect":
 		// 仍保留的 JSON 映射型 MiniMax 选项：保存前校验。
 		if err := model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "MiniMax 设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.emotion_pattern", "minimax.tone_word_pattern":
 		if err := model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "MiniMax 设置失败: " + err.Error(),
-			})
+			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.voice_whitelist", "minimax.voice_redirect":
 		// 已迁移到数据库音色表，拒绝写入旧 key，提示通过音色管理维护。
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+			"message": i18n.T(c, i18n.MsgOptionMigratedToVoiceManagement),
 		})
 		return
 	}
@@ -680,7 +816,8 @@ func UpdateOption(c *gin.Context) {
 
 	err = model.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if option.Key == "DataExportInterval" {
@@ -718,5 +855,4 @@ func UpdateOption(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }

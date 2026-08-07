@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/types"
 )
 
 type ContextPricingUsage struct {

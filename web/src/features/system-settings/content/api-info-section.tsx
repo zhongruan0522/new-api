@@ -88,10 +88,10 @@ type ApiInfoSectionProps = {
 
 const createApiInfoSchema = (t: (key: string) => string) =>
   z.object({
-    url: z.string().url(t('Must be a valid URL')),
-    route: z.string().min(1, t('Route is required')),
-    description: z.string().min(1, t('Description is required')),
-    color: z.string().min(1, t('Color is required')),
+    url: z.string().url(t('systemSettings.errors.mustBeAValidUrl')),
+    route: z.string().min(1, t('systemSettings.errors.routeIsRequired')),
+    description: z.string().min(1, t('systemSettings.errors.descriptionIsRequired')),
+    color: z.string().min(1, t('systemSettings.errors.colorIsRequired')),
   })
 
 type ApiInfoFormValues = z.infer<ReturnType<typeof createApiInfoSchema>>
@@ -181,7 +181,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) {
-      toast.error(t('Please select items to delete'))
+      toast.error(t('systemSettings.errors.pleaseSelectItemsToDelete'))
       return
     }
     setDeleteTarget('batch')
@@ -194,7 +194,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
         prev.filter((item) => item.id !== editingApiInfo.id)
       )
       setHasChanges(true)
-      toast.success(t('API info deleted. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.apiInfoDeletedClickSaveSettingsToApply'))
     } else if (deleteTarget === 'batch') {
       setApiInfoList((prev) =>
         prev.filter((item) => !selectedIds.includes(item.id))
@@ -202,7 +202,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
       setSelectedIds([])
       setHasChanges(true)
       toast.success(
-        t('{{count}} API entries deleted. Click "Save Settings" to apply.', {
+        t('systemSettings.status.countApiEntriesDeletedClickSaveSettingsToApply', {
           count: selectedIds.length,
         })
       )
@@ -218,11 +218,11 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
           item.id === editingApiInfo.id ? { ...item, ...values } : item
         )
       )
-      toast.success(t('API info updated. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.apiInfoUpdatedClickSaveSettingsToApply'))
     } else {
       const newId = Math.max(...apiInfoList.map((item) => item.id), 0) + 1
       setApiInfoList((prev) => [...prev, { id: newId, ...values }])
-      toast.success(t('API info added. Click "Save Settings" to apply.'))
+      toast.success(t('common.tips.apiInfoAddedClickSaveSettingsToApply'))
     }
     setHasChanges(true)
     setShowDialog(false)
@@ -238,7 +238,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
         setHasChanges(false)
       }
     } catch {
-      toast.error(t('Failed to save API info'))
+      toast.error(t('systemSettings.errors.failedToSaveApiInfo'))
     }
   }
 
@@ -255,13 +255,13 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
   const getColorClass = (color: string) => getBgColorClass(color)
 
   return (
-    <SettingsSection title={t('API Addresses')}>
+    <SettingsSection title={t('systemSettings.fields.apiAddresses')}>
       <div className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div className='flex flex-wrap items-center gap-2'>
             <Button onClick={handleAdd} size='sm'>
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add API')}
+              {t('systemSettings.actions.addApi')}
             </Button>
             <Button
               onClick={handleBatchDelete}
@@ -270,7 +270,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
               disabled={selectedIds.length === 0}
             >
               <Trash2 className='mr-2 h-4 w-4' />
-              {t('Delete (')}
+              {t('systemSettings.actions.delete')}
               {selectedIds.length})
             </Button>
             <Button
@@ -280,7 +280,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('Saving...') : t('Save Settings')}
+              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -298,18 +298,18 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>{t('URL')}</TableHead>
-                <TableHead>{t('Route')}</TableHead>
-                <TableHead>{t('Description')}</TableHead>
-                <TableHead>{t('Color')}</TableHead>
-                <TableHead className='w-32'>{t('Actions')}</TableHead>
+                <TableHead>{t('systemSettings.fields.url')}</TableHead>
+                <TableHead>{t('systemSettings.fields.route')}</TableHead>
+                <TableHead>{t('auditLogs.tips.description')}</TableHead>
+                <TableHead>{t('systemSettings.fields.color')}</TableHead>
+                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {apiInfoList.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className='h-24 text-center'>
-                    {t('No API Domains yet. Click "Add API" to create one.')}
+                    {t('common.tips.noApiDomainsYetClickAddApiToCreate')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -386,10 +386,10 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingApiInfo ? t('Edit API Shortcut') : t('Add API Shortcut')}
+              {editingApiInfo ? t('systemSettings.actions.editApiShortcut') : t('systemSettings.actions.addApiShortcut')}
             </DialogTitle>
             <DialogDescription>
-              {t('Configure API documentation links for the dashboard')}
+              {t('systemSettings.tips.configureApiDocumentationLinksForTheDashboard')}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -402,10 +402,10 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='url'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('API URL')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.apiUrl')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('https://api.example.com')}
+                        placeholder={t('systemSettings.placeholders.urlApiExampleCom')}
                         {...field}
                       />
                     </FormControl>
@@ -418,9 +418,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='route'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Route Description')}</FormLabel>
+                    <FormLabel>{t('systemSettings.tips.routeDescription')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('e.g., CN2 GIA')} {...field} />
+                      <Input placeholder={t('systemSettings.placeholders.eGCn2Gia')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -431,11 +431,11 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='description'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Description')}</FormLabel>
+                    <FormLabel>{t('auditLogs.tips.description')}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={t(
-                          'e.g., Recommended for China Mainland Users'
+                          'systemSettings.placeholders.eGRecommendedForChinaMainlandUsers'
                         )}
                         {...field}
                       />
@@ -449,7 +449,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='color'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Badge Color')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.badgeColor')}</FormLabel>
                     <Select
                       items={[
                         ...colorOptions.map((option) => ({
@@ -469,7 +469,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('Select a color')} />
+                          <SelectValue placeholder={t('systemSettings.placeholders.selectAColor')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -488,7 +488,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {t('Visual indicator color for the API card')}
+                      {t('systemSettings.tips.visualIndicatorColorForTheApiCard')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -500,10 +500,10 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                   variant='outline'
                   onClick={() => setShowDialog(false)}
                 >
-                  {t('Cancel')}
+                  {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingApiInfo ? t('Update') : t('Add')}
+                  {editingApiInfo ? t('channels.fields.update') : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>
@@ -514,7 +514,7 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Are you sure?')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('keys.tips.sure')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget === 'single'
                 ? 'This API shortcut will be removed from the list.'
@@ -522,9 +522,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

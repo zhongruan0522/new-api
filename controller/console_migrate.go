@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 	opts, err := model.AllOption()
 	if err != nil {
 		common.SysError("failed to get all options: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "获取配置失败，请稍后重试"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": i18n.T(c, i18n.MsgConfigFetchFailed)})
 		return
 	}
 	// 建立 map
@@ -102,5 +103,5 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// 重新加载 OptionMap
 	model.InitOptionMap()
 	common.SysLog("console setting migrated")
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "migrated"})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": i18n.T(c, i18n.MsgMiscMigrated)})
 }

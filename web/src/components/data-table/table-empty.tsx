@@ -65,9 +65,9 @@ export function TableEmpty({
   children,
 }: TableEmptyProps) {
   const { t } = useTranslation()
-  const resolvedTitle = title ?? t('No Data')
+  const resolvedTitle = title ?? t('common.fields.noData')
   const resolvedDescription =
-    description ?? t('No records found. Try adjusting your filters.')
+    description ?? t('common.tips.noRecordsFoundTryAdjustingYourFilters')
   return (
     <TableRow>
       <TableCell colSpan={colSpan} className='h-[400px] p-0'>

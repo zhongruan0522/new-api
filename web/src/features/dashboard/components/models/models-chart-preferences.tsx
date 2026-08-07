@@ -77,21 +77,21 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant='outline' size='sm' />}>
         <Settings2 className='mr-2 h-4 w-4' />
-        {t('Preferences')}
+        {t('dashboard.fields.preferences')}
       </DialogTrigger>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Dashboard Preferences')}</DialogTitle>
+          <DialogTitle>{t('dashboard.titles.preferences')}</DialogTitle>
           <DialogDescription>
             {t(
-              'Choose the default charts, range, and time granularity for model analytics.'
+              'dashboard.placeholders.chooseTheDefaultChartsRangeAndTimeGranularityFor'
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className='grid gap-4 py-2'>
           <div className='grid gap-2'>
-            <Label htmlFor='default-time-range'>{t('Default range')}</Label>
+            <Label htmlFor='default-time-range'>{t('dashboard.fields.defaultRange')}</Label>
             <Select
               items={[
                 ...TIME_RANGE_PRESETS.map((option) => ({
@@ -108,7 +108,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='default-time-range'>
-                <SelectValue placeholder={t('Select default range')} />
+                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultRange')} />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -124,7 +124,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
 
           <div className='grid gap-2'>
             <Label htmlFor='default-time-granularity'>
-              {t('Default time granularity')}
+              {t('dashboard.fields.defaultTimeGranularity')}
             </Label>
             <Select
               items={[
@@ -142,7 +142,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='default-time-granularity'>
-                <SelectValue placeholder={t('Select time granularity')} />
+                <SelectValue placeholder={t('dashboard.placeholders.selectTimeGranularity')} />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -158,7 +158,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
 
           <div className='grid gap-2'>
             <Label htmlFor='consumption-distribution-chart'>
-              {t('Default consumption chart')}
+              {t('dashboard.fields.defaultConsumptionChart')}
             </Label>
             <Select
               items={[
@@ -177,7 +177,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='consumption-distribution-chart'>
-                <SelectValue placeholder={t('Select default chart')} />
+                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultChart')} />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -193,7 +193,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
 
           <div className='grid gap-2'>
             <Label htmlFor='model-analytics-chart'>
-              {t('Default model call chart')}
+              {t('dashboard.fields.defaultModelCallChart')}
             </Label>
             <Select
               items={[
@@ -211,7 +211,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='model-analytics-chart'>
-                <SelectValue placeholder={t('Select default chart')} />
+                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultChart')} />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -229,7 +229,7 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
         <DialogFooter>
           <Button onClick={handleSave} type='button'>
             <Save className='mr-2 h-4 w-4' />
-            {t('Save Preferences')}
+            {t('dashboard.actions.savePreferences')}
           </Button>
         </DialogFooter>
       </DialogContent>

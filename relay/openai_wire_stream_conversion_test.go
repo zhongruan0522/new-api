@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 // Test reasoning and incomplete status because Responses streaming clients need
@@ -95,6 +95,80 @@ func TestChatToResponsesStreamConverter_ReasoningDelta(t *testing.T) {
 	}
 	if !strings.Contains(out, "event: response.created") {
 		t.Fatalf("converted frame = %q, want response.created", out)
+	}
+}
+
+// Test text whitespace preservation because markdown, code blocks and tables
+// rely on standalone newlines/indentation that may arrive as their own chunks.
+func TestResponsesToChatStreamConverter_PreservesTextWhitespaceDeltas(t *testing.T) {
+	converter := newResponsesToChatStreamConverter(false)
+	deltas := []string{"| A | B |", "\n", "| - | - |", "\n", "| 1 | 2 |"}
+	var out strings.Builder
+	for _, delta := range deltas {
+		event, err := common.Marshal(dto.ResponsesStreamResponse{
+			Type:  "response.output_text.delta",
+			Delta: delta,
+		})
+		if err != nil {
+			t.Fatalf("marshal text delta %q error = %v", delta, err)
+		}
+		frame, err := converter.ConvertFrame("response.output_text.delta", string(event), "event: response.output_text.delta\ndata: "+string(event)+"\n\n")
+		if err != nil {
+			t.Fatalf("ConvertFrame(%q) error = %v", delta, err)
+		}
+		out.WriteString(frame)
+	}
+
+	got := collectChatStreamContent(t, out.String())
+	want := strings.Join(deltas, "")
+	if got != want {
+		t.Fatalf("chat stream content = %q, want %q", got, want)
+	}
+}
+
+// Test the inverse streaming rewrite for the same class of formatting-sensitive
+// content; conversion must not trim per-chunk text before emitting Responses.
+func TestChatToResponsesStreamConverter_PreservesTextWhitespaceDeltas(t *testing.T) {
+	converter := newChatToResponsesStreamConverter()
+	deltas := []string{"| A | B |", "\n", "| - | - |", "\n", "| 1 | 2 |"}
+	var out strings.Builder
+	for _, delta := range deltas {
+		chunk := dto.ChatCompletionsStreamResponse{
+			Id:      "chatcmpl_1",
+			Object:  "chat.completion.chunk",
+			Created: 1700000000,
+			Model:   "gpt-4.1",
+			Choices: []dto.ChatCompletionsStreamResponseChoice{{
+				Index: 0,
+				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{Content: &delta},
+			}},
+		}
+		raw, err := common.Marshal(chunk)
+		if err != nil {
+			t.Fatalf("marshal chunk %q error = %v", delta, err)
+		}
+		frame, err := converter.ConvertFrame("", string(raw), "data: "+string(raw)+"\n\n")
+		if err != nil {
+			t.Fatalf("ConvertFrame(%q) error = %v", delta, err)
+		}
+		out.WriteString(frame)
+	}
+	done, err := converter.ConvertFrame("", "[DONE]", "data: [DONE]\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame([DONE]) error = %v", err)
+	}
+	out.WriteString(done)
+
+	deltaText, doneText, completedText := collectResponsesStreamText(t, out.String())
+	want := strings.Join(deltas, "")
+	if deltaText != want {
+		t.Fatalf("responses stream deltas = %q, want %q", deltaText, want)
+	}
+	if doneText != want {
+		t.Fatalf("responses output_item.done text = %q, want %q", doneText, want)
+	}
+	if completedText != want {
+		t.Fatalf("responses completed text = %q, want %q", completedText, want)
 	}
 }
 
@@ -801,4 +875,89 @@ func TestResponsesToChatStreamConverter_CustomToolCallInput(t *testing.T) {
 	if !strings.Contains(out, `"custom":{"input":"1)"}`) {
 		t.Fatalf("done output = %q, want remaining custom input delta", out)
 	}
+}
+
+func collectChatStreamContent(t *testing.T, s string) string {
+	t.Helper()
+	var builder strings.Builder
+	for _, frame := range splitSSEFramesForTest(s) {
+		_, data, _, err := parseSSEFrame(frame)
+		if err != nil {
+			t.Fatalf("parse chat frame %q error = %v", frame, err)
+		}
+		if data == "" || data == "[DONE]" {
+			continue
+		}
+		var chunk dto.ChatCompletionsStreamResponse
+		if err := common.UnmarshalJsonStr(data, &chunk); err != nil {
+			t.Fatalf("unmarshal chat chunk %q error = %v", data, err)
+		}
+		for _, choice := range chunk.Choices {
+			builder.WriteString(choice.Delta.GetContentString())
+		}
+	}
+	return builder.String()
+}
+
+func collectResponsesStreamText(t *testing.T, s string) (deltaText string, doneText string, completedText string) {
+	t.Helper()
+	var deltaBuilder strings.Builder
+	var doneBuilder strings.Builder
+	var completedBuilder strings.Builder
+	for _, frame := range splitSSEFramesForTest(s) {
+		event, data, _, err := parseSSEFrame(frame)
+		if err != nil {
+			t.Fatalf("parse responses frame %q error = %v", frame, err)
+		}
+		if data == "" || data == "[DONE]" {
+			continue
+		}
+		var stream dto.ResponsesStreamResponse
+		if err := common.UnmarshalJsonStr(data, &stream); err != nil {
+			t.Fatalf("unmarshal responses frame %q error = %v", data, err)
+		}
+		eventType := stream.Type
+		if eventType == "" {
+			eventType = event
+		}
+		switch eventType {
+		case "response.output_text.delta":
+			deltaBuilder.WriteString(stream.Delta)
+		case "response.output_item.done":
+			if stream.Item != nil {
+				appendResponsesMessageText(&doneBuilder, []dto.ResponsesOutput{*stream.Item})
+			}
+		case "response.completed":
+			if stream.Response == nil {
+				continue
+			}
+			appendResponsesMessageText(&completedBuilder, stream.Response.Output)
+		}
+	}
+	return deltaBuilder.String(), doneBuilder.String(), completedBuilder.String()
+}
+
+func appendResponsesMessageText(builder *strings.Builder, outputs []dto.ResponsesOutput) {
+	for _, output := range outputs {
+		if output.Type != "message" {
+			continue
+		}
+		for _, part := range output.Content {
+			if part.Type == "output_text" {
+				builder.WriteString(part.Text)
+			}
+		}
+	}
+}
+
+func splitSSEFramesForTest(s string) []string {
+	parts := strings.Split(s, "\n\n")
+	frames := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		frames = append(frames, part+"\n\n")
+	}
+	return frames
 }

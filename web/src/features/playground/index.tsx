@@ -61,7 +61,7 @@ export function Playground() {
         toast.error(
           error instanceof Error
             ? error.message
-            : i18next.t('Failed to load playground models')
+            : i18next.t('playground.errors.failedToLoadPlaygroundModels')
         )
         return []
       }
@@ -78,7 +78,7 @@ export function Playground() {
         toast.error(
           error instanceof Error
             ? error.message
-            : i18next.t('Failed to load playground groups')
+            : i18next.t('playground.errors.failedToLoadPlaygroundGroups')
         )
         return []
       }

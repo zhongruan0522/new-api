@@ -109,32 +109,32 @@ export function DatabaseMaintenanceSection() {
     () => [
       {
         mode: 'pre_migrate',
-        title: t('Database migration'),
+        title: t('systemSettings.fields.databaseMigration'),
         description: t(
-          'Copy the current database to a new database of another supported type.'
+          'systemSettings.actions.copyTheCurrentDatabaseToANewDatabaseOf'
         ),
         help: t(
-          'Supports SQLite to MySQL/PostgreSQL, MySQL to PostgreSQL, and PostgreSQL to MySQL. Use this before switching SQL_DSN.'
+          'systemSettings.tips.supportsSqliteToMySqlPostgreSqlMySql'
         ),
-        startLabel: t('Start database migration'),
-        confirmTitle: t('Confirm database migration'),
+        startLabel: t('systemSettings.actions.startDatabaseMigration'),
+        confirmTitle: t('systemSettings.actions.confirmDatabaseMigration'),
         confirmDescription: t(
-          'A migration task will copy data to the target database. Make sure the target DSN is correct and points to a safe destination.'
+          'systemSettings.tips.migrationTaskWillCopyDataToTheTargetDatabase'
         ),
       },
       {
         mode: 'same_type_migrate',
-        title: t('Database sync'),
+        title: t('systemSettings.fields.databaseSync'),
         description: t(
-          'Copy the current database to another database of the same type.'
+          'systemSettings.actions.copyTheCurrentDatabaseToAnotherDatabaseOfThe'
         ),
         help: t(
-          'Supports MySQL to MySQL and PostgreSQL to PostgreSQL. The backend verifies that the target is not the current source database before writing.'
+          'systemSettings.tips.supportsMySqlToMySqlAndPostgreSql'
         ),
-        startLabel: t('Start database sync'),
-        confirmTitle: t('Confirm database sync'),
+        startLabel: t('systemSettings.actions.startDatabaseSync'),
+        confirmTitle: t('systemSettings.actions.confirmDatabaseSync'),
         confirmDescription: t(
-          'A sync task will copy data to the target database. Make sure this is not your current production database.'
+          'systemSettings.tips.syncTaskWillCopyDataToTheTargetDatabase'
         ),
       },
     ],
@@ -142,13 +142,13 @@ export function DatabaseMaintenanceSection() {
   )
 
   return (
-    <SettingsSection title={t('Database Maintenance')}>
+    <SettingsSection title={t('systemSettings.fields.databaseMaintenance')}>
       <Alert>
         <AlertTriangle className='size-4' />
-        <AlertTitle>{t('High-risk operation')}</AlertTitle>
+        <AlertTitle>{t('systemSettings.fields.highRiskOperation')}</AlertTitle>
         <AlertDescription>
           {t(
-            'Database migration and sync run on the server and may write to the target database. Back up data and verify DSNs before starting.'
+            'systemSettings.tips.databaseMigrationAndSyncRunOnTheServerAnd'
           )}
         </AlertDescription>
       </Alert>
@@ -181,14 +181,14 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
     try {
       const res = await getDatabaseMigrationInfo(config.mode)
       if (!res.success) {
-        throw new Error(res.message || t('Failed to load database information'))
+        throw new Error(res.message || t('systemSettings.errors.failedToLoadDatabaseInformation'))
       }
       setInfo(res.data)
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t('Failed to load database information')
+          : t('systemSettings.errors.failedToLoadDatabaseInformation')
       )
     } finally {
       setIsLoadingInfo(false)
@@ -202,7 +202,7 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
       try {
         const res = await getDatabaseMigrationJob(config.mode, jobId)
         if (!res.success) {
-          throw new Error(res.message || t('Failed to refresh migration job'))
+          throw new Error(res.message || t('systemSettings.errors.failedToRefreshMigrationJob'))
         }
         setJob(res.data)
       } catch (error) {
@@ -210,7 +210,7 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
           toast.error(
             error instanceof Error
               ? error.message
-              : t('Failed to refresh migration job')
+              : t('systemSettings.errors.failedToRefreshMigrationJob')
           )
         }
       } finally {
@@ -246,7 +246,7 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
 
   const handleOpenConfirm = () => {
     if (!request.target_dsn) {
-      toast.error(t('Target database DSN is required.'))
+      toast.error(t('systemSettings.errors.targetDatabaseDsnIsRequired'))
       return
     }
     setConfirmOpen(true)
@@ -257,14 +257,14 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
     try {
       const res = await startDatabaseMigration(config.mode, request)
       if (!res.success || !res.data?.job_id) {
-        throw new Error(res.message || t('Failed to start migration task'))
+        throw new Error(res.message || t('systemSettings.errors.failedToStartMigrationTask'))
       }
-      toast.success(t('Migration task started'))
+      toast.success(t('systemSettings.fields.migrationTaskStarted'))
       setConfirmOpen(false)
       await refreshJob(res.data.job_id, true)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to start migration task')
+        error instanceof Error ? error.message : t('systemSettings.errors.failedToStartMigrationTask')
       )
     } finally {
       setIsStarting(false)
@@ -290,23 +290,23 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
 
       <div className='grid gap-3 rounded-lg bg-muted/30 p-3 text-sm sm:grid-cols-3'>
         <InfoItem
-          label={t('Main database')}
-          value={isLoadingInfo ? t('Loading...') : formatDbType(info?.main_db_type)}
+          label={t('systemSettings.fields.mainDatabase')}
+          value={isLoadingInfo ? t('common.tips.loading') : formatDbType(info?.main_db_type)}
         />
         <InfoItem
-          label={t('Log database')}
-          value={isLoadingInfo ? t('Loading...') : formatDbType(info?.log_db_type)}
+          label={t('systemSettings.fields.logDatabase')}
+          value={isLoadingInfo ? t('common.tips.loading') : formatDbType(info?.log_db_type)}
         />
         <InfoItem
-          label={t('Separated log database')}
-          value={info?.log_db_is_separated ? t('Yes') : t('No')}
+          label={t('systemSettings.fields.separatedLogDatabase')}
+          value={info?.log_db_is_separated ? t('systemSettings.actions.yes') : t('systemSettings.actions.no')}
         />
       </div>
 
       <div className='space-y-3'>
         <div className='space-y-1.5'>
           <Label htmlFor={`${config.mode}-target-dsn`}>
-            {t('Target database DSN')}
+            {t('systemSettings.fields.targetDatabaseDsn')}
           </Label>
           <Input
             id={`${config.mode}-target-dsn`}
@@ -316,14 +316,14 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
             onChange={(event) =>
               setFormState((prev) => ({ ...prev, targetDsn: event.target.value }))
             }
-            placeholder={t('Enter target SQL_DSN')}
+            placeholder={t('systemSettings.placeholders.enterTargetSqlDsn')}
             disabled={isRunning}
           />
         </div>
 
         <div className='space-y-1.5'>
           <Label htmlFor={`${config.mode}-target-log-dsn`}>
-            {t('Target log database DSN')}
+            {t('systemSettings.fields.targetLogDatabaseDsn')}
           </Label>
           <Input
             id={`${config.mode}-target-log-dsn`}
@@ -336,14 +336,14 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
                 targetLogDsn: event.target.value,
               }))
             }
-            placeholder={t('Optional. Leave empty to use target database DSN.')}
+            placeholder={t('systemSettings.tips.optionalLeaveEmptyToUseTargetDatabaseDsn')}
             disabled={isRunning || !formState.includeLogs}
           />
         </div>
 
         <SwitchRow
-          label={t('Include usage logs')}
-          description={t('Copy the log database/table in addition to main data.')}
+          label={t('systemSettings.titles.includeUsageLogs')}
+          description={t('systemSettings.actions.copyTheLogDatabaseTableInAdditionToMain')}
           checked={formState.includeLogs}
           disabled={isRunning}
           onCheckedChange={(checked) =>
@@ -351,9 +351,9 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
           }
         />
         <SwitchRow
-          label={t('Force overwrite target database')}
+          label={t('systemSettings.fields.forceOverwriteTargetDatabase')}
           description={t(
-            'Allow migration when target tables already contain data. Use only after a verified backup.'
+            'systemSettings.tips.allowMigrationWhenTargetTablesAlreadyContainDataUse'
           )}
           checked={formState.force}
           disabled={isRunning}
@@ -377,7 +377,7 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
           <RefreshCw
             className={cn('size-4', isRefreshingJob && 'animate-spin')}
           />
-          {t('Refresh task')}
+          {t('systemSettings.actions.refreshTask')}
         </Button>
       </div>
 
@@ -390,16 +390,16 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
             <AlertDialogDescription>
               {config.confirmDescription}{' '}
               {formState.force
-                ? t('Force overwrite is enabled; target data may be replaced.')
-                : t('Target database should be empty unless force overwrite is enabled.')}
+                ? t('systemSettings.status.forceOverwriteIsEnabledTargetDataMayBeReplaced')
+                : t('systemSettings.status.targetDatabaseShouldBeEmptyUnlessForceOverwriteIs')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isStarting}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleStart} disabled={isStarting}>
-              {isStarting ? t('Starting...') : t('Confirm and start')}
+              {isStarting ? t('systemSettings.tips.starting') : t('systemSettings.actions.confirmAndStart')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -457,7 +457,7 @@ function JobPanel({
   if (!job) {
     return (
       <div className='text-muted-foreground rounded-lg border border-dashed p-4 text-sm'>
-        {t('No migration task has been started in this session.')}
+        {t('systemSettings.tips.noMigrationTaskHasBeenStartedInThisSession')}
       </div>
     )
   }
@@ -466,9 +466,9 @@ function JobPanel({
     <div className='space-y-3 rounded-lg border p-3'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='min-w-0'>
-          <div className='text-sm font-medium'>{t('Task progress')}</div>
+          <div className='text-sm font-medium'>{t('systemSettings.fields.taskProgress')}</div>
           <div className='text-muted-foreground text-xs break-all'>
-            {t('Task ID')}: {job.id}
+            {t('systemSettings.fields.taskId')}: {job.id}
           </div>
         </div>
         <Badge variant={statusVariant(job.status)}>{t(job.status)}</Badge>
@@ -476,23 +476,23 @@ function JobPanel({
 
       <Progress value={progress} />
       <div className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
-        <span>{t('Progress')}: {progress}%</span>
-        <span>{t('Current step')}: {job.current_step || '-'}</span>
+        <span>{t('systemSettings.fields.progress')}: {progress}%</span>
+        <span>{t('systemSettings.fields.currentStep')}: {job.current_step || '-'}</span>
         <span>
-          {t('Source')}: {formatDbType(job.source_db_type)}
+          {t('subscriptions.fields.source')}: {formatDbType(job.source_db_type)}
         </span>
         <span>
-          {t('Target')}: {formatDbType(job.target_db_type)}
+          {t('systemSettings.fields.target')}: {formatDbType(job.target_db_type)}
         </span>
-        <span>{t('Started at')}: {formatTimestamp(job.started_at)}</span>
+        <span>{t('systemSettings.fields.startedAt')}: {formatTimestamp(job.started_at)}</span>
         {job.finished_at ? (
-          <span>{t('Finished at')}: {formatTimestamp(job.finished_at)}</span>
+          <span>{t('systemSettings.fields.finishedAt')}: {formatTimestamp(job.finished_at)}</span>
         ) : null}
       </div>
 
       {job.error ? (
         <Alert variant='destructive'>
-          <AlertTitle>{t('Task failed')}</AlertTitle>
+          <AlertTitle>{t('systemSettings.status.taskFailed')}</AlertTitle>
           <AlertDescription>{job.error}</AlertDescription>
         </Alert>
       ) : null}
@@ -502,9 +502,9 @@ function JobPanel({
           <table className='w-full text-sm'>
             <thead className='bg-muted/50 text-muted-foreground'>
               <tr>
-                <th className='px-3 py-2 text-left font-medium'>{t('Table')}</th>
-                <th className='px-3 py-2 text-right font-medium'>{t('Copied')}</th>
-                <th className='px-3 py-2 text-right font-medium'>{t('Total')}</th>
+                <th className='px-3 py-2 text-left font-medium'>{t('systemSettings.fields.table')}</th>
+                <th className='px-3 py-2 text-right font-medium'>{t('common.status.copied')}</th>
+                <th className='px-3 py-2 text-right font-medium'>{t('dashboard.fields.total')}</th>
               </tr>
             </thead>
             <tbody>

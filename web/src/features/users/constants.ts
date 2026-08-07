@@ -38,12 +38,12 @@ export const USER_STATUS = {
 
 export const USER_STATUSES = {
   [USER_STATUS.ENABLED]: {
-    labelKey: 'Enabled',
+    labelKey: 'channels.status.enabled',
     variant: 'success' as const,
     value: USER_STATUS.ENABLED,
   },
   [USER_STATUS.DISABLED]: {
-    labelKey: 'Disabled',
+    labelKey: 'channels.status.disabled',
     variant: 'neutral' as const,
     value: USER_STATUS.DISABLED,
   },
@@ -57,9 +57,9 @@ export const USER_STATUSES = {
 export const USER_STATUS_DELETED = 3
 
 export const getUserStatusOptions = (t: (key: string) => string) => [
-  { label: t('Enabled'), value: String(USER_STATUS.ENABLED) },
-  { label: t('Disabled'), value: String(USER_STATUS.DISABLED) },
-  { label: t('Deleted'), value: String(USER_STATUS_DELETED) },
+  { label: t('channels.status.enabled'), value: String(USER_STATUS.ENABLED) },
+  { label: t('channels.status.disabled'), value: String(USER_STATUS.DISABLED) },
+  { label: t('subscriptions.actions.deleted'), value: String(USER_STATUS_DELETED) },
 ]
 
 // ============================================================================
@@ -74,26 +74,26 @@ export const USER_ROLE = {
 
 export const USER_ROLES = {
   [USER_ROLE.USER]: {
-    labelKey: 'User',
+    labelKey: 'systemSettings.fields.user',
     value: USER_ROLE.USER,
     icon: User,
   },
   [USER_ROLE.ADMIN]: {
-    labelKey: 'Admin',
+    labelKey: 'systemSettings.fields.admin',
     value: USER_ROLE.ADMIN,
     icon: Users,
   },
   [USER_ROLE.ROOT]: {
-    labelKey: 'Root',
+    labelKey: 'users.fields.root',
     value: USER_ROLE.ROOT,
     icon: Shield,
   },
 } as const
 
 export const getUserRoleOptions = (t: (key: string) => string) => [
-  { label: t('User'), value: String(USER_ROLE.USER), icon: User },
-  { label: t('Admin'), value: String(USER_ROLE.ADMIN), icon: Users },
-  { label: t('Root'), value: String(USER_ROLE.ROOT), icon: Shield },
+  { label: t('systemSettings.fields.user'), value: String(USER_ROLE.USER), icon: User },
+  { label: t('systemSettings.fields.admin'), value: String(USER_ROLE.ADMIN), icon: Users },
+  { label: t('users.fields.root'), value: String(USER_ROLE.ROOT), icon: Shield },
 ]
 
 // ============================================================================
@@ -111,7 +111,7 @@ export const BINDING_FIELDS = [
   { key: 'discord_id', label: 'Discord ID' },
   { key: 'oidc_id', label: 'OIDC ID' },
   { key: 'wechat_id', label: 'WeChat ID' },
-  { key: 'email', label: 'Email' },
+  { key: 'email', label: 'auth.fields.email' },
   { key: 'telegram_id', label: 'Telegram ID' },
 ] as const
 
@@ -120,13 +120,13 @@ export const BINDING_FIELDS = [
 // ============================================================================
 
 export const ERROR_MESSAGES = {
-  UNEXPECTED: 'An unexpected error occurred',
-  NO_USER: 'No user selected',
-  LOAD_FAILED: 'Failed to load users',
-  SEARCH_FAILED: 'Failed to search users',
-  CREATE_FAILED: 'Failed to create user',
-  UPDATE_FAILED: 'Failed to update user',
-  DELETE_FAILED: 'Failed to delete user',
+  UNEXPECTED: 'common.fields.unexpectedErrorOccurred',
+  NO_USER: 'common.errors.noUserSelected',
+  LOAD_FAILED: 'common.errors.failedToLoadUsers',
+  SEARCH_FAILED: 'common.errors.failedToSearchUsers',
+  CREATE_FAILED: 'common.errors.failedToCreateUser',
+  UPDATE_FAILED: 'common.errors.failedToUpdateUser',
+  DELETE_FAILED: 'common.errors.failedToDeleteUser',
 } as const
 
 // ============================================================================
@@ -134,6 +134,6 @@ export const ERROR_MESSAGES = {
 // ============================================================================
 
 export const SUCCESS_MESSAGES = {
-  USER_CREATED: 'User created successfully',
-  USER_UPDATED: 'User updated successfully',
+  USER_CREATED: 'common.status.userCreatedSuccessfully',
+  USER_UPDATED: 'common.status.userUpdatedSuccessfully',
 } as const

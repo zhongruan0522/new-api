@@ -122,15 +122,15 @@ const HEALTH_CONFIG: Record<
 > = {
   healthy: {
     dotClass: 'bg-success',
-    labelKey: 'Healthy',
+    labelKey: 'common.fields.healthy',
   },
   caution: {
     dotClass: 'bg-warning',
-    labelKey: 'Low balance',
+    labelKey: 'common.fields.lowBalance',
   },
   critical: {
     dotClass: 'bg-destructive',
-    labelKey: 'Balance depleted',
+    labelKey: 'dashboard.fields.balanceDepleted',
   },
 }
 
@@ -177,7 +177,7 @@ export function SummaryCards() {
     statusCurrencyFlag !== undefined
       ? statusCurrencyFlag
       : currencyEnabledFromStore
-  const currencyLabel = currencyEnabled ? getCurrencyLabel() : 'Tokens'
+  const currencyLabel = currencyEnabled ? getCurrencyLabel() : 'rankings.fields.tokens'
 
   const sparklineData = useMemo(
     () =>
@@ -240,10 +240,10 @@ export function SummaryCards() {
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div className='flex flex-col gap-1'>
               <h3 className='text-base font-semibold'>
-                {t('Usage at a glance')}
+                {t('dashboard.fields.usageAtAGlance')}
               </h3>
               <p className='text-muted-foreground text-sm'>
-                {t('Monitor balance, usage, and request volume')}
+                {t('dashboard.tips.monitorBalanceUsageAndRequestVolume')}
               </p>
             </div>
           </div>
@@ -272,7 +272,7 @@ export function SummaryCards() {
           <div className='flex flex-col gap-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs font-medium'>
-                {t('Credit remaining')}
+                {t('dashboard.fields.creditRemaining')}
               </span>
               <span className='flex items-center gap-1.5'>
                 <span
@@ -293,7 +293,7 @@ export function SummaryCards() {
               <div className='bg-background/60 rounded-lg px-2.5 py-2'>
                 <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
                   <Flame className='size-3 shrink-0' aria-hidden='true' />
-                  <span className='truncate'>{t('Last 24h usage')}</span>
+                  <span className='truncate'>{t('dashboard.fields.last24hUsage')}</span>
                 </div>
                 <div className='text-foreground mt-1.5 truncate text-xs font-semibold tabular-nums'>
                   {formatQuota(recentUsage)}
@@ -312,7 +312,7 @@ export function SummaryCards() {
                       aria-hidden='true'
                     />
                   )}
-                  <span className='truncate'>{t('Runway')}</span>
+                  <span className='truncate'>{t('dashboard.fields.runway')}</span>
                 </div>
                 <div
                   className={cn(
@@ -323,20 +323,20 @@ export function SummaryCards() {
                 >
                   {runwayDays !== null
                     ? runwayDays < 1
-                      ? t('Less than 1 day left')
+                      ? t('dashboard.fields.lessThan1DayLeft')
                       : runwayDays > 999
-                        ? `999+ ${t('days')}`
-                        : `~${formatNumber(Math.floor(runwayDays))} ${t('days')}`
+                        ? `999+ ${t('dashboard.fields.days')}`
+                        : `~${formatNumber(Math.floor(runwayDays))} ${t('dashboard.fields.days')}`
                     : remainQuota <= 0
-                      ? t('Balance depleted')
-                      : t('No recent usage')}
+                      ? t('dashboard.fields.balanceDepleted')
+                      : t('dashboard.fields.noRecentUsage')}
                 </div>
               </div>
             </div>
           </div>
 
           <Button className='justify-between' render={<Link to='/wallet' />}>
-            <span>{t('Wallet')}</span>
+            <span>{t('layout.titles.wallet')}</span>
             <ArrowRight data-icon='inline-end' />
           </Button>
         </div>

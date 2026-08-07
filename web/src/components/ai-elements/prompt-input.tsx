@@ -324,7 +324,7 @@ export function PromptInputAttachment({
             )}
           </div>
           <Button
-            aria-label={t('Remove attachment')}
+            aria-label={t('common.actions.removeAttachment')}
             className='absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5'
             onClick={(e) => {
               e.stopPropagation()
@@ -334,7 +334,7 @@ export function PromptInputAttachment({
             variant='ghost'
           >
             <XIcon />
-            <span className='sr-only'>{t('Remove')}</span>
+            <span className='sr-only'>{t('common.actions.remove')}</span>
           </Button>
         </div>
 
@@ -403,7 +403,7 @@ export const PromptInputActionAddAttachments = ({
   ...props
 }: PromptInputActionAddAttachmentsProps) => {
   const { t } = useTranslation()
-  const resolvedLabel = label ?? t('Add photos or files')
+  const resolvedLabel = label ?? t('common.actions.addPhotosOrFiles')
   const attachments = usePromptInputAttachments()
 
   return (
@@ -513,7 +513,7 @@ export const PromptInput = ({
       if (incoming.length && accepted.length === 0) {
         onError?.({
           code: 'accept',
-          message: t('No files match the accepted types.'),
+          message: t('common.tips.noFilesMatchTheAcceptedTypes'),
         })
         return
       }
@@ -523,7 +523,7 @@ export const PromptInput = ({
       if (accepted.length > 0 && sized.length === 0) {
         onError?.({
           code: 'max_file_size',
-          message: t('All files exceed the maximum size.'),
+          message: t('common.tips.allFilesExceedTheMaximumSize'),
         })
         return
       }
@@ -538,7 +538,7 @@ export const PromptInput = ({
         if (typeof capacity === 'number' && sized.length > capacity) {
           onError?.({
             code: 'max_files',
-            message: t('Too many files. Some were not added.'),
+            message: t('common.tips.tooManyFilesSomeWereNotAdded'),
           })
         }
         const next: (FileUIPart & { id: string })[] = []
@@ -771,12 +771,12 @@ export const PromptInput = ({
       <span aria-hidden='true' className='hidden' ref={anchorRef} />
       <input
         accept={accept}
-        aria-label={t('Upload Files')}
+        aria-label={t('common.actions.uploadFiles')}
         className='hidden'
         multiple={multiple}
         onChange={handleChange}
         ref={inputRef}
-        title={t('Upload Files')}
+        title={t('common.actions.uploadFiles')}
         type='file'
       />
       <form
@@ -818,7 +818,7 @@ export const PromptInputTextarea = ({
   const { t } = useTranslation()
   const controller = useOptionalPromptInputController()
   const attachments = usePromptInputAttachments()
-  const resolvedPlaceholder = placeholder ?? t('What would you like to know?')
+  const resolvedPlaceholder = placeholder ?? t('common.tips.whatWouldYouLikeToKnow')
   const [isComposing, setIsComposing] = useState(false)
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
@@ -1031,7 +1031,7 @@ export const PromptInputSubmit = ({
 
   return (
     <InputGroupButton
-      aria-label={t('Submit')}
+      aria-label={t('common.actions.submit')}
       className={cn(className)}
       size={size}
       type='submit'

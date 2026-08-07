@@ -10,20 +10,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/middleware"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/relay"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/middleware"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/relay"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -86,6 +87,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	defer func() {
 		if newAPIError != nil {
 			logger.LogError(c, fmt.Sprintf("relay error: %s", common.LocalLogPreview(newAPIError.Error())))
+			newAPIError.SetExemptStrings(
+				common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+				common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
+			)
 			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 			switch relayFormat {
 			case types.RelayFormatOpenAIRealtime:
@@ -184,7 +189,15 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 	lastFailedChannelId := 0
 
-	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+	// When the global automatic-retry toggle is off, only the first attempt runs.
+	// The configured RetryTimes and status-code rules are preserved so toggling
+	// retry back on later resumes the previous behavior without data loss.
+	maxRetry := common.RetryTimes
+	if !common.AutomaticRetryEnabled {
+		maxRetry = 0
+	}
+
+	for ; retryParam.GetRetry() <= maxRetry; retryParam.IncreaseRetry() {
 		// retry%2==1 means same-priority retry: exclude the previously failed channel
 		// retry%2==1 表示同优先级重试：排除上次失败的渠道
 		if retryParam.GetRetry()%2 == 1 {
@@ -304,10 +317,17 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	info.PriceData.GroupRatioInfo = helper.HandleGroupRatio(c, info)
 
 	if err != nil {
-		return nil, types.NewError(fmt.Errorf("获取分组 %s 下模型 %s 的可用渠道失败（retry）: %s", selectGroup, info.OriginModelName, err.Error()), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+		return nil, types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryGetChannelFailed, map[string]any{
+			"Group": selectGroup,
+			"Model": info.OriginModelName,
+			"Error": err.Error(),
+		})), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
 	}
 	if channel == nil {
-		return nil, types.NewError(fmt.Errorf("分组 %s 下模型 %s 的可用渠道不存在（retry）", selectGroup, info.OriginModelName), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+		return nil, types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryChannelNotFound, map[string]any{
+			"Group": selectGroup,
+			"Model": info.OriginModelName,
+		})), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
 	}
 
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, info.OriginModelName)
@@ -336,17 +356,27 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
-	statusCode := openaiErr.StatusCode
+	if shouldRetryByHTTPStatusCode(openaiErr.OriginalStatusCode) {
+		return true
+	}
+	if shouldRetryByHTTPStatusCode(openaiErr.StatusCode) {
+		return true
+	}
+
+	return shouldRetryByNumericErrorCode(openaiErr)
+}
+
+func shouldRetryByHTTPStatusCode(statusCode int) bool {
+	if statusCode == 0 {
+		return false
+	}
 	if statusCode >= 200 && statusCode < 300 {
-		return shouldRetryByNumericErrorCode(openaiErr)
+		return false
 	}
 	if statusCode < 100 || statusCode > 9999 {
 		return true
 	}
-	if operation_setting.ShouldRetryByStatusCode(statusCode) {
-		return true
-	}
-	return shouldRetryByNumericErrorCode(openaiErr)
+	return operation_setting.ShouldRetryByStatusCode(statusCode)
 }
 
 func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {
@@ -406,6 +436,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			startTime = time.Now()
 		}
 		useTimeMs := int(time.Since(startTime).Milliseconds())
+		err.SetExemptStrings(modelName, userGroup)
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
 	}
 

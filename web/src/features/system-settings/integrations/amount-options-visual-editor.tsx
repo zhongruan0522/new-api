@@ -42,7 +42,7 @@ export function AmountOptionsVisualEditor({
     const parsed = safeJsonParseWithValidation<unknown[]>(value, {
       fallback: [],
       validator: isArray,
-      validatorMessage: t('Amount options must be a JSON array'),
+      validatorMessage: t('systemSettings.errors.amountOptionsMustBeAJsonArray'),
       context: 'amount options',
     })
 
@@ -92,13 +92,13 @@ export function AmountOptionsVisualEditor({
     <div className='space-y-4'>
       <div>
         <p className='text-muted-foreground mb-3 text-sm'>
-          {t('Preset recharge amounts displayed to users')}
+          {t('systemSettings.tips.presetRechargeAmountsDisplayedToUsers')}
         </p>
 
         {amounts.length === 0 ? (
           <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
             {t(
-              'No amount options configured. Add amounts below to get started.'
+              'systemSettings.tips.noAmountOptionsConfiguredAddAmountsBelowToGet'
             )}
           </div>
         ) : (
@@ -121,7 +121,7 @@ export function AmountOptionsVisualEditor({
                     handleRemove(amount)
                   }}
                   className='hover:bg-muted-foreground/20 size-auto p-0.5'
-                  aria-label={t('Remove ${{amount}}', { amount })}
+                  aria-label={t('systemSettings.actions.removeAmount', { amount })}
                 >
                   <X className='h-3.5 w-3.5' />
                 </Button>
@@ -134,14 +134,14 @@ export function AmountOptionsVisualEditor({
       <div className='flex flex-col gap-2 sm:flex-row sm:items-end'>
         <div className='flex-1'>
           <Label htmlFor='new-amount' className='mb-2 block'>
-            {t('Add new amount')}
+            {t('systemSettings.actions.addNewAmount')}
           </Label>
           <Input
             id='new-amount'
             type='number'
             step='0.01'
             min='0'
-            placeholder={t('e.g., 100')}
+            placeholder={t('systemSettings.placeholders.eG100')}
             value={newAmount}
             onChange={(e) => setNewAmount(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -158,7 +158,7 @@ export function AmountOptionsVisualEditor({
           className='w-full sm:w-auto'
         >
           <Plus className='h-4 w-4 sm:mr-2' />
-          <span className='sm:inline'>{t('Add')}</span>
+          <span className='sm:inline'>{t('channels.actions.add')}</span>
         </Button>
       </div>
     </div>

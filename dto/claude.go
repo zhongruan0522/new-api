@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,10 +54,7 @@ func (c *ClaudeMediaMessage) IsStringContent() bool {
 		return false
 	}
 	_, ok := c.Content.(string)
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
 
 func (c *ClaudeMediaMessage) GetStringContent() string {
@@ -316,31 +313,27 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 	if c.Tools != nil {
 		tools := c.GetTools()
 		normalTools, webSearchTools := ProcessTools(tools)
-		if normalTools != nil {
-			for _, t := range normalTools {
-				tokenCountMeta.ToolsCount++
-				if t.Name != "" {
-					texts = append(texts, t.Name)
-				}
-				if t.Description != "" {
-					texts = append(texts, t.Description)
-				}
-				if t.InputSchema != nil {
-					b, _ := common.Marshal(t.InputSchema)
-					texts = append(texts, string(b))
-				}
+		for _, t := range normalTools {
+			tokenCountMeta.ToolsCount++
+			if t.Name != "" {
+				texts = append(texts, t.Name)
+			}
+			if t.Description != "" {
+				texts = append(texts, t.Description)
+			}
+			if t.InputSchema != nil {
+				b, _ := common.Marshal(t.InputSchema)
+				texts = append(texts, string(b))
 			}
 		}
-		if webSearchTools != nil {
-			for _, t := range webSearchTools {
-				tokenCountMeta.ToolsCount++
-				if t.Name != "" {
-					texts = append(texts, t.Name)
-				}
-				if t.UserLocation != nil {
-					b, _ := common.Marshal(t.UserLocation)
-					texts = append(texts, string(b))
-				}
+		for _, t := range webSearchTools {
+			tokenCountMeta.ToolsCount++
+			if t.Name != "" {
+				texts = append(texts, t.Name)
+			}
+			if t.UserLocation != nil {
+				b, _ := common.Marshal(t.UserLocation)
+				texts = append(texts, string(b))
 			}
 		}
 	}

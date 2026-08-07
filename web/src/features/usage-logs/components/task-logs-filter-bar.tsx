@@ -161,8 +161,8 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
   const filterValue = getFilterValue(filters, props.logCategory)
   const placeholder =
     props.logCategory === 'drawing'
-      ? t('Filter by Midjourney task ID')
-      : t('Filter by task ID')
+      ? t('usageLogs.actions.filterByMidjourneyTaskId')
+      : t('usageLogs.actions.filterByTaskId')
   const hasAdditionalFilters = !!filterValue || !!filters.channel
   const dateRangeFilter = (
     <LogsFilterField wide>
@@ -179,7 +179,7 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
   const taskIdFilter = (
     <LogsFilterField>
       <LogsFilterInput
-        aria-label={t('Task ID')}
+        aria-label={t('systemSettings.fields.taskId')}
         placeholder={placeholder}
         autoComplete="off"
         value={filterValue}
@@ -191,7 +191,7 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
   const channelFilter = isAdmin ? (
     <LogsFilterField>
       <LogsFilterInput
-        placeholder={t('Channel ID')}
+        placeholder={t('usageLogs.fields.channelId')}
         autoComplete="off"
         value={filters.channel || ''}
         onChange={(e) => handleChange('channel', e.target.value)}

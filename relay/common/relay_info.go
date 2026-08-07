@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -130,9 +130,12 @@ type RelayInfo struct {
 	// Subscription billing is removed; "" or "wallet" means wallet.
 	BillingSource string
 	// RequestId is used for idempotent pre-consume/refund
-	RequestId         string
-	IsClaudeBetaQuery bool // /v1/messages?beta=true
-	IsChannelTest     bool // channel test request
+	RequestId                 string
+	IsClaudeBetaQuery         bool // /v1/messages?beta=true
+	IsChannelTest             bool // channel test request
+	RuntimeHeadersOverride    map[string]interface{}
+	UseRuntimeHeadersOverride bool
+	ParamOverrideAudit        []string
 
 	// UpstreamRequestBodySize is set when the marshaled upstream request body
 	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
@@ -302,15 +305,18 @@ func (info *RelayInfo) ToString() string {
 
 // 定义支持流式选项的通道类型
 var streamSupportedChannels = map[int]bool{
-	constant.ChannelTypeOpenAI:    true,
-	constant.ChannelTypeAnthropic: true,
-	constant.ChannelTypeAws:       true,
-	constant.ChannelTypeGemini:    true,
-	constant.ChannelTypeAzure:     true,
-	constant.ChannelTypeOllama:    true,
-	constant.ChannelTypeDeepSeek:  true,
-	constant.ChannelTypeZhipu_v4:  true,
-	constant.ChannelTypeByteDance: true,
+	constant.ChannelTypeOpenAI:      true,
+	constant.ChannelTypeAnthropic:   true,
+	constant.ChannelTypeAws:         true,
+	constant.ChannelTypeGemini:      true,
+	constant.ChannelTypeAzure:       true,
+	constant.ChannelTypeOllama:      true,
+	constant.ChannelTypeDeepSeek:    true,
+	constant.ChannelTypeZhipu_v4:    true,
+	constant.ChannelTypeByteDance:   true,
+	constant.ChannelTypeMoonshot:    true,
+	constant.ChannelTypeMiniMax:     true,
+	constant.ChannelTypeSiliconFlow: true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
@@ -615,23 +621,17 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 
 	// 默认移除 service_tier，除非明确允许（避免额外计费风险）
 	if !channelOtherSettings.AllowServiceTier {
-		if _, exists := data["service_tier"]; exists {
-			delete(data, "service_tier")
-		}
+		delete(data, "service_tier")
 	}
 
 	// 默认允许 store 透传，除非明确禁用（禁用可能影响 Codex 使用）
 	if channelOtherSettings.DisableStore {
-		if _, exists := data["store"]; exists {
-			delete(data, "store")
-		}
+		delete(data, "store")
 	}
 
 	// 默认移除 safety_identifier，除非明确允许（保护用户隐私，避免向 OpenAI 报告用户信息）
 	if !channelOtherSettings.AllowSafetyIdentifier {
-		if _, exists := data["safety_identifier"]; exists {
-			delete(data, "safety_identifier")
-		}
+		delete(data, "safety_identifier")
 	}
 
 	jsonDataAfter, err := common.Marshal(data)

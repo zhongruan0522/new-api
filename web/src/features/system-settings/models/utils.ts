@@ -82,7 +82,7 @@ function extractErrorPosition(
 }
 
 function formatErrorMessage(error: unknown, jsonString: string): string {
-  if (!(error instanceof Error)) return 'Invalid JSON'
+  if (!(error instanceof Error)) return 'systemSettings.errors.invalidJson'
 
   const position = extractErrorPosition(error, jsonString)
   const message = error.message
@@ -118,7 +118,7 @@ export function validateJsonString(
   if (!trimmed) {
     return {
       valid: allowEmpty,
-      message: allowEmpty ? undefined : 'Value is required',
+      message: allowEmpty ? undefined : 'common.errors.valueIsRequired',
     }
   }
 
@@ -127,7 +127,7 @@ export function validateJsonString(
     if (predicate && !predicate(parsed)) {
       return {
         valid: false,
-        message: predicateMessage || 'JSON structure is invalid',
+        message: predicateMessage || 'common.errors.jsonStructureIsInvalid',
       }
     }
 

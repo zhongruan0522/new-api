@@ -59,10 +59,10 @@ export function CommandMenu() {
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
       <Command>
-        <CommandInput placeholder={t('Type a command or search...')} />
+        <CommandInput placeholder={t('common.tips.typeACommandOrSearch')} />
         <CommandList>
           <ScrollArea className='h-72 pe-1'>
-            <CommandEmpty>{t('No results found.')}</CommandEmpty>
+            <CommandEmpty>{t('common.tips.noResultsFound')}</CommandEmpty>
             {navGroups.map((group) => (
               <CommandGroup key={group.id || group.title} heading={group.title}>
                 {group.items.map((navItem, i) => {
@@ -100,19 +100,19 @@ export function CommandMenu() {
               </CommandGroup>
             ))}
             <CommandSeparator />
-            <CommandGroup heading={t('Theme')}>
+            <CommandGroup heading={t('common.fields.theme')}>
               <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
-                <Sun /> <span>{t('Light')}</span>
+                <Sun /> <span>{t('common.fields.light')}</span>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
                 <Moon className='scale-90' />
-                <span>{t('Dark')}</span>
+                <span>{t('common.fields.dark')}</span>
               </CommandItem>
               <CommandItem
                 onSelect={() => runCommand(() => setTheme('system'))}
               >
                 <Laptop />
-                <span>{t('System')}</span>
+                <span>{t('common.titles.system')}</span>
               </CommandItem>
             </CommandGroup>
           </ScrollArea>

@@ -189,6 +189,7 @@ export type SiteSettings = {
   ServerAddress: string
   'legal.user_agreement': string
   'legal.privacy_policy': string
+  'general_setting.docs_link': string
   HeaderNavModules: string
   SidebarModulesAdmin: string
 }
@@ -308,7 +309,6 @@ export type BillingSettings = {
   QuotaForInviter: number
   QuotaForInvitee: number
   TopUpLink: string
-  'general_setting.docs_link': string
   'quota_setting.free_model_pre_consumed_quota': number
   ModelPrice: string
   ModelRatio: string
@@ -349,6 +349,7 @@ export type BillingSettings = {
 
 export type OperationsSettings = {
   RetryTimes: number
+  AutomaticRetryEnabled: boolean
   DefaultCollapseSidebar: boolean
   ChannelDisableThreshold: string
   QuotaRemindThreshold: string
@@ -395,7 +396,7 @@ export type SecuritySettings = {
   'fetch_setting.ip_filter_mode': boolean
   'fetch_setting.domain_list': string[]
   'fetch_setting.ip_list': string[]
-  'fetch_setting.allowed_ports': number[]
+  'fetch_setting.allowed_ports': string[]
   'fetch_setting.apply_ip_filter_for_domain': boolean
   'audit_setting.enabled': boolean
   'audit_setting.modules': string

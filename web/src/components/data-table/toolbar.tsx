@@ -153,7 +153,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
     !!props.table.getState().globalFilter ||
     !!props.hasAdditionalFilters
 
-  const placeholder = props.searchPlaceholder ?? t('Filter...')
+  const placeholder = props.searchPlaceholder ?? t('common.actions.filter')
 
   const searchValue = props.searchKey
     ? ((props.table.getColumn(props.searchKey)?.getFilterValue() as string) ??
@@ -222,7 +222,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
   // visible when active filters exist).
   const resetButton = hasSearch ? (
     <Button variant='outline' onClick={handleReset} disabled={!isFiltered}>
-      {t('Reset')}
+      {t('common.actions.reset')}
     </Button>
   ) : isFiltered ? (
     <Button
@@ -230,7 +230,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
       onClick={handleReset}
       className='text-muted-foreground hover:text-foreground gap-1 px-2'
     >
-      {t('Reset')}
+      {t('common.actions.reset')}
       <Cross2Icon />
     </Button>
   ) : null
@@ -238,7 +238,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
   const searchButton = hasSearch ? (
     <Button onClick={props.onSearch} disabled={props.searchLoading}>
       {props.searchLoading && <Loader2 className='animate-spin' />}
-      {t('Search')}
+      {t('common.actions.search')}
     </Button>
   ) : null
 
@@ -258,7 +258,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
           'text-primary hover:text-primary'
       )}
     >
-      {expanded ? t('Collapse') : t('Expand')}
+      {expanded ? t('common.fields.collapse') : t('common.fields.expand')}
       <ChevronDown
         className={cn(
           'size-3.5 transition-transform duration-200',

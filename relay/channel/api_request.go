@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	common2 "github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
+	common2 "github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -237,10 +237,11 @@ func applyHeaderOverridePlaceholders(template string, c *gin.Context, apiKey str
 // Passthrough rules are applied first, then normal overrides are applied, so explicit overrides win.
 func processHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]string, error) {
 	headerOverride := make(map[string]string)
+	effectiveHeaderOverride := common.GetEffectiveHeaderOverride(info)
 
 	passAll := false
 	var passthroughRegex []*regexp.Regexp
-	for k := range info.HeadersOverride {
+	for k := range effectiveHeaderOverride {
 		key := strings.TrimSpace(k)
 		if key == "" {
 			continue
@@ -299,7 +300,7 @@ func processHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]s
 		}
 	}
 
-	for k, v := range info.HeadersOverride {
+	for k, v := range effectiveHeaderOverride {
 		if isHeaderPassthroughRuleKey(k) {
 			continue
 		}

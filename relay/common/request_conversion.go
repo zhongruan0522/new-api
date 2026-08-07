@@ -1,8 +1,8 @@
 package common
 
 import (
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/types"
 )
 
 func GuessRelayFormatFromRequest(req any) (types.RelayFormat, bool) {

@@ -6,9 +6,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -104,17 +105,7 @@ func GetPerformanceStats(c *gin.Context) {
 		MonitorDiskThreshold:   monitorConfig.DiskThreshold,
 	}
 
-	// 获取磁盘空间信息
-	// 使用缓存的系统状态，避免频繁调用系统 API
-	systemStatus := common.GetSystemStatus()
-	diskSpaceInfo := common.DiskSpaceInfo{
-		UsedPercent: systemStatus.DiskUsage,
-	}
-	// 如果需要详细信息，可以按需获取，或者扩展 SystemStatus
-	// 这里为了保持接口兼容性，我们仍然调用 GetDiskSpaceInfo，但注意这可能会有性能开销
-	// 考虑到 GetPerformanceStats 是管理接口，频率较低，直接调用是可以接受的
-	// 但为了一致性，我们也可以考虑从 SystemStatus 中获取部分信息
-	diskSpaceInfo = common.GetDiskSpaceInfo()
+	diskSpaceInfo := common.GetDiskSpaceInfo()
 
 	stats := PerformanceStats{
 		CacheStats: cacheStats,
@@ -142,7 +133,8 @@ func ClearDiskCache(c *gin.Context) {
 	// 10 分钟是一个安全的阈值，确保正在进行的请求不会被误删
 	err := common.CleanupOldDiskCacheFiles(10 * time.Minute)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to cleanup old disk cache files: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -150,7 +142,7 @@ func ClearDiskCache(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "不活跃的磁盘缓存已清理",
+		"message": i18n.T(c, i18n.MsgPerformanceDiskCacheCleared),
 	})
 }
 
@@ -162,7 +154,7 @@ func ResetPerformanceStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "统计信息已重置",
+		"message": i18n.T(c, i18n.MsgPerformanceStatsReset),
 	})
 }
 
@@ -174,7 +166,7 @@ func ForceGC(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "GC 已执行",
+		"message": i18n.T(c, i18n.MsgPerformanceGCExecuted),
 	})
 }
 

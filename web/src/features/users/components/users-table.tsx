@@ -173,9 +173,9 @@ export function UsersTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No Users Found')}
+      emptyTitle={t('users.titles.noUsersFound')}
       emptyDescription={t(
-        'No users available. Try adjusting your search or filters.'
+        'users.tips.noUsersAvailableTryAdjustingYourSearchOrFilters'
       )}
       skeletonKeyPrefix='users-skeleton'
       toolbar={<UsersFilterBar table={table} />}

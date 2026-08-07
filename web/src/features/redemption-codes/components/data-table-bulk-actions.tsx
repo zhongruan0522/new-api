@@ -64,7 +64,7 @@ export function DataTableBulkActions<TData>({
       if (result.success) {
         const count = result.data || 0
         toast.success(
-          t('Successfully deleted {{count}} invalid redemption codes', {
+          t('redemptionCodes.status.successfullyDeletedCountInvalidRedemptionCodes', {
             count,
           })
         )
@@ -79,15 +79,15 @@ export function DataTableBulkActions<TData>({
 
   return (
     <>
-      <BulkActionsToolbar table={table} entityName={t('Redemption Codes')}>
+      <BulkActionsToolbar table={table} entityName={t('redemptionCodes.fields.codes')}>
         <CopyButton
           value={contentToCopy}
           variant='outline'
           size='icon'
           className='size-8'
-          tooltip={t('Copy selected codes')}
-          successTooltip={t('Codes copied!')}
-          aria-label={t('Copy selected codes')}
+          tooltip={t('redemptionCodes.actions.copySelectedCodes')}
+          successTooltip={t('redemptionCodes.status.codesCopied')}
+          aria-label={t('redemptionCodes.actions.copySelectedCodes')}
         />
 
         <Tooltip>
@@ -98,16 +98,16 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={() => setShowDeleteInvalidConfirm(true)}
                 className='size-8'
-                aria-label={t('Delete invalid redemption codes')}
-                title={t('Delete invalid redemption codes')}
+                aria-label={t('redemptionCodes.actions.deleteInvalidRedemptionCodes')}
+                title={t('redemptionCodes.actions.deleteInvalidRedemptionCodes')}
               />
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('Delete invalid codes')}</span>
+            <span className='sr-only'>{t('redemptionCodes.actions.deleteInvalidCodes')}</span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Delete invalid codes (used/disabled/expired)')}</p>
+            <p>{t('redemptionCodes.actions.deleteInvalidCodesUsedDisabledExpired')}</p>
           </TooltipContent>
         </Tooltip>
       </BulkActionsToolbar>
@@ -119,18 +119,18 @@ export function DataTableBulkActions<TData>({
         handleConfirm={handleDeleteInvalid}
         isLoading={isDeleting}
         className='max-w-md'
-        title={t('Delete Invalid Redemption Codes?')}
+        title={t('redemptionCodes.actions.deleteInvalidRedemptionCodesfa2061')}
         desc={
           <>
-            {t('This will delete all')} <strong>{t('Used')}</strong>,{' '}
-            <strong>{t('Disabled')}</strong>
-            {t(', and')} <strong>{t('Expired')}</strong>{' '}
-            {t('redemption codes.')}
+            {t('redemptionCodes.tips.deleteAll')} <strong>{t('common.status.used')}</strong>,{' '}
+            <strong>{t('channels.status.disabled')}</strong>
+            {t('redemptionCodes.fields.value')} <strong>{t('redemptionCodes.status.expired')}</strong>{' '}
+            {t('redemptionCodes.tips.codes')}
             <br />
-            {t('This action cannot be undone.')}
+            {t('keys.errors.actionCannotBeUndone951f49')}
           </>
         }
-        confirmText={t('Delete Invalid')}
+        confirmText={t('redemptionCodes.actions.deleteInvalid')}
       />
     </>
   )

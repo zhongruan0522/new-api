@@ -3,7 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"strings"
@@ -37,7 +37,7 @@ type Token struct {
 	RemainQuota        int     `json:"remain_quota" gorm:"default:0"`
 	UnlimitedQuota     bool    `json:"unlimited_quota"`
 	ModelLimitsEnabled bool    `json:"model_limits_enabled"`
-	ModelLimits        string  `json:"model_limits" gorm:"type:varchar(1024);default:''"`
+	ModelLimits        string  `json:"model_limits" gorm:"type:text;default:''"`
 	AllowIps           *string `json:"allow_ips" gorm:"default:''"`
 	UsedQuota          int     `json:"used_quota" gorm:"default:0"` // used quota
 	Group              string  `json:"group" gorm:"default:''"`
@@ -68,6 +68,25 @@ func (token *Token) Clean() {
 	token.Key = ""
 }
 
+// MaskTokenKey 将令牌密钥脱敏为等长星号，供列表/详情等接口返回，避免泄露真实 key。
+// 数据库中的 key 不含 sk- 前缀；前端展示时再拼接 sk-。
+func MaskTokenKey(key string) string {
+	if key == "" {
+		return ""
+	}
+	return strings.Repeat("*", len(key))
+}
+
+// GetFullKey 返回数据库中存储的完整密钥（不含 sk- 前缀）。
+func (token *Token) GetFullKey() string {
+	return token.Key
+}
+
+// GetMaskedKey 返回脱敏后的密钥字段值。
+func (token *Token) GetMaskedKey() string {
+	return MaskTokenKey(token.Key)
+}
+
 func (token *Token) GetIpLimits() []string {
 	// delete empty spaces
 	//split with \n
@@ -92,8 +111,7 @@ func (token *Token) GetIpLimits() []string {
 
 func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
 	var tokens []*Token
-	var err error
-	err = DB.Where("user_id = ?", userId).Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
+	err := DB.Where("user_id = ?", userId).Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
 	return tokens, err
 }
 
@@ -395,8 +413,7 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 }
 
 func (token *Token) Insert() error {
-	var err error
-	err = DB.Create(token).Error
+	err := DB.Create(token).Error
 	return err
 }
 

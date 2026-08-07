@@ -74,18 +74,18 @@ export function DataTableColumnHeader<TData, TValue>({
         <DropdownMenuContent align='start'>
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUpIcon className='text-muted-foreground/70 size-3.5' />
-            {t('Asc')}
+            {t('common.fields.asc')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
             <ArrowDownIcon className='text-muted-foreground/70 size-3.5' />
-            {t('Desc')}
+            {t('common.fields.desc')}
           </DropdownMenuItem>
           {column.getCanHide() && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
                 <EyeNoneIcon className='text-muted-foreground/70 size-3.5' />
-                {t('Hide')}
+                {t('common.fields.hide')}
               </DropdownMenuItem>
             </>
           )}

@@ -78,7 +78,7 @@ function getRatioBadgeClassName(ratio: ApiKeyGroupOption['ratio']) {
 
 function GroupRatioBadge({ ratio }: { ratio: ApiKeyGroupOption['ratio'] }) {
   const { t } = useTranslation()
-  const label = formatGroupRatio(ratio, t('Ratio'))
+  const label = formatGroupRatio(ratio, t('dynamicRatio.fields.ratio794f65'))
 
   if (!label) return null
 
@@ -145,7 +145,7 @@ export function ApiKeyGroupCombobox({
         <span className='flex min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3'>
           <span className='min-w-0'>
             <span className='block truncate font-medium'>
-              {selectedOption?.label || placeholder || t('Select a group')}
+              {selectedOption?.label || placeholder || t('dynamicRatio.placeholders.selectAGroup')}
             </span>
             {selectedOption?.desc && (
               <span className='text-muted-foreground block truncate text-[11px] sm:text-xs'>
@@ -167,12 +167,12 @@ export function ApiKeyGroupCombobox({
       >
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder={t('Search...')}
+            placeholder={t('keys.actions.search')}
             value={searchValue}
             onValueChange={setSearchValue}
           />
           <CommandList className='max-h-[360px]'>
-            <CommandEmpty>{t('No group found.')}</CommandEmpty>
+            <CommandEmpty>{t('common.tips.noGroupFound')}</CommandEmpty>
             <CommandGroup>
               {filteredOptions.map((option) => (
                 <CommandItem

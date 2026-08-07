@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 )
 
 func TestSendPasswordResetEmailHidesUnknownEmail(t *testing.T) {

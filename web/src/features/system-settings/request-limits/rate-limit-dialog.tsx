@@ -110,11 +110,11 @@ export function RateLimitDialog({
         <DialogHeader>
           <DialogTitle>
             {isEditMode
-              ? t('Edit group rate limit')
-              : t('Add group rate limit')}
+              ? t('systemSettings.actions.editGroupRateLimit')
+              : t('systemSettings.actions.addGroupRateLimit')}
           </DialogTitle>
           <DialogDescription>
-            {t('Configure rate limiting rules for a specific user group.')}
+            {t('systemSettings.tips.configureRateLimitingRulesForASpecificUserGroup')}
           </DialogDescription>
         </DialogHeader>
 
@@ -128,18 +128,18 @@ export function RateLimitDialog({
               name='groupName'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Group Name')}</FormLabel>
+                  <FormLabel>{t('models.fields.groupName')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('e.g., default, vip, premium')}
+                      placeholder={t('systemSettings.placeholders.eGDefaultVipPremium')}
                       {...field}
                       disabled={isEditMode}
                     />
                   </FormControl>
                   <FormDescription>
                     {isEditMode
-                      ? t('Group name cannot be changed when editing.')
-                      : t('Unique identifier for this group.')}
+                      ? t('systemSettings.errors.groupNameCannotBeChangedWhenEditing')
+                      : t('systemSettings.tips.uniqueIdentifierForThisGroup')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +152,7 @@ export function RateLimitDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {t('Max Requests (including failures)')}
+                    {t('systemSettings.tips.maxRequestsIncludingFailures')}
                   </FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
@@ -167,12 +167,12 @@ export function RateLimitDialog({
                         }
                       />
                       <span className='text-muted-foreground text-sm'>
-                        {t('times')}
+                        {t('systemSettings.fields.times')}
                       </span>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Total requests allowed per period. 0 = unlimited.')}
+                    {t('systemSettings.tips.totalRequestsAllowedPerPeriod0Unlimited')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -184,7 +184,7 @@ export function RateLimitDialog({
               name='maxSuccess'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Max Successful Requests')}</FormLabel>
+                  <FormLabel>{t('systemSettings.status.maxSuccessfulRequests')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -198,12 +198,12 @@ export function RateLimitDialog({
                         }
                       />
                       <span className='text-muted-foreground text-sm'>
-                        {t('times')}
+                        {t('systemSettings.fields.times')}
                       </span>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Only successful requests count toward this limit.')}
+                    {t('systemSettings.status.onlySuccessfulRequestsCountTowardThisLimit')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -216,10 +216,10 @@ export function RateLimitDialog({
                 variant='outline'
                 onClick={() => onOpenChange(false)}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('Update') : t('Add')}
+                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

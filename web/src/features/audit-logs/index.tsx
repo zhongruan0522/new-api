@@ -29,7 +29,7 @@ export function AuditLogs() {
 
   return (
     <SectionPageLayout>
-      <SectionPageLayout.Title>{t('Audit Logs')}</SectionPageLayout.Title>
+      <SectionPageLayout.Title>{t('auditLogs.titles.logs')}</SectionPageLayout.Title>
       <SectionPageLayout.Content>
         <AuditLogsTable search={search} />
       </SectionPageLayout.Content>

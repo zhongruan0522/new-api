@@ -102,10 +102,10 @@ export function AuditLogsFilterBar({
 
   const moduleLabel =
     moduleItems.find((m) => m.value === localFilters.module)?.label ??
-    t('All Modules')
+    t('auditLogs.fields.allModules')
   const actionTypeLabel =
     actionTypeItems.find((a) => a.value === localFilters.actionType)?.label ??
-    t('All Action Types')
+    t('auditLogs.fields.allActionTypes')
 
   return (
     <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
@@ -121,7 +121,7 @@ export function AuditLogsFilterBar({
       </div>
 
       <Input
-        placeholder={t('Operator')}
+        placeholder={t('auditLogs.fields.operator')}
         autoComplete='off'
         value={localFilters.username}
         onChange={(e) => handleChange('username', e.target.value)}
@@ -141,7 +141,7 @@ export function AuditLogsFilterBar({
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           <SelectGroup>
-            <SelectItem value=''>{t('All Modules')}</SelectItem>
+            <SelectItem value=''>{t('auditLogs.fields.allModules')}</SelectItem>
             {AUDIT_MODULES.map((m) => (
               <SelectItem key={m.value} value={m.value}>
                 {t(m.label)}
@@ -163,7 +163,7 @@ export function AuditLogsFilterBar({
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           <SelectGroup>
-            <SelectItem value=''>{t('All Action Types')}</SelectItem>
+            <SelectItem value=''>{t('auditLogs.fields.allActionTypes')}</SelectItem>
             {AUDIT_ACTION_TYPES.map((a) => (
               <SelectItem key={a.value} value={a.value}>
                 {t(a.label)}
@@ -175,10 +175,10 @@ export function AuditLogsFilterBar({
 
       <div className='ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2'>
         <Button variant='outline' onClick={handleReset}>
-          {t('Reset')}
+          {t('common.actions.reset')}
         </Button>
         <Button onClick={handleApply} disabled={loading}>
-          {t('Search')}
+          {t('common.actions.search')}
         </Button>
       </div>
     </div>

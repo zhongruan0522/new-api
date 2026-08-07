@@ -40,10 +40,10 @@ interface StatusCodeRiskDialogProps {
 }
 
 const CHECKLIST_KEYS = [
-  'High-risk status code retry risk check 1',
-  'High-risk status code retry risk check 2',
-  'High-risk status code retry risk check 3',
-  'High-risk status code retry risk check 4',
+  'common.errors.highRiskStatusCodeRetryRiskCheck1',
+  'common.tips.highRiskStatusCodeRetryRiskCheck2',
+  'common.tips.highRiskStatusCodeRetryRiskCheck3',
+  'common.tips.highRiskStatusCodeRetryRiskCheck4',
 ] as const
 
 export function StatusCodeRiskDialog({
@@ -56,7 +56,7 @@ export function StatusCodeRiskDialog({
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
   const [confirmText, setConfirmText] = useState('')
 
-  const requiredText = t('High-risk status code retry confirmation text')
+  const requiredText = t('channels.fields.highRiskStatusCodeRetryConfirmationText')
   const allChecked = checkedItems.size === CHECKLIST_KEYS.length
   const textMatches = confirmText.trim() === requiredText.trim()
   const canConfirm = allChecked && textMatches
@@ -89,10 +89,10 @@ export function StatusCodeRiskDialog({
         <DialogHeader>
           <DialogTitle className='text-destructive flex items-center gap-2'>
             <AlertTriangle className='h-5 w-5' />
-            {t('High-risk operation confirmation')}
+            {t('channels.tips.highRiskOperationConfirmation')}
           </DialogTitle>
           <DialogDescription>
-            {t('High-risk status code retry risk disclaimer')}
+            {t('channels.errors.highRiskStatusCodeRetryRiskDisclaimer')}
           </DialogDescription>
         </DialogHeader>
 
@@ -100,7 +100,7 @@ export function StatusCodeRiskDialog({
           {detailItems.length > 0 && (
             <div className='border-destructive/30 bg-destructive/5 rounded-lg border p-3'>
               <p className='mb-2 text-sm font-medium'>
-                {t('Detected high-risk status code redirect rules')}
+                {t('channels.tips.detectedHighRiskStatusCodeRedirectRules')}
               </p>
               <ul className='list-inside list-disc text-sm'>
                 {detailItems.map((item) => (
@@ -132,7 +132,7 @@ export function StatusCodeRiskDialog({
 
           <div className='space-y-1.5'>
             <Label className='text-sm'>
-              {t('Action confirmation')}:{' '}
+              {t('channels.fields.actionConfirmation')}:{' '}
               <code className='bg-muted rounded px-1 text-xs'>
                 {requiredText}
               </code>
@@ -140,11 +140,11 @@ export function StatusCodeRiskDialog({
             <Input
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={t('High-risk status code retry input placeholder')}
+              placeholder={t('channels.tips.highRiskStatusCodeRetryInputPlaceholder')}
             />
             {confirmText && !textMatches && (
               <p className='text-destructive text-xs'>
-                {t('High-risk status code retry input mismatch')}
+                {t('channels.tips.highRiskStatusCodeRetryInputMismatch')}
               </p>
             )}
           </div>
@@ -152,14 +152,14 @@ export function StatusCodeRiskDialog({
 
         <DialogFooter>
           <Button variant='outline' onClick={handleCancel}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button
             variant='destructive'
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            {t('I confirm enabling high-risk retry')}
+            {t('channels.tips.iConfirmEnablingHighRiskRetry')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -49,7 +49,7 @@ export function LanguageSwitcher() {
         render={<Button variant='ghost' size='icon' className='h-9 w-9' />}
       >
         <Languages className='size-[1.2rem]' />
-        <span className='sr-only'>{t('Change language')}</span>
+        <span className='sr-only'>{t('common.fields.changeLanguage')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (

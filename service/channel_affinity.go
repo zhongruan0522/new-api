@@ -12,10 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/samber/hot"
 	"github.com/tidwall/gjson"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/pkg/cachex"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/pkg/cachex"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
 const (
@@ -193,15 +194,15 @@ func ClearChannelAffinityCacheAll() int {
 	return len(keys)
 }
 
-func ClearChannelAffinityCacheByRuleName(ruleName string) (int, error) {
+func ClearChannelAffinityCacheByRuleName(ctx *gin.Context, ruleName string) (int, error) {
 	ruleName = strings.TrimSpace(ruleName)
 	if ruleName == "" {
-		return 0, fmt.Errorf("rule_name 不能为空")
+		return 0, fmt.Errorf("%s", i18n.T(ctx, i18n.MsgChannelAffinityRuleNameRequired))
 	}
 
 	setting := operation_setting.GetChannelAffinitySetting()
 	if setting == nil {
-		return 0, fmt.Errorf("channel_affinity_setting 未初始化")
+		return 0, fmt.Errorf("%s", i18n.T(ctx, i18n.MsgChannelAffinitySettingNotInitialized))
 	}
 
 	var matchedRule *operation_setting.ChannelAffinityRule
@@ -214,10 +215,10 @@ func ClearChannelAffinityCacheByRuleName(ruleName string) (int, error) {
 		break
 	}
 	if matchedRule == nil {
-		return 0, fmt.Errorf("未知规则名称")
+		return 0, fmt.Errorf("%s", i18n.T(ctx, i18n.MsgChannelAffinityUnknownRuleName))
 	}
 	if !matchedRule.IncludeRuleName {
-		return 0, fmt.Errorf("该规则未启用 include_rule_name，无法按规则清空缓存")
+		return 0, fmt.Errorf("%s", i18n.T(ctx, i18n.MsgChannelAffinityIncludeRuleNameDisabled))
 	}
 
 	cache := getChannelAffinityCache()
@@ -285,6 +286,11 @@ func extractChannelAffinityValue(c *gin.Context, src operation_setting.ChannelAf
 			return ""
 		}
 		return strings.TrimSpace(c.GetString(src.Key))
+	case "request_header":
+		if src.Key == "" || c.Request == nil {
+			return ""
+		}
+		return strings.TrimSpace(c.Request.Header.Get(src.Key))
 	case "gjson":
 		if src.Path == "" {
 			return ""

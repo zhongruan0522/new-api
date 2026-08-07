@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { shouldCommitDebouncedSearch } from './channels-table'
+import { shouldCommitDebouncedSearch } from '../lib/should-commit-debounced-search'
 
 describe('shouldCommitDebouncedSearch', () => {
   test('does not submit search while a user is composing Chinese input', () => {

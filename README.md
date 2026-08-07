@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="/web/public/logo.png" alt="New API" width="120" />
+  <img src="/web/public/logo.png" alt="NookMux" width="120" />
 
-  # New API
+  # NookMux
 
   基于 [newapi](https://github.com/QuantumNous/new-api) 的自用定制版 AI API 网关 / 代理项目。
 
-  本项目仅用于个人学习、研究与自用场景，不得用于商业用途，不得使用本项目进行中转、分发、倒卖厂商 Plan 或其他违反上游服务条款的行为。部署或使用本项目即视为已理解并同意相关限制。
+  本项目主要用于个人学习、研究与自用场景。使用、部署或二次分发本项目时，应遵守 AGPL-3.0 许可证、本项目及上游项目的版权声明，并自行确保不违反相关上游服务提供商的服务条款；不得将本项目用于中转、分发、倒卖厂商 Plan 或其他违反第三方服务条款的行为。
 
-  [官方文档](https://docs.newapi.pro/zh/docs) · [DeepWiki](https://deepwiki.com/QuantumNous/new-api)
+  [Zread](https://zread.ai/NookMux/NookMux) · [DeepWiki](https://deepwiki.com/NookMux/NookMux)
 </div>
 
 ---
@@ -26,9 +26,12 @@
 
 - OpenCode
 - Codex
-- CurSor
+- Cursor
 
 ### 使用的 AI 模型
+
+<details>
+<summary>Z.AI GLM</summary>
 
 - GLM-5 系列  
   - GLM-5
@@ -39,9 +42,19 @@
   - GLM-5-Turbo
   - GLM-5V-Turbo
 
+</details>
+
+<details>
+<summary>OpenAI GPT</summary>
+
 - GPT-5 系列  
   - GPT-5.2-Xhigh
   - GPT-5.4-Xhigh / High
+  - GPT-5.5-High
+
+</details>
+
+> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax-M3`、`Kimi-K2.6`、`Kimi-K3`
 
 ## 致谢
 
@@ -51,3 +64,5 @@
 - **[MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
 - **[AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
 - **[Openafw](https://github.com/openafw/openafw)** - 本地AI流量安全过滤方案参考
+- **[zaicontrol[私有仓库]](https://github.com/zhongruan0522/zaicontrol)** - Z.AI套餐查询相关接口
+- **[cc-switch](https://github.com/farion1231/cc-switch)** - Kimi套餐查询相关接口

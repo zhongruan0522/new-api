@@ -1,6 +1,6 @@
 package common
 
-import "github.com/zhongruan0522/new-api/dto"
+import "github.com/NookMux/NookMux/dto"
 
 // ApplyResponsesUsageToChatUsage maps OpenAI Responses usage fields onto the
 // Chat Completions usage fields used internally for quota calculation.

@@ -79,13 +79,13 @@ export function SensitiveWordsSection({
   }
 
   return (
-    <SettingsSection title={t('Sensitive Words')}>
+    <SettingsSection title={t('systemSettings.fields.sensitiveWords')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save sensitive words'
+            saveLabel='common.actions.saveSensitiveWords'
           />
           <div className='space-y-4'>
             <FormField
@@ -94,10 +94,10 @@ export function SensitiveWordsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Enable filtering')}</FormLabel>
+                    <FormLabel>{t('systemSettings.actions.enableFiltering')}</FormLabel>
                     <FormDescription>
                       {t(
-                        'Blocks messages when sensitive keywords are detected.'
+                        'systemSettings.tips.blocksMessagesWhenSensitiveKeywordsAreDetected'
                       )}
                     </FormDescription>
                   </SettingsSwitchContent>
@@ -117,10 +117,10 @@ export function SensitiveWordsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('Inspect user prompts')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.inspectUserPrompts')}</FormLabel>
                     <FormDescription>
                       {t(
-                        'When enabled, prompts are scanned before reaching upstream models.'
+                        'systemSettings.status.enabledPromptsAreScannedBeforeReachingUpstreamModels'
                       )}
                     </FormDescription>
                   </SettingsSwitchContent>
@@ -140,17 +140,17 @@ export function SensitiveWordsSection({
             name='SensitiveWords'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Blocked keywords')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.blockedKeywords')}</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={12}
-                    placeholder={t('Enter one keyword per line')}
+                    placeholder={t('systemSettings.placeholders.enterOneKeywordPerLine')}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Each line represents one keyword. Leave blank to disable the list but keep the switch states.'
+                    'systemSettings.tips.eachLineRepresentsOneKeywordLeaveBlankToDisable'
                   )}
                 </FormDescription>
                 <FormMessage />

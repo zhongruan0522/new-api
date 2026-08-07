@@ -74,15 +74,15 @@ import type { SyncOverwritePayload } from '../../types'
 import { useModels } from '../models-provider'
 
 const FIELD_LABELS: Record<string, string> = {
-  description: 'Description',
-  icon: 'Icon',
-  tags: 'Tags',
-  vendor: 'Vendor',
-  name_rule: 'Name Rule',
+  description: 'auditLogs.tips.description',
+  icon: 'models.fields.icon',
+  tags: 'models.fields.tags',
+  vendor: 'models.fields.vendor',
+  name_rule: 'models.fields.nameRule',
   status: 'Status',
-  endpoints: 'Endpoints',
-  quota_types: 'Quota Types',
-  enable_groups: 'Enable Groups',
+  endpoints: 'models.fields.endpoints',
+  quota_types: 'models.fields.quotaTypes',
+  enable_groups: 'models.actions.enableGroups',
 }
 
 const formatValue = (value: unknown) => {
@@ -114,7 +114,7 @@ type ConflictFieldRow = {
 
 function ValuePreview({ value }: { value: unknown }) {
   return (
-    <pre className='bg-muted/70 text-muted-foreground max-h-32 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs break-words whitespace-pre-wrap'>
+    <pre className='bg-muted/70 text-muted-foreground max-h-32 overflow-auto rounded-md border px-2 py-1.5 font-mono text-xs wrap-break-word whitespace-pre-wrap'>
       {formatValue(value)}
     </pre>
   )
@@ -135,7 +135,7 @@ export function UpstreamConflictDialog({
   const [search, setSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(20)
   const [pageIndex, setPageIndex] = useState(0)
 
   useEffect(() => {
@@ -220,7 +220,7 @@ export function UpstreamConflictDialog({
             <Checkbox
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label={t('Select row')}
+              aria-label={t('channels.placeholders.selectRow')}
             />
           ) : null}
           <div className='space-y-1'>
@@ -264,7 +264,7 @@ export function UpstreamConflictDialog({
           <PopoverContent className='w-[min(90vw,24rem)] space-y-4 text-sm'>
             <div>
               <StatusBadge
-                label='Local'
+                label={t('common.fields.local')}
                 variant='neutral'
                 size='sm'
                 copyable={false}
@@ -276,7 +276,7 @@ export function UpstreamConflictDialog({
             </div>
             <div>
               <StatusBadge
-                label='Upstream'
+                label={t('common.fields.upstream')}
                 variant='info'
                 size='sm'
                 copyable={false}
@@ -303,14 +303,14 @@ export function UpstreamConflictDialog({
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label={t('Select all')}
+          aria-label={t('channels.placeholders.selectAll')}
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label={t('Select row')}
+          aria-label={t('channels.placeholders.selectRow')}
         />
       ),
       enableSorting: false,
@@ -416,7 +416,7 @@ export function UpstreamConflictDialog({
       .filter((item) => item.fields.length > 0)
 
     if (payload.length === 0) {
-      toast.warning(t('Select at least one field to overwrite.'))
+      toast.warning(t('models.placeholders.selectAtLeastOneFieldToOverwrite'))
       return
     }
 
@@ -429,16 +429,16 @@ export function UpstreamConflictDialog({
       })
 
       if (response.success) {
-        toast.success(t('Selected conflicts were overwritten successfully.'))
+        toast.success(t('models.placeholders.selectedConflictsWereOverwrittenSuccessfully'))
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         setUpstreamConflicts([])
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('Failed to apply overwrite.'))
+        toast.error(response.message || t('models.errors.failedToApplyOverwrite'))
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || t('Failed to apply overwrite.'))
+      toast.error((error as Error)?.message || t('models.errors.failedToApplyOverwrite'))
     } finally {
       setIsSubmitting(false)
     }
@@ -459,18 +459,18 @@ export function UpstreamConflictDialog({
         initialFocus={!isMobile}
       >
         <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden'>
-          <DialogHeader className='flex-shrink-0 text-start'>
-            <DialogTitle>{t('Resolve Conflicts')}</DialogTitle>
+          <DialogHeader className='shrink-0 text-start'>
+            <DialogTitle>{t('models.fields.resolveConflicts')}</DialogTitle>
             <DialogDescription>
               {t(
-                'Select the fields you want to overwrite with upstream data. Unselected fields keep their local values.'
+                'models.placeholders.selectTheFieldsYouWantToOverwriteWithUpstream'
               )}
             </DialogDescription>
           </DialogHeader>
 
           {!hasConflicts ? (
             <div className='text-muted-foreground flex flex-1 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm'>
-              {t('No conflict entries available.')}
+              {t('models.tips.noConflictEntriesAvailable')}
             </div>
           ) : (
             <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-hidden'>
@@ -478,13 +478,13 @@ export function UpstreamConflictDialog({
                 <div className='space-y-1'>
                   <div className='text-sm font-medium'>
                     {visibleModelCount}{' '}
-                    {visibleModelCount === 1 ? t('Model') : t('Models')}{' '}
-                    {t('with conflicts')}
+                    {visibleModelCount === 1 ? t('common.fields.model') : t('channels.titles.models')}{' '}
+                    {t('models.fields.conflicts')}
                   </div>
                   <div className='text-muted-foreground text-xs'>
-                    {visibleFieldCount} {t('field')}
-                    {visibleFieldCount === 1 ? '' : 's'} {t('showing •')}{' '}
-                    {totalSelectedFields} {t('selected')}
+                    {visibleFieldCount} {t('models.fields.field')}
+                    {visibleFieldCount === 1 ? '' : 's'} {t('models.fields.showingd03544')}{' '}
+                    {totalSelectedFields} {t('common.placeholders.selected')}
                   </div>
                 </div>
                 <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
@@ -496,9 +496,9 @@ export function UpstreamConflictDialog({
                         setSearch(event.target.value)
                         setPageIndex(0)
                       }}
-                      placeholder={t('Search models or fields...')}
+                      placeholder={t('models.actions.searchModelsOrFields')}
                       className='pl-9'
-                      aria-label={t('Search conflicting models or fields')}
+                      aria-label={t('models.actions.searchConflictingModelsOrFields')}
                     />
                   </div>
                   <Button
@@ -507,14 +507,14 @@ export function UpstreamConflictDialog({
                     onClick={clearSelections}
                     disabled={!hasSelection}
                   >
-                    {t('Clear selection')}
+                    {t('common.actions.clearSelection')}
                   </Button>
                 </div>
               </div>
 
               {showSearchEmptyState ? (
                 <div className='text-muted-foreground flex flex-1 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm'>
-                  {t('No conflicts match your search.')}
+                  {t('models.tips.noConflictsMatchYourSearch')}
                 </div>
               ) : (
                 <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border'>
@@ -560,41 +560,41 @@ export function UpstreamConflictDialog({
 
                   <div className='bg-muted/40 flex flex-col gap-2 border-t px-2 py-1.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-3 sm:py-2'>
                     <div className='text-muted-foreground text-xs'>
-                      {t('Showing')} {displayStart}-{displayEnd} {t('of')}{' '}
-                      {visibleFieldCount} {t('field')}
+                      {t('models.fields.showing')} {displayStart}-{displayEnd} {t('common.fields.valuede04fa')}{' '}
+                      {visibleFieldCount} {t('models.fields.field')}
                       {visibleFieldCount === 1 ? '' : 's'}
                     </div>
                     <div className='flex items-center justify-between gap-2 sm:flex-wrap sm:gap-3'>
                       <div className='flex items-center gap-1.5 text-xs sm:gap-2'>
                         <span className='hidden sm:inline'>
-                          {t('Rows per page')}
+                          {t('common.fields.rowsPerPage')}
                         </span>
-                        <Select
-                          items={[
-                            ...[5, 10, 20, 50].map((size) => ({
-                              value: String(size),
-                              label: size,
-                            })),
-                          ]}
-                          value={String(pageSize)}
-                          onValueChange={(value) => {
-                            setPageSize(Number(value))
-                            setPageIndex(0)
-                          }}
-                        >
-                          <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              {[5, 10, 20, 50].map((size) => (
-                                <SelectItem key={size} value={String(size)}>
-                                  {size}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                       <Select
+                         items={[
+                            ...[10, 20, 50, 100].map((size) => ({
+                             value: String(size),
+                             label: size,
+                           })),
+                         ]}
+                         value={String(pageSize)}
+                         onValueChange={(value) => {
+                           setPageSize(Number(value))
+                           setPageIndex(0)
+                         }}
+                       >
+                         <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent alignItemWithTrigger={false}>
+                           <SelectGroup>
+                              {[10, 20, 50, 100].map((size) => (
+                               <SelectItem key={size} value={String(size)}>
+                                 {size}
+                               </SelectItem>
+                             ))}
+                           </SelectGroup>
+                         </SelectContent>
+                       </Select>
                       </div>
                       <div className='flex items-center gap-1'>
                         <Button
@@ -605,12 +605,12 @@ export function UpstreamConflictDialog({
                             setPageIndex((prev) => Math.max(0, prev - 1))
                           }
                           disabled={pageIndex === 0}
-                          aria-label={t('Previous page')}
+                          aria-label={t('models.fields.previousPage')}
                         >
                           <ChevronLeft className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
                         </Button>
                         <span className='text-xs font-medium'>
-                          {t('Page {{current}} of {{total}}', {
+                          {t('common.fields.pageCurrentOfTotal', {
                             current: currentPageDisplay,
                             total: totalPagesDisplay,
                           })}
@@ -628,7 +628,7 @@ export function UpstreamConflictDialog({
                             pageIndex >= totalPages - 1 ||
                             totalFilteredFields === 0
                           }
-                          aria-label={t('Next page')}
+                          aria-label={t('models.fields.nextPage')}
                         >
                           <ChevronRight className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
                         </Button>
@@ -640,13 +640,13 @@ export function UpstreamConflictDialog({
             </div>
           )}
         </div>
-        <DialogFooter className='flex-shrink-0'>
+        <DialogFooter className='shrink-0'>
           <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='text-muted-foreground flex flex-1 items-start gap-2 text-xs'>
-              <Info className='h-4 w-4 flex-shrink-0' />
+              <Info className='h-4 w-4 shrink-0' />
               <span>
                 {t(
-                  'Only selected fields will be overwritten. You can re-run the sync wizard if new conflicts appear.'
+                  'models.tips.onlySelectedFieldsWillBeOverwrittenYouCanRe'
                 )}
               </span>
             </div>
@@ -658,13 +658,13 @@ export function UpstreamConflictDialog({
                   onOpenChange(false)
                 }}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button
                 onClick={handleApplyOverwrite}
                 disabled={isSubmitting || !hasSelection}
               >
-                {isSubmitting ? t('Applying...') : t('Apply Overwrite')}
+                {isSubmitting ? t('models.tips.applying') : t('models.fields.applyOverwrite')}
               </Button>
             </div>
           </div>

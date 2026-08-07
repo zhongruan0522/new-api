@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {

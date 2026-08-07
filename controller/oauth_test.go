@@ -10,8 +10,8 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/oauth"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/oauth"
 )
 
 type oauthBindTestProvider struct{}

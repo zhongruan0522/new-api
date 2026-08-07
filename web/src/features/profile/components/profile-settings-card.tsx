@@ -64,8 +64,8 @@ export function ProfileSettingsCard({
 
   return (
     <TitledCard
-      title={t('Settings')}
-      description={t('Configure your account preferences and integrations')}
+      title={t('profile.titles.settings')}
+      description={t('profile.tips.configureYourAccountPreferencesAndIntegrations')}
       icon={<Settings className='h-4 w-4' />}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -75,8 +75,8 @@ export function ProfileSettingsCard({
             className='h-full gap-2 rounded-lg px-3 py-0 leading-none'
           >
             <Link2 className='h-4 w-4' />
-            <span className='hidden sm:inline'>{t('Account Bindings')}</span>
-            <span className='sm:hidden'>{t('Bindings')}</span>
+            <span className='hidden sm:inline'>{t('profile.fields.accountBindings')}</span>
+            <span className='sm:hidden'>{t('profile.fields.bindings')}</span>
           </TabsTrigger>
           <TabsTrigger
             value='settings'
@@ -84,9 +84,9 @@ export function ProfileSettingsCard({
           >
             <Settings className='h-4 w-4' />
             <span className='hidden sm:inline'>
-              {t('Settings & Preferences')}
+              {t('profile.titles.settingsPreferences')}
             </span>
-            <span className='sm:hidden'>{t('Settings')}</span>
+            <span className='sm:hidden'>{t('profile.titles.settings')}</span>
           </TabsTrigger>
         </TabsList>
 

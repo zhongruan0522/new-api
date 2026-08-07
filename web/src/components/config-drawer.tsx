@@ -86,7 +86,7 @@ export function ConfigDrawer() {
           <Button
             size='icon'
             variant='ghost'
-            aria-label={t('Open theme settings')}
+            aria-label={t('common.actions.openThemeSettings')}
             aria-describedby='config-drawer-description'
             className='max-md:hidden'
           />
@@ -96,9 +96,9 @@ export function ConfigDrawer() {
       </SheetTrigger>
       <SheetContent className={sideDrawerContentClassName('sm:max-w-md')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
-          <SheetTitle>{t('Theme Settings')}</SheetTitle>
+          <SheetTitle>{t('common.titles.themeSettings')}</SheetTitle>
           <SheetDescription id='config-drawer-description'>
-            {t('Adjust the appearance and layout to suit your preferences.')}
+            {t('common.tips.adjustTheAppearanceAndLayoutToSuitYourPreferences')}
           </SheetDescription>
         </SheetHeader>
         <div className={sideDrawerFormClassName()}>
@@ -115,9 +115,9 @@ export function ConfigDrawer() {
           <Button
             variant='destructive'
             onClick={handleReset}
-            aria-label={t('Reset all settings to default values')}
+            aria-label={t('common.actions.resetAllSettingsToDefaultValues')}
           >
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -147,7 +147,7 @@ function SectionTitle(props: {
           variant='secondary'
           className='size-4'
           onClick={props.onReset}
-          aria-label={t('Reset')}
+          aria-label={t('common.actions.reset')}
         >
           <RotateCcw className='size-3' aria-hidden='true' />
         </Button>
@@ -215,7 +215,7 @@ function ThemeConfig() {
   return (
     <div>
       <SectionTitle
-        title={t('Theme')}
+        title={t('common.fields.theme')}
         showReset={theme !== defaultTheme}
         onReset={() => setTheme(defaultTheme)}
       />
@@ -223,19 +223,19 @@ function ThemeConfig() {
         value={theme}
         onValueChange={setTheme}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label={t('Select theme preference')}
+        aria-label={t('common.placeholders.selectThemePreference')}
         aria-describedby='theme-description'
       >
         {[
-          { value: 'system', label: t('System'), icon: IconThemeSystem },
-          { value: 'light', label: t('Light'), icon: IconThemeLight },
-          { value: 'dark', label: t('Dark'), icon: IconThemeDark },
+          { value: 'system', label: t('common.titles.system'), icon: IconThemeSystem },
+          { value: 'light', label: t('common.fields.light'), icon: IconThemeLight },
+          { value: 'dark', label: t('common.fields.dark'), icon: IconThemeDark },
         ].map((item) => (
           <RadioGroupItem key={item.value} item={item} isTheme />
         ))}
       </Radio>
       <div id='theme-description' className='sr-only'>
-        {t('Choose between system preference, light mode, or dark mode')}
+        {t('common.placeholders.chooseBetweenSystemPreferenceLightModeOrDarkMode')}
       </div>
     </div>
   )
@@ -247,7 +247,7 @@ function PresetConfig() {
   return (
     <div>
       <SectionTitle
-        title={t('Color preset')}
+        title={t('common.fields.colorPreset')}
         showReset={customization.preset !== defaults.preset}
         onReset={() => setPreset(defaults.preset)}
       />
@@ -255,14 +255,14 @@ function PresetConfig() {
         value={customization.preset}
         onValueChange={(v) => setPreset(v as ThemePreset)}
         className='grid w-full grid-cols-4 gap-3'
-        aria-label={t('Select color preset')}
+        aria-label={t('common.placeholders.selectColorPreset')}
       >
         {THEME_PRESETS.map((preset) => (
           <Item
             key={preset.value}
             value={preset.value}
             className='group flex flex-col items-stretch outline-none'
-            aria-label={t(`preset.${preset.value}`)}
+            aria-label={preset.name}
           >
             <div
               className={cn(
@@ -295,7 +295,7 @@ function PresetConfig() {
               />
             </div>
             <div className='mt-1.5 truncate text-center text-xs'>
-              {t(`preset.${preset.value}`)}
+              {preset.name}
             </div>
           </Item>
         ))}
@@ -310,7 +310,7 @@ const RADIUS_OPTIONS: {
   // CSS border-radius value used to render the visual preview corner.
   preview: string
 }[] = [
-  { value: 'default', label: 'Auto', preview: '1rem' },
+  { value: 'default', label: 'common.fields.auto', preview: '1rem' },
   { value: 'none', label: '0', preview: '0' },
   { value: 'sm', label: '0.3', preview: '0.3rem' },
   { value: 'md', label: '0.5', preview: '0.5rem' },
@@ -324,7 +324,7 @@ function RadiusConfig() {
   return (
     <div>
       <SectionTitle
-        title={t('Border radius')}
+        title={t('common.fields.borderRadius')}
         showReset={customization.radius !== defaults.radius}
         onReset={() => setRadius(defaults.radius)}
       />
@@ -332,7 +332,7 @@ function RadiusConfig() {
         value={customization.radius}
         onValueChange={(v) => setRadius(v as ThemeRadius)}
         className='grid w-full grid-cols-6 gap-2'
-        aria-label={t('Select border radius')}
+        aria-label={t('common.placeholders.selectBorderRadius')}
       >
         {RADIUS_OPTIONS.map((option) => (
           <Item
@@ -340,7 +340,7 @@ function RadiusConfig() {
             value={option.value}
             className='group flex flex-col items-stretch outline-none'
             aria-label={
-              option.value === 'default' ? t('System default') : option.label
+              option.value === 'default' ? t('common.titles.systemDefault') : option.label
             }
           >
             <div
@@ -403,14 +403,14 @@ function ScaleConfig() {
     rows: number
     rowGap: string
   }[] = [
-    { value: 'sm', label: t('Compact'), rows: 4, rowGap: '3px' },
-    { value: 'default', label: t('Default'), rows: 3, rowGap: '6px' },
-    { value: 'lg', label: t('Comfortable'), rows: 2, rowGap: '10px' },
+    { value: 'sm', label: t('common.fields.compact'), rows: 4, rowGap: '3px' },
+    { value: 'default', label: t('common.fields.default'), rows: 3, rowGap: '6px' },
+    { value: 'lg', label: t('common.fields.comfortable'), rows: 2, rowGap: '10px' },
   ]
   return (
     <div>
       <SectionTitle
-        title={t('Density')}
+        title={t('common.fields.density')}
         showReset={customization.scale !== defaults.scale}
         onReset={() => setScale(defaults.scale)}
       />
@@ -418,7 +418,7 @@ function ScaleConfig() {
         value={customization.scale}
         onValueChange={(v) => setScale(v as ThemeScale)}
         className='grid w-full grid-cols-3 gap-4'
-        aria-label={t('Select interface density')}
+        aria-label={t('common.placeholders.selectInterfaceDensity')}
       >
         {scaleOptions.map((option) => (
           <Item
@@ -460,7 +460,7 @@ function SidebarConfig() {
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title={t('Sidebar')}
+        title={t('common.fields.sidebar')}
         showReset={defaultVariant !== variant}
         onReset={() => setVariant(defaultVariant)}
       />
@@ -468,23 +468,23 @@ function SidebarConfig() {
         value={variant}
         onValueChange={setVariant}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label={t('Select sidebar style')}
+        aria-label={t('common.placeholders.selectSidebarStyle')}
         aria-describedby='sidebar-description'
       >
         {[
-          { value: 'inset', label: t('Inset'), icon: IconSidebarInset },
+          { value: 'inset', label: t('common.fields.inset'), icon: IconSidebarInset },
           {
             value: 'floating',
-            label: t('Floating'),
+            label: t('common.fields.floating'),
             icon: IconSidebarFloating,
           },
-          { value: 'sidebar', label: t('Sidebar'), icon: IconSidebarSidebar },
+          { value: 'sidebar', label: t('common.fields.sidebar'), icon: IconSidebarSidebar },
         ].map((item) => (
           <RadioGroupItem key={item.value} item={item} />
         ))}
       </Radio>
       <div id='sidebar-description' className='sr-only'>
-        {t('Choose between inset, floating, or standard sidebar layout')}
+        {t('common.placeholders.chooseBetweenInsetFloatingOrStandardSidebarLayout')}
       </div>
     </div>
   )
@@ -500,7 +500,7 @@ function LayoutConfig() {
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title={t('Layout')}
+        title={t('common.fields.layout')}
         showReset={radioState !== 'default'}
         onReset={() => {
           setOpen(true)
@@ -518,15 +518,15 @@ function LayoutConfig() {
           setCollapsible(v as Collapsible)
         }}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label={t('Select layout style')}
+        aria-label={t('common.placeholders.selectLayoutStyle')}
         aria-describedby='layout-description'
       >
         {[
-          { value: 'default', label: t('Default'), icon: IconLayoutDefault },
-          { value: 'icon', label: t('Compact'), icon: IconLayoutCompact },
+          { value: 'default', label: t('common.fields.default'), icon: IconLayoutDefault },
+          { value: 'icon', label: t('common.fields.compact'), icon: IconLayoutCompact },
           {
             value: 'offcanvas',
-            label: t('Full layout'),
+            label: t('common.fields.fullLayout'),
             icon: IconLayoutFull,
           },
         ].map((item) => (
@@ -535,7 +535,7 @@ function LayoutConfig() {
       </Radio>
       <div id='layout-description' className='sr-only'>
         {t(
-          'Choose between default expanded, compact icon-only, or full layout mode'
+          'common.placeholders.chooseBetweenDefaultExpandedCompactIconOnlyOrFull'
         )}
       </div>
     </div>
@@ -548,7 +548,7 @@ function ContentLayoutConfig() {
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title={t('Content width')}
+        title={t('common.fields.contentWidth')}
         showReset={customization.contentLayout !== defaults.contentLayout}
         onReset={() => setContentLayout(defaults.contentLayout)}
       />
@@ -556,11 +556,11 @@ function ContentLayoutConfig() {
         value={customization.contentLayout}
         onValueChange={(v) => setContentLayout(v as ContentLayout)}
         className='grid w-full grid-cols-2 gap-4'
-        aria-label={t('Select content width')}
+        aria-label={t('common.placeholders.selectContentWidth')}
       >
         {[
-          { value: 'full', label: t('Full width') },
-          { value: 'centered', label: t('Centered') },
+          { value: 'full', label: t('common.fields.fullWidth') },
+          { value: 'centered', label: t('common.fields.centered') },
         ].map((option) => (
           <Item
             key={option.value}
@@ -622,7 +622,7 @@ function DirConfig() {
   return (
     <div>
       <SectionTitle
-        title={t('Direction')}
+        title={t('common.fields.direction')}
         showReset={defaultDir !== dir}
         onReset={() => setDir(defaultDir)}
       />
@@ -630,20 +630,20 @@ function DirConfig() {
         value={dir}
         onValueChange={setDir}
         className='grid w-full max-w-md grid-cols-3 gap-4'
-        aria-label={t('Select site direction')}
+        aria-label={t('common.placeholders.selectSiteDirection')}
         aria-describedby='direction-description'
       >
         {[
           {
             value: 'ltr',
-            label: t('Left to Right'),
+            label: t('common.fields.leftToRight'),
             icon: (props: SVGProps<SVGSVGElement>) => (
               <IconDir dir='ltr' {...props} />
             ),
           },
           {
             value: 'rtl',
-            label: t('Right to Left'),
+            label: t('common.fields.rightToLeft'),
             icon: (props: SVGProps<SVGSVGElement>) => (
               <IconDir dir='rtl' {...props} />
             ),
@@ -653,7 +653,7 @@ function DirConfig() {
         ))}
       </Radio>
       <div id='direction-description' className='sr-only'>
-        {t('Choose between left-to-right or right-to-left site direction')}
+        {t('common.placeholders.chooseBetweenLeftToRightOrRightToLeft')}
       </div>
     </div>
   )

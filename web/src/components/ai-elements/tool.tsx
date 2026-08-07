@@ -65,13 +65,13 @@ const getStatusBadge = (status: ExtendedToolState) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { t } = useTranslation()
   const labels: Record<ExtendedToolState, string> = {
-    'input-streaming': t('Pending'),
-    'input-available': t('Running'),
-    'approval-requested': t('Awaiting Approval'),
-    'approval-responded': t('Responded'),
-    'output-available': t('Completed'),
-    'output-error': t('Error'),
-    'output-denied': t('Denied'),
+    'input-streaming': t('common.status.pending'),
+    'input-available': t('common.fields.running73989d'),
+    'approval-requested': t('common.fields.awaitingApproval'),
+    'approval-responded': t('common.fields.responded'),
+    'output-available': t('common.fields.completed'),
+    'output-error': t('common.errors.error'),
+    'output-denied': t('common.fields.denied'),
   }
 
   const icons: Record<ExtendedToolState, ReactNode> = {
@@ -138,7 +138,7 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
   return (
     <div className={cn('space-y-2 overflow-hidden p-4', className)} {...props}>
       <h4 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-        {t('Parameters')}
+        {t('common.fields.parameters')}
       </h4>
       <div className='bg-muted/50 rounded-md'>
         <CodeBlock code={JSON.stringify(input, null, 2)} language='json' />
@@ -176,7 +176,7 @@ export const ToolOutput = ({
   return (
     <div className={cn('space-y-2 p-4', className)} {...props}>
       <h4 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-        {errorText ? t('Error') : t('Result')}
+        {errorText ? t('common.errors.error') : t('common.fields.result')}
       </h4>
       <div
         className={cn(

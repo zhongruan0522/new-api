@@ -69,7 +69,7 @@ export function SignUpForm({
   const [wechatCode, setWeChatCode] = useState('')
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
-  const legalConsentErrorMessage = t('Please agree to the legal terms first')
+  const legalConsentErrorMessage = t('auth.errors.pleaseAgreeToTheLegalTermsFirst')
 
   const { status } = useStatus()
   const {
@@ -150,11 +150,11 @@ export function SignUpForm({
     // Validate email verification if required
     if (emailVerificationRequired) {
       if (!data.email) {
-        toast.error(t('Please enter your email'))
+        toast.error(t('auth.errors.pleaseEnterYourEmail'))
         return
       }
       if (!verificationCode) {
-        toast.error(t('Please enter the verification code'))
+        toast.error(t('auth.errors.pleaseEnterTheVerificationCode'))
         return
       }
     }
@@ -173,10 +173,10 @@ export function SignUpForm({
       })
 
       if (res?.success) {
-        toast.success(t('Account created! Please sign in'))
+        toast.success(t('auth.status.accountCreatedPleaseSignIn'))
         redirectToLogin()
       } else {
-        toast.error(res?.message || t('Failed to create account'))
+        toast.error(res?.message || t('auth.errors.failedToCreateAccount'))
       }
     } catch (_error) {
       // Errors are handled by global interceptor
@@ -208,7 +208,7 @@ export function SignUpForm({
 
   async function handleWeChatLogin() {
     if (!wechatCode.trim()) {
-      toast.error(t('Please enter the verification code'))
+      toast.error(t('auth.errors.pleaseEnterTheVerificationCode'))
       return
     }
 
@@ -217,13 +217,13 @@ export function SignUpForm({
       const res = await wechatLoginByCode(wechatCode)
       if (res?.success) {
         await handleLoginSuccess(res.data as { id?: number } | null)
-        toast.success(t('Signed In Via WeChat'))
+        toast.success(t('auth.status.signedInViaWeChat'))
         handleWeChatDialogChange(false)
       } else {
-        toast.error(res?.message || t('Login failed'))
+        toast.error(res?.message || t('auth.status.loginFailed'))
       }
     } catch (_error) {
-      toast.error(t('Login failed'))
+      toast.error(t('auth.status.loginFailed'))
     } finally {
       setIsWeChatSubmitting(false)
     }
@@ -242,9 +242,9 @@ export function SignUpForm({
           name='username'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('Username')}</FormLabel>
+              <FormLabel>{t('auth.fields.username')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('Enter your username')} {...field} />
+                <Input placeholder={t('auth.placeholders.enterYourUsername')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -257,10 +257,10 @@ export function SignUpForm({
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('Password')}</FormLabel>
+              <FormLabel>{t('auth.fields.password')}</FormLabel>
               <FormControl>
                 <PasswordInput
-                  placeholder={t('Enter password (8-20 characters)')}
+                  placeholder={t('auth.placeholders.enterPassword820Characters')}
                   {...field}
                 />
               </FormControl>
@@ -275,9 +275,9 @@ export function SignUpForm({
           name='confirmPassword'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('Confirm password')}</FormLabel>
+              <FormLabel>{t('auth.actions.confirmPassword')}</FormLabel>
               <FormControl>
-                <PasswordInput placeholder={t('Confirm password')} {...field} />
+                <PasswordInput placeholder={t('auth.actions.confirmPassword')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -294,11 +294,11 @@ export function SignUpForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {t('Email (required for verification)')}
+                    {t('auth.tips.emailRequiredForVerification')}
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('name@example.com')}
+                      placeholder={t('auth.placeholders.nameExampleCom')}
                       type='email'
                       {...field}
                     />
@@ -312,7 +312,7 @@ export function SignUpForm({
             <div className='flex items-end gap-2'>
               <div className='flex-1'>
                 <Input
-                  placeholder={t('Verification Code')}
+                  placeholder={t('auth.fields.verificationCode')}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />
@@ -330,11 +330,11 @@ export function SignUpForm({
                 onClick={handleSendVerificationCode}
               >
                 {isActive ? (
-                  t('Resend ({{seconds}}s)', { seconds: secondsLeft })
+                  t('auth.fields.resendSecondsS', { seconds: secondsLeft })
                 ) : isSendingCode ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : (
-                  t('Send code')
+                  t('auth.actions.sendCode')
                 )}
               </Button>
             </div>
@@ -369,7 +369,7 @@ export function SignUpForm({
           }
         >
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
-          {t('Create account')}
+          {t('auth.actions.createAccount')}
         </Button>
 
         {oauthRegisterEnabled && (
@@ -390,10 +390,10 @@ export function SignUpForm({
         >
           <DialogContent className='max-w-sm'>
             <DialogHeader className='text-left'>
-              <DialogTitle>{t('WeChat sign in')}</DialogTitle>
+              <DialogTitle>{t('auth.fields.chatSignIn')}</DialogTitle>
               <DialogDescription>
                 {t(
-                  'Scan the QR code to follow the official account and reply with “验证码” to receive your verification code.'
+                  'auth.tips.scanTheQrCodeToFollowTheOfficialAccount'
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -402,21 +402,21 @@ export function SignUpForm({
               <div className='flex justify-center'>
                 <img
                   src={wechatQrCodeUrl}
-                  alt={t('WeChat login QR code')}
+                  alt={t('auth.fields.chatLoginQrCode')}
                   className='h-40 w-40 rounded-md border object-contain'
                 />
               </div>
             ) : (
               <p className='text-muted-foreground text-sm'>
-                {t('QR code is not configured. Please contact support.')}
+                {t('auth.tips.qrCodeIsNotConfiguredPleaseContactSupport')}
               </p>
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('Verification Code')}</Label>
+              <Label htmlFor='wechat-code'>{t('auth.fields.verificationCode')}</Label>
               <Input
                 id='wechat-code'
-                placeholder={t('Enter the verification code')}
+                placeholder={t('auth.placeholders.enterTheVerificationCode')}
                 value={wechatCode}
                 onChange={(event) => setWeChatCode(event.target.value)}
                 autoComplete='one-time-code'
@@ -430,7 +430,7 @@ export function SignUpForm({
                 onClick={() => handleWeChatDialogChange(false)}
                 disabled={isWeChatSubmitting}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button
                 type='button'
@@ -445,7 +445,7 @@ export function SignUpForm({
                 {isWeChatSubmitting ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : null}
-                {t('Confirm')}
+                {t('common.actions.confirm')}
               </Button>
             </DialogFooter>
           </DialogContent>

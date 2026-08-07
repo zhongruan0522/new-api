@@ -79,16 +79,16 @@ const createUptimeKumaSchema = (t: (key: string) => string) =>
   z.object({
     categoryName: z
       .string()
-      .min(1, { error: t('Category name is required') })
-      .max(50, { error: t('Category name must be less than 50 characters') }),
-    url: z.string().url({ error: t('Must be a valid URL') }),
+      .min(1, { error: t('systemSettings.errors.categoryNameIsRequired') })
+      .max(50, { error: t('systemSettings.errors.categoryNameMustBeLessThan50Characters') }),
+    url: z.string().url({ error: t('systemSettings.errors.mustBeAValidUrl') }),
     slug: z
       .string()
-      .min(1, { error: t('Slug is required') })
-      .max(100, { error: t('Slug must be less than 100 characters') })
+      .min(1, { error: t('systemSettings.errors.slugIsRequired') })
+      .max(100, { error: t('systemSettings.errors.slugMustBeLessThan100Characters') })
       .regex(/^[a-zA-Z0-9_-]+$/, {
         error: t(
-          'Slug can only contain letters, numbers, hyphens, and underscores'
+          'systemSettings.tips.slugCanOnlyContainLettersNumbersHyphensAndUnderscores'
         ),
       }),
   })
@@ -160,7 +160,7 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
 
   const handleBatchDelete = () => {
     if (selectedIds.length === 0) {
-      toast.error(t('Please select items to delete'))
+      toast.error(t('systemSettings.errors.pleaseSelectItemsToDelete'))
       return
     }
     setDeleteTarget('batch')
@@ -171,13 +171,13 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
     if (deleteTarget === 'single' && editingGroup) {
       setGroups((prev) => prev.filter((item) => item.id !== editingGroup.id))
       setHasChanges(true)
-      toast.success(t('Group deleted. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.groupDeletedClickSaveSettingsToApply'))
     } else if (deleteTarget === 'batch') {
       setGroups((prev) => prev.filter((item) => !selectedIds.includes(item.id)))
       setSelectedIds([])
       setHasChanges(true)
       toast.success(
-        t('{{count}} groups deleted. Click "Save Settings" to apply.', {
+        t('systemSettings.status.countGroupsDeletedClickSaveSettingsToApply', {
           count: selectedIds.length,
         })
       )
@@ -193,11 +193,11 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
           item.id === editingGroup.id ? { ...item, ...values } : item
         )
       )
-      toast.success(t('Group updated. Click "Save Settings" to apply.'))
+      toast.success(t('common.status.groupUpdatedClickSaveSettingsToApply'))
     } else {
       const newId = Math.max(...groups.map((item) => item.id), 0) + 1
       setGroups((prev) => [...prev, { id: newId, ...values }])
-      toast.success(t('Group added. Click "Save Settings" to apply.'))
+      toast.success(t('common.tips.groupAddedClickSaveSettingsToApply'))
     }
     setHasChanges(true)
     setShowDialog(false)
@@ -210,9 +210,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
         value: JSON.stringify(groups),
       })
       setHasChanges(false)
-      toast.success(t('Uptime Kuma groups saved successfully'))
+      toast.success(t('systemSettings.status.uptimeKumaGroupsSavedSuccessfully'))
     } catch {
-      toast.error(t('Failed to save Uptime Kuma groups'))
+      toast.error(t('systemSettings.errors.failedToSaveUptimeKumaGroups'))
     }
   }
 
@@ -227,13 +227,13 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('Uptime Kuma')}>
+    <SettingsSection title={t('systemSettings.fields.uptimeKuma')}>
       <div className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div className='flex flex-wrap items-center gap-2'>
             <Button onClick={handleAdd} size='sm'>
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add Group')}
+              {t('systemSettings.actions.addGroup')}
             </Button>
             <Button
               onClick={handleBatchDelete}
@@ -242,7 +242,7 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
               disabled={selectedIds.length === 0}
             >
               <Trash2 className='mr-2 h-4 w-4' />
-              {t('Delete (')}
+              {t('systemSettings.actions.delete')}
               {selectedIds.length})
             </Button>
             <Button
@@ -252,7 +252,7 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('Saving...') : t('Save Settings')}
+              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -269,10 +269,10 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>{t('Category Name')}</TableHead>
-                <TableHead>{t('Uptime Kuma URL')}</TableHead>
-                <TableHead>{t('Status Page Slug')}</TableHead>
-                <TableHead className='w-32'>{t('Actions')}</TableHead>
+                <TableHead>{t('systemSettings.fields.categoryName')}</TableHead>
+                <TableHead>{t('systemSettings.fields.uptimeKumaUrl')}</TableHead>
+                <TableHead>{t('systemSettings.fields.statusPageSlug')}</TableHead>
+                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -280,7 +280,7 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 <TableRow>
                   <TableCell colSpan={5} className='h-24 text-center'>
                     {t(
-                      'No Uptime Kuma groups yet. Click "Add Group" to create one.'
+                      'common.tips.noUptimeKumaGroupsYetClickAddGroupTo'
                     )}
                   </TableCell>
                 </TableRow>
@@ -338,11 +338,11 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
           <DialogHeader>
             <DialogTitle>
               {editingGroup
-                ? t('Edit Uptime Kuma Group')
-                : t('Add Uptime Kuma Group')}
+                ? t('systemSettings.actions.editUptimeKumaGroup')
+                : t('systemSettings.actions.addUptimeKumaGroup')}
             </DialogTitle>
             <DialogDescription>
-              {t('Configure monitoring status page groups for the dashboard')}
+              {t('systemSettings.tips.configureMonitoringStatusPageGroupsForTheDashboard')}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -355,16 +355,16 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='categoryName'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Category Name')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.categoryName')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('e.g., Core APIs, OpenAI, Claude')}
+                        placeholder={t('systemSettings.placeholders.eGCoreApisOpenAiClaude')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Display name for this monitoring group (max 50 characters)'
+                        'systemSettings.tips.displayNameForThisMonitoringGroupMax50Characters'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -376,15 +376,15 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='url'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Uptime Kuma URL')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.uptimeKumaUrl')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('https://status.example.com')}
+                        placeholder={t('systemSettings.placeholders.urlStatusExampleCom')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Base URL of your Uptime Kuma instance')}
+                      {t('systemSettings.tips.baseUrlOfYourUptimeKumaInstance')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -395,13 +395,13 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='slug'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Status Page Slug')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.statusPageSlug')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('my-status')} {...field} />
+                      <Input placeholder={t('systemSettings.fields.myStatus')} {...field} />
                     </FormControl>
                     <FormDescription>
-                      {t('The slug is appended to the URL:')} {'{url}'}
-                      {t('/status/')}
+                      {t('systemSettings.tips.slugIsAppendedToTheUrl')} {'{url}'}
+                      {t('systemSettings.placeholders.status')}
                       {'{slug}'}
                     </FormDescription>
                     <FormMessage />
@@ -414,10 +414,10 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                   variant='outline'
                   onClick={() => setShowDialog(false)}
                 >
-                  {t('Cancel')}
+                  {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingGroup ? t('Update') : t('Add')}
+                  {editingGroup ? t('channels.fields.update') : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>
@@ -428,7 +428,7 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Are you sure?')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('keys.tips.sure')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget === 'single'
                 ? 'This Uptime Kuma group will be removed from the list.'
@@ -436,9 +436,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

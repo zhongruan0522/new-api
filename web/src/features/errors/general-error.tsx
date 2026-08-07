@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-const FEEDBACK_URL = 'https://github.com/zhongruan0522/new-api/issues'
+const FEEDBACK_URL = 'https://github.com/NookMux/NookMux/issues'
 
 type GeneralErrorProps = React.HTMLAttributes<HTMLDivElement> & {
   minimal?: boolean
@@ -47,11 +47,11 @@ export function GeneralError({
   const status = getHttpStatus(error)
   const isRateLimited = status === 429
   const title = isRateLimited
-    ? t('Too many requests')
-    : `${t('Oops! Something went wrong')} ${`:')`}`
+    ? t('common.fields.tooManyRequests')
+    : `${t('common.tips.oopsSomethingWentWrong')} ${`:')`}`
   const description = isRateLimited
-    ? t('Please wait a moment before trying again.')
-    : t('Please try again later.')
+    ? t('common.errors.pleaseWaitAMomentBeforeTryingAgain')
+    : t('common.tips.pleaseTryAgainLater')
 
   return (
     <div className={cn('h-svh w-full', className)}>
@@ -63,17 +63,17 @@ export function GeneralError({
         )}
         <span className='font-medium'>{title}</span>
         <p className='text-muted-foreground text-center'>
-          {t('We apologize for the inconvenience.')} <br /> {description}
+          {t('common.tips.apologizeForTheInconvenience')} <br /> {description}
         </p>
         {!minimal && (
           <p className='text-muted-foreground text-center text-sm'>
-            {t('If this keeps happening, please report it on GitHub Issues.')}
+            {t('common.tips.ifThisKeepsHappeningPleaseReportItOnGit')}
           </p>
         )}
         {!minimal && (
           <div className='mt-6 flex flex-wrap justify-center gap-4'>
             <Button variant='outline' onClick={() => history.go(-1)}>
-              {t('Go Back')}
+              {t('common.fields.goBack')}
             </Button>
             <Button
               variant='outline'
@@ -85,10 +85,10 @@ export function GeneralError({
                 />
               }
             >
-              {t('Report an issue')}
+              {t('common.fields.reportAnIssue')}
             </Button>
             <Button onClick={() => navigate({ to: '/' })}>
-              {t('Back To Home')}
+              {t('layout.actions.backToHome')}
             </Button>
           </div>
         )}

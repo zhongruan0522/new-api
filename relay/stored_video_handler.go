@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/model"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

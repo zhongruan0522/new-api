@@ -130,7 +130,7 @@ export function RateLimitVisualEditor({
         <div className='relative flex-1'>
           <Search className='text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4' />
           <Input
-            placeholder={t('Search group names...')}
+            placeholder={t('systemSettings.actions.searchGroupNames')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className='pl-9'
@@ -138,16 +138,16 @@ export function RateLimitVisualEditor({
         </div>
         <Button onClick={handleAdd}>
           <Plus className='mr-2 h-4 w-4' />
-          {t('Add Group')}
+          {t('systemSettings.actions.addGroup')}
         </Button>
       </div>
 
       {filteredRateLimits.length === 0 ? (
         <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center'>
           {searchText
-            ? t('No groups match your search')
+            ? t('systemSettings.fields.noGroupsMatchYourSearch')
             : t(
-                'No group-based rate limits configured. Click "Add group" to get started.'
+                'common.tips.noGroupBasedRateLimitsConfiguredClickAddGroup'
               )}
         </div>
       ) : (
@@ -155,12 +155,12 @@ export function RateLimitVisualEditor({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('Group Name')}</TableHead>
+                <TableHead>{t('models.fields.groupName')}</TableHead>
                 <TableHead className='text-right'>
-                  {t('Max Requests (including failures)')}
+                  {t('systemSettings.tips.maxRequestsIncludingFailures')}
                 </TableHead>
-                <TableHead className='text-right'>{t('Max Success')}</TableHead>
-                <TableHead className='text-right'>{t('Actions')}</TableHead>
+                <TableHead className='text-right'>{t('systemSettings.status.maxSuccess')}</TableHead>
+                <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -172,7 +172,7 @@ export function RateLimitVisualEditor({
                   <TableCell className='text-right'>
                     <span className='font-mono'>
                       {limit.maxRequests === 0
-                        ? t('Unlimited')
+                        ? t('keyQuery.fields.unlimited')
                         : limit.maxRequests.toLocaleString()}
                     </span>
                   </TableCell>

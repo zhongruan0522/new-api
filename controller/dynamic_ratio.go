@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +16,8 @@ import (
 func GetDynamicRatioRules(c *gin.Context) {
 	rules, err := model.GetDynamicRatioRules()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get dynamic ratio rules: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, rules)
@@ -25,15 +27,16 @@ func GetDynamicRatioRules(c *gin.Context) {
 func CreateDynamicRatioRule(c *gin.Context) {
 	var rule model.DynamicRatioRule
 	if err := c.ShouldBindJSON(&rule); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if err := rule.Validate(); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if err := model.CreateDynamicRatioRule(&rule); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to create dynamic ratio rule: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshDynamicRatioCache()
@@ -45,25 +48,27 @@ func CreateDynamicRatioRule(c *gin.Context) {
 func UpdateDynamicRatioRule(c *gin.Context) {
 	var rule model.DynamicRatioRule
 	if err := c.ShouldBindJSON(&rule); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if rule.Id == 0 {
-		common.ApiErrorMsg(c, "规则 ID 不能为空")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioRuleIDRequired)
 		return
 	}
 	if err := rule.Validate(); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	// 查询更新前的原始数据用于审计差异对比
 	origin, err := model.GetDynamicRatioRuleById(rule.Id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get dynamic ratio rule by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if err := model.UpdateDynamicRatioRule(&rule); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update dynamic ratio rule: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshDynamicRatioCache()
@@ -76,11 +81,12 @@ func DeleteDynamicRatioRule(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		common.ApiErrorMsg(c, "无效的规则 ID")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioInvalidRuleID)
 		return
 	}
 	if err := model.DeleteDynamicRatioRule(id); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete dynamic ratio rule: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshDynamicRatioCache()
@@ -94,15 +100,16 @@ func ReorderDynamicRatioRules(c *gin.Context) {
 		Ids []int64 `json:"ids"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(req.Ids) == 0 {
-		common.ApiErrorMsg(c, "ID 列表不能为空")
+		common.ApiErrorI18n(c, i18n.MsgDynamicRatioIDListRequired)
 		return
 	}
 	if err := model.ReorderDynamicRatioRules(req.Ids); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to reorder dynamic ratio rules: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshDynamicRatioCache()
@@ -116,11 +123,12 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 		Enabled bool `json:"enabled"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if err := model.UpdateOption("DynamicRatioEnabled", strconv.FormatBool(req.Enabled)); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update DynamicRatioEnabled option: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
@@ -133,13 +141,14 @@ func GetDynamicRatioStatus(c *gin.Context) {
 	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if group != "" {
 		if !service.GroupInUserUsableGroups(user.Group, group) {
-			common.ApiErrorMsg(c, "无权访问该分组")
+			common.ApiErrorI18n(c, i18n.MsgDynamicRatioGroupForbidden)
 			return
 		}
 		common.ApiSuccess(c, model.GetDynamicRatioStatus(group))

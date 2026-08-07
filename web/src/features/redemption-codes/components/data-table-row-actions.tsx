@@ -87,7 +87,7 @@ export function DataTableRowActions<TData>({
         }
       >
         <DotsHorizontalIcon className='h-4 w-4' />
-        <span className='sr-only'>{t('Open menu')}</span>
+        <span className='sr-only'>{t('channels.actions.openMenu')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-[160px]'>
         <DropdownMenuItem
@@ -97,7 +97,7 @@ export function DataTableRowActions<TData>({
           }}
           disabled={!canEdit}
         >
-          {t('Edit')}
+          {t('channels.actions.edit')}
           <DropdownMenuShortcut>
             <Edit size={16} />
           </DropdownMenuShortcut>
@@ -106,14 +106,14 @@ export function DataTableRowActions<TData>({
           <DropdownMenuItem onClick={handleToggleStatus}>
             {isEnabled ? (
               <>
-                {t('Disable')}
+                {t('channels.actions.disable')}
                 <DropdownMenuShortcut>
                   <PowerOff size={16} />
                 </DropdownMenuShortcut>
               </>
             ) : (
               <>
-                {t('Enable')}
+                {t('channels.actions.enable')}
                 <DropdownMenuShortcut>
                   <Power size={16} />
                 </DropdownMenuShortcut>
@@ -129,7 +129,7 @@ export function DataTableRowActions<TData>({
           }}
           className='text-destructive focus:text-destructive'
         >
-          {t('Delete')}
+          {t('common.actions.delete')}
           <DropdownMenuShortcut>
             <Trash2 size={16} />
           </DropdownMenuShortcut>

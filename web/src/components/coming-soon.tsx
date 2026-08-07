@@ -26,11 +26,11 @@ export function ComingSoon() {
       <div className='m-auto flex h-full w-full flex-col items-center justify-center gap-2'>
         <Telescope size={72} />
         <h1 className='text-4xl leading-tight font-bold'>
-          {t('Coming Soon!')}
+          {t('common.tips.comingSoon')}
         </h1>
         <p className='text-muted-foreground text-center'>
-          {t('This page has not been created yet.')} <br />
-          {t('Stay tuned though!')}
+          {t('common.status.pageHasNotBeenCreatedYet')} <br />
+          {t('common.tips.stayTunedThough')}
         </p>
       </div>
     </div>

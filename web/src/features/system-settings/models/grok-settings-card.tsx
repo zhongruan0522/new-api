@@ -113,7 +113,7 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
     ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -128,7 +128,7 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
   const enabled = form.watch('grok.violation_deduction_enabled')
 
   return (
-    <SettingsSection title={t('Grok Settings')}>
+    <SettingsSection title={t('systemSettings.titles.grokSettings')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -143,10 +143,10 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable violation deduction')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableViolationDeduction')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'When enabled, violation requests will incur additional charges.'
+                      'systemSettings.status.enabledViolationRequestsWillIncurAdditionalCharges'
                     )}{' '}
                     <a
                       href={XAI_VIOLATION_FEE_DOC_URL}
@@ -154,7 +154,7 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
                       rel='noreferrer'
                       className='underline'
                     >
-                      {t('Official documentation')}
+                      {t('systemSettings.fields.officialDocumentation')}
                     </a>
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -173,7 +173,7 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
             name='grok.violation_deduction_amount'
             render={({ field }) => (
               <FormItem className='max-w-xs'>
-                <FormLabel>{t('Violation deduction amount')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.violationDeductionAmount')}</FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -185,7 +185,7 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Base amount. Actual deduction = base amount × system group rate.'
+                    'systemSettings.tips.baseAmountActualDeductionBaseAmountSystemGroupRate'
                   )}
                 </FormDescription>
               </FormItem>

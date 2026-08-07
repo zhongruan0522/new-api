@@ -39,14 +39,14 @@ type VoiceManagementTableProps = {
 }
 
 function getVoiceTypeLabelKey(type: string): string {
-  if (type === 'created') return 'Voice Status - Paid'
-  if (type === 'preview') return 'Voice Status - Preview'
+  if (type === 'created') return 'minimax.fields.voiceStatusPaid'
+  if (type === 'preview') return 'minimax.fields.voiceStatusPreview'
   return type || '-'
 }
 
 function getOperatorKindLabelKey(kind: string): string {
-  if (kind === 'admin') return 'Admin'
-  if (kind === 'user') return 'User'
+  if (kind === 'admin') return 'systemSettings.fields.admin'
+  if (kind === 'user') return 'systemSettings.fields.user'
   return kind
 }
 
@@ -70,7 +70,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
     const baseColumns: ColumnDef<VoiceRecord>[] = [
       {
         accessorKey: 'created_at',
-        header: t('Time'),
+        header: t('auditLogs.fields.time'),
         size: 170,
         cell: ({ row }) => (
           <span className='whitespace-nowrap'>
@@ -80,7 +80,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       },
       {
         accessorKey: 'type',
-        header: t('Type'),
+        header: t('channels.fields.type'),
         size: 110,
         cell: ({ row }) => (
           <Badge variant='secondary'>
@@ -90,7 +90,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       },
       {
         accessorKey: 'operator_id',
-        header: t('Operator ID'),
+        header: t('minimax.fields.operatorId'),
         size: 150,
         cell: ({ row }) => (
           <div className='space-y-0.5'>
@@ -105,13 +105,13 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       },
       {
         accessorKey: 'voice_id',
-        header: t('Voice ID'),
+        header: t('minimax.fields.voiceId'),
         size: 230,
         cell: ({ row }) => <MonoValue value={row.original.voice_id} />,
       },
       {
         accessorKey: 'quota_cost',
-        header: t('Cost'),
+        header: t('keyQuery.fields.cost'),
         size: 130,
         cell: ({ row }) => (
           <span className='whitespace-nowrap'>
@@ -121,23 +121,23 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       },
       {
         accessorKey: 'redirect_id',
-        header: t('Redirect ID'),
+        header: t('minimax.fields.redirectId'),
         size: 230,
         cell: ({ row }) => <MonoValue value={row.original.redirect_id} />,
       },
       {
         accessorKey: 'allowed',
-        header: t('Whitelist'),
+        header: t('minimax.fields.whitelist'),
         size: 120,
         cell: ({ row }) => (
           <Badge variant={row.original.allowed ? 'default' : 'outline'}>
-            {row.original.allowed ? t('Allowed') : t('Not Allowed')}
+            {row.original.allowed ? t('minimax.fields.allowed') : t('minimax.fields.notAllowed')}
           </Badge>
         ),
       },
       {
         accessorKey: 'remark',
-        header: t('Remark'),
+        header: t('channels.fields.remark'),
         size: 220,
         cell: ({ row }) => (
           <span
@@ -156,7 +156,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       ...baseColumns,
       {
         id: 'actions',
-        header: t('Actions'),
+        header: t('channels.fields.actions'),
         size: 150,
         cell: ({ row }) => (
           <div className='flex items-center justify-end gap-2'>
@@ -166,7 +166,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
               onClick={() => props.onEdit(row.original)}
             >
               <Edit />
-              {t('Edit')}
+              {t('channels.actions.edit')}
             </Button>
             <Button
               variant='destructive'
@@ -174,7 +174,7 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
               onClick={() => props.onRequestDelete(row.original)}
             >
               <Trash2 />
-              {t('Delete')}
+              {t('common.actions.delete')}
             </Button>
           </div>
         ),
@@ -201,9 +201,9 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
       columns={columns}
       isLoading={props.isLoading}
       isFetching={props.isFetching}
-      emptyTitle={t('No voices found')}
+      emptyTitle={t('minimax.fields.noVoicesFound')}
       emptyDescription={t(
-        'Voice records will appear here after users create voices or admins add them.'
+        'minimax.tips.voiceRecordsWillAppearHereAfterUsersCreateVoices'
       )}
       skeletonKeyPrefix='minimax-voice-skeleton'
       tableClassName='overflow-x-auto'

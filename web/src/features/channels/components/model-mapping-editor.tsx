@@ -24,6 +24,14 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   deleteOptionJsonMapEntry,
@@ -65,7 +73,8 @@ type MappingRow = {
   isNew?: boolean
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50]
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const DEFAULT_MODEL_MAPPING_PAGE_SIZE = 20
 
 function formatJsonForEditor(value: string) {
   const trimmed = value.trim()
@@ -100,7 +109,7 @@ export function ModelMappingEditor({
   const [rows, setRows] = useState<MappingRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
+  const [pageSize, setPageSize] = useState(DEFAULT_MODEL_MAPPING_PAGE_SIZE)
   const nextRowIdRef = useRef(0)
   // Tracks the last JSON string we pushed up via onChange. The external-sync
   // effect uses this to ignore echoes of our own changes, which would otherwise
@@ -115,7 +124,7 @@ export function ModelMappingEditor({
   }, [])
 
   const isServerPaginated = Boolean(optionKey)
-  const failedToLoadSettingsMessage = t('Failed to load settings')
+  const failedToLoadSettingsMessage = t('channels.errors.failedToLoadSettings')
 
   const jsonMapQuery = useQuery({
     queryKey: [
@@ -159,7 +168,7 @@ export function ModelMappingEditor({
         map_key: mapKey,
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to update setting'))
+        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
       }
     },
     onSuccess: async () => {
@@ -172,10 +181,10 @@ export function ModelMappingEditor({
         }),
         queryClient.invalidateQueries({ queryKey: ['system-options'] }),
       ])
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to update setting'))
+      toast.error(error.message || t('channels.errors.failedToUpdateSetting'))
     },
   })
 
@@ -184,7 +193,7 @@ export function ModelMappingEditor({
       if (!optionKey) return
       const mapKey = row.from.trim()
       if (!mapKey) {
-        throw new Error(t('Mapping key cannot be empty'))
+        throw new Error(t('channels.errors.mappingKeyCannotBeEmpty'))
       }
       const data = await upsertOptionJsonMapEntry({
         key: optionKey,
@@ -193,7 +202,7 @@ export function ModelMappingEditor({
         value: row.to.trim(),
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to update setting'))
+        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
       }
     },
     onSuccess: async () => {
@@ -206,10 +215,10 @@ export function ModelMappingEditor({
         }),
         queryClient.invalidateQueries({ queryKey: ['system-options'] }),
       ])
-      toast.success(t('Settings updated successfully'))
+      toast.success(t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to update setting'))
+      toast.error(error.message || t('channels.errors.failedToUpdateSetting'))
     },
   })
 
@@ -429,7 +438,7 @@ export function ModelMappingEditor({
       if (isServerPaginated) {
         const result = await fullJsonQuery.refetch()
         if (result.isError) {
-          toast.error(result.error.message || t('Failed to load settings'))
+          toast.error(result.error.message || t('channels.errors.failedToLoadSettings'))
           return
         }
         const fullValue = result.data ?? '{}'
@@ -463,12 +472,12 @@ export function ModelMappingEditor({
             {mode === 'visual' ? (
               <>
                 <Code className='mr-2 h-4 w-4' />
-                {t('JSON Mode')}
+                {t('common.fields.jsonMode')}
               </>
             ) : (
               <>
                 <Table className='mr-2 h-4 w-4' />
-                {t('Visual Mode')}
+                {t('common.fields.visualMode')}
               </>
             )}
           </Button>
@@ -481,7 +490,7 @@ export function ModelMappingEditor({
               onClick={handleFillTemplate}
               disabled={disabled}
             >
-              {t('Fill Template')}
+              {t('common.actions.fillTemplate')}
             </Button>
           ) : null}
         </div>
@@ -494,7 +503,7 @@ export function ModelMappingEditor({
             disabled={disabled}
           >
             <Plus className='mr-2 h-4 w-4' />
-            {t('Add Mapping')}
+            {t('channels.actions.addMapping')}
           </Button>
         ) : null}
       </div>
@@ -504,13 +513,13 @@ export function ModelMappingEditor({
           {isLoadingRows || totalRows > 0 ? (
             <div className='space-y-2'>
               <div className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
-                <div>{fromLabel ? t(fromLabel) : t('Original Model')}</div>
-                <div>{toLabel ? t(toLabel) : t('Replacement Model')}</div>
+                <div>{fromLabel ? t(fromLabel) : t('channels.fields.originalModel')}</div>
+                <div>{toLabel ? t(toLabel) : t('channels.fields.replacementModel')}</div>
                 <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
               </div>
               {isLoadingRows ? (
                 <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
-                  {t('Loading...')}
+                  {t('common.tips.loading')}
                 </div>
               ) : null}
               {visibleRows.map((row) => (
@@ -550,7 +559,7 @@ export function ModelMappingEditor({
                           !isRowDirty(row)
                         }
                         className='h-10 w-10'
-                        aria-label={t('Save')}
+                        aria-label={t('channels.actions.save')}
                       >
                         <Save className='h-4 w-4' />
                       </Button>
@@ -574,7 +583,7 @@ export function ModelMappingEditor({
               {emptyText
                 ? t(emptyText)
                 : t(
-                    'No model mappings configured. Click "Add Mapping" to get started.'
+                    'common.tips.noModelMappingsConfiguredClickAddMappingToGet'
                   )}
             </div>
           )}
@@ -582,7 +591,7 @@ export function ModelMappingEditor({
             <div className='flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
               <div className='text-muted-foreground flex flex-wrap items-center gap-3 text-xs'>
                 <span>
-                  {t('Showing {{start}}-{{end}} of {{count}} mappings', {
+                  {t('channels.tips.showingStartEndOfCountMappings', {
                     start: Math.min(
                       totalRows,
                       safePageIndex * pageSize + 1
@@ -594,24 +603,29 @@ export function ModelMappingEditor({
                     count: totalRows,
                   })}
                 </span>
-                <div className='flex items-center gap-2'>
-                  <span>{t('Rows per page')}</span>
-                  <select
-                    className='border-input bg-background h-8 rounded-md border px-2 text-sm'
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value))
-                      setPageIndex(0)
-                    }}
-                    disabled={disabled}
-                  >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+               <div className='flex items-center gap-2'>
+                 <span>{t('common.fields.rowsPerPage')}</span>
+                 <Select
+                   value={String(pageSize)}
+                   onValueChange={(value) => {
+                     setPageSize(Number(value))
+                     setPageIndex(0)
+                   }}
+                 >
+                   <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent alignItemWithTrigger={false}>
+                     <SelectGroup>
+                       {PAGE_SIZE_OPTIONS.map((size) => (
+                         <SelectItem key={size} value={String(size)}>
+                           {size}
+                         </SelectItem>
+                       ))}
+                     </SelectGroup>
+                   </SelectContent>
+                 </Select>
+               </div>
               </div>
               <div className='flex items-center gap-2'>
                 <Button
@@ -623,7 +637,7 @@ export function ModelMappingEditor({
                     setPageIndex(() => Math.max(0, safePageIndex - 1))
                   }
                 >
-                  {t('Previous')}
+                  {t('common.fields.previous')}
                 </Button>
                 <span className='text-muted-foreground text-xs'>
                   {safePageIndex + 1} / {pageCount}
@@ -637,7 +651,7 @@ export function ModelMappingEditor({
                     setPageIndex(() => Math.min(pageCount - 1, safePageIndex + 1))
                   }
                 >
-                  {t('Next')}
+                  {t('common.fields.next')}
                 </Button>
               </div>
             </div>
@@ -648,7 +662,7 @@ export function ModelMappingEditor({
           <Textarea
             value={jsonValue}
             onChange={(e) => handleJsonChange(e.target.value)}
-            placeholder={jsonPlaceholder ?? t('{"original-model": "replacement-model"}')}
+            placeholder={jsonPlaceholder ?? t('common.tips.originalModelReplacementModel')}
             disabled={disabled}
             rows={8}
             wrap='off'

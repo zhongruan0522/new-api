@@ -1,14 +1,14 @@
 {
-  "| Based on": "| Based on",
-  "About": "About",
-  "AGPL v3.0 License": "AGPL v3.0 License",
-  "https://github.com/zhongruan0522/new-api": "https://github.com/zhongruan0522/new-api",
-  "JustSong": "JustSong",
-  "New API Project Repository:": "New API Project Repository:",
-  "NewAPI": "NewAPI",
-  "No About Content Set": "No About Content Set",
-  "One API": "One API",
-  "QuantumNous": "QuantumNous",
-  "The administrator has not configured any about content yet. You can set it in the settings page, supporting HTML or URL.": "The administrator has not configured any about content yet. You can set it in the settings page, supporting HTML or URL.",
-  "This project must be used in compliance with the": "This project must be used in compliance with the"
+  "about.fields.basedOn": "| Based on",
+  "about.titles.value": "About",
+  "about.tips.agplV30License": "AGPL v3.0 License",
+  "about.placeholders.urlGithubComNookMuxNookMux": "https://github.com/NookMux/NookMux",
+  "about.fields.justSong": "JustSong",
+  "about.fields.newApiProjectRepository": "New API Project Repository:",
+  "about.fields.newApi": "NewAPI",
+  "about.titles.noAboutContentSet": "No About Content Set",
+  "about.fields.oneApi": "One API",
+  "about.fields.nookMux": "NookMux",
+  "about.tips.administratorHasNotConfiguredAnyAboutContentYetYou": "The administrator has not configured any about content yet. You can set it in the settings page, supporting HTML or URL.",
+  "about.errors.projectMustBeUsedInComplianceWithThe": "This project must be used in compliance with the"
 }

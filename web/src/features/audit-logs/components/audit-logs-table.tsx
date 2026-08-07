@@ -127,7 +127,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       })
 
       if (!result?.success) {
-        toast.error(result?.message || t('Failed to load audit logs'))
+        toast.error(result?.message || t('auditLogs.errors.failedToLoadAuditLogs'))
         return DEFAULT_AUDIT_LOGS_DATA
       }
 
@@ -198,7 +198,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
     () => [
       {
         id: 'created_at',
-        header: () => t('Time'),
+        header: () => t('auditLogs.fields.time'),
         cell: ({ row }) => {
           const ts = row.original.created_at
           if (!ts) return '-'
@@ -212,7 +212,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'username',
-        header: () => t('Operator'),
+        header: () => t('auditLogs.fields.operator'),
         cell: ({ row }) => (
           <span className='text-sm font-medium'>
             {row.original.username || '-'}
@@ -222,7 +222,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'ip',
-        header: () => t('IP'),
+        header: () => t('auditLogs.fields.ip'),
         cell: ({ row }) => (
           <span className='text-muted-foreground text-xs tabular-nums'>
             {row.original.ip || '-'}
@@ -232,7 +232,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'module',
-        header: () => t('Module'),
+        header: () => t('auditLogs.fields.module'),
         cell: ({ row }) => {
           const value = row.original.module
           const labelKey =
@@ -247,7 +247,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'action_type',
-        header: () => t('Action Type'),
+        header: () => t('auditLogs.fields.actionType'),
         cell: ({ row }) => {
           const value = row.original.action_type
           const labelKey =
@@ -266,7 +266,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'description',
-        header: () => t('Description'),
+        header: () => t('auditLogs.tips.description'),
         cell: ({ row }) => (
           <span className='text-foreground/90 text-sm'>
             {row.original.description || '-'}
@@ -275,7 +275,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       },
       {
         id: 'actions',
-        header: () => t('Details'),
+        header: () => t('auditLogs.titles.details'),
         cell: ({ row }) => {
           const log = row.original
           const hasDiff =
@@ -295,7 +295,7 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
               }}
             >
               <Eye className='size-3.5' />
-              {t('View Details')}
+              {t('auditLogs.actions.viewDetails')}
             </Button>
           )
         },
@@ -343,9 +343,9 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
         columns={columns as ColumnDef<AuditLog>[]}
         isLoading={isLoading}
         isFetching={isFetching}
-        emptyTitle={t('No Audit Logs Found')}
+        emptyTitle={t('auditLogs.titles.noAuditLogsFound')}
         emptyDescription={t(
-          'No audit logs available. Logs will appear here once administrative operations are performed.'
+          'auditLogs.tips.noAuditLogsAvailableLogsWillAppearHereOnce'
         )}
         skeletonKeyPrefix='audit-log-skeleton'
         tableClassName='overflow-x-auto'

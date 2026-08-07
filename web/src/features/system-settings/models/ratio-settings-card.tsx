@@ -25,7 +25,12 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { resetModelRatios } from '../api'
+import {
+  deleteOptionJsonMapEntry,
+  resetModelRatios,
+  resetToolBillingRules,
+  upsertOptionJsonMapEntry,
+} from '../api'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 import { GroupRatioForm } from './group-ratio-form'
@@ -43,7 +48,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -52,7 +57,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -61,7 +66,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -70,7 +75,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -79,7 +84,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -88,7 +93,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -97,7 +102,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -106,7 +111,7 @@ const modelSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -118,7 +123,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -127,7 +132,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -136,7 +141,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -145,7 +150,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -159,7 +164,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON array',
+        message: result.message || 'common.errors.invalidJsonArray',
       })
     }
   }),
@@ -169,7 +174,7 @@ const groupSchema = z.object({
     if (!result.valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
+        message: result.message || 'common.errors.invalidJson',
       })
     }
   }),
@@ -178,6 +183,70 @@ const groupSchema = z.object({
 type ModelFormValues = z.infer<typeof modelSchema>
 type GroupFormValues = z.infer<typeof groupSchema>
 type RatioTabId = 'models' | 'groups' | 'tool-prices'
+
+type ModelJsonMapField =
+  | 'ModelPrice'
+  | 'ModelRatio'
+  | 'CacheRatio'
+  | 'CreateCacheRatio'
+  | 'CompletionRatio'
+  | 'AudioRatio'
+  | 'AudioCompletionRatio'
+  | 'ContextPricing'
+
+function parseJsonObject(value: string): Record<string, unknown> {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return {}
+  }
+  const parsed = JSON.parse(trimmed)
+  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Expected JSON object')
+  }
+  return parsed as Record<string, unknown>
+}
+
+function jsonValueEquals(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+async function updateJsonMapFieldByDiff(
+  field: ModelJsonMapField,
+  previousValue: string,
+  nextValue: string
+) {
+  const previous = parseJsonObject(previousValue)
+  const next = parseJsonObject(nextValue)
+  const keys = new Set([...Object.keys(previous), ...Object.keys(next)])
+
+  for (const mapKey of keys) {
+    const hadPrevious = Object.prototype.hasOwnProperty.call(previous, mapKey)
+    const hasNext = Object.prototype.hasOwnProperty.call(next, mapKey)
+    if (!hasNext) {
+      if (hadPrevious) {
+        const data = await deleteOptionJsonMapEntry({
+          key: field,
+          map_key: mapKey,
+        })
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to update setting')
+        }
+      }
+      continue
+    }
+
+    if (!hadPrevious || !jsonValueEquals(previous[mapKey], next[mapKey])) {
+      const data = await upsertOptionJsonMapEntry({
+        key: field,
+        map_key: mapKey,
+        value: JSON.stringify(next[mapKey]),
+      })
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update setting')
+      }
+    }
+  }
+}
 
 type RatioSettingsCardProps = {
   modelDefaults: ModelFormValues
@@ -191,27 +260,59 @@ export function RatioSettingsCard({
   modelDefaults,
   groupDefaults,
   toolPricesDefault,
-  titleKey = 'Pricing Ratios',
+  titleKey = 'systemSettings.titles.pricingRatios',
   visibleTabs = ['models', 'groups', 'tool-prices'],
 }: RatioSettingsCardProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const queryClient = useQueryClient()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [toolBillingConfirmOpen, setToolBillingConfirmOpen] = useState(false)
+  // 模型价格的保存走的是 upsertOptionJsonMapEntry，不会触发 updateOption mutation，
+  // 因此需要一个独立的本地状态来准确反映保存进行中。
+  const [isSavingModelRatios, setIsSavingModelRatios] = useState(false)
 
   const resetMutation = useMutation({
     mutationFn: resetModelRatios,
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(t('Model prices reset successfully'))
+        toast.success(t('systemSettings.fields.modelPricesResetSuccessfully'))
         queryClient.invalidateQueries({ queryKey: ['system-options'] })
         setConfirmOpen(false)
       } else {
-        toast.error(data.message || t('Failed to reset model ratios'))
+        toast.error(
+          data.message || t('systemSettings.errors.failedToResetModelRatios')
+        )
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to reset model ratios'))
+      toast.error(
+        error.message || t('systemSettings.errors.failedToResetModelRatios')
+      )
+    },
+  })
+
+  const resetToolBillingMutation = useMutation({
+    mutationFn: resetToolBillingRules,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(
+          t('systemSettings.fields.toolBillingRulesResetSuccessfully')
+        )
+        queryClient.invalidateQueries({ queryKey: ['system-options'] })
+        setToolBillingConfirmOpen(false)
+      } else {
+        toast.error(
+          data.message ||
+            t('systemSettings.errors.failedToResetToolBillingRules')
+        )
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(
+        error.message ||
+          t('systemSettings.errors.failedToResetToolBillingRules')
+      )
     },
   })
 
@@ -349,15 +450,34 @@ export function RatioSettingsCard({
       )
 
       if (updates.length === 0) {
-        toast.info(t('No model price changes to save'))
+        toast.info(t('systemSettings.errors.noModelPriceChangesToSave'))
         return
       }
 
-      for (const key of updates) {
-        await updateOption.mutateAsync({ key, value: normalized[key] })
+      setIsSavingModelRatios(true)
+      try {
+        for (const key of updates) {
+          await updateJsonMapFieldByDiff(
+            key,
+            modelNormalizedDefaults.current[key],
+            normalized[key]
+          )
+        }
+        modelNormalizedDefaults.current = normalized
+        await queryClient.invalidateQueries({ queryKey: ['system-options'] })
+        toast.success(t('channels.status.settingsUpdatedSuccessfully'))
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : t('systemSettings.errors.failedToSaveModelPrices')
+        )
+        throw error
+      } finally {
+        setIsSavingModelRatios(false)
       }
     },
-    [t, updateOption]
+    [queryClient, t]
   )
 
   const saveGroupRatios = useCallback(
@@ -403,10 +523,19 @@ export function RatioSettingsCard({
     resetMutate()
   }, [resetMutate])
 
+  const handleResetToolBillingRules = useCallback(() => {
+    setToolBillingConfirmOpen(true)
+  }, [])
+
+  const { mutate: resetToolBillingMutate } = resetToolBillingMutation
+  const handleConfirmResetToolBilling = useCallback(() => {
+    resetToolBillingMutate()
+  }, [resetToolBillingMutate])
+
   const tabLabels: Record<RatioTabId, string> = {
-    models: 'Model prices',
-    groups: 'Group ratios',
-    'tool-prices': 'Tool prices',
+    models: 'common.fields.modelPrices',
+    groups: 'systemSettings.fields.groupRatios',
+    'tool-prices': 'common.fields.toolPrices',
   }
   const tabsGridClass =
     {
@@ -423,7 +552,7 @@ export function RatioSettingsCard({
           form={modelForm}
           onSave={saveModelRatios}
           onReset={handleResetRatios}
-          isSaving={updateOption.isPending}
+          isSaving={isSavingModelRatios}
           isResetting={resetMutation.isPending}
         />
       )
@@ -438,7 +567,13 @@ export function RatioSettingsCard({
       )
     }
     if (tab === 'tool-prices') {
-      return <ToolPriceSettings defaultValue={toolPricesDefault} />
+      return (
+        <ToolPriceSettings
+          defaultValue={toolPricesDefault}
+          onReset={handleResetToolBillingRules}
+          isResetting={resetToolBillingMutation.isPending}
+        />
+      )
     }
     return null
   }
@@ -468,14 +603,27 @@ export function RatioSettingsCard({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={t('Reset all model prices?')}
+        title={t('systemSettings.actions.resetAllModelPrices')}
         desc={t(
-          'This will clear custom pricing ratios and revert to upstream defaults.'
+          'systemSettings.tips.clearCustomPricingRatiosAndRevertToUpstreamDefaults'
         )}
         destructive
         isLoading={resetMutation.isPending}
         handleConfirm={handleConfirmReset}
-        confirmText={t('Reset')}
+        confirmText={t('common.actions.reset')}
+      />
+
+      <ConfirmDialog
+        open={toolBillingConfirmOpen}
+        onOpenChange={setToolBillingConfirmOpen}
+        title={t('systemSettings.actions.resetAllToolBillingRules')}
+        desc={t(
+          'systemSettings.tips.clearToolBillingRulesAndRestoreDefaults'
+        )}
+        destructive
+        isLoading={resetToolBillingMutation.isPending}
+        handleConfirm={handleConfirmResetToolBilling}
+        confirmText={t('common.actions.reset')}
       />
     </SettingsSection>
   )

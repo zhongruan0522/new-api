@@ -4,8 +4,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/service"
 )
 
 type createTicketRequest struct {
@@ -26,7 +27,8 @@ func GetUserTickets(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	items, total, err := service.ListUserTickets(c.GetInt("id"), pageInfo.GetPage(), pageInfo.GetPageSize(), c.DefaultQuery("status", "all"), c.Query("keyword"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to list user tickets: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -38,7 +40,8 @@ func GetAdminTickets(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	items, total, err := service.ListAdminTickets(c.GetInt("role"), pageInfo.GetPage(), pageInfo.GetPageSize(), c.DefaultQuery("status", "all"), c.Query("keyword"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to list admin tickets: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -49,7 +52,7 @@ func GetAdminTickets(c *gin.Context) {
 func CreateTicket(c *gin.Context) {
 	var req createTicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
@@ -62,7 +65,8 @@ func CreateTicket(c *gin.Context) {
 		Content:  req.Content,
 	})
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to create ticket: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, data)
@@ -71,13 +75,14 @@ func CreateTicket(c *gin.Context) {
 func GetTicketDetail(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
 	data, err := service.GetTicketDetail(ticketId, c.GetInt("id"), c.GetInt("role"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get ticket detail: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, data)
@@ -86,13 +91,13 @@ func GetTicketDetail(c *gin.Context) {
 func ReplyTicket(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
 	var req replyTicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
@@ -104,7 +109,8 @@ func ReplyTicket(c *gin.Context) {
 		Content:  req.Content,
 	})
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to reply ticket: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, nil)
@@ -113,13 +119,14 @@ func ReplyTicket(c *gin.Context) {
 func CloseTicket(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
 	err = service.CloseTicket(ticketId, c.GetInt("id"), c.GetInt("role"), c.GetString("username"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to close ticket: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, nil)
@@ -128,19 +135,20 @@ func CloseTicket(c *gin.Context) {
 func UpdateTicketStatus(c *gin.Context) {
 	ticketId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ticketId <= 0 {
-		common.ApiErrorMsg(c, "无效的工单编号")
+		common.ApiErrorI18n(c, i18n.MsgTicketInvalidID)
 		return
 	}
 
 	var req updateTicketStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
 	err = service.UpdateTicketStatus(ticketId, c.GetInt("id"), c.GetInt("role"), c.GetString("username"), req.Status)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update ticket status: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, nil)

@@ -111,7 +111,7 @@ export function LegalDocument({
             <CardContent className='space-y-4'>
               <p className='text-muted-foreground text-sm'>
                 {t(
-                  'The administrator configured an external link for this document.'
+                  'common.tips.administratorConfiguredAnExternalLinkForThisDocument'
                 )}
               </p>
               <Button
@@ -123,7 +123,7 @@ export function LegalDocument({
                   />
                 }
               >
-                {t('View document')}
+                {t('common.actions.viewDocument')}
               </Button>
             </CardContent>
           </Card>

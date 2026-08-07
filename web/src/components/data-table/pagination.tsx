@@ -57,15 +57,18 @@ export function DataTablePagination<TData>({
     >
       <div className='flex w-full items-center justify-between gap-2'>
         <div className='flex min-w-0 items-center text-xs font-medium whitespace-nowrap sm:min-w-[130px] sm:text-sm @2xl/content:hidden'>
-          {t('Page {{current}} of {{total}}', {
+          {t('common.fields.pageCurrentOfTotal', {
             current: currentPage,
             total: totalPages,
           })}
         </div>
-        <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+       <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+          <p className='hidden text-sm font-medium sm:block'>
+            {t('common.fields.rowsPerPage')}
+          </p>
           <Select
             items={[
-              ...[10, 20, 30, 40, 50, 100].map((pageSize) => ({
+              ...[10, 20, 50, 100].map((pageSize) => ({
                 value: `${pageSize}`,
                 label: pageSize,
               })),
@@ -80,7 +83,7 @@ export function DataTablePagination<TData>({
             </SelectTrigger>
             <SelectContent side='top' alignItemWithTrigger={false}>
               <SelectGroup>
-                {[10, 20, 30, 40, 50, 100].map((pageSize) => (
+                {[10, 20, 50, 100].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>
@@ -88,15 +91,12 @@ export function DataTablePagination<TData>({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <p className='hidden text-sm font-medium sm:block'>
-            {t('Rows per page')}
-          </p>
         </div>
       </div>
 
       <div className='flex items-center sm:space-x-6 lg:space-x-8'>
         <div className='flex min-w-[130px] items-center text-sm font-medium whitespace-nowrap @max-3xl/content:hidden'>
-          {t('Page {{current}} of {{total}}', {
+          {t('common.fields.pageCurrentOfTotal', {
             current: currentPage,
             total: totalPages,
           })}
@@ -108,7 +108,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <span className='sr-only'>{t('Go to first page')}</span>
+            <span className='sr-only'>{t('common.fields.goToFirstPage')}</span>
             <DoubleArrowLeftIcon className='h-4 w-4' />
           </Button>
           <Button
@@ -117,7 +117,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <span className='sr-only'>{t('Go to previous page')}</span>
+            <span className='sr-only'>{t('common.fields.goToPreviousPage')}</span>
             <ChevronLeftIcon className='h-4 w-4' />
           </Button>
 
@@ -145,7 +145,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <span className='sr-only'>{t('Go to next page')}</span>
+            <span className='sr-only'>{t('common.fields.goToNextPage')}</span>
             <ChevronRightIcon className='h-4 w-4' />
           </Button>
           <Button
@@ -154,7 +154,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <span className='sr-only'>{t('Go to last page')}</span>
+            <span className='sr-only'>{t('common.fields.goToLastPage')}</span>
             <DoubleArrowRightIcon className='h-4 w-4' />
           </Button>
         </div>

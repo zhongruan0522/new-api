@@ -44,64 +44,64 @@ type CapabilityMeta = {
 const CAPABILITY_META: Record<ModelCapability, CapabilityMeta> = {
   function_calling: {
     icon: Workflow,
-    labelKey: 'Function Calling',
+    labelKey: 'common.fields.functionCalling',
     descriptionKey:
-      'Invoke developer-defined functions with structured arguments',
+      'common.tips.invokeDeveloperDefinedFunctionsWithStructuredArguments',
   },
   streaming: {
     icon: Zap,
-    labelKey: 'Streaming',
-    descriptionKey: 'Stream tokens incrementally as they are generated',
+    labelKey: 'common.fields.streaming',
+    descriptionKey: 'common.tips.streamTokensIncrementallyAsTheyAreGenerated',
   },
   vision: {
     icon: ScanEye,
-    labelKey: 'Vision',
-    descriptionKey: 'Understand image inputs alongside text',
+    labelKey: 'common.fields.vision',
+    descriptionKey: 'common.tips.understandImageInputsAlongsideText',
   },
   json_mode: {
     icon: Braces,
-    labelKey: 'JSON Mode',
-    descriptionKey: 'Force a syntactically valid JSON response',
+    labelKey: 'common.fields.jsonMode',
+    descriptionKey: 'common.tips.forceASyntacticallyValidJsonResponse',
   },
   structured_output: {
     icon: FileCode,
-    labelKey: 'Structured Output',
-    descriptionKey: 'Return data conforming to a JSON schema',
+    labelKey: 'common.fields.structuredOutput',
+    descriptionKey: 'common.tips.returnDataConformingToAJsonSchema',
   },
   reasoning: {
     icon: Sparkles,
-    labelKey: 'Reasoning',
-    descriptionKey: 'Multi-step thinking before final answer',
+    labelKey: 'common.fields.reasoning',
+    descriptionKey: 'common.tips.multiStepThinkingBeforeFinalAnswer',
   },
   tools: {
     icon: Settings2,
-    labelKey: 'Tools',
-    descriptionKey: 'Use external tools to extend capabilities',
+    labelKey: 'common.fields.tools',
+    descriptionKey: 'common.actions.useExternalToolsToExtendCapabilities',
   },
   system_prompt: {
     icon: PanelTopOpen,
-    labelKey: 'System Prompt',
-    descriptionKey: 'Steer behaviour with a system instruction',
+    labelKey: 'usageLogs.titles.systemPrompt',
+    descriptionKey: 'common.tips.steerBehaviourWithASystemInstruction',
   },
   web_search: {
     icon: Globe,
-    labelKey: 'Web Search',
-    descriptionKey: 'Search the public web at inference time',
+    labelKey: 'common.fields.webSearch',
+    descriptionKey: 'common.actions.searchThePublicWebAtInferenceTime',
   },
   code_interpreter: {
     icon: Code2,
-    labelKey: 'Code Interpreter',
-    descriptionKey: 'Execute code in a sandbox during the response',
+    labelKey: 'common.fields.codeInterpreter',
+    descriptionKey: 'common.tips.executeCodeInASandboxDuringTheResponse',
   },
   caching: {
     icon: Database,
-    labelKey: 'Prompt Caching',
-    descriptionKey: 'Cache repeated prompt prefixes for cheaper, faster reuse',
+    labelKey: 'common.fields.promptCaching',
+    descriptionKey: 'common.tips.cacheRepeatedPromptPrefixesForCheaperFasterReuse',
   },
   embeddings: {
     icon: BookOpenCheck,
-    labelKey: 'Embeddings',
-    descriptionKey: 'Return vector embeddings for inputs',
+    labelKey: 'pricing.fields.embeddings',
+    descriptionKey: 'common.tips.returnVectorEmbeddingsForInputs',
   },
 }
 
@@ -143,7 +143,7 @@ export function ModelDetailsCapabilities(props: {
   if (ordered.length === 0) {
     return (
       <p className='text-muted-foreground text-sm'>
-        {t('No capabilities reported for this model.')}
+        {t('pricing.tips.noCapabilitiesReportedForThisModel')}
       </p>
     )
   }

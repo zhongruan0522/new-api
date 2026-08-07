@@ -2,8 +2,9 @@ package model_setting
 
 import (
 	"net/http"
+	"strings"
 
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 //var claudeHeadersSettings = map[string][]string{}
@@ -46,21 +47,34 @@ func GetClaudeSettings() *ClaudeSettings {
 func (c *ClaudeSettings) WriteHeaders(originModel string, httpHeader *http.Header) {
 	if headers, ok := c.HeadersSettings[originModel]; ok {
 		for headerKey, headerValues := range headers {
-			// get existing values for this header key
-			existingValues := httpHeader.Values(headerKey)
-			existingValuesMap := make(map[string]bool)
-			for _, v := range existingValues {
-				existingValuesMap[v] = true
+			mergedValues := normalizeHeaderListValues(
+				append(append([]string(nil), httpHeader.Values(headerKey)...), headerValues...),
+			)
+			if len(mergedValues) == 0 {
+				continue
 			}
-
-			// add only values that don't already exist
-			for _, headerValue := range headerValues {
-				if !existingValuesMap[headerValue] {
-					httpHeader.Add(headerKey, headerValue)
-				}
-			}
+			httpHeader.Set(headerKey, strings.Join(mergedValues, ","))
 		}
 	}
+}
+
+func normalizeHeaderListValues(values []string) []string {
+	normalizedValues := make([]string, 0, len(values))
+	seenValues := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		for _, item := range strings.Split(value, ",") {
+			normalizedItem := strings.TrimSpace(item)
+			if normalizedItem == "" {
+				continue
+			}
+			if _, exists := seenValues[normalizedItem]; exists {
+				continue
+			}
+			seenValues[normalizedItem] = struct{}{}
+			normalizedValues = append(normalizedValues, normalizedItem)
+		}
+	}
+	return normalizedValues
 }
 
 func (c *ClaudeSettings) GetDefaultMaxTokens(model string) int {

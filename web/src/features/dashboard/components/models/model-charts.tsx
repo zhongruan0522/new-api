@@ -130,10 +130,10 @@ export function ModelCharts(props: ModelChartsProps) {
         <div className='flex items-center gap-2'>
           <PieChartIcon className='text-muted-foreground/60 size-4' />
           <div className='text-sm font-semibold'>
-            {t('Model Call Analytics')}
+            {t('dashboard.titles.modelCallAnalytics')}
           </div>
           <span className='text-muted-foreground text-xs'>
-            {t('labelWithColon', { label: t('Total') })} {chartData.totalCountDisplay}
+            {t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') })} {chartData.totalCountDisplay}
           </span>
         </div>
 

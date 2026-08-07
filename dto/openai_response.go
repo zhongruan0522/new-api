@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 )
 
 const (
@@ -292,7 +292,7 @@ type OpenAIResponsesResponse struct {
 	Status             string             `json:"status"`
 	Error              any                `json:"error,omitempty"`
 	IncompleteDetails  *IncompleteDetails `json:"incomplete_details,omitempty"`
-	Instructions       string             `json:"instructions"`
+	Instructions       json.RawMessage    `json:"instructions"`
 	MaxOutputTokens    int                `json:"max_output_tokens"`
 	Model              string             `json:"model"`
 	Output             []ResponsesOutput  `json:"output"`

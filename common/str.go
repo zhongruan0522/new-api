@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -19,6 +20,10 @@ var (
 	maskIPPattern     = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
 	// maskApiKeyPattern matches patterns like 'api_key:xxx' or "api_key:xxx" to mask the API key value
 	maskApiKeyPattern = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
+	// maskMinimaxBrandPattern masks upstream provider brand names (case-insensitive) leaked in error messages
+	maskMinimaxBrandPattern = regexp.MustCompile(`(?i)minimax`)
+	// maskSpeechPrefixPattern masks upstream internal model prefixes (e.g. speech-02-hd) leaked in error messages
+	maskSpeechPrefixPattern = regexp.MustCompile(`speech-`)
 )
 
 const LocalLogContentLimit = 2048
@@ -250,5 +255,44 @@ func MaskSensitiveInfo(str string) string {
 	// Mask API keys (e.g., "api_key:EXAMPLE-KEY-REPLACE-ME" -> "api_key:***")
 	str = maskApiKeyPattern.ReplaceAllString(str, "${1}api_key:***${3}")
 
+	// Mask upstream provider/brand identifiers leaked in error messages
+	str = maskMinimaxBrandPattern.ReplaceAllString(str, "*")
+	str = maskSpeechPrefixPattern.ReplaceAllString(str, "*")
+
 	return str
+}
+
+// MaskSensitiveInfoWithExemptions works like MaskSensitiveInfo but preserves the
+// given exemption strings (e.g. the current model name and group name) so that
+// legitimate values are not masked away. Exemptions are temporarily replaced
+// with null-byte-delimited placeholders that cannot appear in normal text and
+// are not touched by any mask rule.
+func MaskSensitiveInfoWithExemptions(str string, exemptions []string) string {
+	seen := make(map[string]bool)
+	valid := make([]string, 0, len(exemptions))
+	for _, s := range exemptions {
+		if s == "" || seen[s] {
+			continue
+		}
+		seen[s] = true
+		valid = append(valid, s)
+	}
+	if len(valid) == 0 {
+		return MaskSensitiveInfo(str)
+	}
+	// Sort by length descending so longer exemptions are protected first.
+	sort.Slice(valid, func(i, j int) bool {
+		return len(valid[i]) > len(valid[j])
+	})
+	masked := str
+	placeholders := make([]string, len(valid))
+	for i, s := range valid {
+		placeholders[i] = fmt.Sprintf("\x00E%d\x00", i)
+		masked = strings.ReplaceAll(masked, s, placeholders[i])
+	}
+	masked = MaskSensitiveInfo(masked)
+	for i := len(valid) - 1; i >= 0; i-- {
+		masked = strings.ReplaceAll(masked, placeholders[i], valid[i])
+	}
+	return masked
 }

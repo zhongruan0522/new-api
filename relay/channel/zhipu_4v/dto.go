@@ -1,10 +1,8 @@
 package zhipu_4v
 
 import (
-	"time"
-
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/types"
 )
 
 //	type ZhipuMessage struct {
@@ -53,9 +51,4 @@ type ZhipuV4StreamResponse struct {
 	Created int64                                     `json:"created"`
 	Choices []dto.ChatCompletionsStreamResponseChoice `json:"choices"`
 	Usage   dto.Usage                                 `json:"usage"`
-}
-
-type tokenData struct {
-	Token      string
-	ExpiryTime time.Time
 }

@@ -1,12 +1,14 @@
 {
-  "Ask anything": "Ask anything",
-  "Attach": "Attach",
-  "Feature in development": "Feature in development",
-  "Model Price Not Configured": "Model Price Not Configured",
-  "Search feature in development": "Search feature in development",
-  "Send": "Send",
-  "Stop": "Stop",
-  "Take photo": "Take photo",
-  "Take screenshot": "Take screenshot",
-  "Upload photo": "Upload photo"
+  "playground.fields.askAnything": "Ask anything",
+  "playground.fields.attach": "Attach",
+  "playground.fields.featureInDevelopment": "Feature in development",
+  "playground.fields.modelPriceNotConfigured": "Model Price Not Configured",
+  "playground.actions.searchFeatureInDevelopment": "Search feature in development",
+  "playground.actions.send": "Send",
+  "playground.actions.stop": "Stop",
+  "playground.fields.takePhoto": "Take photo",
+  "playground.fields.takeScreenshot": "Take screenshot",
+  "playground.actions.uploadPhoto": "Upload photo",
+  "playground.errors.failedToLoadPlaygroundModels": "Failed to load playground models",
+  "playground.errors.failedToLoadPlaygroundGroups": "Failed to load playground groups"
 }

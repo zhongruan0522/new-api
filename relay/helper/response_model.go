@@ -3,8 +3,8 @@ package helper
 import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func responseModelName(info *relaycommon.RelayInfo) string {

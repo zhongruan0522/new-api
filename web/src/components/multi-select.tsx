@@ -45,7 +45,7 @@ export function MultiSelect({
   className,
 }: MultiSelectProps) {
   const { t } = useTranslation()
-  const resolvedPlaceholder = placeholder ?? t('Select items...')
+  const resolvedPlaceholder = placeholder ?? t('common.placeholders.selectItems')
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState('')
@@ -87,7 +87,7 @@ export function MultiSelect({
                 <Button
                   variant='ghost'
                   size='icon-sm'
-                  aria-label={t('Remove')}
+                  aria-label={t('common.actions.remove')}
                   className='ml-1 size-auto p-0'
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {

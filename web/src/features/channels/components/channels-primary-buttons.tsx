@@ -80,7 +80,7 @@ export function ChannelsPrimaryButtons() {
         <div className='hidden items-center gap-2 rounded-md border px-3 py-1.5 sm:flex'>
           <Tags className='text-muted-foreground h-4 w-4' />
           <Label htmlFor='tag-mode' className='cursor-pointer text-sm'>
-            {t('Tag Mode')}
+            {t('channels.fields.tagMode')}
           </Label>
           <Switch
             id='tag-mode'
@@ -92,7 +92,7 @@ export function ChannelsPrimaryButtons() {
         <div className='hidden items-center gap-2 rounded-md border px-3 py-1.5 sm:flex'>
           <SortAsc className='text-muted-foreground h-4 w-4' />
           <Label htmlFor='id-sort' className='cursor-pointer text-sm'>
-            {t('Sort by ID')}
+            {t('channels.fields.sortById')}
           </Label>
           <Switch
             id='id-sort'
@@ -110,8 +110,8 @@ export function ChannelsPrimaryButtons() {
           size='sm'
         >
           <Plus className='h-4 w-4' />
-          <span className='max-sm:hidden'>{t('Create Channel')}</span>
-          <span className='sm:hidden'>{t('Create')}</span>
+          <span className='max-sm:hidden'>{t('channels.actions.createChannel')}</span>
+          <span className='sm:hidden'>{t('channels.actions.create')}</span>
         </Button>
 
         {/* More Actions */}
@@ -127,7 +127,7 @@ export function ChannelsPrimaryButtons() {
               onCheckedChange={handleTagModeToggle}
             >
               <Tags className='mr-2 h-4 w-4' />
-              {t('Tag Mode')}
+              {t('channels.fields.tagMode')}
             </DropdownMenuCheckboxItem>
 
             <DropdownMenuCheckboxItem
@@ -136,7 +136,7 @@ export function ChannelsPrimaryButtons() {
               onCheckedChange={handleIdSortToggle}
             >
               <SortAsc className='mr-2 h-4 w-4' />
-              {t('Sort by ID')}
+              {t('channels.fields.sortById')}
             </DropdownMenuCheckboxItem>
 
             <DropdownMenuSeparator className='sm:hidden' />
@@ -146,7 +146,7 @@ export function ChannelsPrimaryButtons() {
                 handleTestAllChannels(queryClient)
               }}
             >
-              {t('Test All Channels')}
+              {t('channels.titles.testAllChannels')}
               <DropdownMenuShortcut>
                 <TestTube className='h-4 w-4' />
               </DropdownMenuShortcut>
@@ -157,7 +157,7 @@ export function ChannelsPrimaryButtons() {
                 handleUpdateAllBalances(queryClient)
               }}
             >
-              {t('Update All Balances')}
+              {t('channels.fields.updateAllBalances')}
               <DropdownMenuShortcut>
                 <DollarSign className='h-4 w-4' />
               </DropdownMenuShortcut>
@@ -173,7 +173,7 @@ export function ChannelsPrimaryButtons() {
                 })
               }}
             >
-              {t('Fix Abilities')}
+              {t('channels.fields.fixAbilities')}
               <DropdownMenuShortcut>
                 <Settings2 className='h-4 w-4' />
               </DropdownMenuShortcut>
@@ -188,7 +188,7 @@ export function ChannelsPrimaryButtons() {
               }}
               className='text-destructive focus:text-destructive'
             >
-              {t('Delete All Disabled')}
+              {t('channels.actions.deleteAllDisabled')}
               <DropdownMenuShortcut>
                 <Trash2 className='h-4 w-4' />
               </DropdownMenuShortcut>
@@ -200,7 +200,7 @@ export function ChannelsPrimaryButtons() {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title={t('Delete All Disabled Channels?')}
+        title={t('channels.actions.deleteAllDisabledChannels')}
         desc='This will permanently delete all manually and automatically disabled channels. This action cannot be undone.'
         destructive
         handleConfirm={() => {

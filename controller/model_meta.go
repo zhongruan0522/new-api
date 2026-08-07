@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,8 @@ func GetAllModelsMeta(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all models: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
@@ -51,7 +53,8 @@ func SearchModelsMeta(c *gin.Context) {
 
 	modelsMeta, total, err := model.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to search models: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
@@ -66,12 +69,13 @@ func GetModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	var m model.Model
 	if err := model.DB.First(&m, id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get model by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	enrichModels([]*model.Model{&m})
@@ -82,24 +86,26 @@ func GetModelMeta(c *gin.Context) {
 func CreateModelMeta(c *gin.Context) {
 	var m model.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.ModelName == "" {
-		common.ApiErrorMsg(c, "模型名称不能为空")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaNameRequired)
 		return
 	}
 	// 名称冲突检查
 	if dup, err := model.IsModelNameDuplicated(0, m.ModelName); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to check model name duplication: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "模型名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 		return
 	}
 
 	if err := m.Insert(); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to insert model: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshPricing()
@@ -113,25 +119,27 @@ func UpdateModelMeta(c *gin.Context) {
 
 	var m model.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.Id == 0 {
-		common.ApiErrorMsg(c, "缺少模型 ID")
+		common.ApiErrorI18n(c, i18n.MsgModelMetaMissingID)
 		return
 	}
 
 	// 查询更新前的原始数据用于审计差异对比
 	var origin model.Model
 	if err := model.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get model origin: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if statusOnly {
 		// 只更新状态，防止误清空其他字段
 		if err := model.DB.Model(&model.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update model status: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
@@ -141,15 +149,17 @@ func UpdateModelMeta(c *gin.Context) {
 	} else {
 		// 名称冲突检查
 		if dup, err := model.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to check model name duplication: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		} else if dup {
-			common.ApiErrorMsg(c, "模型名称已存在")
+			common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 			return
 		}
 
 		if err := m.Update(); err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to update model: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
@@ -163,11 +173,12 @@ func DeleteModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if err := model.DB.Delete(&model.Model{}, id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete model: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	model.RefreshPricing()

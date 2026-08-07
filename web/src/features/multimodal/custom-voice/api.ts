@@ -53,6 +53,17 @@ export type CustomVoiceConfirmResponse = {
   }
 }
 
+export type CustomVoiceConfirmQuote = {
+  voice_id: string
+  quota_cost: number
+}
+
+export type CustomVoiceConfirmQuoteResponse = {
+  success: boolean
+  message: string
+  data: CustomVoiceConfirmQuote
+}
+
 export type TtsModelOption = {
   value: string
   label: string
@@ -107,6 +118,16 @@ export async function confirmCustomVoice(
 ): Promise<CustomVoiceConfirmResponse> {
   const res = await api.post<CustomVoiceConfirmResponse>(
     '/api/custom_voice/confirm',
+    { voice_id: voiceId }
+  )
+  return res.data
+}
+
+export async function getCustomVoiceConfirmQuote(
+  voiceId: string
+): Promise<CustomVoiceConfirmQuoteResponse> {
+  const res = await api.post<CustomVoiceConfirmQuoteResponse>(
+    '/api/custom_voice/confirm_quote',
     { voice_id: voiceId }
   )
   return res.data

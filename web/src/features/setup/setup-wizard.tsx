@@ -47,20 +47,20 @@ import type { SetupFormValues, SetupStatus } from './types'
 
 const STEPS = [
   {
-    titleKey: 'Database check',
-    descriptionKey: 'Verify your database connection',
+    titleKey: 'common.fields.databaseCheck',
+    descriptionKey: 'common.actions.verifyYourDatabaseConnection',
   },
   {
-    titleKey: 'Administrator account',
-    descriptionKey: 'Create credentials for the root user',
+    titleKey: 'setup.fields.administratorAccount',
+    descriptionKey: 'common.actions.createCredentialsForTheRootUser',
   },
   {
-    titleKey: 'Usage mode',
-    descriptionKey: 'Choose how the platform will operate',
+    titleKey: 'setup.fields.usageMode',
+    descriptionKey: 'common.placeholders.chooseHowThePlatformWillOperate',
   },
   {
-    titleKey: 'Review & initialize',
-    descriptionKey: 'Confirm settings and finish setup',
+    titleKey: 'common.fields.reviewInitialize',
+    descriptionKey: 'common.actions.confirmSettingsAndFinishSetup',
   },
 ]
 
@@ -103,19 +103,19 @@ export function SetupWizard() {
     mutationFn: submitSetup,
     onSuccess: async (response) => {
       if (response.success) {
-        toast.success(t('System initialized successfully! Redirecting…'))
+        toast.success(t('setup.status.systemInitializedSuccessfullyRedirecting'))
         await queryClient.invalidateQueries({ queryKey: ['setup-status'] })
         setTimeout(() => {
           navigate({ to: '/' })
         }, 1200)
       } else {
         toast.error(
-          response.message || t('Initialization failed, please try again.')
+          response.message || t('setup.status.initializationFailedPleaseTryAgain')
         )
       }
     },
     onError: () => {
-      toast.error(t('Failed to initialize system'))
+      toast.error(t('setup.errors.failedToInitializeSystem'))
     },
   })
 
@@ -123,7 +123,7 @@ export function SetupWizard() {
     if (!statusResponse) return
 
     if (!statusResponse.success) {
-      toast.error(statusResponse.message || t('Failed to load setup status'))
+      toast.error(statusResponse.message || t('setup.errors.failedToLoadSetupStatus'))
       return
     }
 
@@ -212,27 +212,27 @@ export function SetupWizard() {
     if (!username) {
       form.setError('username', {
         type: 'manual',
-        message: t('Please enter an administrator username'),
+        message: t('setup.errors.pleaseEnterAnAdministratorUsername'),
       })
-      toast.error(t('Please enter an administrator username'))
+      toast.error(t('setup.errors.pleaseEnterAnAdministratorUsername'))
       return false
     }
 
     if (!password || password.length < 8) {
       form.setError('password', {
         type: 'manual',
-        message: t('Password must be at least 8 characters long'),
+        message: t('setup.errors.passwordMustBeAtLeast8CharactersLong'),
       })
-      toast.error(t('Password must be at least 8 characters long'))
+      toast.error(t('setup.errors.passwordMustBeAtLeast8CharactersLong'))
       return false
     }
 
     if (password !== confirmPassword) {
       form.setError('confirmPassword', {
         type: 'manual',
-        message: t('Passwords do not match'),
+        message: t('profile.fields.passwordsDoNotMatch'),
       })
-      toast.error(t('Passwords do not match'))
+      toast.error(t('profile.fields.passwordsDoNotMatch'))
       return false
     }
 
@@ -244,9 +244,9 @@ export function SetupWizard() {
     if (!usageMode) {
       form.setError('usageMode', {
         type: 'manual',
-        message: t('Select a usage mode to continue'),
+        message: t('setup.placeholders.selectAUsageModeToContinue'),
       })
-      toast.error(t('Select a usage mode to continue'))
+      toast.error(t('setup.placeholders.selectAUsageModeToContinue'))
       return false
     }
     return true
@@ -289,7 +289,7 @@ export function SetupWizard() {
             ) : (
               <img
                 src={logo}
-                alt={t('System logo')}
+                alt={t('setup.titles.systemLogo')}
                 className='h-12 w-12 rounded-full object-cover shadow-sm'
               />
             )}
@@ -298,12 +298,12 @@ export function SetupWizard() {
             <Skeleton className='h-7 w-40' />
           ) : (
             <h1 className='text-2xl font-semibold tracking-tight'>
-              {t('Initialize')} {systemName}
+              {t('setup.fields.initialize')} {systemName}
             </h1>
           )}
           <p className='text-muted-foreground text-center text-sm sm:text-base'>
             {t(
-              'Follow the guided steps to prepare your workspace before the first login.'
+              'setup.tips.followTheGuidedStepsToPrepareYourWorkspaceBefore'
             )}
           </p>
         </div>
@@ -311,10 +311,10 @@ export function SetupWizard() {
         <Card className='shadow-lg'>
           <CardHeader className='space-y-2'>
             <CardTitle className='text-xl font-semibold'>
-              {t('System setup wizard')}
+              {t('setup.titles.systemSetupWizard')}
             </CardTitle>
             <CardDescription>
-              {t('Complete these steps to finish the initial installation.')}
+              {t('setup.tips.completeTheseStepsToFinishTheInitialInstallation')}
             </CardDescription>
           </CardHeader>
 
@@ -363,10 +363,10 @@ export function SetupWizard() {
             </ol>
 
             {isLoading ? (
-              <LoadingState message={t('Loading setup status…')} />
+              <LoadingState message={t('setup.titles.loadingSetupStatus')} />
             ) : isError ? (
               <ErrorState
-                title={t('We could not load the setup status.')}
+                title={t('setup.tips.couldNotLoadTheSetupStatus')}
                 onRetry={() => refetch()}
               />
             ) : (

@@ -46,7 +46,7 @@ export function StepNavigation({
       <div className='flex justify-end gap-2 sm:justify-start'>
         {!isFirstStep && (
           <Button type='button' variant='outline' onClick={onBack}>
-            {t('Go Back')}
+            {t('common.fields.goBack')}
           </Button>
         )}
       </div>
@@ -54,7 +54,7 @@ export function StepNavigation({
       <div className='flex flex-1 justify-end gap-2'>
         {!isLastStep && (
           <Button type='button' onClick={onNext}>
-            {t('Next')}
+            {t('common.fields.next')}
           </Button>
         )}
 
@@ -63,12 +63,12 @@ export function StepNavigation({
             {isSubmitting ? (
               <>
                 <Loader2 className='mr-2 size-4 animate-spin' />
-                {t('Initializing…')}
+                {t('setup.fields.initializing')}
               </>
             ) : (
               <>
                 <CheckCircle2 className='mr-2 size-4' />
-                {t('Initialize system')}
+                {t('setup.titles.initializeSystem')}
               </>
             )}
           </Button>

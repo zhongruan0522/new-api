@@ -26,7 +26,7 @@ import { createSectionRegistry } from '../utils/section-registry'
 const SECURITY_SECTIONS = [
   {
     id: 'rate-limit',
-    titleKey: 'Rate Limiting',
+    titleKey: 'home.fields.rateLimiting',
     build: (settings: SecuritySettings) => (
       <RateLimitSection
         defaultValues={{
@@ -43,7 +43,7 @@ const SECURITY_SECTIONS = [
   },
   {
     id: 'sensitive-words',
-    titleKey: 'Sensitive Words',
+    titleKey: 'systemSettings.fields.sensitiveWords',
     build: (settings: SecuritySettings) => (
       <SensitiveWordsSection
         defaultValues={{
@@ -56,7 +56,7 @@ const SECURITY_SECTIONS = [
   },
   {
     id: 'ssrf',
-    titleKey: 'SSRF Protection',
+    titleKey: 'systemSettings.fields.ssrfProtection',
     build: (settings: SecuritySettings) => (
       <SSRFSection
         defaultValues={{
@@ -80,7 +80,7 @@ const SECURITY_SECTIONS = [
   },
   {
     id: 'audit',
-    titleKey: 'Audit Log',
+    titleKey: 'systemSettings.fields.auditLog',
     build: (settings: SecuritySettings) => (
       <AuditSection
         defaultValues={{

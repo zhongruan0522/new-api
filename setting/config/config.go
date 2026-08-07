@@ -1,13 +1,14 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // ConfigManager 统一管理所有配置
@@ -274,11 +275,46 @@ func setFieldFromString(field reflect.Value, strValue string) error {
 	case reflect.Map, reflect.Slice, reflect.Struct:
 		newValue := reflect.New(field.Type())
 		if err := common.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
+			// 兼容历史持久化数据中 `[]string` 字段被写成 JSON 数字数组（如
+			// allowed_ports 存为 [80,443] 而非 ["80","443"]）的情形。这种情况
+			// 直接 Unmarshal 进 []string 会失败，导致整个配置模块被跳过、所有
+			// 字段在重启后回到默认值。此处仅对 []string 目标做一次容错：解析为
+			// 通用数组后逐元素转字符串，其他 slice/map/struct 类型仍保持严格。
+			if coerced, ok := coerceStringSlice(strValue, field.Type()); ok {
+				field.Set(coerced)
+				return nil
+			}
 			return err
 		}
 		field.Set(newValue.Elem())
 	}
 	return nil
+}
+
+// coerceStringSlice 尝试把 JSON 文本（可能是数字数组、混合类型数组）规范化为
+// 目标 []string 切片。仅当目标是元素类型为 string 的切片时生效；成功返回可用于
+// 赋值的 reflect.Value，失败返回 (zero, false)，由调用方决定如何报错。
+func coerceStringSlice(strValue string, targetType reflect.Type) (reflect.Value, bool) {
+	if targetType.Kind() != reflect.Slice || targetType.Elem().Kind() != reflect.String {
+		return reflect.Value{}, false
+	}
+	var raw []interface{}
+	if err := common.Unmarshal([]byte(strValue), &raw); err != nil {
+		return reflect.Value{}, false
+	}
+	out := reflect.MakeSlice(targetType, 0, len(raw))
+	for _, item := range raw {
+		switch v := item.(type) {
+		case string:
+			out = reflect.Append(out, reflect.ValueOf(v))
+		case float64, int, int64, json.Number, bool:
+			out = reflect.Append(out, reflect.ValueOf(fmt.Sprintf("%v", v)))
+		default:
+			// 含 nil、嵌套对象等无法无损转字符串的元素，放弃容错。
+			return reflect.Value{}, false
+		}
+	}
+	return out, true
 }
 
 func parseIntConfigValue(strValue string) (int64, error) {

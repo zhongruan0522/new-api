@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestPatchClaudeMessageDeltaUsageDataPreserveUnknownFields(t *testing.T) {
@@ -75,7 +75,7 @@ func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 		require.EqualValues(t, 50, usage.CacheCreationInputTokens)
 		require.EqualValues(t, 53, usage.OutputTokens)
 		require.NotNil(t, usage.CacheCreation)
-		require.EqualValues(t, 10, usage.CacheCreation.Ephemeral5mInputTokens)
+		require.EqualValues(t, 30, usage.CacheCreation.Ephemeral5mInputTokens)
 		require.EqualValues(t, 20, usage.CacheCreation.Ephemeral1hInputTokens)
 	})
 

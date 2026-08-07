@@ -32,22 +32,22 @@ export type DashboardSectionId =
 const DASHBOARD_SECTIONS = [
   {
     id: 'metrics' as const,
-    titleKey: 'Data Metrics',
+    titleKey: 'systemSettings.fields.dataMetrics',
     build: () => <DashboardMetricsSection />,
   },
   {
     id: 'panels' as const,
-    titleKey: 'Dashboard Panels',
+    titleKey: 'systemSettings.titles.dashboardPanels',
     build: () => <DashboardPanelsSection />,
   },
   {
     id: 'refresh' as const,
-    titleKey: 'Refresh Intervals',
+    titleKey: 'systemSettings.actions.refreshIntervals',
     build: () => <DashboardRefreshSection />,
   },
   {
     id: 'limits' as const,
-    titleKey: 'Data Limits',
+    titleKey: 'systemSettings.fields.dataLimits',
     build: () => <DashboardLimitsSection />,
   },
 ]

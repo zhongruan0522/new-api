@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/console_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,13 +31,13 @@ func GetAllLogs(c *gin.Context) {
 	httpReferer := c.Query("http_referer")
 	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all logs: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func GetUserLogs(c *gin.Context) {
@@ -79,14 +80,14 @@ func GetUserLogs(c *gin.Context) {
 
 	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get user logs: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	filterHiddenUsageLogFields(logs)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 // filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的详情弹窗独有字段数据。
@@ -120,6 +121,9 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 			log.RequestId = ""
 			log.UpstreamRequestId = ""
 			log.Ip = ""
+			log.Ua = ""
+			log.XTitle = ""
+			log.HttpReferer = ""
 			stripHiddenOtherFields(log, nil)
 			continue
 		}
@@ -133,6 +137,12 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 		}
 		if hiddenFields[console_setting.UsageLogFieldIPAddress] {
 			log.Ip = ""
+		}
+		// 客户端请求头已独立为顶层列，按 client_headers 开关裁剪
+		if hiddenFields[console_setting.UsageLogFieldClientHeaders] {
+			log.Ua = ""
+			log.XTitle = ""
+			log.HttpReferer = ""
 		}
 		// other JSON 内的字段
 		stripHiddenOtherFields(log, hiddenFields)
@@ -241,47 +251,62 @@ func stripHiddenOtherFields(log *model.Log, hiddenFields map[string]bool) {
 	log.Other = common.MapToJsonStr(otherMap)
 }
 
-// Deprecated: SearchAllLogs 已废弃，前端未使用该接口。
-func SearchAllLogs(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": false,
-		"message": "该接口已废弃",
-	})
-}
-
-// Deprecated: SearchUserLogs 已废弃，前端未使用该接口。
-func SearchUserLogs(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": false,
-		"message": "该接口已废弃",
-	})
-}
-
 func GetLogByKey(c *gin.Context) {
 	tokenId := c.GetInt("token_id")
 	if tokenId == 0 {
+		common.ApiErrorI18n(c, i18n.MsgInvalidToken)
+		return
+	}
+
+	// 当未传分页参数时，保留旧的"近期日志数组"响应（兼容老前端）。
+	// 传入 p / page_size 任意一个即切换到分页响应。
+	rawPage := c.Query("p")
+	rawPageSize := c.Query("page_size")
+	usePagination := rawPage != "" || rawPageSize != ""
+
+	if !usePagination {
+		logs, err := model.GetLogByTokenId(tokenId)
+		if err != nil {
+			common.SysError("failed to get log by token id: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
+		// GetLogByKey 经 TokenAuthReadOnly 认证，访问者为持有该 token 的普通用户。
+		filterHiddenUsageLogFields(logs)
 		c.JSON(200, gin.H{
-			"success": false,
-			"message": "无效的令牌",
+			"success": true,
+			"message": "",
+			"data":    logs,
 		})
 		return
 	}
-	logs, err := model.GetLogByTokenId(tokenId)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
-	// GetLogByKey 经 TokenAuthReadOnly 认证，访问者为持有该 token 的普通用户。
-	filterHiddenUsageLogFields(logs)
-	c.JSON(200, gin.H{
-		"success": true,
-		"message": "",
-		"data":    logs,
+
+	// 分页 + 筛选模式：tokenId 由后端从认证上下文强制注入，调用方无法跨 token 查询。
+	pageInfo := common.GetPageQuery(c)
+	logType, _ := strconv.Atoi(c.Query("type"))
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	modelName := c.Query("model_name")
+
+	logs, total, err := model.GetLogsByTokenId(model.GetLogsByTokenIdParams{
+		TokenId:        tokenId,
+		StartTimestamp: startTimestamp,
+		EndTimestamp:   endTimestamp,
+		ModelName:      modelName,
+		LogType:        logType,
+		StartIdx:       pageInfo.GetStartIdx(),
+		Num:            pageInfo.GetPageSize(),
 	})
+	if err != nil {
+		common.SysError("failed to get logs by token id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	filterHiddenUsageLogFields(logs)
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(logs)
+	common.ApiSuccess(c, pageInfo)
 }
 
 func GetLogsStat(c *gin.Context) {
@@ -313,13 +338,15 @@ func GetLogsStat(c *gin.Context) {
 			qStat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
 		}
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to get quota stat: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
 		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to query rpm tpm: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = model.Stat{
@@ -332,7 +359,8 @@ func GetLogsStat(c *gin.Context) {
 	} else {
 		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to sum used quota: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -378,13 +406,15 @@ func GetLogsSelfStat(c *gin.Context) {
 	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
 		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to get quota stat by user id: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒）
 		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to query rpm tpm: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = model.Stat{
@@ -397,7 +427,8 @@ func GetLogsSelfStat(c *gin.Context) {
 	} else {
 		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("failed to sum used quota: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -467,17 +498,11 @@ func DeleteHistoryLogs(c *gin.Context) {
 	cleanAuditLogs := c.Query("clean_audit_logs") == "true" || c.Query("clean_audit_logs") == "1"
 
 	if endTimestamp == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "end timestamp is required",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if !cleanLogs && !cleanStoredImages && !cleanStoredVideos && !cleanAuditLogs {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "at least one log type must be selected",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -533,7 +558,8 @@ func DeleteHistoryLogs(c *gin.Context) {
 	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, detail, true)
 
 	if firstErr != nil {
-		common.ApiError(c, firstErr)
+		common.SysError("failed to delete history logs: " + firstErr.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/zhongruan0522/new-api/types"
+import "github.com/NookMux/NookMux/types"
 
 const (
 	RealtimeEventTypeError              = "error"

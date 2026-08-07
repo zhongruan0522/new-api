@@ -95,6 +95,7 @@ var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 
 var RetryTimes = 0
+var AutomaticRetryEnabled = false
 
 // DynamicRatioEnabled 全局动态倍率开关
 var DynamicRatioEnabled = false
@@ -170,6 +171,7 @@ var (
 	DownloadRateLimitDuration int64 = 60
 
 	// Per-user search rate limit (applies after authentication, keyed by user ID)
+	SearchRateLimitEnable   bool
 	SearchRateLimitNum            = 10
 	SearchRateLimitDuration int64 = 60
 )

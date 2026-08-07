@@ -59,12 +59,14 @@ export async function getOptionJsonMap(params: {
   key: string
   page: number
   pageSize: number
+  keyword?: string
 }) {
   const res = await api.get<OptionJsonMapResponse>('/api/option/json_map', {
     params: {
       key: params.key,
       page: params.page,
       page_size: params.pageSize,
+      keyword: params.keyword || undefined,
     },
   })
   return res.data
@@ -140,9 +142,14 @@ export async function resetModelRatios() {
   return res.data
 }
 
-export async function getDatabaseMigrationInfo(
-  mode: DatabaseMigrationMode
-) {
+export async function resetToolBillingRules() {
+  const res = await api.post<UpdateOptionResponse>(
+    '/api/option/reset_tool_billing_rules'
+  )
+  return res.data
+}
+
+export async function getDatabaseMigrationInfo(mode: DatabaseMigrationMode) {
   const res = await api.get<DatabaseMigrationInfoResponse>(
     `/api/db/${mode}/info`
   )

@@ -34,9 +34,9 @@ export type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS]
 
 export function getSortLabels(t: TFunction): Record<SortOption, string> {
   return {
-    [SORT_OPTIONS.NAME]: t('Name'),
-    [SORT_OPTIONS.PRICE_LOW]: t('Price: Low to High'),
-    [SORT_OPTIONS.PRICE_HIGH]: t('Price: High to Low'),
+    [SORT_OPTIONS.NAME]: t('channels.fields.name'),
+    [SORT_OPTIONS.PRICE_LOW]: t('pricing.fields.priceLowToHigh'),
+    [SORT_OPTIONS.PRICE_HIGH]: t('pricing.fields.priceHighToLow'),
   }
 }
 
@@ -57,9 +57,9 @@ export function getQuotaTypeLabels(
   t: TFunction
 ): Record<QuotaTypeOption, string> {
   return {
-    [QUOTA_TYPES.ALL]: t('All Models'),
-    [QUOTA_TYPES.TOKEN]: t('Token-based'),
-    [QUOTA_TYPES.REQUEST]: t('Per Request'),
+    [QUOTA_TYPES.ALL]: t('dynamicRatio.titles.allModels'),
+    [QUOTA_TYPES.TOKEN]: t('pricing.fields.tokenBased'),
+    [QUOTA_TYPES.REQUEST]: t('pricing.fields.perRequest'),
   }
 }
 
@@ -84,15 +84,15 @@ export function getEndpointTypeLabels(
   t: TFunction
 ): Record<EndpointTypeOption, string> {
   return {
-    [ENDPOINT_TYPES.ALL]: t('All Types'),
+    [ENDPOINT_TYPES.ALL]: t('pricing.fields.allTypes'),
     [ENDPOINT_TYPES.OPENAI]: 'Chat',
     [ENDPOINT_TYPES.OPENAI_RESPONSE]: 'Response',
     [ENDPOINT_TYPES.ANTHROPIC]: 'Anthropic',
     [ENDPOINT_TYPES.GEMINI]: 'Gemini',
     [ENDPOINT_TYPES.JINA_RERANK]: 'Rerank',
-    [ENDPOINT_TYPES.IMAGE_GENERATION]: t('Image'),
-    [ENDPOINT_TYPES.EMBEDDINGS]: t('Embeddings'),
-    [ENDPOINT_TYPES.OPENAI_VIDEO]: t('Video'),
+    [ENDPOINT_TYPES.IMAGE_GENERATION]: t('models.fields.image'),
+    [ENDPOINT_TYPES.EMBEDDINGS]: t('pricing.fields.embeddings'),
+    [ENDPOINT_TYPES.OPENAI_VIDEO]: t('pricing.fields.video'),
   }
 }
 

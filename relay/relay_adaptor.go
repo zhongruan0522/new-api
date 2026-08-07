@@ -1,21 +1,21 @@
 package relay
 
 import (
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/relay/channel"
-	"github.com/zhongruan0522/new-api/relay/channel/aws"
-	"github.com/zhongruan0522/new-api/relay/channel/bytedance"
-	"github.com/zhongruan0522/new-api/relay/channel/claude"
-	"github.com/zhongruan0522/new-api/relay/channel/deepseek"
-	"github.com/zhongruan0522/new-api/relay/channel/gemini"
-	"github.com/zhongruan0522/new-api/relay/channel/minimax"
-	"github.com/zhongruan0522/new-api/relay/channel/moonshot"
-	"github.com/zhongruan0522/new-api/relay/channel/ollama"
-	"github.com/zhongruan0522/new-api/relay/channel/openai"
-	"github.com/zhongruan0522/new-api/relay/channel/siliconflow"
-	"github.com/zhongruan0522/new-api/relay/channel/vertex"
-	"github.com/zhongruan0522/new-api/relay/channel/xiaomi"
-	"github.com/zhongruan0522/new-api/relay/channel/zhipu_4v"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/relay/channel"
+	"github.com/NookMux/NookMux/relay/channel/aws"
+	"github.com/NookMux/NookMux/relay/channel/bytedance"
+	"github.com/NookMux/NookMux/relay/channel/claude"
+	"github.com/NookMux/NookMux/relay/channel/deepseek"
+	"github.com/NookMux/NookMux/relay/channel/gemini"
+	"github.com/NookMux/NookMux/relay/channel/minimax"
+	"github.com/NookMux/NookMux/relay/channel/moonshot"
+	"github.com/NookMux/NookMux/relay/channel/ollama"
+	"github.com/NookMux/NookMux/relay/channel/openai"
+	"github.com/NookMux/NookMux/relay/channel/siliconflow"
+	"github.com/NookMux/NookMux/relay/channel/vertex"
+	"github.com/NookMux/NookMux/relay/channel/xiaomi"
+	"github.com/NookMux/NookMux/relay/channel/zhipu_4v"
 )
 
 func GetAdaptor(apiType int) channel.Adaptor {

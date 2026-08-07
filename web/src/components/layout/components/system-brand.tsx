@@ -52,13 +52,13 @@ export function SystemBrand(props: SystemBrandProps) {
   const variant = props.variant ?? 'sidebar'
   const name = status?.system_name || props.defaultName || 'New API'
   const version =
-    status?.version || props.defaultVersion || t('Unknown version')
+    status?.version || props.defaultVersion || t('layout.fields.unknownVersion')
 
   if (variant === 'inline') {
     return (
       <Link
         to='/'
-        aria-label={t('Back To Home')}
+        aria-label={t('layout.actions.backToHome')}
         className={cn(
           'text-foreground inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium transition-colors outline-none select-none',
           'hover:bg-accent focus-visible:ring-ring/40 focus-visible:ring-2'
@@ -67,7 +67,7 @@ export function SystemBrand(props: SystemBrandProps) {
         <div className='flex size-5 items-center justify-center overflow-hidden rounded-md'>
           <img
             src={logo}
-            alt={t('Logo')}
+            alt={t('layout.fields.logo')}
             className='size-full rounded-md object-cover'
           />
         </div>
@@ -87,7 +87,7 @@ export function SystemBrand(props: SystemBrandProps) {
           <div className='flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg'>
             <img
               src={logo}
-              alt={t('Logo')}
+              alt={t('layout.fields.logo')}
               className='size-full rounded-lg object-cover'
             />
           </div>

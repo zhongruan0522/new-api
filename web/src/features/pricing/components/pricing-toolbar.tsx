@@ -175,7 +175,7 @@ export function PricingToolbar(props: PricingToolbarProps) {
             className='gap-1.5 xl:hidden'
           >
             <Filter className='size-4' />
-            {t('Filter')}
+            {t('dashboard.actions.filter')}
             {props.activeFilterCount > 0 && (
               <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                 {props.activeFilterCount}
@@ -187,7 +187,7 @@ export function PricingToolbar(props: PricingToolbarProps) {
             <span className='text-foreground font-semibold tabular-nums'>
               {props.filteredCount.toLocaleString()}
             </span>
-            <span>{props.filteredCount === 1 ? t('Model') : t('Models')}</span>
+            <span>{props.filteredCount === 1 ? t('common.fields.model') : t('channels.titles.models')}</span>
             {props.hasActiveFilters && props.totalCount && (
               <span className='text-muted-foreground/60 text-xs'>
                 / {props.totalCount.toLocaleString()}
@@ -200,12 +200,12 @@ export function PricingToolbar(props: PricingToolbarProps) {
           <div className='hidden items-center gap-2 sm:flex'>
             <SegmentedControl
               options={[
-                { value: 'standard', label: t('Standard') },
-                { value: 'recharge', label: t('Recharge') },
+                { value: 'standard', label: t('pricing.fields.standard') },
+                { value: 'recharge', label: t('pricing.fields.recharge') },
               ]}
               value={props.showRechargePrice ? 'recharge' : 'standard'}
               onChange={handleRechargePriceChange}
-              ariaLabel={t('Price display mode')}
+              ariaLabel={t('pricing.fields.priceDisplayMode')}
             />
             <SegmentedControl
               options={[
@@ -214,7 +214,7 @@ export function PricingToolbar(props: PricingToolbarProps) {
               ]}
               value={props.tokenUnit}
               onChange={handleTokenUnitChange}
-              ariaLabel={t('Token unit')}
+              ariaLabel={t('pricing.fields.tokenUnit')}
             />
           </div>
 
@@ -230,7 +230,7 @@ export function PricingToolbar(props: PricingToolbarProps) {
               }
             >
               <ArrowUpDown className='size-3.5' />
-              <span>{sortLabels[props.sortBy as SortOption] || t('Sort Order')}</span>
+              <span>{sortLabels[props.sortBy as SortOption] || t('pricing.fields.sortOrder')}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-44'>
               {Object.entries(sortLabels).map(([value, label]) => (
@@ -256,17 +256,17 @@ export function PricingToolbar(props: PricingToolbarProps) {
               {
                 value: VIEW_MODES.CARD,
                 icon: Grid2X2,
-                tooltip: t('Card view'),
+                tooltip: t('pricing.fields.cardView'),
               },
               {
                 value: VIEW_MODES.TABLE,
                 icon: Table2,
-                tooltip: t('Table view'),
+                tooltip: t('pricing.fields.tableView'),
               },
             ]}
             value={props.viewMode}
             onChange={handleViewModeChange}
-            ariaLabel={t('View mode')}
+            ariaLabel={t('pricing.actions.viewMode')}
           />
         </div>
       </div>
@@ -277,9 +277,9 @@ export function PricingToolbar(props: PricingToolbarProps) {
           className={sideDrawerContentClassName('sm:max-w-md')}
         >
           <SheetHeader className={sideDrawerHeaderClassName()}>
-            <SheetTitle>{t('Filter')}</SheetTitle>
+            <SheetTitle>{t('dashboard.actions.filter')}</SheetTitle>
             <SheetDescription>
-              {t('Filter models by provider, group, type, endpoint, and tags.')}
+              {t('pricing.actions.filterModelsByProviderGroupTypeEndpointAndTags')}
             </SheetDescription>
           </SheetHeader>
           <div className={sideDrawerFormClassName('gap-0')}>

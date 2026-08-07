@@ -59,9 +59,9 @@ export function TwoFASetupDialog({
   const [setupData, setSetupData] = useState<TwoFASetupData | null>(null)
   const [code, setCode] = useState('')
   const stepLabels = [
-    t('Scan QR Code'),
-    t('Save Backup Codes'),
-    t('Verify Setup'),
+    t('profile.fields.scanQrCode'),
+    t('profile.actions.saveBackupCodes'),
+    t('profile.actions.verifySetup'),
   ]
 
   const handleSetup = useCallback(async () => {
@@ -73,13 +73,13 @@ export function TwoFASetupDialog({
         setSetupData(response.data)
         setStep(0)
       } else {
-        toast.error(response.message || t('Failed to setup 2FA'))
+        toast.error(response.message || t('profile.errors.failedToSetup2Fa'))
         onOpenChange(false)
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Setup 2FA error:', error)
-      toast.error(t('Failed to setup 2FA'))
+      toast.error(t('profile.errors.failedToSetup2Fa'))
       onOpenChange(false)
     } finally {
       setInitializing(false)
@@ -88,7 +88,7 @@ export function TwoFASetupDialog({
 
   const handleEnable = async () => {
     if (!code) {
-      toast.error(t('Please enter the verification code'))
+      toast.error(t('auth.errors.pleaseEnterTheVerificationCode'))
       return
     }
 
@@ -97,7 +97,7 @@ export function TwoFASetupDialog({
       const response = await enable2FA(code)
 
       if (response.success) {
-        toast.success(t('Two-factor authentication enabled successfully!'))
+        toast.success(t('profile.status.twoFactorAuthenticationEnabledSuccessfully'))
         onOpenChange(false)
         onSuccess()
         // Reset
@@ -105,10 +105,10 @@ export function TwoFASetupDialog({
         setCode('')
         setSetupData(null)
       } else {
-        toast.error(response.message || t('Failed to enable 2FA'))
+        toast.error(response.message || t('profile.errors.failedToEnable2Fa'))
       }
     } catch (_error) {
-      toast.error(t('Failed to enable 2FA'))
+      toast.error(t('profile.errors.failedToEnable2Fa'))
     } finally {
       setLoading(false)
     }
@@ -139,9 +139,9 @@ export function TwoFASetupDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Setup Two-Factor Authentication')}</DialogTitle>
+          <DialogTitle>{t('profile.titles.setupTwoFactorAuthentication')}</DialogTitle>
           <DialogDescription>
-            {t('Step')} {step + 1} {t('of 3:')} {stepLabels[step]}
+            {t('profile.fields.step')} {step + 1} {t('profile.fields.value3')} {stepLabels[step]}
           </DialogDescription>
         </DialogHeader>
 
@@ -150,13 +150,13 @@ export function TwoFASetupDialog({
             <div className='flex flex-col items-center justify-center gap-3 py-8'>
               <div className='border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent' />
               <div className='text-muted-foreground text-sm'>
-                {t('Setting up 2FA...')}
+                {t('profile.tips.settingUp2Fa')}
               </div>
             </div>
           ) : !setupData ? (
             <div className='flex justify-center py-8'>
               <div className='text-muted-foreground'>
-                {t('Failed to load setup data')}
+                {t('profile.errors.failedToLoadSetupData')}
               </div>
             </div>
           ) : (
@@ -166,7 +166,7 @@ export function TwoFASetupDialog({
                 <div className='space-y-4'>
                   <p className='text-muted-foreground text-sm'>
                     {t(
-                      'Scan this QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, etc.)'
+                      'profile.tips.scanThisQrCodeWithYourAuthenticatorAppGoogle'
                     )}
                   </p>
                   <div className='flex justify-center rounded-lg bg-white p-4'>
@@ -176,7 +176,7 @@ export function TwoFASetupDialog({
                     <div className='flex items-center justify-between'>
                       <div>
                         <p className='text-muted-foreground text-xs'>
-                          {t('Or enter this key manually:')}
+                          {t('profile.fields.enterThisKeyManually')}
                         </p>
                         <code className='font-mono text-sm'>
                           {setupData.secret}
@@ -185,8 +185,8 @@ export function TwoFASetupDialog({
                       <CopyButton
                         value={setupData.secret}
                         variant='ghost'
-                        tooltip={t('Copy secret key')}
-                        aria-label={t('Copy secret key')}
+                        tooltip={t('profile.actions.copySecretKey')}
+                        aria-label={t('profile.actions.copySecretKey')}
                       />
                     </div>
                   </div>
@@ -199,7 +199,7 @@ export function TwoFASetupDialog({
                   <Alert>
                     <AlertDescription>
                       {t(
-                        'Save these backup codes in a safe place. Each code can only be used once.'
+                        'profile.actions.saveTheseBackupCodesInASafePlaceEach'
                       )}
                     </AlertDescription>
                   </Alert>
@@ -221,10 +221,10 @@ export function TwoFASetupDialog({
                     size='default'
                     className='w-full'
                     iconClassName='mr-2 size-4'
-                    tooltip={t('Copy all backup codes')}
-                    aria-label={t('Copy all backup codes')}
+                    tooltip={t('profile.actions.copyAllBackupCodes')}
+                    aria-label={t('profile.actions.copyAllBackupCodes')}
                   >
-                    {t('Copy All Codes')}
+                    {t('profile.actions.copyAllCodes')}
                   </CopyButton>
                 </div>
               )}
@@ -233,17 +233,17 @@ export function TwoFASetupDialog({
               {step === 2 && (
                 <div className='space-y-4'>
                   <div className='space-y-2'>
-                    <Label htmlFor='code'>{t('Verification Code')}</Label>
+                    <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
                     <Input
                       id='code'
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      placeholder={t('Enter 6-digit code')}
+                      placeholder={t('profile.placeholders.enter6DigitCode')}
                       maxLength={6}
                       disabled={loading}
                     />
                     <p className='text-muted-foreground text-xs'>
-                      {t('Enter the 6-digit code from your authenticator app')}
+                      {t('profile.placeholders.enterThe6DigitCodeFromYourAuthenticatorApp')}
                     </p>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export function TwoFASetupDialog({
               onClick={() => setStep(step - 1)}
               disabled={initializing || loading}
             >
-              {t('Go Back')}
+              {t('common.fields.goBack')}
             </Button>
           )}
           {step < 2 ? (
@@ -267,7 +267,7 @@ export function TwoFASetupDialog({
               onClick={() => setStep(step + 1)}
               disabled={initializing || !setupData}
             >
-              {t('Next')}
+              {t('common.fields.next')}
             </Button>
           ) : (
             <Button
@@ -275,7 +275,7 @@ export function TwoFASetupDialog({
               disabled={initializing || loading || !code}
             >
               {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {loading ? t('Enabling...') : t('Enable 2FA')}
+              {loading ? t('profile.tips.enabling') : t('profile.actions.enable2Fa')}
             </Button>
           )}
         </DialogFooter>

@@ -62,12 +62,12 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
     const val = quotaValue
     switch (mode) {
       case 'add':
-        return `${t('Current quota')}: ${formatQuota(current)}  +${formatQuota(val)} = ${formatQuota(current + val)}`
+        return `${t('users.fields.currentQuota')}: ${formatQuota(current)}  +${formatQuota(val)} = ${formatQuota(current + val)}`
       case 'subtract':
-        return `${t('Current quota')}: ${formatQuota(current)}  -${formatQuota(val)} = ${formatQuota(current - val)}`
+        return `${t('users.fields.currentQuota')}: ${formatQuota(current)}  -${formatQuota(val)} = ${formatQuota(current - val)}`
       case 'override': {
         const overrideQuota = parseQuotaFromDollars(amountValue)
-        return `${t('Current quota')}: ${formatQuota(current)} → ${formatQuota(overrideQuota)}`
+        return `${t('users.fields.currentQuota')}: ${formatQuota(current)} → ${formatQuota(overrideQuota)}`
       }
       default:
         return ''
@@ -89,16 +89,16 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
         value: mode === 'override' ? value : Math.abs(value),
       })
       if (result.success) {
-        toast.success(t('Quota adjusted successfully'))
+        toast.success(t('users.fields.quotaAdjustedSuccessfully'))
         setAmount('')
         setMode('add')
         props.onOpenChange(false)
         props.onSuccess()
       } else {
-        toast.error(result.message || t('Failed to adjust quota'))
+        toast.error(result.message || t('users.errors.failedToAdjustQuota'))
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : t('Failed to adjust quota'))
+      toast.error(e instanceof Error ? e.message : t('users.errors.failedToAdjustQuota'))
     } finally {
       setLoading(false)
     }
@@ -111,16 +111,16 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
   }
 
   const placeholder = tokensOnly
-    ? t('Enter amount in tokens')
-    : t('Enter amount in {{currency}}', { currency: currencyLabel })
+    ? t('users.placeholders.enterAmountInTokens')
+    : t('users.placeholders.enterAmountInCurrency', { currency: t(currencyLabel) })
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('Adjust Quota')}</DialogTitle>
+          <DialogTitle>{t('users.fields.adjustQuota')}</DialogTitle>
           <DialogDescription>
-            {t('Select an operation mode and enter the amount')}
+            {t('users.placeholders.selectAnOperationModeAndEnterTheAmount')}
           </DialogDescription>
         </DialogHeader>
         <div className='space-y-4'>
@@ -129,7 +129,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Mode')}</Label>
+            <Label>{t('channels.fields.mode')}</Label>
             <div className='flex gap-1'>
               {(['add', 'subtract', 'override'] as const).map((m) => (
                 <Button
@@ -147,10 +147,10 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
                   }}
                 >
                   {m === 'add'
-                    ? t('Add')
+                    ? t('channels.actions.add')
                     : m === 'subtract'
-                      ? t('Subtract')
-                      : t('Override')}
+                      ? t('users.fields.subtract')
+                      : t('users.fields.override')}
                 </Button>
               ))}
             </div>
@@ -158,7 +158,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
 
           <div className='space-y-2'>
             <Label>
-              {t('Amount')} ({currencyLabel})
+              {t('orderQuery.fields.amount')} ({t(currencyLabel)})
             </Label>
             <Input
               type='number'
@@ -175,10 +175,10 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
         </div>
         <DialogFooter>
           <Button variant='outline' onClick={handleCancel}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={loading}>
-            {loading ? t('Processing...') : t('Confirm')}
+            {loading ? t('users.status.processing') : t('common.actions.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

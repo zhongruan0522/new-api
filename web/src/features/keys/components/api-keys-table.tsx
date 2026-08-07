@@ -21,7 +21,6 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import {
   type SortingState,
-  type VisibilityState,
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
@@ -47,6 +46,7 @@ import {
   DISABLED_ROW_DESKTOP,
   DISABLED_ROW_MOBILE,
   DataTablePage,
+  usePersistentColumnVisibility,
 } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
 import { getApiKeys, searchApiKeys } from '../api'
@@ -112,10 +112,10 @@ function ApiKeysMobileList({
             <EmptyMedia variant='icon'>
               <Database className='size-6' />
             </EmptyMedia>
-            <EmptyTitle>{t('No API Keys Found')}</EmptyTitle>
+            <EmptyTitle>{t('keys.fields.noApiKeysFound')}</EmptyTitle>
             <EmptyDescription>
               {t(
-                'No API keys available. Create your first API key to get started.'
+                'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
               )}
             </EmptyDescription>
           </EmptyHeader>
@@ -144,7 +144,7 @@ function ApiKeysMobileList({
                   {apiKey.name}
                 </div>
                 <div className='text-muted-foreground text-[11px]'>
-                  {t('API Key')}
+                  {t('channels.fields.apiKey')}
                 </div>
               </div>
               {statusConfig && (
@@ -165,7 +165,7 @@ function ApiKeysMobileList({
 
             <div className='space-y-1.5'>
               <span className='text-muted-foreground text-xs'>
-                {t('Quota')}
+                {t('keys.fields.quota')}
               </span>
               <ApiKeyQuotaCell apiKey={apiKey} className='w-full' />
             </div>
@@ -184,7 +184,10 @@ export function ApiKeysTable() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'name', desc: false },
   ])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'api-keys-table',
+    {}
+  )
 
   const {
     globalFilter,
@@ -309,17 +312,17 @@ export function ApiKeysTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No API Keys Found')}
+      emptyTitle={t('keys.fields.noApiKeysFound')}
       emptyDescription={t(
-        'No API keys available. Create your first API key to get started.'
+        'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
       )}
       skeletonKeyPrefix='api-keys-skeleton'
       toolbarProps={{
-        searchPlaceholder: t('Filter by name or key...'),
+        searchPlaceholder: t('keys.actions.filterByNameOrKey'),
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: API_KEY_STATUS_OPTIONS,
             singleSelect: true,
           },

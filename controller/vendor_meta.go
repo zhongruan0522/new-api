@@ -3,9 +3,10 @@ package controller
 import (
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +16,8 @@ func GetAllVendors(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	vendors, err := model.GetAllVendors(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all vendors: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	var total int64
@@ -31,7 +33,8 @@ func SearchVendors(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	vendors, total, err := model.SearchVendors(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to search vendors: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
@@ -44,12 +47,13 @@ func GetVendorMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	v, err := model.GetVendorByID(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get vendor by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, v)
@@ -59,24 +63,26 @@ func GetVendorMeta(c *gin.Context) {
 func CreateVendorMeta(c *gin.Context) {
 	var v model.Vendor
 	if err := c.ShouldBindJSON(&v); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if v.Name == "" {
-		common.ApiErrorMsg(c, "供应商名称不能为空")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameRequired)
 		return
 	}
 	// 创建前先检查名称
 	if dup, err := model.IsVendorNameDuplicated(0, v.Name); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to check vendor name duplication: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "供应商名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameExists)
 		return
 	}
 
 	if err := v.Insert(); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to insert vendor: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionCreate, "新增供应商: "+v.Name, nil, v)
@@ -87,30 +93,33 @@ func CreateVendorMeta(c *gin.Context) {
 func UpdateVendorMeta(c *gin.Context) {
 	var v model.Vendor
 	if err := c.ShouldBindJSON(&v); err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if v.Id == 0 {
-		common.ApiErrorMsg(c, "缺少供应商 ID")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaMissingID)
 		return
 	}
 	// 查询更新前的原始数据用于审计差异对比
 	var origin model.Vendor
 	if err := model.DB.First(&origin, "id = ?", v.Id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get vendor origin: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 名称冲突检查
 	if dup, err := model.IsVendorNameDuplicated(v.Id, v.Name); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to check vendor name duplication: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	} else if dup {
-		common.ApiErrorMsg(c, "供应商名称已存在")
+		common.ApiErrorI18n(c, i18n.MsgVendorMetaNameExists)
 		return
 	}
 
 	if err := v.Update(); err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update vendor: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionUpdate, "修改供应商: "+v.Name, origin, v)
@@ -122,11 +131,12 @@ func DeleteVendorMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if err := model.DB.Delete(&model.Vendor{}, id).Error; err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to delete vendor: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionDelete, "删除供应商 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})

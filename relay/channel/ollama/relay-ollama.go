@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	channelconstant "github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/common"
+	channelconstant "github.com/NookMux/NookMux/constant"
 )
 
 // resolveBaseURL 将套餐简写（如 "ollama-coding-plan"）解析为实际 URL。

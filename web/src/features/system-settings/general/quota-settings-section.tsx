@@ -49,10 +49,6 @@ const quotaSchema = z.object({
   PreConsumedQuota: z.coerce.number().min(0),
   QuotaForInviter: z.coerce.number().min(0),
   QuotaForInvitee: z.coerce.number().min(0),
-  TopUpLink: z.string(),
-  general_setting: z.object({
-    docs_link: z.string(),
-  }),
   quota_setting: z.object({
     free_model_pre_consumed_quota: z.coerce.number().min(0),
   }),
@@ -67,7 +63,7 @@ type QuotaSettingsSectionProps = {
 export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
-  const quotaUnitLabel = getCurrencyLabel()
+  const quotaUnitLabel = t(getCurrencyLabel())
   const displayDefaultValues = useMemo(
     () => ({
       ...defaultValues,
@@ -122,7 +118,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
     })
 
   return (
-    <SettingsSection title={t('Quota Settings')}>
+    <SettingsSection title={t('keys.titles.quotaSettings')}>
       <FormNavigationGuard when={isDirty} />
 
       <Form {...form}>
@@ -138,7 +134,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForNewUser'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('New User Quota')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.newUserQuota')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -151,9 +147,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Initial quota given to new users')}
+                    {t('systemSettings.tips.initialQuotaGivenToNewUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +161,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='PreConsumedQuota'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Pre-Consumed Quota')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.preConsumedQuota')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -178,9 +174,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota consumed before charging users')}
+                    {t('systemSettings.tips.quotaConsumedBeforeChargingUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -192,7 +188,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForInviter'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Inviter Reward')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.inviterReward')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -205,9 +201,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to users who invite others')}
+                    {t('systemSettings.tips.quotaGivenToUsersWhoInviteOthers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -219,7 +215,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='QuotaForInvitee'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Invitee Reward')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.inviteeReward')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -232,9 +228,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to invited users')}
+                    {t('systemSettings.titles.quotaGivenToInvitedUsers')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -246,7 +242,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
               name='quota_setting.free_model_pre_consumed_quota'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Pre-Consume for Free Models')}</FormLabel>
+                  <FormLabel>{t('systemSettings.titles.preConsumeForFreeModels')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -259,49 +255,9 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota pre-consumed for zero-cost models; set 0 to disable.')}
+                    {t('systemSettings.tips.quotaPreConsumedForZeroCostModelsSet0')}
                     {' · '}
-                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='TopUpLink'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Top-Up Link')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('https://example.com/topup')}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t('External link for users to purchase quota')}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='general_setting.docs_link'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Documentation Link')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('https://docs.example.com')}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t('Link to your documentation site')}
+                    {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

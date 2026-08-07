@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 	"strconv"
 	"sync"
 	"time"

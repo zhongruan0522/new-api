@@ -6,11 +6,12 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/types"
 )
 
 type BillingSession struct {
@@ -121,7 +122,7 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 	}
 
 	if effectiveQuota > 0 {
-		if err := PreConsumeTokenQuota(s.relayInfo, effectiveQuota); err != nil {
+		if err := PreConsumeTokenQuota(c, s.relayInfo, effectiveQuota); err != nil {
 			return types.NewErrorWithStatusCode(
 				err,
 				types.ErrorCodePreConsumeTokenQuotaFailed,
@@ -264,7 +265,7 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {
 	if relayInfo == nil {
 		return nil, types.NewError(
-			fmt.Errorf("relayInfo is nil"),
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingRelayInfoNil)),
 			types.ErrorCodeInvalidRequest,
 			types.ErrOptionWithSkipRetry(),
 		)
@@ -276,7 +277,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 	}
 	if userQuota <= 0 {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("用户额度不足, 剩余额度: %s", logger.FormatQuota(userQuota)),
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingUserQuotaNotEnough, map[string]any{"Quota": logger.FormatQuota(userQuota)})),
 			types.ErrorCodeInsufficientUserQuota,
 			http.StatusForbidden,
 			types.ErrOptionWithSkipRetry(),
@@ -285,11 +286,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 	}
 	if userQuota-preConsumedQuota < 0 {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf(
-				"预扣费额度失败, 用户剩余额度: %s, 需要预扣费额度: %s",
-				logger.FormatQuota(userQuota),
-				logger.FormatQuota(preConsumedQuota),
-			),
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingPrepaidFailed, map[string]any{"UserQuota": logger.FormatQuota(userQuota), "NeedQuota": logger.FormatQuota(preConsumedQuota)})),
 			types.ErrorCodeInsufficientUserQuota,
 			http.StatusForbidden,
 			types.ErrOptionWithSkipRetry(),

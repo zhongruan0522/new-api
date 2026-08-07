@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
@@ -22,10 +22,7 @@ import (
 
 var commonGroupCol string
 var commonKeyCol string
-var commonTrueVal string
-var commonFalseVal string
 
-var logKeyCol string
 var logGroupCol string
 
 func init() {
@@ -37,31 +34,23 @@ func initCol() {
 	if common.UsingPostgreSQL {
 		commonGroupCol = `"group"`
 		commonKeyCol = `"key"`
-		commonTrueVal = "true"
-		commonFalseVal = "false"
 	} else {
 		commonGroupCol = "`group`"
 		commonKeyCol = "`key`"
-		commonTrueVal = "1"
-		commonFalseVal = "0"
 	}
 	if os.Getenv("LOG_SQL_DSN") != "" {
 		switch common.LogSqlType {
 		case common.DatabaseTypePostgreSQL:
 			logGroupCol = `"group"`
-			logKeyCol = `"key"`
 		default:
 			logGroupCol = commonGroupCol
-			logKeyCol = commonKeyCol
 		}
 	} else {
 		// LOG_SQL_DSN 为空时，日志数据库与主数据库相同
 		if common.UsingPostgreSQL {
 			logGroupCol = `"group"`
-			logKeyCol = `"key"`
 		} else {
 			logGroupCol = commonGroupCol
-			logKeyCol = commonKeyCol
 		}
 	}
 	// log sql type and database type
@@ -73,29 +62,6 @@ var DB *gorm.DB
 var LOG_DB *gorm.DB
 
 const defaultSQLMaxIdleConns = 20
-
-func createRootAccountIfNeed() error {
-	var user User
-	//if user.Status != common.UserStatusEnabled {
-	if err := DB.First(&user).Error; err != nil {
-		common.SysLog("no user exists, create a root user for you: username is root, password is 123456")
-		hashedPassword, err := common.Password2Hash("123456")
-		if err != nil {
-			return err
-		}
-		rootUser := User{
-			Username:    "root",
-			Password:    hashedPassword,
-			Role:        common.RoleRootUser,
-			Status:      common.UserStatusEnabled,
-			DisplayName: "Root User",
-			AccessToken: nil,
-			Quota:       100000000,
-		}
-		DB.Create(&rootUser)
-	}
-	return nil
-}
 
 func CheckSetup() {
 	setup := GetSetup()
@@ -244,6 +210,10 @@ func InitDB() (err error) {
 func InitLogDB() (err error) {
 	if os.Getenv("LOG_SQL_DSN") == "" {
 		LOG_DB = DB
+		// 日志与主库同库：Log 表已由 migrateDB 的 AutoMigrate 处理，这里仅做数据回填。
+		if common.IsMasterNode {
+			backfillLogClientHeaderColumns()
+		}
 		return
 	}
 	db, err := chooseDB("LOG_SQL_DSN", true)
@@ -271,6 +241,11 @@ func InitLogDB() (err error) {
 		}
 		common.SysLog("database migration started")
 		err = migrateLOGDB()
+		if err != nil {
+			return err
+		}
+		// 独立日志库：AutoMigrate 完成后回填历史日志的客户端请求头列。
+		backfillLogClientHeaderColumns()
 		return err
 	} else {
 		common.FatalLog(err)
@@ -286,6 +261,12 @@ func migrateDB() error {
 	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
 	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
 	cleanupLegacyChannelJSONColumns()
+
+	// PostgreSQL：把旧版 tokens.model_limits 从 varchar(1024) 迁移为 text，
+	// 避免超过 1024 字符的模型限制字符串写入失败。必须在 AutoMigrate 之前执行。
+	if err := migrateTokenModelLimitsToText(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -329,84 +310,6 @@ func migrateDB() error {
 		return err
 	}
 	cleanupRemovedQuotaDataCacheStats()
-	return nil
-}
-
-func migrateDBFast() error {
-	// 同 migrateDB 中的说明
-	cleanupLegacyUniqueIndexes()
-
-	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
-	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
-	cleanupLegacyChannelJSONColumns()
-
-	var wg sync.WaitGroup
-
-	migrations := []struct {
-		model interface{}
-		name  string
-	}{
-		{&Channel{}, "Channel"},
-		{&Ticket{}, "Ticket"},
-		{&TicketEntry{}, "TicketEntry"},
-		{&Token{}, "Token"},
-		{&User{}, "User"},
-		{&PasskeyCredential{}, "PasskeyCredential"},
-		{&Option{}, "Option"},
-		{&Redemption{}, "Redemption"},
-		{&Ability{}, "Ability"},
-		{&Log{}, "Log"},
-		{&StoredImage{}, "StoredImage"},
-		{&StoredVideo{}, "StoredVideo"},
-		{&TopUp{}, "TopUp"},
-		{&QuotaData{}, "QuotaData"},
-		{&Model{}, "Model"},
-		{&Vendor{}, "Vendor"},
-		{&PrefillGroup{}, "PrefillGroup"},
-		{&Setup{}, "Setup"},
-		{&TwoFA{}, "TwoFA"},
-		{&TwoFABackupCode{}, "TwoFABackupCode"},
-		{&Checkin{}, "Checkin"},
-		{&DynamicRatioRule{}, "DynamicRatioRule"},
-		{&AuditLog{}, "AuditLog"},
-		{&MiniMaxVoice{}, "MiniMaxVoice"},
-	}
-	// 动态计算migration数量，确保errChan缓冲区足够大
-	errChan := make(chan error, len(migrations))
-
-	for _, m := range migrations {
-		wg.Add(1)
-		go func(model interface{}, name string) {
-			defer wg.Done()
-			if err := DB.AutoMigrate(model); err != nil {
-				errChan <- fmt.Errorf("failed to migrate %s: %v", name, err)
-			}
-		}(m.model, m.name)
-	}
-
-	// Wait for all migrations to complete
-	wg.Wait()
-	close(errChan)
-
-	// Check for any errors
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-	if err := cleanupEmptyAccessTokens(); err != nil {
-		return err
-	}
-	if err := cleanupRemovedChatPlaygroundData(); err != nil {
-		return err
-	}
-	cleanupRemovedOAuth()
-	cleanupRemovedTokenSetting()
-	if err := cleanupRemovedMultimodalTextMode(); err != nil {
-		return err
-	}
-	cleanupRemovedQuotaDataCacheStats()
-	common.SysLog("database migrated")
 	return nil
 }
 
@@ -504,6 +407,39 @@ func alterChannelColumnToTextIfJSON(db *gorm.DB, tableName string, columnName st
 	} else {
 		common.SysLog(fmt.Sprintf("migrated channel column %s.%s from JSON to TEXT", tableName, columnName))
 	}
+}
+
+// migrateTokenModelLimitsToText 把 PostgreSQL 旧库中的 tokens.model_limits 列
+// 从 varchar(1024) 迁移为 text。旧版定义为 varchar(1024)，当模型限制字符串
+// 超过 1024 字符时 PostgreSQL 会写入失败。
+//
+// 仅影响 PostgreSQL；对 MySQL/SQLite 无操作。必须在 AutoMigrate(&Token{}) 之前
+// 执行，以免 AutoMigrate 检测到类型不一致时再触发列类型变更或报错。
+//
+// 幂等：列类型已经是 text 时跳过。
+func migrateTokenModelLimitsToText() error {
+	if !common.UsingPostgreSQL {
+		return nil
+	}
+	var dataType string
+	err := DB.Raw(
+		`SELECT data_type FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1`,
+		"tokens", "model_limits",
+	).Row().Scan(&dataType)
+	if err != nil {
+		// 表或列可能尚不存在（首次初始化），直接跳过，交给 AutoMigrate 创建。
+		return nil
+	}
+	if strings.EqualFold(dataType, "text") {
+		return nil
+	}
+	// 表名/列名来自常量，不拼接外部输入，避免 SQL 注入。
+	stmt := `ALTER TABLE tokens ALTER COLUMN model_limits TYPE text`
+	if err := DB.Exec(stmt).Error; err != nil {
+		return fmt.Errorf("failed to migrate tokens.model_limits to text: %w", err)
+	}
+	common.SysLog("migrated tokens.model_limits to text")
+	return nil
 }
 
 // CleanupLegacyUniqueConstraints 动态查询并删除指定表/列的所有 UNIQUE 约束和已知旧索引。

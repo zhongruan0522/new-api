@@ -81,7 +81,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         triggerRefresh()
       } else {
         toast.error(
-          result.message || t('Failed to {{action}} user', { action })
+          result.message || t('users.errors.failedToActionUser', { action })
         )
       }
     } catch (_error) {
@@ -93,10 +93,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     try {
       const result = await resetUserPasskey(user.id)
       if (result.success) {
-        toast.success(t('Passkey reset successfully'))
+        toast.success(t('users.fields.passkeyResetSuccessfully'))
         triggerRefresh()
       } else {
-        toast.error(result.message || t('Failed to reset Passkey'))
+        toast.error(result.message || t('users.errors.failedToResetPasskey'))
       }
     } catch (_error) {
       toast.error(t(ERROR_MESSAGES.UNEXPECTED))
@@ -109,10 +109,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     try {
       const result = await resetUserTwoFA(user.id)
       if (result.success) {
-        toast.success(t('Two-factor authentication reset'))
+        toast.success(t('users.fields.twoFactorAuthenticationReset'))
         triggerRefresh()
       } else {
-        toast.error(result.message || t('Failed to reset 2FA'))
+        toast.error(result.message || t('users.errors.failedToReset2Fa'))
       }
     } catch (_error) {
       toast.error(t(ERROR_MESSAGES.UNEXPECTED))
@@ -141,11 +141,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           }
         >
           <MoreHorizontal className='h-4 w-4' />
-          <span className='sr-only'>{t('Open menu')}</span>
+          <span className='sr-only'>{t('channels.actions.openMenu')}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[180px]'>
           <DropdownMenuItem onClick={handleEdit}>
-            {t('Edit')}
+            {t('channels.actions.edit')}
             <DropdownMenuShortcut>
               <Pencil size={16} />
             </DropdownMenuShortcut>
@@ -155,7 +155,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {isDisabled ? (
             <DropdownMenuItem onClick={() => handleManage('enable')}>
-              {t('Enable')}
+              {t('channels.actions.enable')}
               <DropdownMenuShortcut>
                 <Power size={16} />
               </DropdownMenuShortcut>
@@ -165,7 +165,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               onClick={() => handleManage('disable')}
               disabled={isRoot}
             >
-              {t('Disable')}
+              {t('channels.actions.disable')}
               <DropdownMenuShortcut>
                 <PowerOff size={16} />
               </DropdownMenuShortcut>
@@ -174,7 +174,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {isAdmin && !isRoot && (
             <DropdownMenuItem onClick={() => handleManage('demote')}>
-              {t('Demote')}
+              {t('users.fields.demote')}
               <DropdownMenuShortcut>
                 <ArrowDown size={16} />
               </DropdownMenuShortcut>
@@ -183,7 +183,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {!isAdmin && (
             <DropdownMenuItem onClick={() => handleManage('promote')}>
-              {t('Promote')}
+              {t('users.fields.promote')}
               <DropdownMenuShortcut>
                 <ArrowUp size={16} />
               </DropdownMenuShortcut>
@@ -199,7 +199,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             }}
             disabled={isRoot}
           >
-            {t('Reset Passkey')}
+            {t('users.actions.resetPasskey')}
             <DropdownMenuShortcut>
               <KeyRound size={16} />
             </DropdownMenuShortcut>
@@ -212,7 +212,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             }}
             disabled={isRoot}
           >
-            {t('Reset Two-Factor Authentication')}
+            {t('users.actions.resetTwoFactorAuthentication')}
             <DropdownMenuShortcut>
               <ShieldAlert size={16} />
             </DropdownMenuShortcut>
@@ -225,7 +225,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             className='text-destructive focus:text-destructive'
             disabled={isRoot}
           >
-            {t('Delete')}
+            {t('common.actions.delete')}
             <DropdownMenuShortcut>
               <Trash2 size={16} />
             </DropdownMenuShortcut>
@@ -236,18 +236,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <ConfirmDialog
         open={resetPasskeyOpen}
         onOpenChange={setResetPasskeyOpen}
-        title={t('Reset Passkey')}
+        title={t('users.actions.resetPasskey')}
         desc={`Reset Passkey for ${user.username}? The user will need to register a new Passkey before using passwordless login.`}
-        confirmText='Reset Passkey'
+        confirmText={t('users.actions.resetPasskey')}
         handleConfirm={handleResetPasskey}
       />
 
       <ConfirmDialog
         open={resetTwoFAOpen}
         onOpenChange={setResetTwoFAOpen}
-        title={t('Reset Two-Factor Authentication')}
+        title={t('users.actions.resetTwoFactorAuthentication')}
         desc={`Reset 2FA for ${user.username}? The user must set up 2FA again to continue using it.`}
-        confirmText='Reset Two-Factor Authentication'
+        confirmText={t('users.actions.resetTwoFactorAuthentication')}
         handleConfirm={handleResetTwoFA}
       />
 

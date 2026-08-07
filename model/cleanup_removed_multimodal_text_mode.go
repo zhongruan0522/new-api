@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"gorm.io/gorm"
 )
 
 var removedThirdPartyMultimodalOptionKeys = []string{
@@ -19,6 +21,12 @@ var removedThirdPartyMultimodalOptionKeys = []string{
 	"global.third_party_multimodal_http_referer",
 }
 
+// markerRemovedMultimodalTextMode is the one-shot migration marker recorded in
+// the options table once this cleanup has fully completed. Subsequent startups
+// skip the otherwise-every-start scan over the channels table. Delete the row to
+// force a re-run (e.g. after importing legacy data).
+const markerRemovedMultimodalTextMode = "data_migration.removed_multimodal_text_mode.v1.done"
+
 // cleanupRemovedMultimodalTextMode removes the deprecated third-party
 // media-to-text configuration and normalizes channel settings to the remaining
 // MCP URL mode.
@@ -26,6 +34,12 @@ func cleanupRemovedMultimodalTextMode() error {
 	if DB == nil {
 		return nil
 	}
+
+	if isDataMigrationDone(markerRemovedMultimodalTextMode) {
+		return nil
+	}
+
+	start := time.Now()
 
 	for _, key := range removedThirdPartyMultimodalOptionKeys {
 		res := DB.Delete(&Option{Key: key})
@@ -42,32 +56,47 @@ func cleanupRemovedMultimodalTextMode() error {
 		OtherSettings string `gorm:"column:settings"`
 	}
 
+	// Text-level pre-filter narrows the scan to rows that can possibly need
+	// normalization: encoding/json serializes keys verbatim, so any row that truly
+	// needs a change must contain one of these substrings. Rows that match the
+	// filter but turn out not to need a change are skipped after precise Go-level
+	// JSON parsing in normalizeRemovedMultimodalChannelOtherSettingsJSON.
+	var scannedChannels int64
+	var updatedCount int64
 	var channels []channelSettingsRow
-	if err := DB.Model(&Channel{}).
+	result := DB.Model(&Channel{}).
 		Select("id", "settings").
-		Where("settings IS NOT NULL AND settings <> ?", "").
-		Find(&channels).Error; err != nil {
-		return fmt.Errorf("list channel settings for multimodal cleanup failed: %w", err)
+		// Single Where with explicit parentheses so the OR stays grouped regardless
+		// of how GORM merges conditions, keeping precedence identical across
+		// SQLite/MySQL/PostgreSQL.
+		Where("(settings IS NOT NULL AND settings <> ?) AND (settings LIKE ? OR settings LIKE ?)",
+			"", "%image_auto_convert_to_url%", "%image_auto_convert_to_url_mode%").
+		FindInBatches(&channels, 200, func(tx *gorm.DB, _ int) error {
+			for i := range channels {
+				scannedChannels++
+				ch := channels[i]
+				normalized, changed, err := normalizeRemovedMultimodalChannelOtherSettingsJSON(ch.OtherSettings)
+				if err != nil {
+					return fmt.Errorf("normalize channel %d settings failed: %w", ch.Id, err)
+				}
+				if !changed {
+					continue
+				}
+				if err := tx.Model(&Channel{}).Where("id = ?", ch.Id).Update("settings", normalized).Error; err != nil {
+					return fmt.Errorf("update channel %d settings failed: %w", ch.Id, err)
+				}
+				updatedCount++
+			}
+			return nil
+		})
+	if result.Error != nil {
+		return fmt.Errorf("channel multimodal cleanup failed: %w", result.Error)
 	}
 
-	updatedCount := 0
-	for _, channel := range channels {
-		normalized, changed, err := normalizeRemovedMultimodalChannelOtherSettingsJSON(channel.OtherSettings)
-		if err != nil {
-			return fmt.Errorf("normalize channel %d settings failed: %w", channel.Id, err)
-		}
-		if !changed {
-			continue
-		}
-		if err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("settings", normalized).Error; err != nil {
-			return fmt.Errorf("update channel %d settings failed: %w", channel.Id, err)
-		}
-		updatedCount++
-	}
+	common.SysLog(fmt.Sprintf("multimodal text-mode cleanup: scanned %d channels, normalized %d channels to MCP URL mode in %s",
+		scannedChannels, updatedCount, time.Since(start).Round(time.Millisecond)))
 
-	if updatedCount > 0 {
-		common.SysLog(fmt.Sprintf("normalized %d channel multimodal settings to MCP URL mode", updatedCount))
-	}
+	markDataMigrationDone(markerRemovedMultimodalTextMode)
 	return nil
 }
 

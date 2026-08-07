@@ -57,12 +57,12 @@ export function usePasskeyManagement(
         onStatusChange?.(res.data ?? null)
       } else {
         setStatus(null)
-        toast.error(res.message || i18next.t('Failed to load Passkey status'))
+        toast.error(res.message || i18next.t('auth.errors.failedToLoadPasskeyStatus'))
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[Passkey] Failed to fetch status', error)
-      toast.error(i18next.t('Failed to load Passkey status'))
+      toast.error(i18next.t('auth.errors.failedToLoadPasskeyStatus'))
       setStatus(null)
     } finally {
       setLoading(false)
@@ -81,22 +81,22 @@ export function usePasskeyManagement(
 
   const register = useCallback(async () => {
     if (!supported) {
-      toast.error(i18next.t('This device does not support Passkey'))
+      toast.error(i18next.t('auth.tips.deviceDoesNotSupportPasskey'))
       return false
     }
     if (!navigator?.credentials) {
-      toast.error(i18next.t('Passkey is not supported in this environment'))
+      toast.error(i18next.t('auth.tips.passkeyIsNotSupportedInThisEnvironment'))
       return false
     }
 
     setRegistering(true)
     try {
-      const deviceName = window.prompt(i18next.t('Enter a name for this device (optional)'))
+      const deviceName = window.prompt(i18next.t('auth.placeholders.enterANameForThisDeviceOptional'))
       const beginResponse = await beginPasskeyRegistration(deviceName || undefined)
       if (!beginResponse.success) {
         toast.error(
           beginResponse.message ||
-            i18next.t('Failed to start Passkey registration')
+            i18next.t('auth.errors.failedToStartPasskeyRegistration')
         )
         return false
       }
@@ -109,30 +109,30 @@ export function usePasskeyManagement(
         publicKey
       )) as PublicKeyCredential | null
       if (!credential) {
-        toast.error(i18next.t('Passkey registration was cancelled'))
+        toast.error(i18next.t('auth.status.passkeyRegistrationWasCancelled'))
         return false
       }
 
       const attestation = buildRegistrationResult(credential)
       if (!attestation) {
-        toast.error(i18next.t('Invalid Passkey registration response'))
+        toast.error(i18next.t('auth.errors.invalidPasskeyRegistrationResponse'))
         return false
       }
 
       const finishResponse = await finishPasskeyRegistration(attestation)
       if (!finishResponse.success) {
         toast.error(
-          finishResponse.message || i18next.t('Failed to register Passkey')
+          finishResponse.message || i18next.t('auth.errors.failedToRegisterPasskey')
         )
         return false
       }
 
-      toast.success(i18next.t('Passkey registered successfully'))
+      toast.success(i18next.t('auth.fields.passkeyRegisteredSuccessfully'))
       await fetchStatus()
       return true
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        toast.info(i18next.t('Passkey registration was cancelled'))
+        toast.info(i18next.t('auth.status.passkeyRegistrationWasCancelled'))
         return false
       }
       // eslint-disable-next-line no-console
@@ -140,7 +140,7 @@ export function usePasskeyManagement(
       toast.error(
         error instanceof Error
           ? error.message
-          : i18next.t('Failed to register Passkey')
+          : i18next.t('auth.errors.failedToRegisterPasskey')
       )
       return false
     } finally {
@@ -153,17 +153,17 @@ export function usePasskeyManagement(
     try {
       const res = await deletePasskey(id)
       if (!res.success) {
-        toast.error(res.message || i18next.t('Failed to remove Passkey'))
+        toast.error(res.message || i18next.t('auth.errors.failedToRemovePasskey'))
         return false
       }
 
-      toast.success(i18next.t('Passkey removed successfully'))
+      toast.success(i18next.t('auth.status.passkeyRemovedSuccessfully'))
       await fetchStatus()
       return true
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[Passkey] Removal error', error)
-      toast.error(i18next.t('Failed to remove Passkey'))
+      toast.error(i18next.t('auth.errors.failedToRemovePasskey'))
       return false
     } finally {
       setRemoving(false)

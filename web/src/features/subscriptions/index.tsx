@@ -36,7 +36,7 @@ function SubscriptionsContent() {
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {t('Subscription Management')}
+          {t('subscriptions.titles.subscriptionManagement')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <div className='flex items-center gap-2'>
@@ -44,7 +44,7 @@ function SubscriptionsContent() {
               <Info className='h-4 w-4' />
               <AlertDescription className='text-xs'>
                 {t(
-                  'Stripe/Creem requires creating products on the third-party platform and entering the ID'
+                  'subscriptions.tips.stripeCreemRequiresCreatingProductsOnTheThirdParty'
                 )}
               </AlertDescription>
             </Alert>
@@ -56,7 +56,7 @@ function SubscriptionsContent() {
             <Alert variant='destructive' className='mb-4'>
               <AlertDescription>
                 {t(
-                  'Subscription plan creation and changes are locked until the administrator confirms compliance terms in Payment Gateway settings.'
+                  'subscriptions.tips.subscriptionPlanCreationAndChangesAreLockedUntilThe'
                 )}
               </AlertDescription>
             </Alert>

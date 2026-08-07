@@ -1,6 +1,6 @@
 package common
 
-import "github.com/zhongruan0522/new-api/constant"
+import "github.com/NookMux/NookMux/constant"
 
 // EndpointInfo 描述单个端点的默认请求信息
 // path: 上游路径

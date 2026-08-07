@@ -55,7 +55,7 @@ function getErrorMessage(message: string | undefined, data: unknown): string {
     return data
   }
 
-  return message || i18next.t('Payment request failed')
+  return message || i18next.t('subscriptions.status.paymentRequestFailed')
 }
 
 /**
@@ -81,10 +81,10 @@ export function useWaffoPancakePayment() {
 
           if (checkoutUrl) {
             if (!isSafeHttpCheckoutUrl(checkoutUrl)) {
-              toast.error(i18next.t('Invalid payment redirect URL'))
+              toast.error(i18next.t('wallet.errors.invalidPaymentRedirectUrl'))
               return false
             }
-            toast.success(i18next.t('Redirecting to payment page...'))
+            toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
             window.location.href = checkoutUrl
             return true
           }
@@ -93,7 +93,7 @@ export function useWaffoPancakePayment() {
         toast.error(getErrorMessage(response.message, response.data))
         return false
       } catch (_error) {
-        toast.error(i18next.t('Payment request failed'))
+        toast.error(i18next.t('subscriptions.status.paymentRequestFailed'))
         return false
       } finally {
         setProcessing(false)

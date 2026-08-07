@@ -65,31 +65,31 @@ export function NoticeSection({ defaultValue }: NoticeSectionProps) {
       return
     }
     await updateOption.mutateAsync({
-      key: 'Notice',
+      key: 'common.fields.notice',
       value: normalized,
     })
   }
 
   return (
-    <SettingsSection title={t('System Announcements')}>
+    <SettingsSection title={t('common.titles.systemAnnouncements')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save notice'
+            saveLabel='common.actions.saveNotice'
           />
           <FormField
             control={form.control}
             name='Notice'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Announcement content')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.announcementContent')}</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={8}
                     placeholder={t(
-                      'Planned maintenance on Friday at 22:00 UTC...'
+                      'systemSettings.tips.plannedMaintenanceOnFridayAt2200Utc'
                     )}
                     {...field}
                   />

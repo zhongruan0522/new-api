@@ -162,7 +162,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
   const vendorOptions: FilterOption[] = [
     {
       value: FILTER_ALL,
-      label: t('All Vendors'),
+      label: t('models.fields.allVendors'),
       count: props.models.length,
     },
     ...props.vendors
@@ -181,7 +181,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
   const groupOptions: FilterOption[] = [
     {
       value: FILTER_ALL,
-      label: t('All Groups'),
+      label: t('channels.fields.allGroups'),
     },
     ...props.groups.map((group) => ({
       value: group,
@@ -211,7 +211,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
   const tagOptions: FilterOption[] = [
     {
       value: FILTER_ALL,
-      label: t('All Tags'),
+      label: t('pricing.fields.allTags'),
       count: props.models.length,
     },
     ...props.tags.map((tag) => ({
@@ -247,9 +247,9 @@ export function PricingSidebar(props: PricingSidebarProps) {
     <aside className={cn('rounded-xl border p-3', props.className)}>
       <div className='mb-2.5 flex items-center justify-between gap-2'>
         <div>
-          <h2 className='text-foreground text-sm font-bold'>{t('Filter')}</h2>
+          <h2 className='text-foreground text-sm font-bold'>{t('dashboard.actions.filter')}</h2>
           <p className='text-muted-foreground mt-1 text-xs'>
-            {t('Refine models by provider, group, type, and tags.')}
+            {t('pricing.tips.refineModelsByProviderGroupTypeAndTags')}
           </p>
         </div>
         <Button
@@ -261,43 +261,43 @@ export function PricingSidebar(props: PricingSidebarProps) {
           className='h-7 gap-1.5 px-2 text-xs'
         >
           <RotateCcw className='size-3.5' />
-          {t('Reset')}
+          {t('common.actions.reset')}
         </Button>
       </div>
 
       {props.hasActiveFilters && (
         <Badge variant='secondary' className='mb-3'>
-          {t('Filters active')}
+          {t('pricing.status.filtersActive')}
         </Badge>
       )}
 
       <div className='space-y-1'>
         <FilterSection
-          title={t('Groups')}
+          title={t('channels.fields.groups')}
           value={props.groupFilter}
           options={groupOptions}
           onChange={props.onGroupChange}
         />
         <FilterSection
-          title={t('All Vendors')}
+          title={t('models.fields.allVendors')}
           value={props.vendorFilter}
           options={vendorOptions}
           onChange={props.onVendorChange}
         />
         <FilterSection
-          title={t('Model Tags')}
+          title={t('pricing.fields.modelTags')}
           value={props.tagFilter}
           options={tagOptions}
           onChange={props.onTagChange}
         />
         <FilterSection
-          title={t('Pricing Type')}
+          title={t('pricing.fields.type')}
           value={props.quotaTypeFilter}
           options={quotaOptions}
           onChange={props.onQuotaTypeChange}
         />
         <FilterSection
-          title={t('Endpoint Type')}
+          title={t('channels.fields.endpointType')}
           value={props.endpointTypeFilter}
           options={endpointOptions}
           onChange={props.onEndpointTypeChange}

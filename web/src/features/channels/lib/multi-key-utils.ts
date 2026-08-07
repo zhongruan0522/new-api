@@ -29,7 +29,7 @@ export function getMultiKeyStatusConfig(status: number) {
   return (
     MULTI_KEY_STATUS_CONFIG[status as keyof typeof MULTI_KEY_STATUS_CONFIG] || {
       variant: 'neutral' as const,
-      label: 'Unknown',
+      label: 'channels.fields.unknown',
     }
   )
 }

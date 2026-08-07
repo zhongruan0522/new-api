@@ -83,18 +83,18 @@ export function ApiKeysResetDialog() {
     <AlertDialog open={open === 'reset-key'} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t('Reset API key?')}</AlertDialogTitle>
+          <AlertDialogTitle>{t('keys.actions.resetApiKey')}</AlertDialogTitle>
           <AlertDialogDescription>
             {newKey ? (
               t(
-                'The API key has been reset. The previous key is invalid immediately.'
+                'keys.tips.apiKeyHasBeenResetThePreviousKeyIs'
               )
             ) : (
               <>
-                {t('This will reset API key')}{' '}
+                {t('keys.tips.resetApiKey')}{' '}
                 <span className='font-semibold'>{currentRow?.name}</span>
                 {t(
-                  '. The previous key will become invalid immediately and this action cannot be undone.'
+                  'keys.errors.previousKeyWillBecomeInvalidImmediatelyAndThisAction'
                 )}
               </>
             )}
@@ -103,7 +103,7 @@ export function ApiKeysResetDialog() {
 
         {newKey && (
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>{t('New API Key')}</label>
+            <label className='text-sm font-medium'>{t('keys.fields.newApiKey')}</label>
             <Input
               readOnly
               value={newKey}
@@ -115,7 +115,7 @@ export function ApiKeysResetDialog() {
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isResetting}>
-            {newKey ? t('Close') : t('Cancel')}
+            {newKey ? t('common.actions.close') : t('common.actions.cancel')}
           </AlertDialogCancel>
           {newKey ? (
             <AlertDialogAction
@@ -129,7 +129,7 @@ export function ApiKeysResetDialog() {
               ) : (
                 <Copy className='size-4' />
               )}
-              {t('Copy')}
+              {t('channels.actions.copy')}
             </AlertDialogAction>
           ) : (
             <AlertDialogAction
@@ -140,7 +140,7 @@ export function ApiKeysResetDialog() {
               disabled={isResetting}
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
-              {isResetting ? t('Resetting...') : t('Reset')}
+              {isResetting ? t('keys.tips.resetting') : t('common.actions.reset')}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

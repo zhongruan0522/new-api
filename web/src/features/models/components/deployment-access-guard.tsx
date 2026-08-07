@@ -122,11 +122,11 @@ export function DeploymentAccessGuard({
           <Loader2 className='text-primary mb-6 h-10 w-10 animate-spin' />
           <div className='space-y-3'>
             <LoadingStep
-              label={t('Loading configuration')}
+              label={t('models.titles.loadingConfiguration')}
               status={settingsStatus}
             />
             <LoadingStep
-              label={t('Checking connection')}
+              label={t('models.fields.checkingConnection')}
               status={connectionStatus}
             />
           </div>
@@ -144,22 +144,22 @@ export function DeploymentAccessGuard({
             <Server className='h-8 w-8 text-amber-600 dark:text-amber-400' />
           </div>
           <h3 className='mb-6 text-xl font-semibold'>
-            {t('Model deployment service is disabled')}
+            {t('models.status.modelDeploymentServiceIsDisabled')}
           </h3>
         </div>
         <div className='space-y-4'>
           <Alert variant='default'>
             <AlertCircle className='h-4 w-4' />
-            <AlertTitle>{t('Configuration required')}</AlertTitle>
+            <AlertTitle>{t('models.titles.configurationRequired')}</AlertTitle>
             <AlertDescription>
               {t(
-                'Please enable io.net model deployment service and configure an API key in System Settings.'
+                'models.errors.pleaseEnableIoNetModelDeploymentServiceAndConfigure'
               )}
             </AlertDescription>
           </Alert>
           <Button onClick={handleGoToSettings} className='w-full'>
             <Settings className='mr-2 h-4 w-4' />
-            {t('Go to Settings')}
+            {t('channels.titles.goToSettings')}
           </Button>
         </div>
       </div>
@@ -175,22 +175,22 @@ export function DeploymentAccessGuard({
             <WifiOff className='h-8 w-8 text-red-600 dark:text-red-400' />
           </div>
           <h3 className='mb-6 text-xl font-semibold'>
-            {t('Connection failed')}
+            {t('models.status.connectionFailed')}
           </h3>
         </div>
         <div className='space-y-4'>
           <Alert variant='destructive'>
             <AlertCircle className='h-4 w-4' />
-            <AlertTitle>{t('Connection error')}</AlertTitle>
+            <AlertTitle>{t('models.fields.connectionError')}</AlertTitle>
             <AlertDescription>{t(connectionError)}</AlertDescription>
           </Alert>
           <div className='flex gap-2'>
             <Button variant='outline' onClick={onRetry} className='flex-1'>
-              {t('Retry')}
+              {t('common.actions.retry')}
             </Button>
             <Button onClick={handleGoToSettings} className='flex-1'>
               <Settings className='mr-2 h-4 w-4' />
-              {t('Go to Settings')}
+              {t('channels.titles.goToSettings')}
             </Button>
           </div>
         </div>

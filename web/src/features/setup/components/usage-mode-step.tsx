@@ -44,23 +44,23 @@ const USAGE_MODE_OPTIONS: Array<{
 }> = [
   {
     value: 'external',
-    titleKey: 'External operations',
+    titleKey: 'common.fields.externalOperations',
     descriptionKey:
-      'Serve multiple users or teams with billing and quota control.',
+      'common.tips.serveMultipleUsersOrTeamsWithBillingAndQuota',
     icon: Building2,
   },
   {
     value: 'self',
-    titleKey: 'Personal use',
+    titleKey: 'common.fields.personalUse',
     descriptionKey:
-      'Best for single-tenant deployments. Pricing and billing options stay hidden.',
+      'common.tips.bestForSingleTenantDeploymentsPricingAndBillingOptions',
     icon: Home,
   },
   {
     value: 'demo',
-    titleKey: 'Demo site',
+    titleKey: 'common.fields.demoSite',
     descriptionKey:
-      'Showcase core capabilities with demo credentials and limited access.',
+      'common.tips.showcaseCoreCapabilitiesWithDemoCredentialsAndLimitedAccess',
     icon: Presentation,
   },
 ]
@@ -74,7 +74,7 @@ export function UsageModeStep({ form }: UsageModeStepProps) {
       name='usageMode'
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{t('How will you use the platform?')}</FormLabel>
+          <FormLabel>{t('setup.tips.howWillYouUseThePlatform')}</FormLabel>
           <FormControl>
             <RadioGroup
               value={field.value}
@@ -91,7 +91,7 @@ export function UsageModeStep({ form }: UsageModeStepProps) {
                       key={value}
                       htmlFor={`usage-mode-${value}`}
                       className={cn(
-                        'hover:border-primary/40 focus-within:border-primary/50 has-data-[checked]:border-primary has-data-[checked]:ring-primary/20 group bg-card border-muted flex cursor-pointer flex-col gap-3 rounded-xl border p-4 font-normal transition-all has-data-[checked]:ring-2'
+                        'hover:border-primary/40 focus-within:border-primary/50 has-data-checked:border-primary has-data-checked:ring-primary/20 group bg-card border-muted flex cursor-pointer flex-col gap-3 rounded-xl border p-4 font-normal transition-all has-data-checked:ring-2'
                       )}
                     >
                       <div className='flex items-center gap-3'>
@@ -111,7 +111,7 @@ export function UsageModeStep({ form }: UsageModeStepProps) {
                             {t(descriptionKey)}
                           </p>
                         </div>
-                        <Icon className='text-muted-foreground/70 group-hover:text-primary group-focus-within:text-primary group-has-data-[checked]:text-primary ml-auto size-5 shrink-0 transition' />
+                        <Icon className='text-muted-foreground/70 group-hover:text-primary group-focus-within:text-primary group-has-data-checked:text-primary ml-auto size-5 shrink-0 transition' />
                       </div>
                     </Label>
                   )

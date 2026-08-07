@@ -40,6 +40,8 @@ import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
+// 列表默认展示脱敏 key：sk- + 等长 *（与历史 UI 一致用 12 位星号占位）。
+// 真实密钥仅在复制/查看/新建/重置时通过 /api/token/{id}/key 等接口获取。
 const MASKED_API_KEY = `sk-${'*'.repeat(12)}`
 
 type QuotaLimit = {
@@ -99,15 +101,15 @@ function getQuotaTypeMeta(quotaType: number): {
   variant: StatusVariant
 } {
   if (quotaType === 0) {
-    return { labelKey: 'Unlimited Quota', variant: 'neutral' }
+    return { labelKey: 'keys.fields.unlimitedQuota', variant: 'neutral' }
   }
   if (quotaType === 2) {
-    return { labelKey: 'Hourly Reset Quota', variant: 'info' }
+    return { labelKey: 'keys.fields.hourlyResetQuota', variant: 'info' }
   }
   if (quotaType === 3) {
-    return { labelKey: 'Hourly + Days Reset Quota', variant: 'purple' }
+    return { labelKey: 'keys.fields.hourlyDaysResetQuota', variant: 'purple' }
   }
-  return { labelKey: 'Permanent Quota', variant: 'blue' }
+  return { labelKey: 'keys.fields.permanentQuota', variant: 'blue' }
 }
 
 function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
@@ -129,15 +131,15 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
       return {
         detailLines: [
           {
-            labelKey: 'Window Quota',
+            labelKey: 'keys.fields.windowQuota',
             value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
           },
           {
-            labelKey: 'Reset window',
+            labelKey: 'common.actions.resetWindow',
             value: `Every ${windowHours}h`,
           },
         ],
-        primaryLabelKey: 'Window Quota',
+        primaryLabelKey: 'keys.fields.windowQuota',
         quotaType,
         quotaTypeLabelKey: quotaTypeMeta.labelKey,
         quotaTypeVariant: quotaTypeMeta.variant,
@@ -165,19 +167,19 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
     return {
       detailLines: [
         {
-          labelKey: 'Window Quota',
+          labelKey: 'keys.fields.windowQuota',
           value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
         },
         {
-          labelKey: 'Reset window',
+          labelKey: 'common.actions.resetWindow',
           value: `Every ${windowHours}h`,
         },
         {
-          labelKey: 'Cycle Quota',
+          labelKey: 'keys.fields.cycleQuota',
           value: `${formatQuota(cycleLimit.remaining)} / ${formatQuota(cycleLimit.total)}`,
         },
         {
-          labelKey: 'Reset Period',
+          labelKey: 'subscriptions.actions.resetPeriod',
           value: `Every ${cycleDays}d`,
         },
       ],
@@ -196,7 +198,7 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
 
   return {
     detailLines: [],
-    primaryLabelKey: 'Permanent quota',
+    primaryLabelKey: 'common.fields.permanentQuota',
     quotaType,
     quotaTypeLabelKey: quotaTypeMeta.labelKey,
     quotaTypeVariant: quotaTypeMeta.variant,
@@ -208,10 +210,10 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
 
 function formatQuotaScheduleValue(value: string, t: TFunction) {
   const hourMatch = value.match(/^Every (\d+)h$/)
-  if (hourMatch) return t('Every {{count}}h', { count: Number(hourMatch[1]) })
+  if (hourMatch) return t('keys.fields.everyCountH', { count: Number(hourMatch[1]) })
 
   const dayMatch = value.match(/^Every (\d+)d$/)
-  if (dayMatch) return t('Every {{count}}d', { count: Number(dayMatch[1]) })
+  if (dayMatch) return t('keys.fields.everyCountD', { count: Number(dayMatch[1]) })
 
   return value
 }
@@ -242,18 +244,17 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
   )
 
   const handleCopy = useCallback(async () => {
-    const realKey = resolvedFullKey
+    // 点击复制时再请求真实 key（POST /api/token/{id}/key），列表接口不返回明文。
+    const realKey = resolvedFullKey ?? (await resolveRealKey(apiKey.id))
     if (!realKey) {
-      void resolveRealKey(apiKey.id)
-      toast.info(t('API key is loading, please try again in a moment'))
       return
     }
     const ok = await copyToClipboard(realKey)
     if (ok) {
       markKeyCopied(apiKey.id)
-      toast.success(t('Copied'))
+      toast.success(t('common.status.copied'))
     } else {
-      toast.error(t('Copy failed'))
+      toast.error(t('keyQuery.actions.copyFailed'))
     }
   }, [resolvedFullKey, resolveRealKey, apiKey.id, markKeyCopied, t])
 
@@ -276,12 +277,12 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
           align='start'
         >
           <div className='space-y-2'>
-            <p className='text-muted-foreground text-xs'>{t('Full API Key')}</p>
+            <p className='text-muted-foreground text-xs'>{t('keys.fields.fullApiKey')}</p>
             {isLoading ? (
               <div className='flex items-center gap-2 py-2'>
                 <Loader2 className='size-3.5 animate-spin' />
                 <span className='text-muted-foreground text-xs'>
-                  {t('Loading...')}
+                  {t('common.tips.loading')}
                 </span>
               </div>
             ) : (
@@ -324,10 +325,10 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
         </TooltipTrigger>
         <TooltipContent>
           {isLoading
-            ? t('Loading...')
+            ? t('common.tips.loading')
             : isCopied
-              ? t('Copied!')
-              : t('Copy API key')}
+              ? t('common.status.copiedb7c3ca')
+              : t('keys.actions.copyApiKey')}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -387,31 +388,31 @@ export function ApiKeyQuotaCell({
           {isUnlimited ? (
             <>
               <div className='text-muted-foreground'>
-                {t('No quota cap; usage still depends on account balance.')}
+                {t('keys.tips.noQuotaCapUsageStillDependsOnAccountBalance')}
               </div>
               <div>
-                {t('labelWithColon', { label: t('Used') })} {formatQuota(usage.used)}
+                {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {formatQuota(usage.used)}
               </div>
             </>
           ) : (
             <>
               <div>
-                {t('labelWithColon', { label: t('Used') })} {formatQuota(usage.used)}
+                {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {formatQuota(usage.used)}
               </div>
               <div>
-                {t('labelWithColon', { label: t('Remaining') })} {formatQuota(usage.remaining)} (
+                {t('channels.fields.labelWithColon', { label: t('channels.fields.remaining') })} {formatQuota(usage.remaining)} (
                 {percentage.toFixed(1)}%)
               </div>
               <div>
-                {t('labelWithColon', { label: t('Total') })} {formatQuota(usage.total)}
+                {t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') })} {formatQuota(usage.total)}
               </div>
               <div>
-                {t('labelWithColon', { label: t('Reset') })}{' '}
+                {t('channels.fields.labelWithColon', { label: t('common.actions.reset') })}{' '}
                 {usage.detailLines.length > 0
                   ? usage.detailLines
                       .map((line) => formatQuotaScheduleValue(line.value, t))
                       .join(', ')
-                  : t('No Reset')}
+                  : t('keys.fields.noReset')}
               </div>
             </>
           )}
@@ -426,7 +427,7 @@ export function ModelLimitsCell({ apiKey }: { apiKey: ApiKey }) {
 
   if (!apiKey.model_limits_enabled || !apiKey.model_limits) {
     return (
-      <StatusBadge label={t('Unlimited')} variant='neutral' copyable={false} />
+      <StatusBadge label={t('keyQuery.fields.unlimited')} variant='neutral' copyable={false} />
     )
   }
 
@@ -436,7 +437,7 @@ export function ModelLimitsCell({ apiKey }: { apiKey: ApiKey }) {
     <Tooltip>
       <TooltipTrigger render={<span />}>
         <StatusBadge
-          label={t('{{count}} models', { count: models.length })}
+          label={t('keys.titles.countModels', { count: models.length })}
           variant='neutral'
           copyable={false}
         />
@@ -461,7 +462,7 @@ export function IpRestrictionsCell({ apiKey }: { apiKey: ApiKey }) {
   if (!allowIps) {
     return (
       <StatusBadge
-        label={t('No restriction')}
+        label={t('keys.fields.noRestriction')}
         variant='neutral'
         copyable={false}
       />
@@ -477,7 +478,7 @@ export function IpRestrictionsCell({ apiKey }: { apiKey: ApiKey }) {
     <Tooltip>
       <TooltipTrigger render={<span />}>
         <StatusBadge
-          label={t('{{count}} IP(s)', { count: ips.length })}
+          label={t('keys.fields.countIpS', { count: ips.length })}
           variant='neutral'
           copyable={false}
         />

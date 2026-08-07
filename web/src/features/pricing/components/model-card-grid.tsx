@@ -69,7 +69,7 @@ export function ModelCardGrid(props: ModelCardGridProps) {
       {totalPages > 1 && (
         <div className='text-muted-foreground flex flex-col items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:flex-row'>
           <p className='text-muted-foreground'>
-            {t('Page {{current}} of {{total}}', {
+            {t('common.fields.pageCurrentOfTotal', {
               current: currentPage,
               total: totalPages,
             })}
@@ -84,7 +84,7 @@ export function ModelCardGrid(props: ModelCardGridProps) {
               className='gap-1.5'
             >
               <ChevronLeft className='size-4' />
-              {t('Previous page')}
+              {t('models.fields.previousPage')}
             </Button>
             <Button
               type='button'
@@ -96,7 +96,7 @@ export function ModelCardGrid(props: ModelCardGridProps) {
               disabled={currentPage >= totalPages}
               className='gap-1.5'
             >
-              {t('Next page')}
+              {t('models.fields.nextPage')}
               <ChevronRight className='size-4' />
             </Button>
           </div>

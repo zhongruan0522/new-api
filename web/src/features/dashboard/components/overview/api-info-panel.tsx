@@ -49,13 +49,13 @@ export function ApiInfoPanel() {
       title={
         <span className='flex items-center gap-2'>
           <Route className='text-muted-foreground/60 size-4' />
-          {t('API Info')}
+          {t('dashboard.fields.apiInfo')}
         </span>
       }
-      description={t('Configured routes and latency checks')}
+      description={t('dashboard.tips.configuredRoutesAndLatencyChecks')}
       loading={loading}
       empty={!list.length}
-      emptyMessage={t('No API routes configured')}
+      emptyMessage={t('dashboard.fields.noApiRoutesConfigured')}
       height='h-72'
       contentClassName='p-0'
     >

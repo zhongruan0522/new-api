@@ -247,7 +247,7 @@ export function useSettingsForm<T extends FieldValues>({
     )
 
     if (changedEntries.length === 0) {
-      toast.info(i18next.t('No changes to save'))
+      toast.info(i18next.t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -270,7 +270,7 @@ export function useSettingsForm<T extends FieldValues>({
 
   const handleReset = () => {
     form.reset(defaultValuesRef.current)
-    toast.success(i18next.t('Form reset to saved values'))
+    toast.success(i18next.t('systemSettings.status.formResetToSavedValues'))
   }
 
   return {

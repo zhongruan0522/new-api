@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { memo, useCallback, useState } from 'react'
-import { type UseFormReturn } from 'react-hook-form'
+import { type UseFormReturn, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
@@ -56,7 +56,17 @@ export const ModelRatioForm = memo(function ModelRatioForm({
 }: ModelRatioFormProps) {
   const { t } = useTranslation()
   const [isEditorValid, setIsEditorValid] = useState(true)
-  const values = form.watch()
+  const watchedValues = useWatch({ control: form.control })
+  const values: ModelFormValues = {
+    ModelPrice: watchedValues.ModelPrice ?? '',
+    ModelRatio: watchedValues.ModelRatio ?? '',
+    CacheRatio: watchedValues.CacheRatio ?? '',
+    CreateCacheRatio: watchedValues.CreateCacheRatio ?? '',
+    CompletionRatio: watchedValues.CompletionRatio ?? '',
+    AudioRatio: watchedValues.AudioRatio ?? '',
+    AudioCompletionRatio: watchedValues.AudioCompletionRatio ?? '',
+    ContextPricing: watchedValues.ContextPricing ?? '',
+  }
 
   const handleFieldChange = useCallback(
     (field: ModelRatioField, value: string) => {
@@ -82,7 +92,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           onClick={onReset}
           disabled={isResetting}
         >
-          {t('Reset model ratios')}
+          {t('systemSettings.actions.resetModelRatios')}
         </Button>
         <Button
           type='button'
@@ -90,7 +100,9 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           onClick={form.handleSubmit(onSave)}
           disabled={isSaving || !isEditorValid}
         >
-          {isSaving ? t('Saving...') : t('Save model prices')}
+          {isSaving
+            ? t('channels.tips.saving')
+            : t('systemSettings.actions.saveModelPrices')}
         </Button>
       </SettingsPageActionsPortal>
       <SettingsForm onSubmit={form.handleSubmit(onSave)}>
@@ -105,6 +117,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           contextPricing={values.ContextPricing}
           onChange={handleFieldChange}
           onValidityChange={handleValidityChange}
+          isSaving={isSaving}
         />
       </SettingsForm>
     </Form>

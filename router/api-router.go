@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/zhongruan0522/new-api/controller"
-	"github.com/zhongruan0522/new-api/middleware"
+	"github.com/NookMux/NookMux/controller"
+	"github.com/NookMux/NookMux/middleware"
 
 	// Import oauth package to register providers via init()
-	_ "github.com/zhongruan0522/new-api/oauth"
+	_ "github.com/NookMux/NookMux/oauth"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -135,6 +135,7 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/rest_model_ratio", controller.ResetModelRatio)
+			optionRoute.POST("/reset_tool_billing_rules", controller.ResetToolBillingRules)
 			optionRoute.POST("/migrate_console_setting", controller.MigrateConsoleSetting) // 用于迁移检测的旧键，下个版本会删除
 		}
 
@@ -189,6 +190,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/tag/models", controller.GetTagModels)
 			channelRoute.POST("/copy/:id", controller.CopyChannel)
 			channelRoute.POST("/multi_key/manage", controller.ManageMultiKeys)
+			channelRoute.POST("/test_proxy", controller.TestProxy)
 			channelRoute.GET("/plan/quota/:id", controller.QueryPlanQuota)
 			channelRoute.GET("/plan/glm/usage/:id", controller.QueryGlmUsage)
 			channelRoute.GET("/plan/glm/risk/:id", controller.QueryRiskStatus)
@@ -247,9 +249,7 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/stat", middleware.AdminAuth(), controller.GetLogsStat)
 		logRoute.GET("/self/stat", middleware.UserAuth(), controller.GetLogsSelfStat)
 		logRoute.GET("/channel_affinity_usage_cache", middleware.AdminAuth(), controller.GetChannelAffinityUsageCacheStats)
-		logRoute.GET("/search", middleware.AdminAuth(), controller.SearchAllLogs)
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
-		logRoute.GET("/self/search", middleware.UserAuth(), middleware.SearchRateLimit(), controller.SearchUserLogs)
 
 		dataRoute := apiRouter.Group("/data")
 		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllQuotaDates)
@@ -270,6 +270,7 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{
 			logRoute.GET("/token", middleware.TokenAuthReadOnly(), controller.GetLogByKey)
+			logRoute.GET("/token/usage_log_fields", middleware.TokenAuthReadOnly(), controller.GetUsageLogFieldsVisible)
 		}
 
 		auditRoute := apiRouter.Group("/audit")
@@ -344,7 +345,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			customVoiceRoute.GET("/tags", controller.CustomVoiceTagsHandler)
 			customVoiceRoute.POST("/preview", controller.CustomVoicePreviewHandler)
-			customVoiceRoute.GET("/preview/:record_id/audio", controller.CustomVoicePreviewAudioHandler)
+			customVoiceRoute.POST("/confirm_quote", controller.CustomVoiceConfirmQuoteHandler)
 			customVoiceRoute.POST("/confirm", controller.CustomVoiceConfirmHandler)
 		}
 

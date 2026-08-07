@@ -88,7 +88,7 @@ export function useDrawingLogsColumns(
     {
       accessorKey: 'submit_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Submit Time')} />
+        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitTime')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -108,20 +108,20 @@ export function useDrawingLogsColumns(
           </div>
         )
       },
-      meta: { label: t('Submit Time') },
+      meta: { label: t('usageLogs.actions.submitTime') },
     },
   ]
 
   if (isAdmin) {
     columns.push(
-      createChannelColumn<MidjourneyLog>({ headerLabel: t('Channel') })
+      createChannelColumn<MidjourneyLog>({ headerLabel: t('channels.fields.channel') })
     )
   }
 
   columns.push({
     accessorKey: 'action',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('Type')} />
+      <DataTableColumnHeader column={column} title={t('channels.fields.type')} />
     ),
     cell: ({ row }) => {
       const action = row.getValue('action') as string
@@ -135,13 +135,13 @@ export function useDrawingLogsColumns(
         />
       )
     },
-    meta: { label: t('Type') },
+    meta: { label: t('channels.fields.type') },
   })
 
   columns.push({
     accessorKey: 'mj_id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('Task ID')} />
+      <DataTableColumnHeader column={column} title={t('systemSettings.fields.taskId')} />
     ),
     cell: ({ row }) => {
       const mjId = row.getValue('mj_id') as string
@@ -161,14 +161,14 @@ export function useDrawingLogsColumns(
         </div>
       )
     },
-    meta: { label: t('Task ID'), mobileTitle: true },
+    meta: { label: t('systemSettings.fields.taskId'), mobileTitle: true },
   })
 
   columns.push(
     createDurationColumn<MidjourneyLog>({
       submitTimeKey: 'submit_time',
       finishTimeKey: 'finish_time',
-      headerLabel: t('Duration'),
+      headerLabel: t('keyQuery.fields.duration'),
     })
   )
 
@@ -176,7 +176,7 @@ export function useDrawingLogsColumns(
     columns.push({
       accessorKey: 'code',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Submit Result')} />
+        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitResult')} />
       ),
       cell: ({ row }) => {
         const code = row.getValue('code') as number
@@ -190,16 +190,16 @@ export function useDrawingLogsColumns(
           />
         )
       },
-      meta: { label: t('Submit Result') },
+      meta: { label: t('usageLogs.actions.submitResult') },
     })
   }
 
   columns.push(
-    createProgressColumn<MidjourneyLog>({ headerLabel: t('Progress') }),
+    createProgressColumn<MidjourneyLog>({ headerLabel: t('systemSettings.fields.progress') }),
     {
       accessorKey: 'image_url',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Image')} />
+        <DataTableColumnHeader column={column} title={t('models.fields.image')} />
       ),
       cell: function ImageCell({ row }) {
         const log = row.original
@@ -216,10 +216,10 @@ export function useDrawingLogsColumns(
               type='button'
               className='group text-left text-xs'
               onClick={() => setDialogOpen(true)}
-              title={t('Click to view image')}
+              title={t('usageLogs.fields.clickToViewImage')}
             >
               <span className='text-foreground truncate leading-snug group-hover:underline'>
-                {t('View')}
+                {t('common.actions.view')}
               </span>
             </button>
             <ImageDialog
@@ -231,12 +231,12 @@ export function useDrawingLogsColumns(
           </>
         )
       },
-      meta: { label: t('Image'), mobileHidden: true },
+      meta: { label: t('models.fields.image'), mobileHidden: true },
     },
     {
       accessorKey: 'prompt',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Prompt')} />
+        <DataTableColumnHeader column={column} title={t('keyQuery.fields.prompt')} />
       ),
       cell: function PromptCell({ row }) {
         const log = row.original
@@ -253,7 +253,7 @@ export function useDrawingLogsColumns(
               type='button'
               className='group flex max-w-[220px] items-center text-left text-xs'
               onClick={() => setDialogOpen(true)}
-              title={t('Click to view full prompt')}
+              title={t('usageLogs.fields.clickToViewFullPrompt')}
             >
               <span className='text-muted-foreground truncate leading-snug group-hover:underline'>
                 {prompt}
@@ -268,13 +268,13 @@ export function useDrawingLogsColumns(
           </>
         )
       },
-      meta: { label: t('Prompt'), mobileHidden: true },
+      meta: { label: t('keyQuery.fields.prompt'), mobileHidden: true },
       size: 200,
       maxSize: 220,
     },
     createFailReasonColumn<MidjourneyLog>({
-      headerLabel: t('Fail Reason'),
-      cellTitle: t('Click to view full error message'),
+      headerLabel: t('usageLogs.fields.failReason'),
+      cellTitle: t('usageLogs.tips.clickToViewFullErrorMessage'),
     })
   )
 

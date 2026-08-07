@@ -18,12 +18,19 @@ Here you can manage NewAPI's upstream channels
 
 If using a Coding Plan package, the `API Address` field should not be filled with an actual URL, but with the corresponding special identifier:
 
-| Package Name | Channel Type Selection | API Address (Enter Identifier) |
+| Package Name | Channel Type | API Address (Enter Identifier) |
 | --- | --- | --- |
-| GLM Coding Plan | Zhipu GLM 4V | `glm-coding-plan` |
-| GLM Coding Plan (International Version) | Zhipu GLM 4V | `glm-coding-plan-international` |
-| Kimi Coding Plan | Moonshot | `kimi-coding-plan` |
-| Doubao Coding Plan | ByteDance Volcano Engine, Doubao General | Select `doubao-coding-plan` from dropdown |
+| Zhipu GLM Official Plan | Zhipu GLM 4V | `glm-coding-plan` |
+| Zhipu GLM International Plan | Zhipu GLM 4V | `glm-coding-plan-international` |
+| Kimi Official Plan | Moonshot | `kimi-coding-plan` |
+| MiniMax Official Plan | MiniMax | `minimax-coding-plan` |
+| MiniMax International Plan | MiniMax | `minimax-coding-plan-international` |
+| Ollama Official Plan | Ollama | `ollama-coding-plan` |
+| Xiaomi CN Plan | Xiaomi | `xiaomi-coding-plan` |
+| Xiaomi SGP Plan | Xiaomi | `xiaomi-coding-plan-sgp` |
+| Xiaomi AMS Plan | Xiaomi | `xiaomi-coding-plan-ams` |
+
+The actual upstream addresses corresponding to each plan identifier are defined in `ChannelSpecialBases` in `constant/channel.go`. After creating a plan channel, you can query plan quota usage from the channel list (currently supported for GLM, Kimi, and MiniMax).
 
 # Parameter Override Settings Documentation
 

@@ -113,14 +113,14 @@ export function DashboardRecalculateDialog(
     const start = timeRange.start_timestamp
     const end = timeRange.end_timestamp
     if (!start || !end) {
-      toast.error(t('Please select a valid time range first'))
+      toast.error(t('dashboard.errors.pleaseSelectAValidTimeRangeFirst'))
       return
     }
 
     const startTs = Math.floor(new Date(start).getTime() / 1000)
     const endTs = Math.floor(new Date(end).getTime() / 1000)
     if (endTs <= startTs) {
-      toast.error(t('Please select a valid time range first'))
+      toast.error(t('dashboard.errors.pleaseSelectAValidTimeRangeFirst'))
       return
     }
 
@@ -131,7 +131,7 @@ export function DashboardRecalculateDialog(
         end_timestamp: endTs,
       })
       if (!success) {
-        toast.error(message || t('Recalculation failed'))
+        toast.error(message || t('dashboard.status.recalculationFailed'))
         return
       }
 
@@ -147,10 +147,10 @@ export function DashboardRecalculateDialog(
         }),
       ])
 
-      toast.success(t('Recalculation completed'))
+      toast.success(t('dashboard.fields.recalculationCompleted'))
       setOpen(false)
     } catch {
-      toast.error(t('Recalculation failed'))
+      toast.error(t('dashboard.status.recalculationFailed'))
     } finally {
       setRecalculating(false)
     }
@@ -164,14 +164,14 @@ export function DashboardRecalculateDialog(
         }
       >
         <RefreshCw className='mr-2 h-4 w-4' />
-        {t('Recalculate Dashboard')}
+        {t('dashboard.titles.recalculateDashboard')}
       </DialogTrigger>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Recalculate Dashboard')}</DialogTitle>
+          <DialogTitle>{t('dashboard.titles.recalculateDashboard')}</DialogTitle>
           <DialogDescription>
             {t(
-              'Re-aggregate dashboard data from logs for the selected time range. Existing data will be overwritten.'
+              'dashboard.tips.reAggregateDashboardDataFromLogsForTheSelected'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -180,7 +180,7 @@ export function DashboardRecalculateDialog(
           <div className='grid gap-2'>
             <Label className='flex items-center gap-2'>
               <Calendar className='h-4 w-4' />
-              {t('Quick Range')}
+              {t('dashboard.fields.quickRange')}
             </Label>
             <div className='grid grid-cols-2 gap-2 sm:flex'>
               {TIME_RANGE_PRESETS.map((range) => (
@@ -203,7 +203,7 @@ export function DashboardRecalculateDialog(
           </div>
 
           <div className='grid gap-2'>
-            <Label>{t('Start Time')}</Label>
+            <Label>{t('dashboard.actions.startTime')}</Label>
             <DateTimePicker
               value={timeRange.start_timestamp}
               onChange={(date) => {
@@ -213,12 +213,12 @@ export function DashboardRecalculateDialog(
                 }))
                 setSelectedRange(null)
               }}
-              placeholder={t('Select start time')}
+              placeholder={t('dashboard.placeholders.selectStartTime')}
             />
           </div>
 
           <div className='grid gap-2'>
-            <Label>{t('End Time')}</Label>
+            <Label>{t('dashboard.fields.endTime')}</Label>
             <DateTimePicker
               value={timeRange.end_timestamp}
               onChange={(date) => {
@@ -228,7 +228,7 @@ export function DashboardRecalculateDialog(
                 }))
                 setSelectedRange(null)
               }}
-              placeholder={t('Select end time')}
+              placeholder={t('dashboard.placeholders.selectEndTime')}
             />
           </div>
         </div>
@@ -241,13 +241,13 @@ export function DashboardRecalculateDialog(
               resetTimeRange()
             }}
           >
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
           <Button type='button' onClick={handleRecalculate} disabled={recalculating}>
             <RefreshCw
               className={cn('mr-2 h-4 w-4', recalculating && 'animate-spin')}
             />
-            {recalculating ? t('Recalculating...') : t('Recalculate Dashboard')}
+            {recalculating ? t('dashboard.tips.recalculating') : t('dashboard.titles.recalculateDashboard')}
           </Button>
         </DialogFooter>
       </DialogContent>

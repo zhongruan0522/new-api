@@ -9,12 +9,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/shopspring/decimal"
 
@@ -40,24 +41,10 @@ type OpenAIUsageDailyCost struct {
 	}
 }
 
-type OpenAICreditGrants struct {
-	Object         string  `json:"object"`
-	TotalGranted   float64 `json:"total_granted"`
-	TotalUsed      float64 `json:"total_used"`
-	TotalAvailable float64 `json:"total_available"`
-}
-
 type OpenAIUsageResponse struct {
 	Object string `json:"object"`
 	//DailyCosts []OpenAIUsageDailyCost `json:"daily_costs"`
 	TotalUsage float64 `json:"total_usage"` // unit: 0.01 dollar
-}
-
-type OpenAISBUsageResponse struct {
-	Msg  string `json:"msg"`
-	Data *struct {
-		Credit string `json:"credit"`
-	} `json:"data"`
 }
 
 type SiliconFlowUsageResponse struct {
@@ -140,44 +127,6 @@ func GetResponseBody(method, url string, channel *model.Channel, headers http.He
 		return nil, err
 	}
 	return body, nil
-}
-
-func updateChannelCloseAIBalance(channel *model.Channel) (float64, error) {
-	url := fmt.Sprintf("%s/dashboard/billing/credit_grants", channel.GetBaseURL())
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-
-	if err != nil {
-		return 0, err
-	}
-	response := OpenAICreditGrants{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(response.TotalAvailable)
-	return response.TotalAvailable, nil
-}
-
-func updateChannelOpenAISBBalance(channel *model.Channel) (float64, error) {
-	url := fmt.Sprintf("https://api.openai-sb.com/sb-api/user/status?api_key=%s", channel.Key)
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-	if err != nil {
-		return 0, err
-	}
-	response := OpenAISBUsageResponse{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	if response.Data == nil {
-		return 0, errors.New(response.Msg)
-	}
-	balance, err := strconv.ParseFloat(response.Data.Credit, 64)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(balance)
-	return balance, nil
 }
 
 func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {
@@ -281,7 +230,7 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 	return availableBalanceUsd, nil
 }
 
-func updateChannelBalance(channel *model.Channel) (float64, error) {
+func updateChannelBalance(c *gin.Context, channel *model.Channel) (float64, error) {
 	baseURL := constant.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
 		channel.BaseURL = &baseURL
@@ -292,7 +241,7 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 			baseURL = channel.GetBaseURL()
 		}
 	case constant.ChannelTypeAzure:
-		return 0, errors.New("尚未实现")
+		return 0, errors.New(i18n.T(c, i18n.MsgChannelBalanceNotImplemented))
 	case constant.ChannelTypeCustom:
 		baseURL = channel.GetBaseURL()
 	case constant.ChannelTypeSiliconFlow:
@@ -304,7 +253,7 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 	case constant.ChannelTypeMoonshot:
 		return updateChannelMoonshotBalance(channel)
 	default:
-		return 0, errors.New("尚未实现")
+		return 0, errors.New(i18n.T(c, i18n.MsgChannelBalanceNotImplemented))
 	}
 	url := fmt.Sprintf("%s/v1/dashboard/billing/subscription", baseURL)
 
@@ -341,24 +290,23 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 func UpdateChannelBalance(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := model.CacheGetChannel(id)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to cache get channel: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if channel.ChannelInfo.IsMultiKey {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "多密钥渠道不支持余额查询",
-		})
+		common.ApiErrorI18n(c, i18n.MsgChannelMultiKeyBalanceUnsupported)
 		return
 	}
-	balance, err := updateChannelBalance(channel)
+	balance, err := updateChannelBalance(c, channel)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update channel balance: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -384,7 +332,7 @@ func updateAllChannelsBalance() error {
 		//if channel.Type != common.ChannelTypeOpenAI && channel.Type != common.ChannelTypeCustom {
 		//	continue
 		//}
-		balance, err := updateChannelBalance(channel)
+		balance, err := updateChannelBalance(nil, channel)
 		if err != nil {
 			continue
 		} else {
@@ -402,14 +350,14 @@ func UpdateAllChannelsBalance(c *gin.Context) {
 	// TODO: make it async
 	err := updateAllChannelsBalance()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to update all channels balance: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func AutomaticallyUpdateChannels(frequency int) {

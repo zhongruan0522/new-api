@@ -54,7 +54,7 @@ export function DateTimePicker({
   className,
 }: DateTimePickerProps) {
   const { t, i18n } = useTranslation()
-  const placeholderText = placeholder ?? t('Select Date')
+  const placeholderText = placeholder ?? t('common.placeholders.selectDate')
   const calendarLocale =
     calendarLocales[i18n.language as keyof typeof calendarLocales] ?? enUS
   const [open, setOpen] = React.useState(false)
@@ -151,7 +151,7 @@ export function DateTimePicker({
           size='icon'
           onClick={handleClear}
           className='shrink-0'
-          aria-label={t('Clear')}
+          aria-label={t('common.actions.clear')}
         >
           <span aria-hidden='true'>✕</span>
         </Button>

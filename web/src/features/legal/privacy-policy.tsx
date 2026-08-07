@@ -24,11 +24,11 @@ export function PrivacyPolicy() {
   const { t } = useTranslation()
   return (
     <LegalDocument
-      title={t('Privacy Policy')}
+      title={t('layout.fields.privacyPolicy')}
       queryKey='privacy-policy'
       fetchDocument={getPrivacyPolicy}
       emptyMessage={t(
-        'The administrator has not configured a privacy policy yet.'
+        'common.tips.administratorHasNotConfiguredAPrivacyPolicyYet'
       )}
     />
   )

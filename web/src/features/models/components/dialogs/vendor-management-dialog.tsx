@@ -98,16 +98,16 @@ export function VendorManagementDialog({
           <DialogHeader className='border-b px-6 py-4'>
             <div className='flex items-start justify-between gap-4'>
               <div>
-                <DialogTitle>{t('Manage Vendors')}</DialogTitle>
+                <DialogTitle>{t('models.fields.manageVendors')}</DialogTitle>
                 <DialogDescription>
                   {t(
-                    'Configure model vendors, icons, descriptions, and data privacy metadata.'
+                    'models.actions.configureModelVendorsIconsDescriptionsAndDataPrivacyMetadata'
                   )}
                 </DialogDescription>
               </div>
               <Button size='sm' onClick={openCreate}>
                 <Plus className='h-4 w-4' />
-                {t('Add Vendor')}
+                {t('models.actions.addVendor')}
               </Button>
             </div>
           </DialogHeader>
@@ -120,23 +120,23 @@ export function VendorManagementDialog({
             ) : vendors.length === 0 ? (
               <div className='border-border/70 bg-muted/20 flex h-40 flex-col items-center justify-center gap-3 rounded-md border'>
                 <p className='text-muted-foreground text-sm'>
-                  {t('No vendors configured yet.')}
+                  {t('models.errors.noVendorsConfiguredYet')}
                 </p>
                 <Button size='sm' onClick={openCreate}>
                   <Plus className='h-4 w-4' />
-                  {t('Add Vendor')}
+                  {t('models.actions.addVendor')}
                 </Button>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('Vendor')}</TableHead>
-                    <TableHead>{t('Description')}</TableHead>
-                    <TableHead>{t('Data retention')}</TableHead>
-                    <TableHead>{t('Training opt-out')}</TableHead>
+                    <TableHead>{t('models.fields.vendor')}</TableHead>
+                    <TableHead>{t('auditLogs.tips.description')}</TableHead>
+                    <TableHead>{t('models.fields.dataRetention')}</TableHead>
+                    <TableHead>{t('models.fields.trainingOptOut')}</TableHead>
                     <TableHead className='w-[120px] text-right'>
-                      {t('Actions')}
+                      {t('channels.fields.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -160,7 +160,7 @@ export function VendorManagementDialog({
                       </TableCell>
                       <TableCell className='max-w-[280px]'>
                         <span className='text-muted-foreground line-clamp-2 whitespace-normal'>
-                          {vendor.description || t('No description provided')}
+                          {vendor.description || t('models.tips.noDescriptionProvided')}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -168,8 +168,8 @@ export function VendorManagementDialog({
                           <StatusBadge
                             label={
                               vendor.data_retention_days === 0
-                                ? t('Zero retention')
-                                : `${vendor.data_retention_days} ${t('days')}`
+                                ? t('models.fields.zeroRetention')
+                                : `${vendor.data_retention_days} ${t('dashboard.fields.days')}`
                             }
                             variant={
                               vendor.data_retention_days === 0
@@ -180,7 +180,7 @@ export function VendorManagementDialog({
                           />
                         ) : (
                           <span className='text-muted-foreground text-sm'>
-                            {t('Provider-specific')}
+                            {t('models.fields.providerSpecific')}
                           </span>
                         )}
                       </TableCell>
@@ -188,8 +188,8 @@ export function VendorManagementDialog({
                         <StatusBadge
                           label={
                             vendor.training_opt_out === true
-                              ? t('Enabled')
-                              : t('Unknown')
+                              ? t('channels.status.enabled')
+                              : t('channels.fields.unknown')
                           }
                           variant={
                             vendor.training_opt_out === true
@@ -206,7 +206,7 @@ export function VendorManagementDialog({
                             variant='ghost'
                             size='icon'
                             onClick={() => openEdit(vendor)}
-                            aria-label={t('Edit')}
+                            aria-label={t('channels.actions.edit')}
                           >
                             <Edit className='h-4 w-4' />
                           </Button>
@@ -216,7 +216,7 @@ export function VendorManagementDialog({
                             size='icon'
                             className='text-destructive hover:text-destructive'
                             onClick={() => setDeleteTarget(vendor)}
-                            aria-label={t('Delete')}
+                            aria-label={t('common.actions.delete')}
                           >
                             <Trash2 className='h-4 w-4' />
                           </Button>
@@ -240,11 +240,11 @@ export function VendorManagementDialog({
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(next) => !next && setDeleteTarget(null)}
-        title={t('Delete vendor')}
-        desc={t('This vendor will be removed from the list.')}
+        title={t('models.actions.deleteVendor')}
+        desc={t('models.tips.thisVendorWillBeRemovedFromTheList')}
         destructive
         isLoading={deleting}
-        confirmText={t('Delete')}
+        confirmText={t('common.actions.delete')}
         handleConfirm={confirmDelete}
       />
     </>

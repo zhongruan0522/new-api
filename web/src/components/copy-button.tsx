@@ -54,10 +54,10 @@ export function CopyButton({
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
   const isCopied = copiedText === value
-  const resolvedTooltip = tooltip ?? t('Copy to clipboard')
-  const resolvedSuccessTooltip = successTooltip ?? t('Copied!')
+  const resolvedTooltip = tooltip ?? t('common.actions.copyToClipboard')
+  const resolvedSuccessTooltip = successTooltip ?? t('common.status.copiedb7c3ca')
   const resolvedAriaLabel = ariaLabel ?? resolvedTooltip
-  const copiedAriaLabel = t('Copied')
+  const copiedAriaLabel = t('common.status.copied')
 
   const button = (
     <Button

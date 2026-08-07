@@ -45,12 +45,12 @@ export function DescriptionDialog({
       <DialogContent className='max-w-2xl'>
         <DialogHeader>
           <DialogTitle>{modelName}</DialogTitle>
-          <DialogDescription>{t('Model Description')}</DialogDescription>
+          <DialogDescription>{t('models.tips.modelDescription')}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className='max-h-96'>
           <div className='space-y-2 pr-4'>
-            <p className='text-foreground text-sm leading-relaxed break-words whitespace-pre-wrap'>
+            <p className='text-foreground text-sm leading-relaxed wrap-break-word whitespace-pre-wrap'>
               {description}
             </p>
           </div>

@@ -3,7 +3,7 @@ package types
 import (
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 type RWMap[K comparable, V any] struct {

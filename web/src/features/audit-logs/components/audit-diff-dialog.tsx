@@ -58,7 +58,7 @@ function DiffPanel({ title, raw }: { title: string; raw: string | undefined }) {
           </pre>
         ) : (
           <div className='text-muted-foreground text-xs italic'>
-            {t('No Data')}
+            {t('common.fields.noData')}
           </div>
         )}
       </div>
@@ -86,15 +86,15 @@ export function AuditDiffDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>{t('Audit Log Details')}</DialogTitle>
+          <DialogTitle>{t('auditLogs.titles.logDetails')}</DialogTitle>
           {visibleLog && (
             <DialogDescription>{visibleLog.description}</DialogDescription>
           )}
         </DialogHeader>
 
         <div className='grid gap-3 sm:grid-cols-2'>
-          <DiffPanel title={t('Before')} raw={visibleLog?.before_data} />
-          <DiffPanel title={t('After')} raw={visibleLog?.after_data} />
+          <DiffPanel title={t('auditLogs.fields.value74f396')} raw={visibleLog?.before_data} />
+          <DiffPanel title={t('auditLogs.fields.value')} raw={visibleLog?.after_data} />
         </div>
       </DialogContent>
     </Dialog>

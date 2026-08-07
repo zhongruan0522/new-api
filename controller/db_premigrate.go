@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +22,8 @@ type dbPreMigrateStartRequest struct {
 func GetDBPreMigrateInfo(c *gin.Context) {
 	info, err := service.GetDBPreMigrateInfo()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get db pre migrate info: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.ApiSuccess(c, info)
@@ -32,7 +34,7 @@ func StartDBPreMigrate(c *gin.Context) {
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "无效的参数",
+			"message": i18n.T(c, i18n.MsgInvalidParams),
 		})
 		return
 	}
@@ -44,7 +46,8 @@ func StartDBPreMigrate(c *gin.Context) {
 		Force:        req.Force,
 	})
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to start db pre migrate: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleDB, model.AuditActionUpdate, "启动数据库预迁移", nil, req)
@@ -56,7 +59,7 @@ func GetDBPreMigrateJob(c *gin.Context) {
 	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "job_id 不能为空",
+			"message": i18n.T(c, i18n.MsgJobIDRequired),
 		})
 		return
 	}
@@ -65,7 +68,7 @@ func GetDBPreMigrateJob(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"message": "任务不存在",
+			"message": i18n.T(c, i18n.MsgTaskNotFound),
 		})
 		return
 	}

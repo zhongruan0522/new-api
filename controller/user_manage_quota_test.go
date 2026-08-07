@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 )
 
 func createManageQuotaTestUser(t *testing.T, id int, quota int) {

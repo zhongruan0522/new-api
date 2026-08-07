@@ -30,11 +30,13 @@ import { createSectionRegistry } from '../utils/section-registry'
 const OPERATIONS_SECTIONS = [
   {
     id: 'behavior',
-    titleKey: 'System Behavior',
+    titleKey: 'systemSettings.titles.behavior',
     build: (settings: OperationsSettings) => (
       <SystemBehaviorSection
         defaultValues={{
           RetryTimes: settings.RetryTimes,
+          AutomaticRetryEnabled: settings.AutomaticRetryEnabled,
+          AutomaticRetryStatusCodes: settings.AutomaticRetryStatusCodes,
           DefaultCollapseSidebar: settings.DefaultCollapseSidebar,
         }}
       />
@@ -42,7 +44,7 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'monitoring',
-    titleKey: 'Monitoring & Alerts',
+    titleKey: 'systemSettings.fields.monitoringAlerts',
     build: (settings: OperationsSettings) => (
       <MonitoringSettingsSection
         defaultValues={{
@@ -53,7 +55,6 @@ const OPERATIONS_SECTIONS = [
           AutomaticEnableChannelEnabled: settings.AutomaticEnableChannelEnabled,
           AutomaticDisableKeywords: settings.AutomaticDisableKeywords,
           AutomaticDisableStatusCodes: settings.AutomaticDisableStatusCodes,
-          AutomaticRetryStatusCodes: settings.AutomaticRetryStatusCodes,
           'monitor_setting.auto_test_channel_enabled':
             settings['monitor_setting.auto_test_channel_enabled'],
           'monitor_setting.auto_test_channel_minutes':
@@ -64,7 +65,7 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'email',
-    titleKey: 'SMTP Email',
+    titleKey: 'systemSettings.fields.smtpEmail',
     build: (settings: OperationsSettings) => (
       <EmailSettingsSection
         defaultValues={{
@@ -81,7 +82,7 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'worker',
-    titleKey: 'Worker Proxy',
+    titleKey: 'systemSettings.fields.workerProxy',
     build: (settings: OperationsSettings) => (
       <WorkerSettingsSection
         defaultValues={{
@@ -95,7 +96,7 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'logs',
-    titleKey: 'Log Maintenance',
+    titleKey: 'systemSettings.fields.logMaintenance',
     build: (settings: OperationsSettings) => (
       <LogSettingsSection
         defaultEnabled={Boolean(settings.LogConsumeEnabled)}
@@ -104,12 +105,12 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'database',
-    titleKey: 'Database Maintenance',
+    titleKey: 'systemSettings.fields.databaseMaintenance',
     build: () => <DatabaseMaintenanceSection />,
   },
   {
     id: 'performance',
-    titleKey: 'Performance',
+    titleKey: 'common.fields.performance',
     build: (settings: OperationsSettings) => (
       <PerformanceSection
         defaultValues={{
@@ -135,7 +136,7 @@ const OPERATIONS_SECTIONS = [
   },
   {
     id: 'update-checker',
-    titleKey: 'System maintenance',
+    titleKey: 'systemSettings.titles.maintenance',
     build: () => <SystemMaintenanceSection />,
   },
 ] as const

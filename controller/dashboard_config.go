@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/config"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/config"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,7 @@ func GetDashboardConfig(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "获取配置失败: " + err.Error(),
+			"message": i18n.T(c, i18n.MsgDashboardConfigGetFailed) + ": " + err.Error(),
 		})
 		return
 	}
@@ -38,16 +39,13 @@ func UpdateDashboardConfig(c *gin.Context) {
 	if err := c.ShouldBindJSON(&updates); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "请求参数格式错误: " + err.Error(),
+			"message": i18n.T(c, i18n.MsgDashboardConfigRequestInvalid) + ": " + err.Error(),
 		})
 		return
 	}
 
 	if len(updates) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "没有需要更新的配置项",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardConfigNoUpdates)
 		return
 	}
 
@@ -100,7 +98,7 @@ func UpdateDashboardConfig(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "更新配置失败: " + err.Error(),
+				"message": i18n.T(c, i18n.MsgDashboardConfigUpdateFailed) + ": " + err.Error(),
 			})
 			return
 		}
@@ -124,7 +122,7 @@ func UpdateDashboardConfig(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "配置已更新",
+		"message": i18n.T(c, i18n.MsgDashboardConfigUpdated),
 		"data":    updatedFields,
 	})
 }
@@ -164,7 +162,7 @@ func ResetDashboardConfig(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "配置序列化失败: " + err.Error(),
+			"message": i18n.T(c, i18n.MsgDashboardConfigSerializeFailed) + ": " + err.Error(),
 		})
 		return
 	}
@@ -175,7 +173,7 @@ func ResetDashboardConfig(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "重置配置失败: " + err.Error(),
+				"message": i18n.T(c, i18n.MsgDashboardConfigResetFailed) + ": " + err.Error(),
 			})
 			return
 		}
@@ -197,7 +195,7 @@ func ResetDashboardConfig(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "配置已重置为默认值",
+		"message": i18n.T(c, i18n.MsgDashboardConfigReset),
 		"data":    configMap,
 	})
 }

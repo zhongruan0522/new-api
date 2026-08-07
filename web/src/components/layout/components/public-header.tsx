@@ -295,7 +295,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                       className='h-8 rounded-lg px-3.5 text-xs font-medium'
                       render={<Link to='/sign-in' />}
                     >
-                      {t('Sign In')}
+                      {t('layout.actions.signIn')}
                     </Button>
                   )}
                 </>
@@ -314,7 +314,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                 size='icon'
                 className='size-9'
                 onClick={() => setMobileOpen((v) => !v)}
-                aria-label={t('Toggle navigation menu')}
+                aria-label={t('layout.fields.toggleNavigationMenu')}
               >
                 <div className='relative size-4'>
                   <span
@@ -413,7 +413,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                 onClick={() => setMobileOpen(false)}
                 className='bg-foreground text-background inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80'
               >
-                {isAuthenticated ? t('Go to Dashboard') : t('Sign In')}
+                {isAuthenticated ? t('layout.titles.goToDashboard') : t('layout.actions.signIn')}
               </Link>
             )}
           </div>
@@ -430,23 +430,23 @@ export function PublicHeader(props: PublicHeaderProps) {
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('Sign In Required')}</DialogTitle>
+            <DialogTitle>{t('layout.actions.signInRequired')}</DialogTitle>
             <DialogDescription>
-              {t('Please sign in to view {{module}}.', {
+              {t('layout.tips.pleaseSignInToViewModule', {
                 module: authPromptTarget?.title || '',
               })}
             </DialogDescription>
           </DialogHeader>
           <div className='bg-muted/40 text-muted-foreground rounded-lg px-3 py-2 text-sm'>
-            {t('Redirecting to sign in in {{seconds}} seconds.', {
+            {t('layout.status.redirectingToSignInInSecondsSeconds', {
               seconds: authPromptSecondsLeft,
             })}
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={closeAuthPrompt}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
-            <Button onClick={navigateToSignIn}>{t('Sign In Now')}</Button>
+            <Button onClick={navigateToSignIn}>{t('layout.actions.signInNow')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

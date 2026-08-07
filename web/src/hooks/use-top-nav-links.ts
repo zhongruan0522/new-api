@@ -62,41 +62,41 @@ export function useTopNavLinks(): TopNavLink[] {
 
   // Home
   if (modules?.home !== false) {
-    links.push({ title: t('Home'), href: '/' })
+    links.push({ title: t('systemSettings.fields.home'), href: '/' })
   }
 
   // Console -> /dashboard (new console path)
   if (modules?.console !== false) {
-    links.push({ title: t('Console'), href: '/dashboard' })
+    links.push({ title: t('common.titles.console'), href: '/dashboard' })
   }
 
   // Pricing
   const pricing = modules?.pricing
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed
-    links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
+    links.push({ title: t('pricing.fields.modelSquare'), href: '/pricing', requiresAuth })
   }
 
   // Rankings
   const rankings = modules?.rankings
   if (rankings && typeof rankings === 'object' && rankings.enabled) {
     const requiresAuth = rankings.requireAuth && !isAuthed
-    links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
+    links.push({ title: t('rankings.titles.value'), href: '/rankings', requiresAuth })
   }
 
   // Key usage query
   if (modules?.key_query !== false) {
-    links.push({ title: t('Key Usage Query'), href: '/key-query' })
+    links.push({ title: t('keyQuery.titles.usageQuery'), href: '/key-query' })
   }
 
   // Docs is only exposed when the backend provides an external docs link.
   if (modules?.docs !== false && docsLink) {
-    links.push({ title: t('Docs'), href: docsLink, external: true })
+    links.push({ title: t('pricing.fields.docs'), href: docsLink, external: true })
   }
 
   // About
   if (modules?.about !== false) {
-    links.push({ title: t('About'), href: '/about' })
+    links.push({ title: t('about.titles.value'), href: '/about' })
   }
 
   return links

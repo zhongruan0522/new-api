@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,27 +30,21 @@ func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
 func GetAllQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "配额数据功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	username := c.Query("username")
 	dates, err := model.GetAllQuotaDates(startTimestamp, endTimestamp, username)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all quota dates: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -57,32 +52,25 @@ func GetAllQuotaDates(c *gin.Context) {
 		"message": "",
 		"data":    dates,
 	})
-	return
 }
 
 func GetQuotaDataGroupByUser(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.UserAnalyticsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "用户分析功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardUserAnalyticsDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := model.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get quota data group by user: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -95,11 +83,7 @@ func GetQuotaDataGroupByUser(c *gin.Context) {
 func GetUserQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "配额数据功能已禁用",
-			"data":    []interface{}{},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
@@ -107,15 +91,13 @@ func GetUserQuotaDates(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "时间跨度不能超过 1 个月",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := model.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get quota data by user id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -123,18 +105,13 @@ func GetUserQuotaDates(c *gin.Context) {
 		"message": "",
 		"data":    dates,
 	})
-	return
 }
 
 // GetAllMediaConvertStats 管理员查询所有用户的图片/视频转URL统计
 func GetAllMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "图片/视频转URL统计功能已禁用",
-			"data":    map[string]interface{}{"image_count": 0, "video_count": 0},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 
@@ -143,7 +120,8 @@ func GetAllMediaConvertStats(c *gin.Context) {
 
 	stats, err := model.GetAllMediaConvertStats(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get all media convert stats: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -159,34 +137,25 @@ func RecalculateQuotaData(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
 	if startTimestamp <= 0 || endTimestamp <= 0 || endTimestamp <= startTimestamp {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的时间范围",
-		})
+		common.ApiErrorI18n(c, i18n.MsgDashboardInvalidTimeRange)
 		return
 	}
 
 	err := model.RecalculateQuotaData(startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to recalculate quota data: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.ClearRankingsCache()
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "重新计算完成",
-	})
+	common.ApiSuccessI18n(c, i18n.MsgDashboardRecalculateComplete, nil)
 }
 
 // GetUserMediaConvertStats 普通用户查询自己的图片/视频转URL统计
 func GetUserMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard_setting.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "图片/视频转URL统计功能已禁用",
-			"data":    map[string]interface{}{"image_count": 0, "video_count": 0},
-		})
+		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 
@@ -196,7 +165,8 @@ func GetUserMediaConvertStats(c *gin.Context) {
 
 	stats, err := model.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("failed to get media convert stats by user id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

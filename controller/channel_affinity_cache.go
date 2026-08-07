@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 )
 
 func GetChannelAffinityCacheStats(c *gin.Context) {
@@ -38,12 +39,12 @@ func ClearChannelAffinityCache(c *gin.Context) {
 	if ruleName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "缺少参数：rule_name，或使用 all=true 清空全部",
+			"message": i18n.T(c, i18n.MsgDashboardMissingAffinityClearArgs),
 		})
 		return
 	}
 
-	deleted, err := service.ClearChannelAffinityCacheByRuleName(ruleName)
+	deleted, err := service.ClearChannelAffinityCacheByRuleName(c, ruleName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -71,14 +72,14 @@ func GetChannelAffinityUsageCacheStats(c *gin.Context) {
 	if ruleName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "missing param: rule_name",
+			"message": i18n.T(c, i18n.MsgChannelRuleNameRequired),
 		})
 		return
 	}
 	if keyFp == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "missing param: key_fp",
+			"message": i18n.T(c, i18n.MsgChannelKeyFpRequired),
 		})
 		return
 	}

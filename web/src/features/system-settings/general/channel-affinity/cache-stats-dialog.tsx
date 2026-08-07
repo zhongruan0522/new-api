@@ -68,11 +68,11 @@ export function CacheStatsDialog(props: Props) {
       .then((res) => {
         if (seq !== seqRef.current) return
         if (res.success) setStats((res.data as Record<string, unknown>) || {})
-        else toast.error(res.message || t('Request failed'))
+        else toast.error(res.message || t('subscriptions.status.requestFailed'))
       })
       .catch(() => {
         if (seq !== seqRef.current) return
-        toast.error(t('Request failed'))
+        toast.error(t('subscriptions.status.requestFailed'))
       })
       .finally(() => {
         if (seq !== seqRef.current) return
@@ -89,31 +89,31 @@ export function CacheStatsDialog(props: Props) {
 
     if (s.rule_name || props.target?.rule_name)
       data.push({
-        key: t('Rule'),
+        key: t('systemSettings.fields.rule'),
         value: (s.rule_name || props.target?.rule_name || '') as string,
       })
     if (s.using_group || props.target?.using_group)
       data.push({
-        key: t('Group'),
+        key: t('common.fields.group'),
         value: (s.using_group || props.target?.using_group || '') as string,
       })
     if (props.target?.key_hint)
-      data.push({ key: t('Key Summary'), value: props.target.key_hint })
+      data.push({ key: t('systemSettings.fields.keySummary'), value: props.target.key_hint })
     if (s.key_fp || props.target?.key_fp)
       data.push({
-        key: t('Key Fingerprint'),
+        key: t('systemSettings.fields.keyFingerprint'),
         value: (s.key_fp || props.target?.key_fp || '') as string,
       })
     if (Number(s.window_seconds || 0) > 0)
-      data.push({ key: t('TTL (seconds)'), value: s.window_seconds as number })
+      data.push({ key: t('systemSettings.fields.ttlSeconds'), value: s.window_seconds as number })
     if (total > 0)
       data.push({
-        key: t('Hit Rate'),
+        key: t('systemSettings.fields.hitRate'),
         value: `${hit}/${total} (${formatRate(hit, total)})`,
       })
     if (Number(s.last_seen_at || 0) > 0)
       data.push({
-        key: t('Last Seen'),
+        key: t('systemSettings.fields.lastSeen'),
         value: formatTimestampToDate(s.last_seen_at as number | undefined),
       })
 
@@ -128,7 +128,7 @@ export function CacheStatsDialog(props: Props) {
       data.push({ key: 'Cached tokens', value: cachedTokens })
     if (completionTokens > 0)
       data.push({ key: 'Completion tokens', value: completionTokens })
-    if (totalTokens > 0) data.push({ key: 'Total tokens', value: totalTokens })
+    if (totalTokens > 0) data.push({ key: 'common.fields.totalTokens', value: totalTokens })
 
     return data
   }, [stats, props.target, t])
@@ -137,16 +137,16 @@ export function CacheStatsDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Channel Affinity: Upstream Cache Hit')}</DialogTitle>
+          <DialogTitle>{t('systemSettings.tips.channelAffinityUpstreamCacheHit')}</DialogTitle>
         </DialogHeader>
         <p className='text-muted-foreground text-xs'>
           {t(
-            'Hit criteria: If cached tokens exist in usage, it counts as a hit.'
+            'systemSettings.tips.hitCriteriaIfCachedTokensExistInUsageIt'
           )}
         </p>
         {loading ? (
           <div className='text-muted-foreground py-8 text-center text-sm'>
-            {t('Loading...')}
+            {t('common.tips.loading')}
           </div>
         ) : rows.length > 0 ? (
           <div className='space-y-2'>
@@ -162,7 +162,7 @@ export function CacheStatsDialog(props: Props) {
           </div>
         ) : (
           <div className='text-muted-foreground py-8 text-center text-sm'>
-            {t('No data available')}
+            {t('common.fields.noDataAvailable')}
           </div>
         )}
       </DialogContent>

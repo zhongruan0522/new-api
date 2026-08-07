@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
@@ -405,9 +405,6 @@ func GetChannelById(id int, selectAll bool) (*Channel, error) {
 	}
 	if err != nil {
 		return nil, err
-	}
-	if channel == nil {
-		return nil, errors.New("channel not found")
 	}
 	return channel, nil
 }

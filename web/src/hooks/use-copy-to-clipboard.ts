@@ -56,9 +56,9 @@ export function useCopyToClipboard(options?: UseCopyToClipboardOptions) {
 
   const copyToClipboard = useCallback(
     async (text: string): Promise<boolean> => {
-      const resolvedSuccessMessage = successMessage ?? t('Copied to clipboard')
+      const resolvedSuccessMessage = successMessage ?? t('systemSettings.status.copiedToClipboard')
       const resolvedErrorMessage =
-        errorMessage ?? t('Failed to copy to clipboard')
+        errorMessage ?? t('common.errors.failedToCopyToClipboard')
       const success = await copyToClipboardUtil(text)
 
       if (success) {

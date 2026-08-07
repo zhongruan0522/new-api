@@ -139,7 +139,7 @@ export function MultiKeyManageDialog({
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to load key status')
+        error instanceof Error ? error.message : t('channels.errors.failedToLoadKeyStatus')
       )
     } finally {
       setIsLoading(false)
@@ -182,7 +182,7 @@ export function MultiKeyManageDialog({
       }
 
       if (response?.success) {
-        toast.success(response.message || t('Operation successful'))
+        toast.success(response.message || t('channels.status.operationSuccessful'))
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
 
         // Reload data - reset to page 1 for bulk actions
@@ -194,11 +194,11 @@ export function MultiKeyManageDialog({
           loadKeyStatus(currentPage, pageSize)
         }
       } else {
-        toast.error(response?.message || t('Operation failed'))
+        toast.error(response?.message || t('channels.status.operationFailed'))
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Operation failed')
+        error instanceof Error ? error.message : t('channels.status.operationFailed')
       )
     } finally {
       setIsPerformingAction(false)
@@ -231,7 +231,7 @@ export function MultiKeyManageDialog({
         <DialogContent className='flex max-h-[90vh] max-w-5xl flex-col'>
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2'>
-              {t('Multi-Key Management')}
+              {t('channels.titles.multiKeyManagement')}
               <StatusBadge
                 label={currentRow.name}
                 variant='neutral'
@@ -241,8 +241,8 @@ export function MultiKeyManageDialog({
                 <StatusBadge
                   label={
                     currentRow.channel_info.multi_key_mode === 'random'
-                      ? t('Random')
-                      : t('Polling')
+                      ? t('channels.fields.random')
+                      : t('channels.fields.polling')
                   }
                   variant='neutral'
                   copyable={false}
@@ -250,7 +250,7 @@ export function MultiKeyManageDialog({
               )}
             </DialogTitle>
             <DialogDescription>
-              {t('Manage multi-key status and configuration for this channel')}
+              {t('channels.tips.manageMultiKeyStatusAndConfigurationForThisChannel')}
             </DialogDescription>
           </DialogHeader>
 
@@ -258,17 +258,17 @@ export function MultiKeyManageDialog({
             {/* Statistics */}
             <div className='grid shrink-0 grid-cols-3 gap-3'>
               <StatisticsCard
-                label={t('Enabled')}
+                label={t('channels.status.enabled')}
                 count={enabledCount}
                 total={total}
               />
               <StatisticsCard
-                label={t('Manual Disabled')}
+                label={t('channels.status.manualDisabled')}
                 count={manualDisabledCount}
                 total={total}
               />
               <StatisticsCard
-                label={t('Auto Disabled')}
+                label={t('channels.status.autoDisabled')}
                 count={autoDisabledCount}
                 total={total}
               />
@@ -289,7 +289,7 @@ export function MultiKeyManageDialog({
                 onValueChange={(v) => v !== null && handleStatusFilterChange(v)}
               >
                 <SelectTrigger className='w-40'>
-                  <SelectValue placeholder={t('All Status')} />
+                  <SelectValue placeholder={t('channels.fields.allStatus')} />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
@@ -319,7 +319,7 @@ export function MultiKeyManageDialog({
                     onClick={() => setConfirmAction({ type: 'enable-all' })}
                   >
                     <Power className='mr-2 h-4 w-4' />
-                    {t('Enable All')}
+                    {t('channels.actions.enableAll')}
                   </Button>
                 )}
 
@@ -330,7 +330,7 @@ export function MultiKeyManageDialog({
                     onClick={() => setConfirmAction({ type: 'disable-all' })}
                   >
                     <PowerOff className='mr-2 h-4 w-4' />
-                    {t('Disable All')}
+                    {t('channels.actions.disableAll')}
                   </Button>
                 )}
 
@@ -343,7 +343,7 @@ export function MultiKeyManageDialog({
                     }
                   >
                     <Trash2 className='mr-2 h-4 w-4' />
-                    {t('Delete Auto-Disabled')}
+                    {t('channels.actions.deleteAutoDisabled')}
                   </Button>
                 )}
               </div>
@@ -357,23 +357,23 @@ export function MultiKeyManageDialog({
                 </div>
               ) : keys.length === 0 ? (
                 <div className='text-muted-foreground py-12 text-center'>
-                  {t('No keys found')}
+                  {t('channels.fields.noKeysFound')}
                 </div>
               ) : (
                 <div className='min-w-[800px]'>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className='w-20'>{t('Index')}</TableHead>
-                        <TableHead className='w-32'>{t('Status')}</TableHead>
+                        <TableHead className='w-20'>{t('channels.fields.index')}</TableHead>
+                        <TableHead className='w-32'>{t('channels.fields.status')}</TableHead>
                         <TableHead className='min-w-[200px]'>
-                          {t('Disabled Reason')}
+                          {t('channels.status.disabledReason')}
                         </TableHead>
                         <TableHead className='w-44'>
-                          {t('Disabled Time')}
+                          {t('channels.status.disabledTime')}
                         </TableHead>
                         <TableHead className='w-44 text-right'>
-                          {t('Actions')}
+                          {t('channels.fields.actions')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -409,7 +409,7 @@ export function MultiKeyManageDialog({
             {totalPages > 1 && (
               <div className='flex shrink-0 items-center justify-between'>
                 <div className='text-muted-foreground text-sm'>
-                  {t('Page {{current}} of {{total}}', {
+                  {t('common.fields.pageCurrentOfTotal', {
                     current: currentPage,
                     total: totalPages,
                   })}
@@ -421,7 +421,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || isLoading}
                   >
-                    {t('Previous')}
+                    {t('common.fields.previous')}
                   </Button>
                   <Button
                     variant='outline'
@@ -429,7 +429,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages || isLoading}
                   >
-                    {t('Next')}
+                    {t('common.fields.next')}
                   </Button>
                 </div>
               </div>
@@ -442,7 +442,7 @@ export function MultiKeyManageDialog({
       <ConfirmDialog
         open={confirmAction !== null}
         onOpenChange={(open) => !open && setConfirmAction(null)}
-        title={t('Confirm Action')}
+        title={t('channels.actions.confirmAction')}
         desc={t(getMultiKeyConfirmMessage(confirmAction))}
         destructive={isDestructiveAction(confirmAction)}
         isLoading={isPerformingAction}

@@ -12,22 +12,22 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/relay/channel"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/relay/channel"
 
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/common_handler"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/reasoning"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/common_handler"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/reasoning"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -135,7 +135,8 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		}
 
 		// 特殊处理 responses API
-		if info.RelayMode == relayconstant.RelayModeResponses {
+		if info.RelayMode == relayconstant.RelayModeResponses ||
+			info.RelayMode == relayconstant.RelayModeResponsesCompact {
 			responsesApiVersion := "preview"
 
 			subUrl := "/openai/v1/responses"
@@ -146,6 +147,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 			if info.ChannelOtherSettings.AzureResponsesVersion != "" {
 				responsesApiVersion = info.ChannelOtherSettings.AzureResponsesVersion
+			}
+
+			if info.RelayMode == relayconstant.RelayModeResponsesCompact {
+				subUrl = subUrl + "/compact"
 			}
 
 			requestURL = fmt.Sprintf("%s?api-version=%s", subUrl, responsesApiVersion)
@@ -191,8 +196,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 	// 检查 Header Override 是否已设置 Authorization，如果已设置则跳过默认设置
 	// 这样可以避免在 Header Override 应用时被覆盖（虽然 Header Override 会在之后应用，但这里作为额外保护）
 	hasAuthOverride := false
-	if len(info.HeadersOverride) > 0 {
-		for k := range info.HeadersOverride {
+	effectiveHeaderOverride := relaycommon.GetEffectiveHeaderOverride(info)
+	if len(effectiveHeaderOverride) > 0 {
+		for k := range effectiveHeaderOverride {
 			if strings.EqualFold(k, "Authorization") {
 				hasAuthOverride = true
 				break

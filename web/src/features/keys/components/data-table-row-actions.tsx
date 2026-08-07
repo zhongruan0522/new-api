@@ -105,12 +105,10 @@ export function DataTableRowActions<TData>({
     [apiKey.id, isRealKeyLoading, resolvedRealKey, resolveRealKey]
   )
 
-  const getCachedRealKey = useCallback(() => {
+  const getRealKeyOnDemand = useCallback(async () => {
     if (resolvedRealKey) return resolvedRealKey
-    void resolveRealKey(apiKey.id)
-    toast.info(t('API key is loading, please try again in a moment'))
-    return null
-  }, [apiKey.id, resolvedRealKey, resolveRealKey, t])
+    return resolveRealKey(apiKey.id)
+  }, [apiKey.id, resolvedRealKey, resolveRealKey])
 
   const handleToggleStatus = async (
     e?: React.MouseEvent<HTMLButtonElement>
@@ -149,7 +147,7 @@ export function DataTableRowActions<TData>({
               size='icon-sm'
               onClick={handleToggleStatus}
               disabled={isTogglingStatus}
-              aria-label={isEnabled ? t('Disable') : t('Enable')}
+              aria-label={isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
               className={
                 isEnabled
                   ? 'text-destructive hover:text-destructive'
@@ -167,7 +165,7 @@ export function DataTableRowActions<TData>({
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {isEnabled ? t('Disable') : t('Enable')}
+          {isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
         </TooltipContent>
       </Tooltip>
 
@@ -181,13 +179,13 @@ export function DataTableRowActions<TData>({
                 setCurrentRow(apiKey)
                 setOpen('update')
               }}
-              aria-label={t('Edit')}
+              aria-label={t('channels.actions.edit')}
             />
           }
         >
           <Edit className='size-4' />
         </TooltipTrigger>
-        <TooltipContent>{t('Edit')}</TooltipContent>
+        <TooltipContent>{t('channels.actions.edit')}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -200,13 +198,13 @@ export function DataTableRowActions<TData>({
                 setCurrentRow(apiKey)
                 setOpen('reset-key')
               }}
-              aria-label={t('Reset Key')}
+              aria-label={t('keys.actions.resetKey')}
             />
           }
         >
           <RotateCcw className='size-4' />
         </TooltipTrigger>
-        <TooltipContent>{t('Reset Key')}</TooltipContent>
+        <TooltipContent>{t('keys.actions.resetKey')}</TooltipContent>
       </Tooltip>
 
       <DropdownMenu modal={false} onOpenChange={handleMenuOpenChange}>
@@ -219,29 +217,29 @@ export function DataTableRowActions<TData>({
           }
         >
           <DotsHorizontalIcon className='h-4 w-4' />
-          <span className='sr-only'>{t('Open menu')}</span>
+          <span className='sr-only'>{t('channels.actions.openMenu')}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[200px]'>
           <DropdownMenuItem
             onClick={async () => {
-              const realKey = getCachedRealKey()
+              const realKey = await getRealKeyOnDemand()
               if (!realKey) return
               const ok = await copyToClipboard(realKey)
               if (ok) {
-                toast.success(t('Copied'))
+                toast.success(t('common.status.copied'))
               } else {
-                toast.error(t('Copy failed'))
+                toast.error(t('keyQuery.actions.copyFailed'))
               }
             }}
           >
-            {t('Copy Key')}
+            {t('keys.actions.copyKey')}
             <DropdownMenuShortcut>
               <Copy size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={async () => {
-              const realKey = getCachedRealKey()
+              const realKey = await getRealKeyOnDemand()
               if (!realKey) return
               const connStr = encodeConnectionString(
                 realKey,
@@ -249,13 +247,13 @@ export function DataTableRowActions<TData>({
               )
               const ok = await copyToClipboard(connStr)
               if (ok) {
-                toast.success(t('Copied'))
+                toast.success(t('common.status.copied'))
               } else {
-                toast.error(t('Copy failed'))
+                toast.error(t('keyQuery.actions.copyFailed'))
               }
             }}
           >
-            {t('Copy Connection Info')}
+            {t('keys.actions.copyConnectionInfo')}
             <DropdownMenuShortcut>
               <Link size={16} />
             </DropdownMenuShortcut>
@@ -270,7 +268,7 @@ export function DataTableRowActions<TData>({
               setOpen('cc-switch')
             }}
           >
-            {t('CC Switch')}
+            {t('keys.fields.ccSwitch')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
             </DropdownMenuShortcut>
@@ -283,7 +281,7 @@ export function DataTableRowActions<TData>({
             }}
             className='text-destructive focus:text-destructive'
           >
-            {t('Delete')}
+            {t('common.actions.delete')}
             <DropdownMenuShortcut>
               <Trash2 size={16} />
             </DropdownMenuShortcut>

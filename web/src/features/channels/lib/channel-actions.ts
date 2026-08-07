@@ -151,7 +151,7 @@ export async function handleUpdateChannelField(
       const fieldLabel =
         fieldName.charAt(0).toUpperCase() + fieldName.slice(1).toLowerCase()
       toast.success(
-        i18next.t('{{field}} updated to {{value}}', {
+        i18next.t('channels.status.fieldUpdatedToValue', {
           field: fieldLabel,
           value,
         })
@@ -184,7 +184,7 @@ export async function handleUpdateTagField(
       const fieldLabel =
         fieldName.charAt(0).toUpperCase() + fieldName.slice(1).toLowerCase()
       toast.success(
-        i18next.t('{{field}} updated to {{value}} for tag: {{tag}}', {
+        i18next.t('channels.status.fieldUpdatedToValueForTagTag', {
           field: fieldLabel,
           value,
           tag,
@@ -209,6 +209,7 @@ export async function handleTestChannel(
     testModel?: string
     endpointType?: string
     stream?: boolean
+    tool?: boolean
     silent?: boolean
   },
   onTestComplete?: (
@@ -218,38 +219,68 @@ export async function handleTestChannel(
     errorCode?: string
   ) => void
 ): Promise<void> {
-  const payload =
-    options && (options.testModel || options.endpointType || options.stream)
-      ? {
-          ...(options.testModel ? { model: options.testModel } : {}),
-          ...(options.endpointType
-            ? { endpoint_type: options.endpointType }
-            : {}),
-          ...(options.stream ? { stream: true } : {}),
-        }
-      : undefined
+  const hasOptions =
+    options &&
+    (options.testModel ||
+      options.endpointType ||
+      options.stream ||
+      options.tool)
+  const payload = hasOptions
+    ? {
+        ...(options.testModel ? { model: options.testModel } : {}),
+        ...(options.endpointType
+          ? { endpoint_type: options.endpointType }
+          : {}),
+        ...(options.stream ? { stream: true } : {}),
+        ...(options.tool ? { tool: true } : {}),
+      }
+    : undefined
 
   try {
     const response = await testChannel(id, payload)
+    const responseTimeMs =
+      response.data?.response_time ??
+      (typeof response.time === 'number'
+        ? Math.round(response.time * 1000)
+        : undefined)
+
     if (response.success) {
       if (!options?.silent) {
         toast.success(i18next.t(SUCCESS_MESSAGES.TESTED))
       }
-      onTestComplete?.(true, response.data?.response_time)
+      onTestComplete?.(true, responseTimeMs)
     } else {
       if (!options?.silent) {
         toast.error(response.message || i18next.t(ERROR_MESSAGES.TEST_FAILED))
       }
-      onTestComplete?.(false, undefined, response.message, response.error_code)
+      onTestComplete?.(
+        false,
+        responseTimeMs,
+        response.message,
+        response.error_code
+      )
     }
   } catch (_error: unknown) {
-    const err = _error as { response?: { data?: { message?: string } } }
+    const err = _error as {
+      response?: {
+        data?: { message?: string; error_code?: string; time?: number }
+      }
+    }
     const errorMsg =
       err?.response?.data?.message || i18next.t(ERROR_MESSAGES.TEST_FAILED)
+    const responseTimeMs =
+      typeof err?.response?.data?.time === 'number'
+        ? Math.round(err.response.data.time * 1000)
+        : undefined
     if (!options?.silent) {
       toast.error(errorMsg)
     }
-    onTestComplete?.(false, undefined, errorMsg)
+    onTestComplete?.(
+      false,
+      responseTimeMs,
+      errorMsg,
+      err?.response?.data?.error_code
+    )
   }
 }
 
@@ -269,10 +300,10 @@ export async function handleCopyChannel(
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.(response.data?.id ?? 0)
     } else {
-      toast.error(response.message || i18next.t('Failed to copy channel'))
+      toast.error(response.message || i18next.t('channels.errors.failedToCopyChannel'))
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to copy channel'))
+    toast.error(i18next.t('channels.errors.failedToCopyChannel'))
   }
 }
 
@@ -289,7 +320,7 @@ export async function handleUpdateChannelBalance(
     if (response.success && response.balance !== undefined) {
       const balance = response.balance
       toast.success(
-        i18next.t('Balance updated: {{balance}}', {
+        i18next.t('channels.status.balanceUpdatedBalance', {
           balance: formatCurrencyFromUSD(balance, {
             digitsLarge: 2,
             digitsSmall: 4,
@@ -300,13 +331,13 @@ export async function handleUpdateChannelBalance(
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.(balance)
     } else {
-      toast.error(response.message || i18next.t('Failed to update balance'))
+      toast.error(response.message || i18next.t('channels.errors.failedToUpdateBalance'))
     }
   } catch (_error: unknown) {
     toast.error(
       _error instanceof Error
         ? _error.message
-        : i18next.t('Failed to update balance')
+        : i18next.t('channels.errors.failedToUpdateBalance')
     )
   }
 }
@@ -324,7 +355,7 @@ export async function handleBatchDelete(
   onSuccess?: (deletedCount: number) => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('No channels selected'))
+    toast.error(i18next.t('channels.titles.noChannelsSelected'))
     return
   }
 
@@ -332,7 +363,7 @@ export async function handleBatchDelete(
     const response = await batchDeleteChannels({ ids })
     if (response.success) {
       toast.success(
-        i18next.t('{{count}} channel(s) deleted', {
+        i18next.t('channels.status.countChannelSDeleted', {
           count: response.data || ids.length,
         })
       )
@@ -353,7 +384,7 @@ export async function handleBatchEnable(
   onSuccess?: () => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('No channels selected'))
+    toast.error(i18next.t('channels.titles.noChannelsSelected'))
     return
   }
 
@@ -369,7 +400,7 @@ export async function handleBatchEnable(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('{{count}} channel(s) enabled', { count: successCount })
+        i18next.t('channels.status.countChannelSEnabled', { count: successCount })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
@@ -377,11 +408,11 @@ export async function handleBatchEnable(
 
     if (failCount > 0) {
       toast.error(
-        i18next.t('{{count}} channel(s) failed to enable', { count: failCount })
+        i18next.t('channels.status.countChannelSFailedToEnable', { count: failCount })
       )
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to enable channels'))
+    toast.error(i18next.t('channels.errors.failedToEnableChannels'))
   }
 }
 
@@ -394,7 +425,7 @@ export async function handleBatchDisable(
   onSuccess?: () => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('No channels selected'))
+    toast.error(i18next.t('channels.titles.noChannelsSelected'))
     return
   }
 
@@ -410,7 +441,7 @@ export async function handleBatchDisable(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('{{count}} channel(s) disabled', { count: successCount })
+        i18next.t('channels.status.countChannelSDisabled', { count: successCount })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
@@ -418,13 +449,13 @@ export async function handleBatchDisable(
 
     if (failCount > 0) {
       toast.error(
-        i18next.t('{{count}} channel(s) failed to disable', {
+        i18next.t('channels.status.countChannelSFailedToDisable', {
           count: failCount,
         })
       )
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to disable channels'))
+    toast.error(i18next.t('channels.errors.failedToDisableChannels'))
   }
 }
 
@@ -438,7 +469,7 @@ export async function handleBatchSetTag(
   onSuccess?: () => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('No channels selected'))
+    toast.error(i18next.t('channels.titles.noChannelsSelected'))
     return
   }
 
@@ -450,7 +481,7 @@ export async function handleBatchSetTag(
       onSuccess?.()
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to set tag'))
+    toast.error(i18next.t('channels.errors.failedToSetTag'))
   }
 }
 
@@ -470,13 +501,13 @@ export async function handleEnableTagChannels(
     const response = await enableTagChannels(tag)
     if (response.success) {
       toast.success(
-        i18next.t('Enabled all channels with tag: {{tag}}', { tag })
+        i18next.t('channels.status.enabledAllChannelsWithTagTag', { tag })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to enable tag channels'))
+    toast.error(i18next.t('channels.errors.failedToEnableTagChannels'))
   }
 }
 
@@ -492,13 +523,13 @@ export async function handleDisableTagChannels(
     const response = await disableTagChannels(tag)
     if (response.success) {
       toast.success(
-        i18next.t('Disabled all channels with tag: {{tag}}', { tag })
+        i18next.t('channels.status.disabledAllChannelsWithTagTag', { tag })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to disable tag channels'))
+    toast.error(i18next.t('channels.errors.failedToDisableTagChannels'))
   }
 }
 
@@ -517,7 +548,7 @@ export async function handleDeleteAllDisabled(
     const response = await deleteDisabledChannels()
     if (response.success) {
       toast.success(
-        i18next.t('{{count}} disabled channel(s) deleted', {
+        i18next.t('channels.status.countDisabledChannelSDeleted', {
           count: response.data || 0,
         })
       )
@@ -525,7 +556,7 @@ export async function handleDeleteAllDisabled(
       onSuccess?.(response.data || 0)
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to delete disabled channels'))
+    toast.error(i18next.t('channels.errors.failedToDeleteDisabledChannels'))
   }
 }
 
@@ -540,7 +571,7 @@ export async function handleFixAbilities(
     const response = await fixChannelAbilities()
     if (response.success && response.data) {
       toast.success(
-        i18next.t('Fixed abilities: {{success}} succeeded, {{fails}} failed', {
+        i18next.t('channels.status.fixedAbilitiesSuccessSucceededFailsFailed', {
           success: response.data.success,
           fails: response.data.fails,
         })
@@ -549,7 +580,7 @@ export async function handleFixAbilities(
       onSuccess?.(response.data)
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to fix abilities'))
+    toast.error(i18next.t('channels.errors.failedToFixAbilities'))
   }
 }
 
@@ -565,18 +596,18 @@ export async function handleTestAllChannels(
     if (response.success) {
       toast.success(
         i18next.t(
-          'Testing all enabled channels started. Please refresh to see results.'
+          'channels.status.testingAllEnabledChannelsStartedPleaseRefreshToSee'
         )
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
     } else {
       toast.error(
-        response.message || i18next.t('Failed to start testing all channels')
+        response.message || i18next.t('channels.errors.failedToStartTestingAllChannels')
       )
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to test all channels'))
+    toast.error(i18next.t('channels.errors.failedToTestAllChannels'))
   }
 }
 
@@ -592,17 +623,17 @@ export async function handleUpdateAllBalances(
     if (response.success) {
       toast.success(
         i18next.t(
-          'Updating all channel balances. This may take a while. Please refresh to see results.'
+          'channels.tips.updatingAllChannelBalancesThisMayTakeAWhile'
         )
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
     } else {
       toast.error(
-        response.message || i18next.t('Failed to update all balances')
+        response.message || i18next.t('channels.errors.failedToUpdateAllBalances')
       )
     }
   } catch (_error) {
-    toast.error(i18next.t('Failed to update all balances'))
+    toast.error(i18next.t('channels.errors.failedToUpdateAllBalances'))
   }
 }

@@ -1,9 +1,9 @@
 package operation_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 type ChannelAffinityKeySource struct {
-	Type string `json:"type"` // context_int, context_string, gjson
+	Type string `json:"type"` // context_int, context_string, request_header, gjson
 	Key  string `json:"key,omitempty"`
 	Path string `json:"path,omitempty"`
 }

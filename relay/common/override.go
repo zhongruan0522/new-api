@@ -3,15 +3,21 @@ package common
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var negativeIndexRegexp = regexp.MustCompile(`\.(-\d+)`)
+
+const (
+	paramOverrideContextRequestHeaders = "request_headers"
+	paramOverrideContextHeaderOverride = "header_override"
+)
 
 type ConditionOperation struct {
 	Path           string      `json:"path"`             // JSON路径
@@ -23,13 +29,28 @@ type ConditionOperation struct {
 
 type ParamOperation struct {
 	Path       string               `json:"path"`
-	Mode       string               `json:"mode"` // delete, set, move, copy, prepend, append, trim_prefix, trim_suffix, ensure_prefix, ensure_suffix, trim_space, to_lower, to_upper, replace, regex_replace
+	Mode       string               `json:"mode"` // delete, set, move, copy, prepend, append, trim_prefix, trim_suffix, ensure_prefix, ensure_suffix, trim_space, to_lower, to_upper, replace, regex_replace, return_error, prune_objects, set_header, delete_header, copy_header, move_header, pass_headers, sync_fields
 	Value      interface{}          `json:"value"`
 	KeepOrigin bool                 `json:"keep_origin"`
 	From       string               `json:"from,omitempty"`
 	To         string               `json:"to,omitempty"`
 	Conditions []ConditionOperation `json:"conditions,omitempty"` // 条件列表
 	Logic      string               `json:"logic,omitempty"`      // AND, OR (默认OR)
+}
+
+type ParamOverrideReturnError struct {
+	Message    string
+	StatusCode int
+	Code       string
+	Type       string
+	SkipRetry  bool
+}
+
+func (err *ParamOverrideReturnError) Error() string {
+	if err == nil || strings.TrimSpace(err.Message) == "" {
+		return "request blocked by param override"
+	}
+	return err.Message
 }
 
 func ApplyParamOverride(jsonData []byte, paramOverride map[string]interface{}, conditionContext map[string]interface{}) ([]byte, error) {
@@ -39,11 +60,48 @@ func ApplyParamOverride(jsonData []byte, paramOverride map[string]interface{}, c
 
 	// 尝试断言为操作格式
 	if operations, ok := tryParseOperations(paramOverride); ok {
-		return applyOperations(jsonData, operations, conditionContext)
+		legacyOverride := buildLegacyParamOverride(paramOverride)
+		workingJSON := jsonData
+		var err error
+		if len(legacyOverride) > 0 {
+			workingJSON, err = applyOperationsLegacy(workingJSON, legacyOverride)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return applyOperations(workingJSON, operations, conditionContext)
 	}
 
 	// 直接使用旧方法
 	return applyOperationsLegacy(jsonData, paramOverride)
+}
+
+func buildLegacyParamOverride(paramOverride map[string]interface{}) map[string]interface{} {
+	if len(paramOverride) == 0 {
+		return nil
+	}
+	legacyOverride := make(map[string]interface{}, len(paramOverride))
+	for key, value := range paramOverride {
+		if strings.EqualFold(strings.TrimSpace(key), "operations") {
+			continue
+		}
+		legacyOverride[key] = value
+	}
+	return legacyOverride
+}
+
+func ApplyParamOverrideWithRelayInfo(jsonData []byte, info *RelayInfo) ([]byte, error) {
+	if info == nil || info.ChannelMeta == nil || len(info.ChannelMeta.ParamOverride) == 0 {
+		return jsonData, nil
+	}
+
+	conditionContext := BuildParamOverrideContext(info)
+	result, err := ApplyParamOverride(jsonData, info.ChannelMeta.ParamOverride, conditionContext)
+	if err != nil {
+		return nil, err
+	}
+	syncRuntimeHeaderOverrideFromContext(info, conditionContext)
+	return result, nil
 }
 
 func tryParseOperations(paramOverride map[string]interface{}) ([]ParamOperation, bool) {
@@ -198,9 +256,7 @@ func processNegativeIndex(data []byte, path string) string {
 		index, _ := strconv.Atoi(negIndex)
 
 		arrayPath := strings.Split(path, negIndex)[0]
-		if strings.HasSuffix(arrayPath, ".") {
-			arrayPath = arrayPath[:len(arrayPath)-1]
-		}
+		arrayPath = strings.TrimSuffix(arrayPath, ".")
 
 		array := gjson.GetBytes(data, arrayPath)
 		if array.IsArray() {
@@ -311,36 +367,45 @@ func escapeSJSONPathKey(key string) string {
 }
 
 func applyOperations(data []byte, operations []ParamOperation, conditionContext map[string]interface{}) ([]byte, error) {
-	var contextJSON string
-	if conditionContext != nil && len(conditionContext) > 0 {
-		ctxBytes, err := common.Marshal(conditionContext)
+	context := ensureContextMap(conditionContext)
+	result := data
+	for _, op := range operations {
+		contextJSON, err := marshalContextJSON(context)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal condition context: %v", err)
 		}
-		contextJSON = string(ctxBytes)
-	}
 
-	result := data
-	for _, op := range operations {
-		// 检查条件是否满足
 		ok, err := checkConditions(result, contextJSON, op.Conditions, op.Logic)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
-			continue // 条件不满足，跳过当前操作
+			continue
 		}
-		// 处理路径中的负数索引
-		opPath := processNegativeIndex(result, op.Path)
+
+		opPaths, err := resolveOperationPaths(result, op.Mode, op.Path)
+		if err != nil {
+			return nil, err
+		}
 
 		switch op.Mode {
 		case "delete":
-			result, err = sjson.DeleteBytes(result, opPath)
-		case "set":
-			if op.KeepOrigin && gjson.GetBytes(result, opPath).Exists() {
-				continue
+			for _, path := range opPaths {
+				result, err = sjson.DeleteBytes(result, path)
+				if err != nil {
+					break
+				}
 			}
-			result, err = sjson.SetBytes(result, opPath, op.Value)
+		case "set":
+			for _, path := range opPaths {
+				if op.KeepOrigin && gjson.GetBytes(result, path).Exists() {
+					continue
+				}
+				result, err = sjson.SetBytes(result, path, op.Value)
+				if err != nil {
+					break
+				}
+			}
 		case "move":
 			opFrom := processNegativeIndex(result, op.From)
 			opTo := processNegativeIndex(result, op.To)
@@ -352,28 +417,99 @@ func applyOperations(data []byte, operations []ParamOperation, conditionContext 
 			opFrom := processNegativeIndex(result, op.From)
 			opTo := processNegativeIndex(result, op.To)
 			result, err = copyValue(result, opFrom, opTo)
-		case "prepend":
-			result, err = modifyValue(result, opPath, op.Value, op.KeepOrigin, true)
-		case "append":
-			result, err = modifyValue(result, opPath, op.Value, op.KeepOrigin, false)
-		case "trim_prefix":
-			result, err = trimStringValue(result, opPath, op.Value, true)
-		case "trim_suffix":
-			result, err = trimStringValue(result, opPath, op.Value, false)
-		case "ensure_prefix":
-			result, err = ensureStringAffix(result, opPath, op.Value, true)
-		case "ensure_suffix":
-			result, err = ensureStringAffix(result, opPath, op.Value, false)
+		case "prepend", "append":
+			for _, path := range opPaths {
+				result, err = modifyValue(result, path, op.Value, op.KeepOrigin, op.Mode == "prepend")
+				if err != nil {
+					break
+				}
+			}
+		case "trim_prefix", "trim_suffix":
+			for _, path := range opPaths {
+				result, err = trimStringValue(result, path, op.Value, op.Mode == "trim_prefix")
+				if err != nil {
+					break
+				}
+			}
+		case "ensure_prefix", "ensure_suffix":
+			for _, path := range opPaths {
+				result, err = ensureStringAffix(result, path, op.Value, op.Mode == "ensure_prefix")
+				if err != nil {
+					break
+				}
+			}
 		case "trim_space":
-			result, err = transformStringValue(result, opPath, strings.TrimSpace)
+			for _, path := range opPaths {
+				result, err = transformStringValue(result, path, strings.TrimSpace)
+				if err != nil {
+					break
+				}
+			}
 		case "to_lower":
-			result, err = transformStringValue(result, opPath, strings.ToLower)
+			for _, path := range opPaths {
+				result, err = transformStringValue(result, path, strings.ToLower)
+				if err != nil {
+					break
+				}
+			}
 		case "to_upper":
-			result, err = transformStringValue(result, opPath, strings.ToUpper)
-		case "replace":
-			result, err = replaceStringValue(result, opPath, op.From, op.To)
-		case "regex_replace":
-			result, err = regexReplaceStringValue(result, opPath, op.From, op.To)
+			for _, path := range opPaths {
+				result, err = transformStringValue(result, path, strings.ToUpper)
+				if err != nil {
+					break
+				}
+			}
+		case "replace", "regex_replace":
+			for _, path := range opPaths {
+				if op.Mode == "replace" {
+					result, err = replaceStringValue(result, path, op.From, op.To)
+				} else {
+					result, err = regexReplaceStringValue(result, path, op.From, op.To)
+				}
+				if err != nil {
+					break
+				}
+			}
+		case "return_error":
+			returnError, parseErr := parseParamOverrideReturnError(op.Value)
+			if parseErr != nil {
+				return nil, parseErr
+			}
+			return nil, returnError
+		case "prune_objects":
+			for _, path := range opPaths {
+				result, err = pruneObjects(result, path, contextJSON, op.Value)
+				if err != nil {
+					break
+				}
+			}
+		case "set_header":
+			err = setHeaderOverrideInContext(context, op.Path, op.Value, op.KeepOrigin)
+		case "delete_header":
+			err = deleteHeaderOverrideInContext(context, op.Path)
+		case "copy_header", "move_header":
+			sourceHeader := op.From
+			targetHeader := op.To
+			if sourceHeader == "" && op.Path != "" {
+				sourceHeader = op.Path
+			}
+			err = copyHeaderOverrideInContext(context, sourceHeader, targetHeader, op.KeepOrigin)
+			if err == nil && op.Mode == "move_header" {
+				err = deleteHeaderOverrideInContext(context, sourceHeader)
+			}
+		case "pass_headers":
+			headerNames, parseErr := parseHeaderPassThroughNames(op.Value)
+			if parseErr != nil {
+				return nil, parseErr
+			}
+			for _, headerName := range headerNames {
+				err = passRequestHeaderToOverride(context, headerName, op.KeepOrigin)
+				if err != nil {
+					break
+				}
+			}
+		case "sync_fields":
+			result, err = syncFieldsBetweenTargets(result, context, op.From, op.To)
 		default:
 			return nil, fmt.Errorf("unknown operation: %s", op.Mode)
 		}
@@ -570,6 +706,535 @@ func mergeObjects(data []byte, path string, value interface{}, keepOrigin bool) 
 	return sjson.SetBytes(data, path, result)
 }
 
+func ensureContextMap(conditionContext map[string]interface{}) map[string]interface{} {
+	if conditionContext != nil {
+		return conditionContext
+	}
+	return make(map[string]interface{})
+}
+
+func parseParamOverrideReturnError(value interface{}) (*ParamOverrideReturnError, error) {
+	returnError := &ParamOverrideReturnError{}
+	switch typedValue := value.(type) {
+	case nil:
+		return nil, fmt.Errorf("return_error value is required")
+	case string:
+		returnError.Message = strings.TrimSpace(typedValue)
+	case map[string]interface{}:
+		if message, ok := typedValue["message"].(string); ok {
+			returnError.Message = strings.TrimSpace(message)
+		}
+		if code, ok := typedValue["code"].(string); ok {
+			returnError.Code = strings.TrimSpace(code)
+		}
+		if errorType, ok := typedValue["type"].(string); ok {
+			returnError.Type = strings.TrimSpace(errorType)
+		}
+		if skipRetry, ok := typedValue["skip_retry"].(bool); ok {
+			returnError.SkipRetry = skipRetry
+		}
+		if statusCodeRaw, exists := typedValue["status_code"]; exists {
+			statusCode, ok := parseOverrideInt(statusCodeRaw)
+			if !ok {
+				return nil, fmt.Errorf("return_error status_code must be numeric")
+			}
+			returnError.StatusCode = statusCode
+		}
+	default:
+		return nil, fmt.Errorf("return_error value must be a string or object")
+	}
+	if strings.TrimSpace(returnError.Message) == "" {
+		returnError.Message = "request blocked by param override"
+	}
+	return returnError, nil
+}
+
+func parseOverrideInt(value interface{}) (int, bool) {
+	switch typedValue := value.(type) {
+	case int:
+		return typedValue, true
+	case int64:
+		return int(typedValue), true
+	case float64:
+		return int(typedValue), true
+	case string:
+		parsed, err := strconv.Atoi(strings.TrimSpace(typedValue))
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
+}
+
+func marshalContextJSON(context map[string]interface{}) (string, error) {
+	if len(context) == 0 {
+		return "", nil
+	}
+	contextBytes, err := common.Marshal(context)
+	if err != nil {
+		return "", err
+	}
+	return string(contextBytes), nil
+}
+
+func resolveOperationPaths(data []byte, mode string, path string) ([]string, error) {
+	if !operationSupportsWildcardPath(mode) {
+		if path == "" {
+			return nil, nil
+		}
+		return []string{processNegativeIndex(data, path)}, nil
+	}
+	if path == "" {
+		return nil, nil
+	}
+	path = processNegativeIndex(data, path)
+	if !strings.Contains(path, "*") {
+		return []string{path}, nil
+	}
+	var decoded interface{}
+	if err := common.Unmarshal(data, &decoded); err != nil {
+		return nil, err
+	}
+	paths := collectWildcardPaths(decoded, strings.Split(path, "."), nil, mode == "set")
+	sort.Strings(paths)
+	return paths, nil
+}
+
+func operationSupportsWildcardPath(mode string) bool {
+	switch mode {
+	case "delete", "set", "prepend", "append", "trim_prefix", "trim_suffix", "ensure_prefix", "ensure_suffix", "trim_space", "to_lower", "to_upper", "replace", "regex_replace", "prune_objects":
+		return true
+	default:
+		return false
+	}
+}
+
+func collectWildcardPaths(value interface{}, segments []string, prefix []string, allowMissingLeaf bool) []string {
+	if len(segments) == 0 {
+		return []string{strings.Join(prefix, ".")}
+	}
+	segment := segments[0]
+	if segment == "*" {
+		return collectWildcardChildPaths(value, segments[1:], prefix, allowMissingLeaf)
+	}
+
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		child, exists := typed[segment]
+		if !exists {
+			if allowMissingLeaf && len(segments) == 1 {
+				return []string{strings.Join(append(prefix, escapeSJSONPathKey(segment)), ".")}
+			}
+			return nil
+		}
+		return collectWildcardPaths(child, segments[1:], append(prefix, escapeSJSONPathKey(segment)), allowMissingLeaf)
+	case []interface{}:
+		index, err := strconv.Atoi(segment)
+		if err != nil || index < 0 || index >= len(typed) {
+			return nil
+		}
+		return collectWildcardPaths(typed[index], segments[1:], append(prefix, segment), allowMissingLeaf)
+	default:
+		return nil
+	}
+}
+
+func collectWildcardChildPaths(value interface{}, segments []string, prefix []string, allowMissingLeaf bool) []string {
+	var paths []string
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			paths = append(paths, collectWildcardPaths(typed[key], segments, append(prefix, escapeSJSONPathKey(key)), allowMissingLeaf)...)
+		}
+	case []interface{}:
+		for index, item := range typed {
+			paths = append(paths, collectWildcardPaths(item, segments, append(prefix, strconv.Itoa(index)), allowMissingLeaf)...)
+		}
+	}
+	return paths
+}
+
+func ensureMapKeyInContext(context map[string]interface{}, key string) map[string]interface{} {
+	if context == nil {
+		return map[string]interface{}{}
+	}
+	if existing, ok := context[key].(map[string]interface{}); ok {
+		return existing
+	}
+	converted := make(map[string]interface{})
+	if existing, ok := context[key].(map[string]string); ok {
+		for headerName, headerValue := range existing {
+			converted[headerName] = headerValue
+		}
+	}
+	context[key] = converted
+	return converted
+}
+
+func normalizeHeaderContextKey(headerName string) string {
+	headerName = strings.TrimSpace(headerName)
+	if headerName == "" {
+		return ""
+	}
+	return strings.ToLower(headerName)
+}
+
+func setHeaderOverrideInContext(context map[string]interface{}, headerName string, value interface{}, keepOrigin bool) error {
+	headerName = normalizeHeaderContextKey(headerName)
+	if headerName == "" {
+		return fmt.Errorf("header name is required")
+	}
+	headers := ensureMapKeyInContext(context, paramOverrideContextHeaderOverride)
+	if keepOrigin {
+		if existingValue := strings.TrimSpace(fmt.Sprintf("%v", headers[headerName])); existingValue != "" {
+			return nil
+		}
+	}
+	headerValue, includeHeader, err := resolveHeaderOverrideValue(context, headerName, value)
+	if err != nil {
+		return err
+	}
+	if !includeHeader {
+		delete(headers, headerName)
+		return nil
+	}
+	headers[headerName] = headerValue
+	return nil
+}
+
+func deleteHeaderOverrideInContext(context map[string]interface{}, headerName string) error {
+	headerName = normalizeHeaderContextKey(headerName)
+	if headerName == "" {
+		return fmt.Errorf("header name is required")
+	}
+	delete(ensureMapKeyInContext(context, paramOverrideContextHeaderOverride), headerName)
+	return nil
+}
+
+func copyHeaderOverrideInContext(context map[string]interface{}, sourceHeader string, targetHeader string, keepOrigin bool) error {
+	sourceHeader = normalizeHeaderContextKey(sourceHeader)
+	targetHeader = normalizeHeaderContextKey(targetHeader)
+	if sourceHeader == "" || targetHeader == "" {
+		return fmt.Errorf("copy_header source and target header are required")
+	}
+	sourceValue, exists := getHeaderValueFromContext(context, sourceHeader)
+	if !exists {
+		return fmt.Errorf("source header does not exist: %s", sourceHeader)
+	}
+	return setHeaderOverrideInContext(context, targetHeader, sourceValue, keepOrigin)
+}
+
+func getHeaderValueFromContext(context map[string]interface{}, headerName string) (string, bool) {
+	headerName = normalizeHeaderContextKey(headerName)
+	for _, contextKey := range []string{paramOverrideContextHeaderOverride, paramOverrideContextRequestHeaders} {
+		if rawHeaders, ok := context[contextKey].(map[string]interface{}); ok {
+			for key, value := range rawHeaders {
+				if normalizeHeaderContextKey(key) == headerName {
+					valueString := strings.TrimSpace(fmt.Sprintf("%v", value))
+					return valueString, valueString != ""
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+func resolveHeaderOverrideValue(context map[string]interface{}, headerName string, value interface{}) (string, bool, error) {
+	if mapping, ok := value.(map[string]interface{}); ok {
+		return mergeHeaderTokenOverrideValue(context, headerName, mapping)
+	}
+	valueString := strings.TrimSpace(fmt.Sprintf("%v", value))
+	if value == nil || valueString == "" {
+		return "", false, nil
+	}
+	return valueString, true, nil
+}
+
+func mergeHeaderTokenOverrideValue(context map[string]interface{}, headerName string, mapping map[string]interface{}) (string, bool, error) {
+	appendTokens, err := parseHeaderAppendTokens(mapping)
+	if err != nil {
+		return "", false, err
+	}
+	keepOnlyDeclared := parseHeaderKeepOnlyDeclared(mapping)
+	currentHeaderValue, _ := getHeaderValueFromContext(context, headerName)
+	currentTokens := splitHeaderListValue(currentHeaderValue)
+	resultTokens := make([]string, 0, len(currentTokens)+len(mapping)+len(appendTokens))
+
+	for _, token := range currentTokens {
+		replacementRaw, declared := mapping[token]
+		if !declared {
+			if !keepOnlyDeclared {
+				resultTokens = append(resultTokens, token)
+			}
+			continue
+		}
+		replacementTokens, err := parseHeaderReplacementTokens(replacementRaw)
+		if err != nil {
+			return "", false, err
+		}
+		resultTokens = append(resultTokens, replacementTokens...)
+	}
+
+	resultTokens = append(resultTokens, appendTokens...)
+	resultTokens = uniqueStrings(resultTokens)
+	if len(resultTokens) == 0 {
+		return "", false, nil
+	}
+	return strings.Join(resultTokens, ","), true, nil
+}
+
+func parseHeaderAppendTokens(mapping map[string]interface{}) ([]string, error) {
+	appendRaw, ok := mapping["$append"]
+	if !ok {
+		return nil, nil
+	}
+	return parseHeaderReplacementTokens(appendRaw)
+}
+
+func parseHeaderKeepOnlyDeclared(mapping map[string]interface{}) bool {
+	keepOnlyDeclared, ok := mapping["$keep_only_declared"].(bool)
+	return ok && keepOnlyDeclared
+}
+
+func parseHeaderReplacementTokens(value interface{}) ([]string, error) {
+	switch typedValue := value.(type) {
+	case nil:
+		return nil, nil
+	case string:
+		return splitHeaderListValue(typedValue), nil
+	case []string:
+		return splitHeaderListValues(typedValue), nil
+	case []interface{}:
+		items := make([]string, 0, len(typedValue))
+		for _, item := range typedValue {
+			items = append(items, fmt.Sprintf("%v", item))
+		}
+		return splitHeaderListValues(items), nil
+	default:
+		return nil, fmt.Errorf("unsupported header token value type: %T", value)
+	}
+}
+
+func splitHeaderListValues(values []string) []string {
+	var tokens []string
+	for _, value := range values {
+		tokens = append(tokens, splitHeaderListValue(value)...)
+	}
+	return uniqueStrings(tokens)
+}
+
+func splitHeaderListValue(value string) []string {
+	parts := strings.Split(value, ",")
+	tokens := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			tokens = append(tokens, part)
+		}
+	}
+	return tokens
+}
+
+func uniqueStrings(values []string) []string {
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func parseHeaderPassThroughNames(value interface{}) ([]string, error) {
+	return parseHeaderReplacementTokens(value)
+}
+
+func passRequestHeaderToOverride(context map[string]interface{}, headerName string, keepOrigin bool) error {
+	value, exists := getHeaderValueFromSpecificContext(context, paramOverrideContextRequestHeaders, headerName)
+	if !exists {
+		return nil
+	}
+	return setHeaderOverrideInContext(context, headerName, value, keepOrigin)
+}
+
+func getHeaderValueFromSpecificContext(context map[string]interface{}, contextKey string, headerName string) (string, bool) {
+	headerName = normalizeHeaderContextKey(headerName)
+	if rawHeaders, ok := context[contextKey].(map[string]interface{}); ok {
+		for key, value := range rawHeaders {
+			if normalizeHeaderContextKey(key) == headerName {
+				valueString := strings.TrimSpace(fmt.Sprintf("%v", value))
+				return valueString, valueString != ""
+			}
+		}
+	}
+	return "", false
+}
+
+type syncTarget struct {
+	kind string
+	key  string
+}
+
+func parseSyncTarget(spec string) (syncTarget, error) {
+	spec = strings.TrimSpace(spec)
+	if spec == "" {
+		return syncTarget{}, fmt.Errorf("sync_fields target is required")
+	}
+	parts := strings.SplitN(spec, ":", 2)
+	if len(parts) == 2 && (parts[0] == "json" || parts[0] == "header") {
+		return syncTarget{kind: parts[0], key: strings.TrimSpace(parts[1])}, nil
+	}
+	return syncTarget{kind: "json", key: spec}, nil
+}
+
+func readSyncTargetValue(data []byte, context map[string]interface{}, target syncTarget) (interface{}, bool) {
+	switch target.kind {
+	case "json":
+		value := gjson.GetBytes(data, processNegativeIndex(data, target.key))
+		if !value.Exists() {
+			return nil, false
+		}
+		return value.Value(), true
+	case "header":
+		value, exists := getHeaderValueFromContext(context, target.key)
+		return value, exists
+	default:
+		return nil, false
+	}
+}
+
+func writeSyncTargetValue(data []byte, context map[string]interface{}, target syncTarget, value interface{}) ([]byte, error) {
+	switch target.kind {
+	case "json":
+		return sjson.SetBytes(data, processNegativeIndex(data, target.key), value)
+	case "header":
+		return data, setHeaderOverrideInContext(context, target.key, value, false)
+	default:
+		return nil, fmt.Errorf("unsupported sync_fields target kind: %s", target.kind)
+	}
+}
+
+func syncFieldsBetweenTargets(data []byte, context map[string]interface{}, fromSpec string, toSpec string) ([]byte, error) {
+	fromTarget, err := parseSyncTarget(fromSpec)
+	if err != nil {
+		return nil, err
+	}
+	toTarget, err := parseSyncTarget(toSpec)
+	if err != nil {
+		return nil, err
+	}
+	if _, exists := readSyncTargetValue(data, context, toTarget); exists {
+		return data, nil
+	}
+	value, exists := readSyncTargetValue(data, context, fromTarget)
+	if !exists {
+		return data, nil
+	}
+	return writeSyncTargetValue(data, context, toTarget, value)
+}
+
+func pruneObjects(data []byte, path string, contextJSON string, value interface{}) ([]byte, error) {
+	conditions, err := parsePruneConditions(value)
+	if err != nil {
+		return nil, err
+	}
+	if len(conditions) == 0 {
+		return data, nil
+	}
+	current := gjson.GetBytes(data, path)
+	if current.IsArray() {
+		items := make([]interface{}, 0)
+		for _, item := range current.Array() {
+			itemBytes := []byte(item.Raw)
+			shouldRemove, err := checkConditions(itemBytes, contextJSON, conditions, "AND")
+			if err != nil {
+				return nil, err
+			}
+			if !shouldRemove {
+				items = append(items, item.Value())
+			}
+		}
+		return sjson.SetBytes(data, path, items)
+	}
+	if current.Type == gjson.JSON {
+		objectValue := make(map[string]interface{})
+		if err := common.UnmarshalJsonStr(current.Raw, &objectValue); err != nil {
+			return nil, err
+		}
+		for key, item := range objectValue {
+			itemBytes, err := common.Marshal(item)
+			if err != nil {
+				return nil, err
+			}
+			shouldRemove, err := checkConditions(itemBytes, contextJSON, conditions, "AND")
+			if err != nil {
+				return nil, err
+			}
+			if shouldRemove {
+				delete(objectValue, key)
+			}
+		}
+		return sjson.SetBytes(data, path, objectValue)
+	}
+	return data, fmt.Errorf("prune_objects requires array or object at path: %s", path)
+}
+
+func parsePruneConditions(value interface{}) ([]ConditionOperation, error) {
+	switch typedValue := value.(type) {
+	case []interface{}:
+		conditions := make([]ConditionOperation, 0, len(typedValue))
+		for _, item := range typedValue {
+			conditionMap, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("prune_objects condition must be an object")
+			}
+			conditions = append(conditions, conditionFromMap(conditionMap))
+		}
+		return conditions, nil
+	case map[string]interface{}:
+		if rawConditions, ok := typedValue["conditions"].([]interface{}); ok {
+			return parsePruneConditions(rawConditions)
+		}
+		return []ConditionOperation{conditionFromMap(typedValue)}, nil
+	default:
+		return nil, fmt.Errorf("prune_objects value must be a condition object or list")
+	}
+}
+
+func conditionFromMap(conditionMap map[string]interface{}) ConditionOperation {
+	condition := ConditionOperation{}
+	if path, ok := conditionMap["path"].(string); ok {
+		condition.Path = path
+	}
+	if mode, ok := conditionMap["mode"].(string); ok {
+		condition.Mode = mode
+	}
+	if value, exists := conditionMap["value"]; exists {
+		condition.Value = value
+	}
+	if invert, ok := conditionMap["invert"].(bool); ok {
+		condition.Invert = invert
+	}
+	if passMissingKey, ok := conditionMap["pass_missing_key"].(bool); ok {
+		condition.PassMissingKey = passMissingKey
+	}
+	return condition
+}
+
 // BuildParamOverrideContext 提供 ApplyParamOverride 可用的上下文信息。
 // 目前内置以下字段：
 //   - upstream_model/model：始终为通道映射后的上游模型名。
@@ -582,6 +1247,7 @@ func BuildParamOverrideContext(info *RelayInfo) map[string]interface{} {
 	}
 
 	ctx := make(map[string]interface{})
+	ctx[paramOverrideContextHeaderOverride] = cloneStringInterfaceMap(getEffectiveHeaderOverrideMap(info))
 	if info.ChannelMeta != nil && info.ChannelMeta.UpstreamModelName != "" {
 		ctx["model"] = info.ChannelMeta.UpstreamModelName
 		ctx["upstream_model"] = info.ChannelMeta.UpstreamModelName
@@ -602,4 +1268,41 @@ func BuildParamOverrideContext(info *RelayInfo) map[string]interface{} {
 
 	ctx["is_channel_test"] = info.IsChannelTest
 	return ctx
+}
+
+func getEffectiveHeaderOverrideMap(info *RelayInfo) map[string]interface{} {
+	if info == nil || info.ChannelMeta == nil {
+		return map[string]interface{}{}
+	}
+	if info.UseRuntimeHeadersOverride {
+		return info.RuntimeHeadersOverride
+	}
+	return info.ChannelMeta.HeadersOverride
+}
+
+func GetEffectiveHeaderOverride(info *RelayInfo) map[string]interface{} {
+	return cloneStringInterfaceMap(getEffectiveHeaderOverrideMap(info))
+}
+
+func syncRuntimeHeaderOverrideFromContext(info *RelayInfo, context map[string]interface{}) {
+	if info == nil {
+		return
+	}
+	rawHeaders, ok := context[paramOverrideContextHeaderOverride].(map[string]interface{})
+	if !ok {
+		return
+	}
+	info.RuntimeHeadersOverride = cloneStringInterfaceMap(rawHeaders)
+	info.UseRuntimeHeadersOverride = true
+}
+
+func cloneStringInterfaceMap(source map[string]interface{}) map[string]interface{} {
+	if len(source) == 0 {
+		return map[string]interface{}{}
+	}
+	target := make(map[string]interface{}, len(source))
+	for key, value := range source {
+		target[key] = value
+	}
+	return target
 }

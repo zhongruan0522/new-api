@@ -3,9 +3,9 @@ package service
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {
@@ -115,13 +115,14 @@ func TestOpenAIUsageToGeminiUsage(t *testing.T) {
 }
 
 func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
+	thinking := "thinking"
 	resp := ResponseOpenAI2Gemini(&dto.OpenAITextResponse{
 		Choices: []dto.OpenAITextResponseChoice{{
 			Index: 0,
 			Message: dto.Message{
 				Role:               "assistant",
 				Content:            "answer",
-				ReasoningContent:   "thinking",
+				ReasoningContent:   &thinking,
 				ReasoningSignature: "sig_123",
 			},
 			FinishReason: "stop",

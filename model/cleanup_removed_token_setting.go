@@ -1,6 +1,6 @@
 package model
 
-import "github.com/zhongruan0522/new-api/common"
+import "github.com/NookMux/NookMux/common"
 
 // cleanupRemovedTokenSetting 移除已废弃的 token_setting 配置项
 // 该设置已硬编码为 1000，不再从数据库读取

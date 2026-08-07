@@ -92,7 +92,7 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
     )
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -102,7 +102,7 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
   }
 
   return (
-    <SettingsSection title={t('Global Model Configuration')}>
+    <SettingsSection title={t('systemSettings.titles.globalModelConfiguration')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -117,10 +117,10 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Keep-alive Ping')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.keepAlivePing')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Periodically send ping frames to keep streaming connections active.'
+                      'systemSettings.status.periodicallySendPingFramesToKeepStreamingConnectionsActive'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -139,7 +139,7 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
             name='general_setting.ping_interval_seconds'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Ping Interval (seconds)')}</FormLabel>
+                <FormLabel>{t('systemSettings.fields.pingIntervalSeconds')}</FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -159,7 +159,7 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Recommended to keep this high to avoid upstream throttling.'
+                    'systemSettings.tips.recommendedToKeepThisHighToAvoidUpstreamThrottling'
                   )}
                 </FormDescription>
                 <FormMessage />

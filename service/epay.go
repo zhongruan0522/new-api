@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
 )
 
 func GetCallbackAddress() string {

@@ -55,10 +55,10 @@ export function Hero(props: HeroProps) {
           className='landing-animate-fade-up text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.15] font-bold tracking-tight'
           style={{ animationDelay: '0ms' }}
         >
-          {t('Unified API Gateway for')}
+          {t('home.fields.unifiedApiGatewayFor')}
           <br />
           <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-            {t('All Your AI Models')}
+            {t('home.titles.allYourAiModels')}
           </span>
         </h1>
         <p
@@ -66,7 +66,7 @@ export function Hero(props: HeroProps) {
           style={{ animationDelay: '80ms' }}
         >
           {t(
-            'Power AI applications, manage digital assets, connect the Future'
+            'home.tips.powerAiApplicationsManageDigitalAssetsConnectTheFuture'
           )}
         </p>
         <div
@@ -78,7 +78,7 @@ export function Hero(props: HeroProps) {
               className='group rounded-lg'
               render={<Link to='/dashboard' />}
             >
-              {t('Go to Dashboard')}
+              {t('layout.titles.goToDashboard')}
               <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
             </Button>
           ) : (
@@ -87,7 +87,7 @@ export function Hero(props: HeroProps) {
                 className='group rounded-lg'
                 render={<Link to='/sign-up' />}
               >
-                {t('Get Started')}
+                {t('dashboard.fields.getStarted')}
                 <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
               </Button>
               <Button
@@ -95,7 +95,7 @@ export function Hero(props: HeroProps) {
                 className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
                 render={<Link to='/pricing' />}
               >
-                {t('View Pricing')}
+                {t('home.actions.viewPricing')}
               </Button>
             </>
           )}

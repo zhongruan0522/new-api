@@ -1,15 +1,14 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/i18n"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,19 +16,37 @@ import (
 // maxUserTokens 每用户最大令牌数量（硬编码）
 const maxUserTokens = 1000
 
+// buildMaskedTokenResponse 返回 key 已脱敏的 token 副本，避免列表/详情接口泄露真实密钥。
+func buildMaskedTokenResponse(token *model.Token) *model.Token {
+	if token == nil {
+		return nil
+	}
+	maskedToken := *token
+	maskedToken.Key = token.GetMaskedKey()
+	return &maskedToken
+}
+
+func buildMaskedTokenResponses(tokens []*model.Token) []*model.Token {
+	maskedTokens := make([]*model.Token, 0, len(tokens))
+	for _, token := range tokens {
+		maskedTokens = append(maskedTokens, buildMaskedTokenResponse(token))
+	}
+	return maskedTokens
+}
+
 func GetAllTokens(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
 	tokens, err := model.GetAllUserTokens(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get all user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	total, _ := model.CountUserTokens(userId)
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(tokens)
+	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func SearchTokens(c *gin.Context) {
@@ -42,52 +59,53 @@ func SearchTokens(c *gin.Context) {
 
 	tokens, total, err := model.SearchUserTokens(userId, keyword, token, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("search user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
-	pageInfo.SetItems(tokens)
+	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func GetToken(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    token,
+		"data":    buildMaskedTokenResponse(token),
 	})
-	return
 }
 
 func GetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"key": token.Key,
+			"key": token.GetFullKey(),
 		},
 	})
 }
@@ -97,7 +115,8 @@ func GetTokenStatus(c *gin.Context) {
 	userId := c.GetInt("id")
 	token, err := model.GetTokenByIds(tokenId, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	snapshot := token.GetQuotaSnapshot()
@@ -119,7 +138,7 @@ func GetTokenUsage(c *gin.Context) {
 	if authHeader == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "No Authorization header",
+			"message": i18n.T(c, i18n.MsgTokenNoAuthHeader),
 		})
 		return
 	}
@@ -128,7 +147,7 @@ func GetTokenUsage(c *gin.Context) {
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "Invalid Bearer token",
+			"message": i18n.T(c, i18n.MsgTokenInvalidBearer),
 		})
 		return
 	}
@@ -140,6 +159,28 @@ func GetTokenUsage(c *gin.Context) {
 	}
 	snapshot := token.GetQuotaSnapshot()
 
+	// 对齐 quota_type 兼容逻辑：quota_type=0 且非无限额度视为永久限额(1)。
+	// 与 GetQuotaSnapshot / TokenAuthReadOnly 中间件保持一致。
+	effectiveQuotaType := token.QuotaType
+	if effectiveQuotaType == 0 && !token.UnlimitedQuota {
+		effectiveQuotaType = 1
+	}
+
+	// 计算下一次窗口/周期重置时间，避免前端重复实现后端锚点逻辑。
+	// 未启用对应限额类型时保持为 0。
+	windowNextResetTime := int64(0)
+	cycleNextResetTime := int64(0)
+	if effectiveQuotaType == 2 || effectiveQuotaType == 3 {
+		if _, windowEnd := token.GetCurrentWindow(); windowEnd > 0 {
+			windowNextResetTime = windowEnd
+		}
+	}
+	if effectiveQuotaType == 3 {
+		if _, cycleEnd := token.GetCurrentCycle(); cycleEnd > 0 {
+			cycleNextResetTime = cycleEnd
+		}
+	}
+
 	expiredAt := token.ExpiredTime
 	if expiredAt == -1 {
 		expiredAt = 0
@@ -147,7 +188,7 @@ func GetTokenUsage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    true,
-		"message": "ok",
+		"message": i18n.T(c, i18n.MsgTokenAuthorized),
 		"data": gin.H{
 			"object":               "token_usage",
 			"name":                 token.Name,
@@ -158,6 +199,21 @@ func GetTokenUsage(c *gin.Context) {
 			"model_limits":         token.GetModelLimitsMap(),
 			"model_limits_enabled": token.ModelLimitsEnabled,
 			"expires_at":           expiredAt,
+			// 以下字段为密钥用量查询页面所需，供前端按 KEY 类型展示额度与周期信息。
+			"quota_type":              effectiveQuotaType,
+			"created_time":            token.CreatedTime,
+			"accessed_time":           token.AccessedTime,
+			"window_hours":            token.WindowHours,
+			"window_quota":            token.WindowQuota,
+			"window_used_quota":       token.WindowUsedQuota,
+			"window_start_hour":       token.WindowStartHour,
+			"window_start_time":       token.WindowStartTime,
+			"window_next_reset_time":  windowNextResetTime,
+			"cycle_days":              token.CycleDays,
+			"cycle_quota":             token.CycleQuota,
+			"cycle_used_quota":        token.CycleUsedQuota,
+			"cycle_start_time":        token.CycleStartTime,
+			"cycle_next_reset_time":   cycleNextResetTime,
 		},
 	})
 }
@@ -166,7 +222,7 @@ func AddToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
@@ -198,81 +254,55 @@ func AddToken(c *gin.Context) {
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期天数必须大于等于1",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期总额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	default:
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的限额类型",
-		})
+		common.ApiErrorI18n(c, i18n.MsgTokenInvalidQuotaType)
 		return
 	}
 
 	// 检查用户令牌数量是否已达上限
 	count, err := model.CountUserTokens(c.GetInt("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("count user tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if int(count) >= maxUserTokens {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": fmt.Sprintf("已达到最大令牌数量限制 (%d)", maxUserTokens),
+			"message": i18n.T(c, i18n.MsgTokenMaxLimitReached, map[string]any{"Max": maxUserTokens}),
 		})
 		return
 	}
@@ -311,7 +341,8 @@ func AddToken(c *gin.Context) {
 	}
 	err = cleanToken.Insert()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("insert token failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
@@ -322,7 +353,6 @@ func AddToken(c *gin.Context) {
 			"key": key,
 		},
 	})
-	return
 }
 
 func DeleteToken(c *gin.Context) {
@@ -330,7 +360,8 @@ func DeleteToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	err := model.DeleteTokenById(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("delete token by id failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
@@ -338,7 +369,6 @@ func DeleteToken(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func UpdateToken(c *gin.Context) {
@@ -347,7 +377,7 @@ func UpdateToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
@@ -379,68 +409,45 @@ func UpdateToken(c *gin.Context) {
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口时长必须大于等于1小时",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "窗口起始小时必须在0-23之间",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期天数必须大于等于1",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "周期总额度必须大于0",
-			})
+			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	}
 
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("get token by ids failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 保存更新前快照用于审计差异对比
@@ -495,14 +502,15 @@ func UpdateToken(c *gin.Context) {
 	}
 	err = cleanToken.Update()
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("update token failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    cleanToken,
+		"data":    buildMaskedTokenResponse(cleanToken),
 	})
 }
 
@@ -519,7 +527,8 @@ func DeleteTokenBatch(c *gin.Context) {
 	userId := c.GetInt("id")
 	count, err := model.BatchDeleteTokens(tokenBatch.Ids, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("batch delete tokens failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
@@ -541,10 +550,11 @@ func GetTokenKeysBatch(c *gin.Context) {
 	for _, id := range tokenBatch.Ids {
 		token, err := model.GetTokenByIds(id, userId)
 		if err != nil {
-			common.ApiError(c, err)
+			common.SysError("get token by ids failed: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
-		keys[id] = token.Key
+		keys[id] = token.GetFullKey()
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -558,13 +568,14 @@ func GetTokenKeysBatch(c *gin.Context) {
 func ResetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiError(c, err)
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	newKey, err := model.ResetTokenKey(id, userId)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("reset token key failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})

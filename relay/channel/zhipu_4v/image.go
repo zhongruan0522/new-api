@@ -3,24 +3,15 @@ package zhipu_4v
 import (
 	"net/http"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
-
-type zhipuImageRequest struct {
-	Model            string `json:"model"`
-	Prompt           string `json:"prompt"`
-	Quality          string `json:"quality,omitempty"`
-	Size             string `json:"size,omitempty"`
-	WatermarkEnabled *bool  `json:"watermark_enabled,omitempty"`
-	UserID           string `json:"user_id,omitempty"`
-}
 
 type zhipuImageResponse struct {
 	Created       *int64            `json:"created,omitempty"`

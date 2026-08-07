@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 type PasskeySettings struct {

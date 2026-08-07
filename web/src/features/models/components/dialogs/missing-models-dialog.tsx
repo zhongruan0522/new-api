@@ -118,10 +118,10 @@ export function MissingModelsDialog({
         className='flex max-h-[85vh] max-w-2xl flex-col gap-3 p-4'
         initialFocus={!isMobile}
       >
-        <DialogHeader className='flex-shrink-0 text-start'>
-          <DialogTitle>{t('Missing Models')}</DialogTitle>
+        <DialogHeader className='shrink-0 text-start'>
+          <DialogTitle>{t('models.errors.missingModels')}</DialogTitle>
           <DialogDescription>
-            {t('Models that are being used but not configured in the system')}
+            {t('models.status.thatAreBeingUsedButNotConfiguredInThe')}
           </DialogDescription>
         </DialogHeader>
 
@@ -131,16 +131,16 @@ export function MissingModelsDialog({
           </div>
         ) : missingModels.length === 0 ? (
           <div className='text-muted-foreground py-12 text-center'>
-            <p>{t('No missing models found.')}</p>
+            <p>{t('models.tips.noMissingModelsFound')}</p>
             <p className='text-sm'>
-              {t('All models in use are properly configured.')}
+              {t('models.tips.allModelsInUseAreProperlyConfigured')}
             </p>
           </div>
         ) : (
           <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
-            <div className='flex flex-shrink-0 items-center justify-between gap-3'>
+            <div className='flex shrink-0 items-center justify-between gap-3'>
               <div className='text-muted-foreground text-sm whitespace-nowrap'>
-                {t('Showing')} {displayStart}-{displayEnd} {t('of')}{' '}
+                {t('models.fields.showing')} {displayStart}-{displayEnd} {t('common.fields.valuede04fa')}{' '}
                 {totalItems}
               </div>
               <div className='relative w-48'>
@@ -151,9 +151,9 @@ export function MissingModelsDialog({
                     setSearchTerm(event.target.value)
                     setCurrentPage(1)
                   }}
-                  placeholder={t('Search models...')}
+                  placeholder={t('common.actions.searchModels')}
                   className='pl-9'
-                  aria-label={t('Search missing models')}
+                  aria-label={t('models.actions.searchMissingModels')}
                 />
               </div>
             </div>
@@ -164,14 +164,14 @@ export function MissingModelsDialog({
                   <EmptyMedia variant='icon'>
                     <Search className='h-5 w-5' />
                   </EmptyMedia>
-                  <EmptyTitle>{t('No matches found')}</EmptyTitle>
+                  <EmptyTitle>{t('models.fields.noMatchesFound')}</EmptyTitle>
                   <EmptyDescription>
-                    {t('Try adjusting your search to locate a missing model.')}
+                    {t('models.tips.tryAdjustingYourSearchToLocateAMissingModel')}
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (
-              <div className='flex-shrink-0 rounded-lg border'>
+              <div className='shrink-0 rounded-lg border'>
                 <div className='divide-y'>
                   {paginatedModels.map((modelName) => (
                     <div
@@ -187,7 +187,7 @@ export function MissingModelsDialog({
                       </div>
                       <Button
                         size='sm'
-                        className='flex-shrink-0 gap-1'
+                        className='shrink-0 gap-1'
                         onClick={() => handleConfigureModel(modelName)}
                       >
                         <Plus className='h-4 w-4' />
@@ -199,7 +199,7 @@ export function MissingModelsDialog({
 
                 <div className='bg-muted/40 flex items-center justify-between border-t px-3 py-2 text-sm'>
                   <div className='text-muted-foreground text-sm'>
-                    {t('Page {{current}} of {{total}}', {
+                    {t('common.fields.pageCurrentOfTotal', {
                       current: currentPage,
                       total: totalPages,
                     })}
@@ -214,7 +214,7 @@ export function MissingModelsDialog({
                           setCurrentPage((prev) => Math.max(1, prev - 1))
                         }
                         disabled={currentPage === 1}
-                        aria-label={t('Previous page')}
+                        aria-label={t('models.fields.previousPage')}
                       >
                         <ChevronLeft className='h-4 w-4' />
                       </Button>
@@ -228,7 +228,7 @@ export function MissingModelsDialog({
                           )
                         }
                         disabled={currentPage === totalPages}
-                        aria-label={t('Next page')}
+                        aria-label={t('models.fields.nextPage')}
                       >
                         <ChevronRight className='h-4 w-4' />
                       </Button>

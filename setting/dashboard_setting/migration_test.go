@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/console_setting"
 	"gorm.io/gorm"
 )
 

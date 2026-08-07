@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"

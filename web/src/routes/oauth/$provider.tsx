@@ -78,7 +78,7 @@ function OAuthCallback() {
       }
 
       if (!search?.code) {
-        toast.error(i18next.t('Missing code'))
+        toast.error(i18next.t('common.errors.missingCode'))
         safeNavigate('/sign-in')
         return
       }
@@ -145,7 +145,7 @@ function OAuthCallback() {
       const redirectAfterLogin = (target?: string) => {
         const to = target || search?.redirect || '/dashboard'
         safeNavigate(to)
-        toast.success(i18next.t('Signed In Successfully!'))
+        toast.success(i18next.t('common.status.signedInSuccessfully'))
       }
 
       const handleBindingFailure = (message: string) => {
@@ -177,7 +177,7 @@ function OAuthCallback() {
               : null
           // Check if this is a bind operation
           if (action === 'bind' || message === 'bind') {
-            toast.success(i18next.t('Binding successful!'))
+            toast.success(i18next.t('common.status.bindingSuccessful'))
             notifyBindingResult('success')
             if (isBindingFlow) {
               // Close the callback window if we opened a new tab for binding
@@ -204,14 +204,19 @@ function OAuthCallback() {
             redirectAfterLogin()
             return
           }
-          toast.error(res?.data?.message || i18next.t('OAuth failed'))
+          toast.error(res?.data?.message || i18next.t('channels.status.oauthFailed'))
           safeNavigate('/sign-in')
           return
         }
-        const message = res?.data?.message || i18next.t('OAuth failed')
+        const message = res?.data?.message || i18next.t('channels.status.oauthFailed')
         if (!res?.data?.success && !isBindingFlow) {
-          // When logging in with an already bound GitHub account, backend may return this message
-          if (message === '该 GitHub 账户已被绑定') {
+          // When logging in with an already bound GitHub account, backend may return this message.
+          // Backend returns translated text, so we need to check both locales.
+          const alreadyBoundMessages = [
+            '该 GitHub 账户已被绑定',
+            'This GitHub account is already bound',
+          ]
+          if (alreadyBoundMessages.includes(message)) {
             if (await finalizeLogin()) {
               redirectAfterLogin()
               return
@@ -231,7 +236,7 @@ function OAuthCallback() {
           (error as { response?: { data?: { message?: string } } }).response
             ?.data?.message) ??
           (error instanceof Error ? error.message : undefined) ??
-          i18next.t('OAuth failed')) as string
+          i18next.t('channels.status.oauthFailed')) as string
 
         if (isBindingFlow) {
           handleBindingFailure(message)

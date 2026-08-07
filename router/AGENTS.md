@@ -14,6 +14,7 @@
 - API、dashboard、relay、web 路由分层清晰；新增业务接口优先放对应 router 文件。
 - 不要在路由层解析复杂业务参数或访问数据库。
 - 不要添加会破坏 SSE/streaming 的全局 gzip；web 静态资源 gzip 只在 web router 中处理。
+- 挂载匿名路由（无 `AdminAuth()`/`UserAuth()`）时，确认对应 controller 不返回角色受限数据；公开面与管理面路由分开，详见 [controller/AGENTS.md](../controller/AGENTS.md) 的「API 设计」。
 
 ## 验证
 

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 type responsesToChatStreamConverter struct {
@@ -191,7 +191,7 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 }
 
 func (c *responsesToChatStreamConverter) emitTextDelta(delta string) (string, error) {
-	if strings.TrimSpace(delta) == "" {
+	if delta == "" {
 		return "", nil
 	}
 
@@ -213,7 +213,7 @@ func (c *responsesToChatStreamConverter) emitTextDelta(delta string) (string, er
 // emitReasoningDelta maps Responses reasoning summaries onto chat chunk
 // reasoning_content so downstream clients keep intermediate thinking text.
 func (c *responsesToChatStreamConverter) emitReasoningDelta(delta string) (string, error) {
-	if strings.TrimSpace(delta) == "" {
+	if delta == "" {
 		return "", nil
 	}
 

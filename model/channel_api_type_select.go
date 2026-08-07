@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 )
 
 type RandomSatisfiedChannelByAPITypeParams struct {

@@ -22,6 +22,12 @@ import { getBgColorClass } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/copy-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { StatusBadge } from '@/components/status-badge'
 import {
   getLatencyColorClass,
@@ -69,7 +75,7 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
         <div className='flex items-center'>
           {status.testing && (
             <StatusBadge
-              label={t('Testing...')}
+              label={t('channels.tips.testing')}
               variant='warning'
               className='animate-pulse'
               copyable={false}
@@ -78,7 +84,7 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
           {status.latency !== null && !status.testing && (
             <StatusBadge
               variant='success'
-              label={`${status.latency}${t('ms')}`}
+              label={`${status.latency}${t('dashboard.fields.ms')}`}
               className={cn(
                 'font-mono font-medium',
                 getLatencyColorClass(status.latency)
@@ -87,7 +93,31 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             />
           )}
           {status.error && (
-            <StatusBadge label={t('N/A')} variant='neutral' copyable={false} />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <StatusBadge
+                      label={
+                        status.errorReason === 'mixed-content'
+                          ? t('dashboard.errors.latencyMixedContent')
+                          : t('dashboard.errors.latencyUnavailable')
+                      }
+                      variant='neutral'
+                      copyable={false}
+                      className='cursor-help'
+                    />
+                  }
+                />
+                <TooltipContent className='max-w-xs'>
+                  <p>
+                    {status.errorReason === 'mixed-content'
+                      ? t('dashboard.tips.latencyMixedContentTip')
+                      : t('dashboard.tips.latencyUnavailableTip')}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
 
@@ -98,7 +128,7 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             onClick={() => props.onTest(item.url)}
             disabled={status.testing}
             className='size-7 p-0'
-            title={t('Test Latency')}
+            title={t('dashboard.fields.testLatency')}
           >
             <Zap
               className={cn('size-3.5', status.testing && 'animate-pulse')}
@@ -110,7 +140,7 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             size='sm'
             onClick={() => openExternalSpeedTest(item.url)}
             className='hidden size-7 p-0 sm:inline-flex'
-            title={t('External Speed Test')}
+            title={t('dashboard.fields.externalSpeedTest')}
           >
             <Gauge className='size-3.5' />
           </Button>
@@ -121,15 +151,15 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             size='sm'
             className='size-7 p-0'
             iconClassName='size-3.5'
-            tooltip={t('Copy URL')}
-            aria-label={t('Copy URL')}
+            tooltip={t('dashboard.actions.copyUrl')}
+            aria-label={t('dashboard.actions.copyUrl')}
           />
 
           <Button
             variant='ghost'
             size='sm'
             className='hidden size-7 p-0 sm:inline-flex'
-            title={t('Open In New Tab')}
+            title={t('dashboard.actions.openInNewTab')}
             render={<a href={item.url} target='_blank' rel='noreferrer' />}
           >
             <ExternalLink className='size-3.5' />

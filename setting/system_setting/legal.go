@@ -1,6 +1,6 @@
 package system_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 type LegalSettings struct {
 	UserAgreement string `json:"user_agreement"`

@@ -1,15 +1,15 @@
 {
-  "Converted URL": "转换后 URL",
-  "Created At": "创建时间",
-  "Delete {{count}} selected file(s)?": "删除选中的 {{count}} 个文件？",
-  "Delete file": "删除文件",
-  "Delete selected": "删除所选",
-  "Delete this multimodal file?": "删除此多模态文件？",
-  "Deleted {{count}} file(s)": "已删除 {{count}} 个文件",
-  "MIME": "MIME",
-  "Multimodal Files": "多模态文件",
-  "No multimodal files": "暂无多模态文件",
-  "Select file": "选择文件",
-  "Select visible files": "选择当前页文件",
-  "Selected {{selected}} of {{total}}": "已选择 {{selected}} / {{total}}"
+  "multimodalFiles.fields.convertedUrl": "转换后 URL",
+  "multimodalFiles.status.createdAt": "创建时间",
+  "multimodalFiles.actions.deleteCountSelectedFileS": "删除选中的 {{count}} 个文件？",
+  "multimodalFiles.actions.deleteFile": "删除文件",
+  "multimodalFiles.actions.deleteSelected": "删除所选",
+  "multimodalFiles.actions.deleteThisMultimodalFile": "删除此多模态文件？",
+  "multimodalFiles.status.deletedCountFileS": "已删除 {{count}} 个文件",
+  "multimodalFiles.fields.mime": "MIME",
+  "multimodalFiles.fields.files": "多模态文件",
+  "multimodalFiles.fields.noMultimodalFiles": "暂无多模态文件",
+  "multimodalFiles.placeholders.selectFile": "选择文件",
+  "multimodalFiles.placeholders.selectVisibleFiles": "选择当前页文件",
+  "multimodalFiles.placeholders.selectedSelectedOfTotal": "已选择 {{selected}} / {{total}}"
 }

@@ -117,7 +117,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
 
   const handleRegister = useCallback(async () => {
     if (!supported) {
-      toast.info(t('This device does not support Passkey'))
+      toast.info(t('auth.tips.deviceDoesNotSupportPasskey'))
       return
     }
 
@@ -130,9 +130,9 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     setRestrictedMethod('2fa')
     await startVerification(register, {
       preferredMethod: '2fa',
-      title: t('Security Verification'),
+      title: t('profile.fields.securityVerification'),
       description: t(
-        'Confirm your identity with Two-factor Authentication before registering a Passkey.'
+        'profile.actions.confirmYourIdentityWithTwoFactorAuthenticationBeforeRegistering'
       ),
     })
   }, [fetchVerificationMethods, register, startVerification, supported, t])
@@ -149,14 +149,14 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       if (!required) {
         toast.error(
           t(
-            'Please enable Two-factor Authentication or Passkey before proceeding'
+            'auth.errors.pleaseEnableTwoFactorAuthenticationOrPasskeyBeforeProceeding'
           )
         )
         return
       }
 
       if (required === 'passkey' && !methods.passkeySupported) {
-        toast.info(t('This device does not support Passkey'))
+        toast.info(t('auth.tips.deviceDoesNotSupportPasskey'))
         return
       }
 
@@ -164,9 +164,9 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       setRestrictedMethod(required)
       await startVerification(() => remove(id), {
         preferredMethod: required,
-        title: t('Security Verification'),
+        title: t('profile.fields.securityVerification'),
         description: t(
-          'Confirm your identity before removing this Passkey from your account.'
+          'profile.actions.confirmYourIdentityBeforeRemovingThisPasskeyFromYour'
         ),
       })
     },
@@ -185,14 +185,14 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     try {
       const res = await updatePasskey(renameId, renameName)
       if (!res.success) {
-        toast.error(res.message || t('Failed to update device name'))
+        toast.error(res.message || t('profile.errors.failedToUpdateDeviceName'))
         return
       }
-      toast.success(t('Device name updated'))
+      toast.success(t('profile.status.deviceNameUpdated'))
       setRenameOpen(false)
       await fetchStatus()
     } catch (_error) {
-      toast.error(t('Failed to update device name'))
+      toast.error(t('profile.errors.failedToUpdateDeviceName'))
     } finally {
       setRenaming(false)
     }
@@ -249,10 +249,10 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       <Card className='gap-0 overflow-hidden py-0'>
         <CardHeader className='p-3 sm:p-5'>
           <CardTitle className='text-lg tracking-tight sm:text-xl'>
-            {t('Passkey Login')}
+            {t('profile.fields.passkeyLogin')}
           </CardTitle>
           <CardDescription className='text-xs sm:text-sm'>
-            {t('Use Passkey to sign in without entering your password.')}
+            {t('profile.actions.usePasskeyToSignInWithoutEnteringYourPassword')}
           </CardDescription>
         </CardHeader>
 
@@ -271,16 +271,16 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                       </div>
                       <div className='min-w-0 flex-1 space-y-1'>
                         <p className='truncate font-medium'>
-                          {credential.device_name || t('Unnamed Device')}
+                          {credential.device_name || t('profile.fields.unnamedDevice')}
                         </p>
                         <div className='flex flex-wrap items-center gap-2 text-sm'>
                           <StatusBadge
                             label={
                               credential.attachment === 'platform'
-                                ? t('Built-in')
+                                ? t('profile.fields.builtIn')
                                 : credential.attachment === 'cross-platform'
-                                  ? t('External')
-                                  : t('Unknown')
+                                  ? t('profile.fields.external')
+                                  : t('channels.fields.unknown')
                             }
                             variant='neutral'
                             copyable={false}
@@ -289,8 +289,8 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                             <StatusBadge
                               label={
                                 credential.backup_state
-                                  ? t('Backed up')
-                                  : t('Not backed up')
+                                  ? t('profile.fields.backedUp')
+                                  : t('profile.fields.notBackedUp')
                               }
                               variant={
                                 credential.backup_state ? 'success' : 'warning'
@@ -301,10 +301,10 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                         </div>
                         <p className='text-muted-foreground text-xs'>
                           {credential.last_used_at
-                            ? t('labelWithColon', { label: t('Last Used') }) +
+                            ? t('channels.fields.labelWithColon', { label: t('keys.status.lastUsed') }) +
                               ' ' +
                               dayjs(credential.last_used_at).fromNow()
-                            : t('Not used yet')}
+                            : t('profile.status.notUsedYet')}
                         </p>
                       </div>
                     </div>
@@ -338,17 +338,17 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              {t('Remove Passkey?')}
+                              {t('profile.actions.removePasskey')}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                               {t(
-                                'This Passkey will be removed from your account. You can register it again anytime.'
+                                'profile.tips.thisPasskeyWillBeRemovedFromYourAccountYouCan'
                               )}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel disabled={removing}>
-                              {t('Cancel')}
+                              {t('common.actions.cancel')}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
@@ -358,7 +358,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                                 handleRemove(credential.id)
                               }}
                             >
-                              {t('Remove')}
+                              {t('common.actions.remove')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -378,27 +378,27 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                 {registering && (
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 )}
-                {count === 0 ? t('Enable Passkey') : t('Add Another Passkey')}
+                {count === 0 ? t('profile.actions.enablePasskey') : t('profile.actions.addAnotherPasskey')}
               </Button>
             )}
 
             {!canAddMore && count > 0 && (
               <p className='text-muted-foreground text-center text-sm'>
-                {t('You have reached the maximum number of Passkeys')} ({count}/
+                {t('profile.tips.haveReachedTheMaximumNumberOfPasskeys')} ({count}/
                 {maxPasskeys})
               </p>
             )}
 
             {showUnsupportedNotice && (
               <div className='bg-muted/60 text-muted-foreground flex items-start gap-3 rounded-md p-4 text-sm'>
-                <ShieldAlert className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500' />
+                <ShieldAlert className='mt-0.5 h-4 w-4 shrink-0 text-amber-500' />
                 <div>
                   <p className='text-foreground font-medium'>
-                    {t('Passkey not supported on this device')}
+                    {t('profile.tips.passkeyNotSupportedOnThisDevice')}
                   </p>
                   <p>
                     {t(
-                      'Use a compatible browser or device with biometric authentication or a security key to register a Passkey.'
+                      'profile.actions.useACompatibleBrowserOrDeviceWithBiometricAuthentication'
                     )}
                   </p>
                 </div>
@@ -411,18 +411,18 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('Rename Device')}</DialogTitle>
+            <DialogTitle>{t('profile.fields.renameDevice')}</DialogTitle>
             <DialogDescription>
-              {t('Give this Passkey a memorable name')}
+              {t('profile.tips.giveThisPasskeyAMemorableName')}
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-2'>
-            <Label htmlFor='device-name'>{t('Device Name')}</Label>
+            <Label htmlFor='device-name'>{t('profile.fields.deviceName')}</Label>
             <Input
               id='device-name'
               value={renameName}
               onChange={(e) => setRenameName(e.target.value)}
-              placeholder={t('e.g. My iPhone, Work Laptop')}
+              placeholder={t('profile.placeholders.eGMyIPhoneWorkLaptop')}
               disabled={renaming}
             />
           </div>
@@ -432,11 +432,11 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
               onClick={() => setRenameOpen(false)}
               disabled={renaming}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button onClick={handleRenameSubmit} disabled={renaming}>
               {renaming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {t('Save')}
+              {t('channels.actions.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -54,7 +54,7 @@ export function SearchBar(props: SearchBarProps) {
       <input
         ref={inputRef}
         type='text'
-        placeholder={props.placeholder || t('Search models...')}
+        placeholder={props.placeholder || t('common.actions.searchModels')}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         className={cn(
@@ -63,7 +63,7 @@ export function SearchBar(props: SearchBarProps) {
           'focus:border-primary/50 focus:ring-primary/20 focus:ring-2',
           'h-10 w-full rounded-lg border pr-16 pl-10 text-sm transition-all outline-none'
         )}
-        aria-label={t('Search models')}
+        aria-label={t('pricing.actions.searchModels')}
       />
       <div className='absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1'>
         {props.value ? (
@@ -72,7 +72,7 @@ export function SearchBar(props: SearchBarProps) {
             size='icon'
             onClick={props.onClear}
             className='text-muted-foreground/60 hover:text-foreground size-7'
-            aria-label={t('Clear search')}
+            aria-label={t('pricing.actions.clearSearch')}
           >
             <X className='size-4' />
           </Button>

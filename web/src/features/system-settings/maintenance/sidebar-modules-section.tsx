@@ -64,24 +64,24 @@ export function SidebarModulesSection({
 
   const sectionMeta: Record<string, { title: string; description: string }> = {
     chat: {
-      title: t('Chat Area'),
-      description: t('Playground experiments and live conversations.'),
+      title: t('systemSettings.fields.chatArea'),
+      description: t('systemSettings.tips.playgroundExperimentsAndLiveConversations'),
     },
     console: {
-      title: t('Console Area'),
-      description: t('Dashboards, tokens, and usage analytics.'),
+      title: t('systemSettings.titles.consoleArea'),
+      description: t('systemSettings.tips.dashboardsTokensAndUsageAnalytics'),
     },
     personal: {
-      title: t('Personal Area'),
-      description: t('Wallet management and personal preferences.'),
+      title: t('systemSettings.fields.personalArea'),
+      description: t('systemSettings.tips.walletManagementAndPersonalPreferences'),
     },
     support: {
-      title: t('Support area'),
-      description: t('Ticket support and user assistance.'),
+      title: t('systemSettings.fields.supportArea'),
+      description: t('systemSettings.tips.ticketSupportAndUserAssistance'),
     },
     admin: {
-      title: t('Admin area'),
-      description: t('Global configuration and administrative tools.'),
+      title: t('systemSettings.fields.adminArea'),
+      description: t('systemSettings.tips.globalConfigurationAndAdministrativeTools'),
     },
   }
 
@@ -91,80 +91,84 @@ export function SidebarModulesSection({
   > = {
     chat: {
       playground: {
-        title: t('Playground'),
-        description: t('Experiment with prompts and models in real time.'),
+        title: t('systemSettings.titles.playground'),
+        description: t('systemSettings.tips.experimentWithPromptsAndModelsInRealTime'),
       },
       custom_voice: {
-        title: t('Custom Voice'),
-        description: t('Customize voice configurations.'),
+        title: t('multimodal.fields.customVoice'),
+        description: t('multimodal.tips.customizeVoiceConfigurations'),
       },
     },
     console: {
       detail: {
-        title: t('Dashboard'),
-        description: t('Aggregated usage metrics and trend charts.'),
+        title: t('systemSettings.titles.dashboard'),
+        description: t('systemSettings.tips.aggregatedUsageMetricsAndTrendCharts'),
       },
       token: {
-        title: t('Token Management'),
-        description: t('Create, revoke, and audit API tokens.'),
+        title: t('systemSettings.titles.tokenManagement'),
+        description: t('systemSettings.actions.createRevokeAndAuditApiTokens'),
       },
       log: {
-        title: t('Usage Logs'),
-        description: t('Detailed request logs for investigations.'),
+        title: t('dashboard.titles.usageLogs'),
+        description: t('systemSettings.tips.detailedRequestLogsForInvestigations'),
       },
       multimodal_files: {
-        title: t('Multimodal files'),
-        description: t('Manage uploaded multimodal file resources.'),
+        title: t('systemSettings.fields.multimodalFiles'),
+        description: t('systemSettings.tips.manageUploadedMultimodalFileResources'),
       },
     },
     personal: {
       topup: {
-        title: t('Wallet'),
-        description: t('Top up balance and view billing history.'),
+        title: t('layout.titles.wallet'),
+        description: t('systemSettings.tips.topUpBalanceAndViewBillingHistory'),
       },
       order_query: {
-        title: t('Order query'),
-        description: t('Search top-up orders by order number.'),
+        title: t('systemSettings.fields.orderQuery'),
+        description: t('systemSettings.actions.searchTopUpOrdersByOrderNumber'),
       },
       personal: {
-        title: t('Profile'),
-        description: t('Personal settings and profile management.'),
+        title: t('layout.titles.profile'),
+        description: t('systemSettings.tips.personalSettingsAndProfileManagement'),
       },
     },
     support: {
       ticket: {
-        title: t('Tickets'),
-        description: t('Create, reply to, and manage support tickets.'),
+        title: t('systemSettings.fields.tickets'),
+        description: t('systemSettings.actions.createReplyToAndManageSupportTickets'),
       },
     },
     admin: {
       dynamic_ratio: {
-        title: t('Dynamic ratio'),
-        description: t('Manage dynamic ratio rules.'),
+        title: t('systemSettings.fields.dynamicRatio'),
+        description: t('systemSettings.tips.manageDynamicRatioRules'),
       },
       channel: {
-        title: t('Channels'),
-        description: t('Configure upstream providers and routing.'),
+        title: t('channels.titles.value'),
+        description: t('dashboard.tips.configureUpstreamProvidersAndRouting'),
       },
       models: {
-        title: t('Models'),
-        description: t('Manage catalog visibility and pricing.'),
+        title: t('channels.titles.models'),
+        description: t('systemSettings.tips.manageCatalogVisibilityAndPricing'),
       },
       redemption: {
-        title: t('Redemption Codes'),
-        description: t('Create and review invite or credit codes.'),
+        title: t('redemptionCodes.fields.codes'),
+        description: t('systemSettings.actions.createAndReviewInviteOrCreditCodes'),
       },
       user: {
-        title: t('Users'),
-        description: t('Administer user accounts and roles.'),
+        title: t('systemSettings.titles.users'),
+        description: t('systemSettings.tips.administerUserAccountsAndRoles'),
       },
       setting: {
-        title: t('System Settings'),
-        description: t('Advanced platform configuration.'),
+        title: t('common.titles.systemSettings'),
+        description: t('systemSettings.tips.advancedPlatformConfiguration'),
       },
       audit_log: {
-        title: t('Audit Logs'),
-        description: t('Review administrative operation records.'),
+        title: t('auditLogs.titles.logs'),
+        description: t('systemSettings.tips.reviewAdministrativeOperationRecords'),
+      },
+      minimax: {
+        title: t('systemSettings.fields.minimax'),
+        description: t('systemSettings.actions.configureMinimaxChannelSettings'),
       },
     },
   }
@@ -221,7 +225,7 @@ export function SidebarModulesSection({
   )
 
   return (
-    <SettingsSection title={t('Sidebar modules')}>
+    <SettingsSection title={t('systemSettings.fields.sidebarModules')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -229,12 +233,12 @@ export function SidebarModulesSection({
             onReset={resetToDefault}
             isSaving={updateOption.isPending}
             resetLabel='Reset to default'
-            saveLabel='Save sidebar modules'
+            saveLabel='common.actions.saveSidebarModules'
           />
           {sections.map(([sectionKey, sectionConfig]) => {
             const sectionInfo = sectionMeta[sectionKey] ?? {
               title: toTitleCase(sectionKey),
-              description: t('Custom sidebar section'),
+              description: t('systemSettings.fields.customSidebarSection'),
             }
             // Only render modules that exist in the default config for this section.
             const defaultModules = SIDEBAR_MODULES_DEFAULT[sectionKey]
@@ -278,7 +282,7 @@ export function SidebarModulesSection({
                   {modules.map(([moduleKey]) => {
                     const moduleInfo = moduleMeta[sectionKey]?.[moduleKey] ?? {
                       title: toTitleCase(moduleKey),
-                      description: t('Custom module'),
+                      description: t('systemSettings.fields.customModule'),
                     }
                     return (
                       <FormField

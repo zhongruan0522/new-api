@@ -123,12 +123,12 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
       <Dialog open={props.open} onOpenChange={(v) => !v && props.onCancel()}>
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
-            <DialogTitle>{t('Upstream Model Updates')}</DialogTitle>
+            <DialogTitle>{t('channels.fields.upstreamModelUpdates')}</DialogTitle>
           </DialogHeader>
 
           <p className='text-muted-foreground text-sm'>
             {t(
-              'Select models to process. Unselected "add" models will be ignored.'
+              'common.placeholders.selectModelsToProcessUnselectedAddModelsWillBe'
             )}
           </p>
 
@@ -138,7 +138,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
           >
             <TabsList className='grid w-full grid-cols-2'>
               <TabsTrigger value='add' className='gap-1'>
-                {t('Add Models')}
+                {t('channels.actions.addModels')}
                 <StatusBadge
                   variant='neutral'
                   className='ml-1'
@@ -148,7 +148,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                 </StatusBadge>
               </TabsTrigger>
               <TabsTrigger value='remove' className='gap-1'>
-                {t('Remove Models')}
+                {t('channels.actions.removeModels')}
                 <StatusBadge
                   variant='neutral'
                   className='ml-1'
@@ -163,7 +163,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
               <div className='relative'>
                 <Search className='text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4' />
                 <Input
-                  placeholder={t('Search models...')}
+                  placeholder={t('common.actions.searchModels')}
                   className='pl-8'
                   value={searchAdd}
                   onChange={(e) => setSearchAdd(e.target.value)}
@@ -178,7 +178,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                     }
                   />
                   <span className='text-muted-foreground text-xs'>
-                    {t('Select All Visible')}
+                    {t('channels.placeholders.selectAllVisible')}
                   </span>
                 </div>
               )}
@@ -203,8 +203,8 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                 ) : (
                   <p className='text-muted-foreground py-8 text-center text-sm'>
                     {props.addModels.length === 0
-                      ? t('No models to add')
-                      : t('No matching results')}
+                      ? t('channels.titles.noModelsToAdd')
+                      : t('channels.fields.noMatchingResults')}
                   </p>
                 )}
               </ScrollArea>
@@ -214,7 +214,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
               <div className='relative'>
                 <Search className='text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4' />
                 <Input
-                  placeholder={t('Search models...')}
+                  placeholder={t('common.actions.searchModels')}
                   className='pl-8'
                   value={searchRemove}
                   onChange={(e) => setSearchRemove(e.target.value)}
@@ -233,7 +233,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                     }
                   />
                   <span className='text-muted-foreground text-xs'>
-                    {t('Select All Visible')}
+                    {t('channels.placeholders.selectAllVisible')}
                   </span>
                 </div>
               )}
@@ -262,8 +262,8 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                 ) : (
                   <p className='text-muted-foreground py-8 text-center text-sm'>
                     {props.removeModels.length === 0
-                      ? t('No models to remove')
-                      : t('No matching results')}
+                      ? t('channels.titles.noModelsToRemove')
+                      : t('channels.fields.noMatchingResults')}
                   </p>
                 )}
               </ScrollArea>
@@ -272,7 +272,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
 
           <DialogFooter>
             <Button variant='outline' onClick={props.onCancel}>
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button
               onClick={handleConfirm}
@@ -282,7 +282,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
                   props.removeModels.length === 0)
               }
             >
-              {t('Confirm')}
+              {t('common.actions.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -291,9 +291,9 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
       <ConfirmDialog
         open={partialConfirmOpen}
         onOpenChange={setPartialConfirmOpen}
-        title={t('Partial Submission')}
+        title={t('channels.fields.partialSubmission')}
         desc={t(
-          'There are both add and remove models pending, but you only selected one type. Confirm submitting only the selected items?'
+          'channels.status.thereAreBothAddAndRemoveModelsPendingBut'
         )}
         handleConfirm={() => {
           setPartialConfirmOpen(false)

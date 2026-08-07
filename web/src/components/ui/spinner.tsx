@@ -36,7 +36,7 @@ function Spinner({ className, strokeWidth = 2, ...props }: SpinnerProps) {
       icon={Loading03Icon}
       strokeWidth={strokeWidth}
       role='status'
-      aria-label={t('Loading')}
+      aria-label={t('common.fields.loading')}
       className={cn('size-4 animate-spin', className)}
       {...props}
     />

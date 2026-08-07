@@ -11,34 +11,28 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 )
 
 // 定制音色流程的常量与校验规则。
 const (
-	customVoiceMaxFileSize       = 20 << 20 // 20MB，与旧版一致
-	customVoicePreviewTextMax    = 2000
-	customVoicePreviewTimeout    = 90 * time.Second
-	customVoiceDemoAudioTTL      = 30 * time.Minute
-	customVoiceDemoAudioMaxBytes = 32 << 20
+	customVoiceMaxFileSize    = 20 << 20 // 20MB，与旧版一致
+	customVoicePreviewTextMax = 2000
+	customVoicePreviewTimeout = 90 * time.Second
 	// customVoicePreviewTTL 试听记录保留时长：超过该时长未确认的“试听中”记录将被自动清理。
 	// 业务规则：7 天内未确认的试听视为放弃，直接删除记录（不写审计日志）。
 	customVoicePreviewTTL = 7 * 24 * time.Hour
 )
 
 var (
-	customVoiceIDPattern            = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*[^-_]$`)
-	ErrCustomVoiceDemoAudioExpired  = errors.New("试听音频已过缓存期限")
-	ErrCustomVoiceDemoAudioNotFound = errors.New("试听音频不存在")
+	customVoiceIDPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*[^-_]$`)
 
 	// 允许上传的音频扩展名。旧版仅做前端 accept 限制，这里服务端强制校验。
 	customVoiceAllowedExts = map[string]struct{}{
@@ -46,22 +40,7 @@ var (
 		".m4a": {},
 		".wav": {},
 	}
-
-	customVoiceDemoAudioCache = struct {
-		sync.RWMutex
-		items map[customVoiceDemoAudioCacheKey]customVoiceDemoAudioCacheEntry
-	}{items: make(map[customVoiceDemoAudioCacheKey]customVoiceDemoAudioCacheEntry)}
 )
-
-type customVoiceDemoAudioCacheKey struct {
-	userId   int
-	recordId int64
-}
-
-type customVoiceDemoAudioCacheEntry struct {
-	url       string
-	expiresAt time.Time
-}
 
 // CustomVoicePreviewRequest 试听（上传并克隆）请求参数。
 type CustomVoicePreviewRequest struct {
@@ -75,7 +54,7 @@ type CustomVoicePreviewRequest struct {
 // CustomVoicePreviewResult 试听返回结果。
 type CustomVoicePreviewResult struct {
 	VoiceId   string `json:"voice_id"`
-	DemoAudio string `json:"demo_audio"` // 项目内试听音频代理 URL
+	DemoAudio string `json:"demo_audio"` // 试听音频 URL（上游返回）
 	FileId    string `json:"file_id"`    // 上游文件 ID（便于调试，不回传敏感信息）
 	RecordId  int64  `json:"record_id"`  // 写入的试听中记录 ID
 }
@@ -86,10 +65,17 @@ type CustomVoiceConfirmResult struct {
 	Status  string `json:"status"`
 }
 
-// CustomVoicePreviewAudio 是项目内试听音频代理返回给 controller 的安全音频内容。
-type CustomVoicePreviewAudio struct {
-	ContentType string
-	Data        []byte
+// CustomVoiceConfirmQuoteResult 确认定制报价返回结果。
+type CustomVoiceConfirmQuoteResult struct {
+	VoiceId   string `json:"voice_id"`
+	QuotaCost int    `json:"quota_cost"`
+}
+
+type customVoiceConfirmContext struct {
+	voiceId      string
+	group        string
+	billingModel string
+	voice        *model.MiniMaxVoice
 }
 
 // customVoiceFileID preserves the upstream JSON type while exposing a safe
@@ -138,71 +124,6 @@ func (id customVoiceFileID) upstreamValue() interface{} {
 		return id.Raw
 	}
 	return id.Display
-}
-
-func registerCustomVoiceDemoAudio(userId int, recordId int64, demoAudioURL string) string {
-	demoAudioURL = strings.TrimSpace(demoAudioURL)
-	if userId <= 0 || recordId <= 0 || demoAudioURL == "" {
-		return ""
-	}
-
-	now := time.Now()
-	customVoiceDemoAudioCache.Lock()
-	defer customVoiceDemoAudioCache.Unlock()
-	pruneExpiredCustomVoiceDemoAudioLocked(now)
-	customVoiceDemoAudioCache.items[customVoiceDemoAudioCacheKey{userId: userId, recordId: recordId}] = customVoiceDemoAudioCacheEntry{
-		url:       demoAudioURL,
-		expiresAt: now.Add(customVoiceDemoAudioTTL),
-	}
-	return fmt.Sprintf("/api/custom_voice/preview/%d/audio", recordId)
-}
-
-func pruneExpiredCustomVoiceDemoAudioLocked(now time.Time) {
-	for key, entry := range customVoiceDemoAudioCache.items {
-		if !entry.expiresAt.IsZero() && now.After(entry.expiresAt) {
-			delete(customVoiceDemoAudioCache.items, key)
-		}
-	}
-}
-
-func getCustomVoiceDemoAudioURL(userId int, recordId int64) (string, error) {
-	key := customVoiceDemoAudioCacheKey{userId: userId, recordId: recordId}
-	now := time.Now()
-
-	customVoiceDemoAudioCache.RLock()
-	entry, ok := customVoiceDemoAudioCache.items[key]
-	customVoiceDemoAudioCache.RUnlock()
-	if !ok {
-		return "", ErrCustomVoiceDemoAudioExpired
-	}
-	if !entry.expiresAt.IsZero() && now.After(entry.expiresAt) {
-		customVoiceDemoAudioCache.Lock()
-		if current, exists := customVoiceDemoAudioCache.items[key]; exists && current.expiresAt.Equal(entry.expiresAt) {
-			delete(customVoiceDemoAudioCache.items, key)
-		}
-		customVoiceDemoAudioCache.Unlock()
-		return "", ErrCustomVoiceDemoAudioExpired
-	}
-	if strings.TrimSpace(entry.url) == "" {
-		return "", ErrCustomVoiceDemoAudioExpired
-	}
-	return entry.url, nil
-}
-
-func isAllowedCustomVoiceAudioContentType(contentType string) bool {
-	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
-	return strings.HasPrefix(contentType, "audio/") || contentType == "application/octet-stream"
-}
-
-func fetchCustomVoiceDemoAudio(originURL string) (*http.Response, error) {
-	fetchSetting := system_setting.GetFetchSetting()
-	if err := common.ValidateURLWithFetchSetting(originURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
-		return nil, err
-	}
-	if system_setting.EnableWorker() {
-		return DoWorkerRequest(&WorkerRequest{URL: originURL, Key: system_setting.WorkerValidKey})
-	}
-	return GetHttpClient().Get(originURL)
 }
 
 func resolveCustomVoiceCloneModel(modelName string) string {
@@ -351,18 +272,8 @@ func normalizeUpstreamError(status int, rawBody []byte) error {
 	return errors.New(msg)
 }
 
-// chargeModelOnce 按模型 ID 扣费一次（按次计费，ModelPrice 优先，乘以分组倍率）。
-// 仅用于确认定制阶段：按系统设置的“音色定制”计费模型按次扣费。
-//
-// 计费原则（防越权/防漏扣）：
-//   - ModelPrice 优先：按价格 * 分组倍率扣费。
-//   - 否则尝试 ModelRatio：按每千 token 倍率 * 分组倍率折算一次基准 quota。
-//   - 解析失败或价格为 0 则 fail closed，绝不“无扣费成功”。
-//   - 仅扣减用户钱包额度（custom voice 流程无 token 上下文），并记录消费日志。
-//   - userId/tokenName/channelId 仅用于日志展示。
-//
-// 返回扣减的 quota。
-func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group string) (int, error) {
+// calculateModelOnceQuota 计算确认定制阶段的按次扣费额度，但不扣费。
+func calculateModelOnceQuota(modelName, group string) (int, error) {
 	modelName = strings.TrimSpace(modelName)
 	if modelName == "" {
 		return 0, errors.New("计费模型未配置，请联系管理员")
@@ -386,6 +297,25 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 	if quota <= 0 {
 		// 价格为 0 视为未正确配置，避免免费滥用。
 		return 0, errors.New("所选计费模型价格无效，请联系管理员")
+	}
+	return quota, nil
+}
+
+// chargeModelOnce 按模型 ID 扣费一次（按次计费，ModelPrice 优先，乘以分组倍率）。
+// 仅用于确认定制阶段：按系统设置的“音色定制”计费模型按次扣费。
+//
+// 计费原则（防越权/防漏扣）：
+//   - ModelPrice 优先：按价格 * 分组倍率扣费。
+//   - 否则尝试 ModelRatio：按每千 token 倍率 * 分组倍率折算一次基准 quota。
+//   - 解析失败或价格为 0 则 fail closed，绝不“无扣费成功”。
+//   - 仅扣减用户钱包额度（custom voice 流程无 token 上下文），并记录消费日志。
+//   - userId/tokenName/channelId 仅用于日志展示。
+//
+// 返回扣减的 quota。
+func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group string) (int, error) {
+	quota, err := calculateModelOnceQuota(modelName, group)
+	if err != nil {
+		return 0, err
 	}
 
 	// 预检用户余额，避免无效的上游调用与负数额度。
@@ -625,11 +555,9 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 		return nil, errors.New("音色记录保存失败，请稍后重试")
 	}
 
-	proxyDemoAudio := registerCustomVoiceDemoAudio(userId, voice.Id, demoAudio)
-
 	return &CustomVoicePreviewResult{
 		VoiceId:   req.VoiceId,
-		DemoAudio: proxyDemoAudio,
+		DemoAudio: demoAudio,
 		FileId:    fileId.String(),
 		RecordId:  voice.Id,
 	}, nil
@@ -718,51 +646,6 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 	return resp.DemoAudio, nil
 }
 
-// GetCustomVoicePreviewAudio 拉取并校验当前用户的试听音频代理内容。
-func GetCustomVoicePreviewAudio(userId int, recordId int64) (*CustomVoicePreviewAudio, error) {
-	if userId <= 0 || recordId <= 0 {
-		return nil, ErrCustomVoiceDemoAudioNotFound
-	}
-	voice, err := model.GetMiniMaxVoiceById(recordId)
-	if err != nil || voice == nil || voice.Type != model.MiniMaxVoiceTypePreview || voice.OperatorKind != "user" || voice.OperatorId != userId {
-		return nil, ErrCustomVoiceDemoAudioNotFound
-	}
-
-	demoAudioURL, err := getCustomVoiceDemoAudioURL(userId, recordId)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := fetchCustomVoiceDemoAudio(demoAudioURL)
-	if err != nil {
-		return nil, errors.New("试听音频拉取失败")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("试听音频拉取失败")
-	}
-	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
-	if contentType == "" {
-		contentType = "audio/mpeg"
-	}
-	if !isAllowedCustomVoiceAudioContentType(contentType) {
-		return nil, errors.New("试听音频类型异常")
-	}
-	if resp.ContentLength > customVoiceDemoAudioMaxBytes {
-		return nil, errors.New("试听音频过大")
-	}
-
-	data, err := io.ReadAll(io.LimitReader(resp.Body, customVoiceDemoAudioMaxBytes+1))
-	if err != nil {
-		return nil, errors.New("读取试听音频失败")
-	}
-	if int64(len(data)) > customVoiceDemoAudioMaxBytes {
-		return nil, errors.New("试听音频过大")
-	}
-	return &CustomVoicePreviewAudio{ContentType: contentType, Data: data}, nil
-}
-
 // buildVoiceClonePayload 构造发给 MiniMax voice_clone 接口的 payload。
 //
 // 当试听文本非空时，复用 MiniMax TTS 增强策略：
@@ -799,15 +682,7 @@ func buildVoiceClonePayload(fileId interface{}, req CustomVoicePreviewRequest) m
 	return payload
 }
 
-// CustomVoiceConfirm 确认定制：按配置的扣费模型 ID 扣费，成功后把记录从试听中转为已创建。
-//
-// 安全要点：
-//   - 必须命中本用户的“试听中”记录，防止越权确认他人音色。
-//   - 一个“试听中”音色 ID 只能确认成功一次：通过条件更新（type=preview -> created）实现幂等。
-//   - 扣费失败即中断，记录不会变为已创建。
-//   - 扣费与状态流转使用一次性条件更新，避免旧实现里 DB.Save(voice) 把内存中残留的
-//     preview 状态回写到数据库。
-func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmResult, error) {
+func prepareCustomVoiceConfirm(userId int, voiceId string) (*customVoiceConfirmContext, error) {
 	voiceId = strings.TrimSpace(voiceId)
 	if voiceId == "" {
 		return nil, errors.New("音色ID不能为空")
@@ -825,7 +700,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, err
 	}
 
-	// 必须命中本用户的试听中记录，防止越权。
+	// 必须命中本用户的试听中记录，防止越权报价或确认他人音色。
 	voice, err := model.GetMiniMaxVoiceByVoiceId(voiceId)
 	if err != nil || voice == nil {
 		return nil, errors.New("音色ID不合规")
@@ -837,14 +712,54 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, errors.New("无权操作该音色")
 	}
 
+	return &customVoiceConfirmContext{
+		voiceId:      voiceId,
+		group:        group,
+		billingModel: billingModel,
+		voice:        voice,
+	}, nil
+}
+
+// CustomVoiceConfirmQuote 查询确认定制阶段应扣额度，只报价不扣费、不激活音色。
+func CustomVoiceConfirmQuote(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmQuoteResult, error) {
+	confirmContext, err := prepareCustomVoiceConfirm(userId, voiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	quotaCost, err := calculateModelOnceQuota(confirmContext.billingModel, confirmContext.group)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CustomVoiceConfirmQuoteResult{
+		VoiceId:   confirmContext.voiceId,
+		QuotaCost: quotaCost,
+	}, nil
+}
+
+// CustomVoiceConfirm 确认定制：按配置的扣费模型 ID 扣费，成功后把记录从试听中转为已创建。
+//
+// 安全要点：
+//   - 必须命中本用户的“试听中”记录，防止越权确认他人音色。
+//   - 一个“试听中”音色 ID 只能确认成功一次：通过条件更新（type=preview -> created）实现幂等。
+//   - 扣费失败即中断，记录不会变为已创建。
+//   - 扣费与状态流转使用一次性条件更新，避免旧实现里 DB.Save(voice) 把内存中残留的
+//     preview 状态回写到数据库。
+func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmResult, error) {
+	confirmContext, err := prepareCustomVoiceConfirm(userId, voiceId)
+	if err != nil {
+		return nil, err
+	}
+
 	// 确认定制阶段按配置的扣费模型 ID 扣费。失败即中断。
-	quota, err := chargeModelOnce(c, userId, 0, billingModel, group)
+	quota, err := chargeModelOnce(c, userId, 0, confirmContext.billingModel, confirmContext.group)
 	if err != nil {
 		return nil, err
 	}
 
 	// 原子地把 preview -> created 并写入扣费额度，杜绝状态回滚风险。
-	ok, err := model.ConfirmMiniMaxVoice(voice.Id, userId, quota)
+	ok, err := model.ConfirmMiniMaxVoice(confirmContext.voice.Id, userId, quota)
 	if err != nil {
 		// 状态更新失败：尽力退还额度，避免无音色却扣费。
 		refundQuota(userId, quota)
@@ -857,7 +772,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 	}
 
 	return &CustomVoiceConfirmResult{
-		VoiceId: voiceId,
+		VoiceId: confirmContext.voiceId,
 		Status:  model.MiniMaxVoiceTypeCreated,
 	}, nil
 }

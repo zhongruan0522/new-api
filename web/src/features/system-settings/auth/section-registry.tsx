@@ -26,7 +26,7 @@ import { PasskeySection } from './passkey-section'
 const AUTH_SECTIONS = [
   {
     id: 'basic-auth',
-    titleKey: 'Basic Authentication',
+    titleKey: 'systemSettings.fields.basicAuthentication',
     build: (settings: AuthSettings) => (
       <BasicAuthSection
         defaultValues={{
@@ -43,7 +43,7 @@ const AUTH_SECTIONS = [
   },
   {
     id: 'oauth',
-    titleKey: 'OAuth Integrations',
+    titleKey: 'systemSettings.fields.oauthIntegrations',
     build: (settings: AuthSettings) => (
       <OAuthSection
         defaultValues={{
@@ -60,7 +60,7 @@ const AUTH_SECTIONS = [
   },
   {
     id: 'passkey',
-    titleKey: 'Passkey Authentication',
+    titleKey: 'systemSettings.fields.passkeyAuthentication',
     build: (settings: AuthSettings) => (
       <PasskeySection
         defaultValues={{
@@ -90,7 +90,7 @@ const AUTH_SECTIONS = [
   },
   {
     id: 'bot-protection',
-    titleKey: 'Bot Protection',
+    titleKey: 'systemSettings.fields.botProtection',
     build: (settings: AuthSettings) => (
       <BotProtectionSection
         defaultValues={{

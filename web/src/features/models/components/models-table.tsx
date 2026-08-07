@@ -211,7 +211,7 @@ export function ModelsTable() {
   // Prepare filter options
   const vendorFilterOptions = [
     {
-      label: `${t('All Vendors')}${vendorCounts?.all ? ` (${vendorCounts.all})` : ''}`,
+      label: `${t('models.fields.allVendors')}${vendorCounts?.all ? ` (${vendorCounts.all})` : ''}`,
       value: 'all',
     },
     ...vendorOptions.map((option) => ({
@@ -226,30 +226,30 @@ export function ModelsTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No Models Found')}
+      emptyTitle={t('common.titles.noModelsFound')}
       emptyDescription={t(
-        'No models available. Create your first model to get started.'
+        'models.tips.noModelsAvailableCreateYourFirstModelToGet'
       )}
       skeletonKeyPrefix='model-skeleton'
       applyHeaderSize
       toolbarProps={{
-        searchPlaceholder: t('Filter by model name...'),
+        searchPlaceholder: t('models.actions.filterByModelName'),
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: [...getModelStatusOptions(t)],
             singleSelect: true,
           },
           {
             columnId: 'vendor_id',
-            title: t('Vendor'),
+            title: t('models.fields.vendor'),
             options: vendorFilterOptions,
             singleSelect: true,
           },
           {
             columnId: 'sync_official',
-            title: t('Official Sync'),
+            title: t('models.fields.officialSync'),
             options: [...getSyncStatusOptions(t)],
             singleSelect: true,
           },

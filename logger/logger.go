@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 )
 
 const (
@@ -77,7 +78,7 @@ func logHelper(ctx context.Context, level string, msg string) {
 	if level == loggerINFO {
 		writer = gin.DefaultWriter
 	}
-	id := ctx.Value(common.RequestIdKey)
+	id := ctx.Value(constant.ContextKeyRequestId)
 	if id == nil {
 		id = "SYSTEM"
 	}

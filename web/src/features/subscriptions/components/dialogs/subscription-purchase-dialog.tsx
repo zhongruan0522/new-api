@@ -93,7 +93,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     (props.epayMethods || []).find((m) => m.type === selectedEpayMethod)
       ?.name ||
     selectedEpayMethod ||
-    t('Select Payment Method')
+    t('subscriptions.placeholders.selectPaymentMethod')
   const totalAmount = Number(plan.total_amount || 0)
   const price = Number(plan.price_amount || 0).toFixed(2)
   const limitReached =
@@ -106,17 +106,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
       const res = await paySubscriptionStripe({ plan_id: plan.id })
       if (res.message === 'success' && res.data?.pay_link) {
         window.open(res.data.pay_link, '_blank')
-        toast.success(t('Payment page opened'))
+        toast.success(t('subscriptions.fields.paymentPageOpened'))
         props.onOpenChange(false)
       } else {
         toast.error(
           res.message && res.message !== 'success'
             ? res.message
-            : t('Payment request failed')
+            : t('subscriptions.status.paymentRequestFailed')
         )
       }
     } catch {
-      toast.error(t('Payment request failed'))
+      toast.error(t('subscriptions.status.paymentRequestFailed'))
     } finally {
       setPaying(false)
     }
@@ -128,17 +128,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
       const res = await paySubscriptionCreem({ plan_id: plan.id })
       if (res.message === 'success' && res.data?.checkout_url) {
         window.open(res.data.checkout_url, '_blank')
-        toast.success(t('Payment page opened'))
+        toast.success(t('subscriptions.fields.paymentPageOpened'))
         props.onOpenChange(false)
       } else {
         toast.error(
           res.message && res.message !== 'success'
             ? res.message
-            : t('Payment request failed')
+            : t('subscriptions.status.paymentRequestFailed')
         )
       }
     } catch {
-      toast.error(t('Payment request failed'))
+      toast.error(t('subscriptions.status.paymentRequestFailed'))
     } finally {
       setPaying(false)
     }
@@ -151,17 +151,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
     try {
       const res = await paySubscriptionWaffoPancake({ plan_id: plan.id })
       if (res.message === 'success' && res.data?.checkout_url) {
-        toast.success(t('Redirecting to payment page...'))
+        toast.success(t('subscriptions.status.redirectingToPaymentPage'))
         window.location.href = res.data.checkout_url
       } else {
         toast.error(
           res.message && res.message !== 'success'
             ? res.message
-            : t('Payment request failed')
+            : t('subscriptions.status.paymentRequestFailed')
         )
       }
     } catch {
-      toast.error(t('Payment request failed'))
+      toast.error(t('subscriptions.status.paymentRequestFailed'))
     } finally {
       setPaying(false)
     }
@@ -173,7 +173,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
 
   const handlePayEpay = async () => {
     if (!selectedEpayMethod) {
-      toast.error(t('Please select a payment method'))
+      toast.error(t('subscriptions.errors.pleaseSelectAPaymentMethod'))
       return
     }
     setPaying(true)
@@ -199,17 +199,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
         document.body.appendChild(form)
         form.submit()
         document.body.removeChild(form)
-        toast.success(t('Payment initiated'))
+        toast.success(t('subscriptions.fields.paymentInitiated'))
         props.onOpenChange(false)
       } else {
         toast.error(
           res.message && res.message !== 'success'
             ? res.message
-            : t('Payment request failed')
+            : t('subscriptions.status.paymentRequestFailed')
         )
       }
     } catch {
-      toast.error(t('Payment request failed'))
+      toast.error(t('subscriptions.status.paymentRequestFailed'))
     } finally {
       setPaying(false)
     }
@@ -221,7 +221,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Crown className='h-5 w-5' />
-            {t('Purchase Subscription')}
+            {t('subscriptions.fields.purchaseSubscription')}
           </DialogTitle>
         </DialogHeader>
 
@@ -229,7 +229,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           <div className='bg-muted/50 space-y-2.5 rounded-lg border p-3 sm:space-y-3 sm:p-4'>
             <div className='flex justify-between'>
               <span className='text-muted-foreground text-sm'>
-                {t('Plan Name')}
+                {t('subscriptions.fields.planName')}
               </span>
               <span className='max-w-[200px] truncate text-sm font-medium'>
                 {plan.title}
@@ -237,41 +237,41 @@ export function SubscriptionPurchaseDialog(props: Props) {
             </div>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>
-                {t('Validity Period')}
+                {t('subscriptions.fields.validityPeriod')}
               </span>
               <span className='flex items-center gap-1 text-sm'>
                 <CalendarClock className='h-3.5 w-3.5' />
                 {formatDuration(plan, t)}
               </span>
             </div>
-            {formatResetPeriod(plan, t) !== t('No Reset') && (
+            {formatResetPeriod(plan, t) !== t('keys.fields.noReset') && (
               <div className='flex justify-between'>
                 <span className='text-muted-foreground text-sm'>
-                  {t('Reset Period')}
+                  {t('subscriptions.actions.resetPeriod')}
                 </span>
                 <span className='text-sm'>{formatResetPeriod(plan, t)}</span>
               </div>
             )}
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>
-                {t('Received amount')}
+                {t('subscriptions.fields.receivedAmount')}
               </span>
               <span className='flex items-center gap-1 text-sm'>
                 <Package className='h-3.5 w-3.5' />
-                {totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited')}
+                {totalAmount > 0 ? formatQuota(totalAmount) : t('keyQuery.fields.unlimited')}
               </span>
             </div>
             {plan.upgrade_group && (
               <div className='flex items-center justify-between'>
                 <span className='text-muted-foreground text-sm'>
-                  {t('Upgrade Group')}
+                  {t('subscriptions.fields.upgradeGroup')}
                 </span>
                 <GroupBadge group={plan.upgrade_group} />
               </div>
             )}
             <Separator />
             <div className='flex items-center justify-between'>
-              <span className='text-sm font-medium'>{t('Amount Due')}</span>
+              <span className='text-sm font-medium'>{t('subscriptions.fields.amountDue')}</span>
               <span className='text-primary text-lg font-bold'>${price}</span>
             </div>
           </div>
@@ -279,7 +279,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           {limitReached && (
             <Alert variant='destructive'>
               <AlertDescription>
-                {t('Purchase limit reached')} ({props.purchaseCount}/
+                {t('subscriptions.fields.purchaseLimitReached')} ({props.purchaseCount}/
                 {props.purchaseLimit})
               </AlertDescription>
             </Alert>
@@ -288,7 +288,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           {hasAnyPayment ? (
             <div className='space-y-3'>
               <p className='text-muted-foreground text-xs'>
-                {t('Select Payment Method')}
+                {t('subscriptions.placeholders.selectPaymentMethod')}
               </p>
               {(hasStripe || hasCreem || hasWaffoPancake) && (
                 <div className='grid grid-cols-2 gap-2 sm:flex'>
@@ -356,7 +356,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     onClick={handlePayEpay}
                     disabled={paying || !selectedEpayMethod || limitReached}
                   >
-                    {t('Pay')}
+                    {t('subscriptions.fields.pay')}
                   </Button>
                 </div>
               )}
@@ -365,7 +365,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
             <Alert>
               <AlertDescription>
                 {t(
-                  'Online payment is not enabled. Please contact the administrator.'
+                  'subscriptions.status.onlinePaymentIsNotEnabledPleaseContactTheAdministrator'
                 )}
               </AlertDescription>
             </Alert>

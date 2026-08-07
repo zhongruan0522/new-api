@@ -57,12 +57,12 @@ export function TwoFADisableDialog({
 
   const handleDisable = async () => {
     if (!code) {
-      toast.error(t('Please enter your verification code or backup code'))
+      toast.error(t('profile.errors.pleaseEnterYourVerificationCodeOrBackupCode'))
       return
     }
 
     if (!confirmed) {
-      toast.error(t('Please confirm that you understand the consequences'))
+      toast.error(t('profile.tips.pleaseConfirmThatYouUnderstandTheConsequences'))
       return
     }
 
@@ -71,17 +71,17 @@ export function TwoFADisableDialog({
       const response = await disable2FA(code)
 
       if (response.success) {
-        toast.success(t('Two-factor authentication disabled'))
+        toast.success(t('profile.status.twoFactorAuthenticationDisabled'))
         onOpenChange(false)
         onSuccess()
         // Reset
         setCode('')
         setConfirmed(false)
       } else {
-        toast.error(response.message || t('Failed to disable 2FA'))
+        toast.error(response.message || t('profile.errors.failedToDisable2Fa'))
       }
     } catch (_error) {
-      toast.error(t('Failed to disable 2FA'))
+      toast.error(t('profile.errors.failedToDisable2Fa'))
     } finally {
       setLoading(false)
     }
@@ -103,11 +103,11 @@ export function TwoFADisableDialog({
         <DialogHeader>
           <DialogTitle className='text-destructive flex items-center gap-2'>
             <AlertTriangle className='h-5 w-5' />
-            {t('Disable Two-Factor Authentication')}
+            {t('profile.actions.disableTwoFactorAuthentication')}
           </DialogTitle>
           <DialogDescription>
             {t(
-              'This action will permanently remove 2FA protection from your account.'
+              'profile.tips.actionWillPermanentlyRemove2FaProtectionFromYour'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -116,21 +116,21 @@ export function TwoFADisableDialog({
           <Alert variant='destructive'>
             <AlertTriangle className='h-4 w-4' />
             <AlertDescription>
-              {t('Warning: Disabling 2FA will make your account less secure.')}
+              {t('profile.tips.warningDisabling2FaWillMakeYourAccountLess')}
             </AlertDescription>
           </Alert>
 
           <div className='space-y-2'>
-            <Label htmlFor='code'>{t('Verification Code')}</Label>
+            <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
             <Input
               id='code'
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder={t('Enter code or backup code')}
+              placeholder={t('profile.placeholders.enterCodeOrBackupCode')}
               disabled={loading}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('Enter your authenticator code or a backup code')}
+              {t('profile.placeholders.enterYourAuthenticatorCodeOrABackupCode')}
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export function TwoFADisableDialog({
               className='text-sm leading-tight font-normal'
             >
               {t(
-                'I understand that disabling 2FA will remove all protection and backup codes'
+                'profile.tips.iUnderstandThatDisabling2FaWillRemoveAll'
               )}
             </Label>
           </div>
@@ -157,7 +157,7 @@ export function TwoFADisableDialog({
             onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button
             variant='destructive'
@@ -165,7 +165,7 @@ export function TwoFADisableDialog({
             disabled={loading || !code || !confirmed}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('Disabling...') : t('Disable 2FA')}
+            {loading ? t('profile.tips.disabling') : t('profile.actions.disable2Fa')}
           </Button>
         </DialogFooter>
       </DialogContent>

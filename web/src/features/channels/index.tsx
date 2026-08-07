@@ -28,7 +28,7 @@ export function Channels() {
   return (
     <ChannelsProvider>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Channels')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('channels.titles.value')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <ChannelsPrimaryButtons />
         </SectionPageLayout.Actions>

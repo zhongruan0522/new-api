@@ -37,15 +37,15 @@ export async function handleEnableModel(
   try {
     const response = await updateModelStatus(id, 1)
     if (response.success) {
-      toast.success(i18next.t('Model enabled successfully'))
+      toast.success(i18next.t('models.status.modelEnabledSuccessfully'))
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('Failed to enable model'))
+      toast.error(response.message || i18next.t('models.errors.failedToEnableModel'))
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('Failed to enable model')
+      (error as Error)?.message || i18next.t('models.errors.failedToEnableModel')
     )
   }
 }
@@ -61,15 +61,15 @@ export async function handleDisableModel(
   try {
     const response = await updateModelStatus(id, 0)
     if (response.success) {
-      toast.success(i18next.t('Model disabled successfully'))
+      toast.success(i18next.t('models.status.modelDisabledSuccessfully'))
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('Failed to disable model'))
+      toast.error(response.message || i18next.t('models.errors.failedToDisableModel'))
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('Failed to disable model')
+      (error as Error)?.message || i18next.t('models.errors.failedToDisableModel')
     )
   }
 }
@@ -105,15 +105,15 @@ export async function handleDeleteModel(
   try {
     const response = await deleteModelAPI(id)
     if (response.success) {
-      toast.success(i18next.t('Model deleted successfully'))
+      toast.success(i18next.t('models.status.modelDeletedSuccessfully'))
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('Failed to delete model'))
+      toast.error(response.message || i18next.t('channels.errors.failedToDeleteModel'))
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('Failed to delete model')
+      (error as Error)?.message || i18next.t('channels.errors.failedToDeleteModel')
     )
   }
 }
@@ -127,7 +127,7 @@ export async function handleBatchDeleteModels(
   onSuccess?: (deletedCount: number) => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('Please select at least one model'))
+    toast.error(i18next.t('models.errors.pleaseSelectAtLeastOneModel'))
     return
   }
 
@@ -150,7 +150,7 @@ export async function handleBatchDeleteModels(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('Successfully deleted {{count}} model(s)', {
+        i18next.t('models.status.successfullyDeletedCountModelS', {
           count: successCount,
         })
       )
@@ -160,11 +160,11 @@ export async function handleBatchDeleteModels(
 
     if (failedCount > 0) {
       toast.error(
-        i18next.t('Failed to delete {{count}} model(s)', { count: failedCount })
+        i18next.t('models.errors.failedToDeleteCountModelS', { count: failedCount })
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('Batch delete failed'))
+    toast.error((error as Error)?.message || i18next.t('models.status.batchDeleteFailed'))
   }
 }
 
@@ -181,7 +181,7 @@ export async function handleBatchEnableModels(
   onSuccess?: () => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('Please select at least one model'))
+    toast.error(i18next.t('models.errors.pleaseSelectAtLeastOneModel'))
     return
   }
 
@@ -202,7 +202,7 @@ export async function handleBatchEnableModels(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('Successfully enabled {{count}} model(s)', {
+        i18next.t('models.status.successfullyEnabledCountModelS', {
           count: successCount,
         })
       )
@@ -212,11 +212,11 @@ export async function handleBatchEnableModels(
 
     if (failedCount > 0) {
       toast.error(
-        i18next.t('Failed to enable {{count}} model(s)', { count: failedCount })
+        i18next.t('models.errors.failedToEnableCountModelS', { count: failedCount })
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('Batch enable failed'))
+    toast.error((error as Error)?.message || i18next.t('models.status.batchEnableFailed'))
   }
 }
 
@@ -229,7 +229,7 @@ export async function handleBatchDisableModels(
   onSuccess?: () => void
 ): Promise<void> {
   if (ids.length === 0) {
-    toast.error(i18next.t('Please select at least one model'))
+    toast.error(i18next.t('models.errors.pleaseSelectAtLeastOneModel'))
     return
   }
 
@@ -250,7 +250,7 @@ export async function handleBatchDisableModels(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('Successfully disabled {{count}} model(s)', {
+        i18next.t('models.status.successfullyDisabledCountModelS', {
           count: successCount,
         })
       )
@@ -260,12 +260,12 @@ export async function handleBatchDisableModels(
 
     if (failedCount > 0) {
       toast.error(
-        i18next.t('Failed to disable {{count}} model(s)', {
+        i18next.t('models.errors.failedToDisableCountModelS', {
           count: failedCount,
         })
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('Batch disable failed'))
+    toast.error((error as Error)?.message || i18next.t('models.status.batchDisableFailed'))
   }
 }

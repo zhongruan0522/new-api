@@ -125,7 +125,7 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
           className='text-primary/60 hover:text-primary/80 border-border flex items-center gap-2.5 border-b p-2.5 transition-colors'
         >
           <User className='size-4' />
-          {t('Profile')}
+          {t('layout.titles.profile')}
         </Link>
 
         <Link
@@ -134,7 +134,7 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
           className='text-primary/60 hover:text-primary/80 border-border flex items-center gap-2.5 border-b p-2.5 transition-colors'
         >
           <Wallet className='size-4' />
-          {t('Wallet')}
+          {t('layout.titles.wallet')}
         </Link>
 
         {/* Sign out - consistent style */}
@@ -144,7 +144,7 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
           className='text-destructive hover:text-destructive/80 h-auto w-full justify-start gap-2.5 p-2.5 hover:bg-transparent'
         >
           <LogOut className='size-4' />
-          {t('Sign out')}
+          {t('layout.actions.signOut')}
         </Button>
       </div>
 
@@ -169,7 +169,7 @@ function MobileSignInButton({ onNavigate }: MobileSignInButtonProps) {
       className='h-10 w-full'
       render={<Link to='/sign-in' onClick={onNavigate} />}
     >
-      {t('Sign In')}
+      {t('layout.actions.signIn')}
     </Button>
   )
 }
@@ -248,7 +248,7 @@ export function MobileDrawer({
                   size='icon-sm'
                   onClick={onClose}
                   className='hover:text-primary cursor-pointer'
-                  aria-label={t('Close menu')}
+                  aria-label={t('layout.actions.closeMenu')}
                 >
                   <X className='size-5' />
                 </Button>

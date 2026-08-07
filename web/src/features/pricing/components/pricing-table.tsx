@@ -121,8 +121,8 @@ export function PricingTable(props: PricingTableProps) {
             ) : table.getRowModel().rows.length === 0 ? (
               <TableEmpty
                 colSpan={columns.length}
-                title={t('No Models Found')}
-                description={t('No models match your current filters.')}
+                title={t('common.titles.noModelsFound')}
+                description={t('pricing.tips.noModelsMatchYourCurrentFilters')}
               />
             ) : (
               table.getRowModel().rows.map((row) => (

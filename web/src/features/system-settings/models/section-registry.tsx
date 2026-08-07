@@ -28,7 +28,7 @@ import { MiniMaxSettingsCard } from './minimax-settings-card'
 const MODELS_SECTIONS = [
   {
     id: 'global',
-    titleKey: 'Global Model Configuration',
+    titleKey: 'systemSettings.titles.globalModelConfiguration',
     build: (settings: ModelSettings) => (
       <GlobalSettingsCard
         defaultValues={{
@@ -44,7 +44,7 @@ const MODELS_SECTIONS = [
   },
   {
     id: 'gemini',
-    titleKey: 'Gemini',
+    titleKey: 'systemSettings.fields.gemini',
     build: (settings: ModelSettings) => (
       <GeminiSettingsCard
         defaultValues={{
@@ -64,7 +64,7 @@ const MODELS_SECTIONS = [
   },
   {
     id: 'claude',
-    titleKey: 'Claude',
+    titleKey: 'systemSettings.fields.claude',
     build: (settings: ModelSettings) => (
       <ClaudeSettingsCard
         defaultValues={{
@@ -78,7 +78,7 @@ const MODELS_SECTIONS = [
   },
   {
     id: 'grok',
-    titleKey: 'Grok',
+    titleKey: 'common.fields.grok',
     build: (settings: ModelSettings) => (
       <GrokSettingsCard
         defaultValues={{
@@ -94,7 +94,7 @@ const MODELS_SECTIONS = [
   },
   {
     id: 'minimax',
-    titleKey: 'MiniMax',
+    titleKey: 'common.fields.miniMax',
     build: (settings: ModelSettings) => (
       <MiniMaxSettingsCard
         defaultValues={{
@@ -119,7 +119,7 @@ const MODELS_SECTIONS = [
   },
   {
     id: 'channel-affinity',
-    titleKey: 'Channel Affinity',
+    titleKey: 'systemSettings.fields.channelAffinity',
     build: (settings: ModelSettings) => (
       <ChannelAffinitySection
         defaultValues={{

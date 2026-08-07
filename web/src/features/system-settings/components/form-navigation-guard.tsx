@@ -48,9 +48,9 @@ export function FormNavigationGuard({
   message,
 }: FormNavigationGuardProps) {
   const { t } = useTranslation()
-  const resolvedTitle = title ?? t('Unsaved changes')
+  const resolvedTitle = title ?? t('systemSettings.fields.unsavedChanges')
   const resolvedMessage =
-    message ?? t('You have unsaved changes. Are you sure you want to leave?')
+    message ?? t('systemSettings.tips.haveUnsavedChangesAreYouSureYouWantTo')
   const blocker = useBlocker({ condition: when })
   const [showDialog, setShowDialog] = useState(false)
 
@@ -93,8 +93,8 @@ export function FormNavigationGuard({
       }}
       title={resolvedTitle}
       desc={resolvedMessage}
-      confirmText={t('Leave')}
-      cancelBtnText={t('Stay')}
+      confirmText={t('systemSettings.fields.leave')}
+      cancelBtnText={t('systemSettings.fields.stay')}
       destructive
       handleConfirm={handleConfirm}
     />

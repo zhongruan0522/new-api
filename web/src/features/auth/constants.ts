@@ -48,7 +48,7 @@ export const registerFormSchema = z
 
 export const forgotPasswordFormSchema = z.object({
   email: z.string().email({
-    message: 'Please enter a valid email address',
+    message: 'profile.errors.pleaseEnterAValidEmailAddress',
   }),
 })
 

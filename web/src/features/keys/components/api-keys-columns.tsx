@@ -72,7 +72,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label={t('Select all')}
+          aria-label={t('channels.placeholders.selectAll')}
           className='translate-y-[2px]'
         />
       ),
@@ -80,30 +80,30 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label={t('Select row')}
+          aria-label={t('channels.placeholders.selectRow')}
           className='translate-y-[2px]'
         />
       ),
       enableSorting: false,
       enableHiding: false,
-      meta: { label: t('Select') },
+      meta: { label: t('keys.placeholders.select') },
     },
     {
       accessorKey: 'name',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Name')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
       ),
       cell: ({ row }) => (
         <div className='max-w-[200px] truncate font-medium'>
           {row.getValue('name')}
         </div>
       ),
-      meta: { label: t('Name'), mobileTitle: true },
+      meta: { label: t('channels.fields.name'), mobileTitle: true },
     },
     {
       accessorKey: 'status',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Status')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
       ),
       cell: ({ row }) => {
         const statusConfig = API_KEY_STATUSES[row.getValue('status') as number]
@@ -117,29 +117,29 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
         )
       },
       filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
-      meta: { label: t('Status'), mobileBadge: true },
+      meta: { label: t('channels.fields.status'), mobileBadge: true },
     },
     {
       id: 'key',
       accessorKey: 'key',
-      header: t('API Key'),
+      header: t('channels.fields.apiKey'),
       cell: ({ row }) => <ApiKeyCell apiKey={row.original} />,
       enableSorting: false,
-      meta: { label: t('API Key') },
+      meta: { label: t('channels.fields.apiKey') },
     },
     {
       id: 'quota',
       accessorKey: 'remain_quota',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Quota')} />
+        <DataTableColumnHeader column={column} title={t('keys.fields.quota')} />
       ),
       cell: ({ row }) => <ApiKeyQuotaCell apiKey={row.original} />,
-      meta: { label: t('Quota') },
+      meta: { label: t('keys.fields.quota') },
     },
     {
       accessorKey: 'group',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Group')} />
+        <DataTableColumnHeader column={column} title={t('common.fields.group')} />
       ),
       cell: ({ row }) => {
         const apiKey = row.original
@@ -157,7 +157,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
                 <GroupBadge group='auto' />
                 {apiKey.cross_group_retry && (
                   <StatusBadge
-                    label={t('Cross-group')}
+                    label={t('keys.fields.crossGroup')}
                     variant='info'
                     copyable={false}
                   />
@@ -166,7 +166,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
               <TooltipContent>
                 <span className='text-xs'>
                   {t(
-                    'Automatically selects the best available group with circuit breaker mechanism'
+                    'keys.tips.automaticallySelectsTheBestAvailableGroupWithCircuitBreaker'
                   )}
                 </span>
               </TooltipContent>
@@ -175,44 +175,44 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
         }
         return <GroupBadge group={group} ratio={ratio} />
       },
-      meta: { label: t('Group'), mobileHidden: true },
+      meta: { label: t('common.fields.group'), mobileHidden: true },
     },
     {
       id: 'model_limits',
       accessorKey: 'model_limits',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Models')} />
+        <DataTableColumnHeader column={column} title={t('channels.titles.models')} />
       ),
       cell: ({ row }) => <ModelLimitsCell apiKey={row.original} />,
       enableSorting: false,
-      meta: { label: t('Models'), mobileHidden: true },
+      meta: { label: t('channels.titles.models'), mobileHidden: true },
     },
     {
       id: 'allow_ips',
       accessorKey: 'allow_ips',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('IP Restriction')} />
+        <DataTableColumnHeader column={column} title={t('keys.fields.ipRestriction')} />
       ),
       cell: ({ row }) => <IpRestrictionsCell apiKey={row.original} />,
       enableSorting: false,
-      meta: { label: t('IP Restriction'), mobileHidden: true },
+      meta: { label: t('keys.fields.ipRestriction'), mobileHidden: true },
     },
     {
       accessorKey: 'created_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Created')} />
+        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
       ),
       cell: ({ row }) => (
         <span className='text-muted-foreground font-mono text-xs tabular-nums'>
           {formatTimestampToDate(row.getValue('created_time'))}
         </span>
       ),
-      meta: { label: t('Created'), mobileHidden: true },
+      meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
     },
     {
       accessorKey: 'accessed_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Last Used')} />
+        <DataTableColumnHeader column={column} title={t('keys.status.lastUsed')} />
       ),
       cell: ({ row }) => {
         const accessedTime = row.getValue('accessed_time') as number
@@ -225,19 +225,19 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
           </span>
         )
       },
-      meta: { label: t('Last Used'), mobileHidden: true },
+      meta: { label: t('keys.status.lastUsed'), mobileHidden: true },
     },
     {
       accessorKey: 'expired_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Expires')} />
+        <DataTableColumnHeader column={column} title={t('keys.fields.expires')} />
       ),
       cell: ({ row }) => {
         const expiredTime = row.getValue('expired_time') as number
         if (expiredTime === -1) {
           return (
             <StatusBadge
-              label={t('Never')}
+              label={t('keyQuery.fields.never')}
               variant='neutral'
               copyable={false}
             />
@@ -255,12 +255,12 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
           </span>
         )
       },
-      meta: { label: t('Expires'), mobileHidden: true },
+      meta: { label: t('keys.fields.expires'), mobileHidden: true },
     },
     {
       id: 'actions',
       cell: ({ row }) => <DataTableRowActions row={row} />,
-      meta: { label: t('Actions') },
+      meta: { label: t('channels.fields.actions') },
       size: 88,
     },
   ]

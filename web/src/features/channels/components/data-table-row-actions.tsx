@@ -140,13 +140,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     try {
       const response = await getGlmRiskStatus(channel.id)
       if (!response.success) {
-        throw new Error(response.message || t('Risk query failed'))
+        throw new Error(response.message || t('channels.status.riskQueryFailed'))
       }
       setRiskDetected(Boolean(response.data?.is_risk))
       setRiskDialogOpen(true)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('Risk query failed')
+        error instanceof Error ? error.message : t('channels.status.riskQueryFailed')
       )
     } finally {
       setIsCheckingRisk(false)
@@ -174,13 +174,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               variant='ghost'
               size='icon-sm'
               onClick={handleTest}
-              aria-label={t('Test Connection')}
+              aria-label={t('channels.fields.testConnection')}
             />
           }
         >
           <Gauge className='size-4' />
         </TooltipTrigger>
-        <TooltipContent>{t('Test Connection')}</TooltipContent>
+        <TooltipContent>{t('channels.fields.testConnection')}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -191,7 +191,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               size='icon-sm'
               onClick={handleToggleStatus}
               disabled={isTogglingStatus}
-              aria-label={isEnabled ? t('Disable') : t('Enable')}
+              aria-label={isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
               className={
                 isEnabled
                   ? 'text-destructive hover:text-destructive'
@@ -209,7 +209,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {isEnabled ? t('Disable') : t('Enable')}
+          {isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
         </TooltipContent>
       </Tooltip>
 
@@ -223,12 +223,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           }
         >
           <MoreHorizontal className='h-4 w-4' />
-          <span className='sr-only'>{t('Open menu')}</span>
+          <span className='sr-only'>{t('channels.actions.openMenu')}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-48'>
           {/* Edit */}
           <DropdownMenuItem onClick={handleEdit}>
-            {t('Edit')}
+            {t('channels.actions.edit')}
             <DropdownMenuShortcut>
               <Pencil size={16} />
             </DropdownMenuShortcut>
@@ -236,7 +236,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {/* Query Balance */}
           <DropdownMenuItem onClick={handleQueryBalance}>
-            {t('Query Balance')}
+            {t('channels.titles.queryBalance')}
             <DropdownMenuShortcut>
               <DollarSign size={16} />
             </DropdownMenuShortcut>
@@ -244,7 +244,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {/* Fetch Models */}
           <DropdownMenuItem onClick={handleFetchModels}>
-            {t('Fetch Models')}
+            {t('channels.titles.fetchModels')}
             <DropdownMenuShortcut>
               <Download size={16} />
             </DropdownMenuShortcut>
@@ -253,7 +253,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           {/* Ollama Models (only for Ollama channels) */}
           {channel.type === 4 && (
             <DropdownMenuItem onClick={handleManageOllamaModels}>
-              {t('Manage Ollama Models')}
+              {t('channels.titles.manageOllamaModels')}
               <DropdownMenuShortcut>
                 <Boxes size={16} />
               </DropdownMenuShortcut>
@@ -264,7 +264,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {/* Copy Channel */}
           <DropdownMenuItem onClick={handleCopy}>
-            {t('Copy Channel')}
+            {t('channels.actions.copyChannel')}
             <DropdownMenuShortcut>
               <Copy size={16} />
             </DropdownMenuShortcut>
@@ -273,7 +273,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           {/* Manage Keys (only for multi-key channels) */}
           {isMultiKey && (
             <DropdownMenuItem onClick={handleManageKeys}>
-              {t('Manage Keys')}
+              {t('channels.fields.manageKeys')}
               <DropdownMenuShortcut>
                 <Key size={16} />
               </DropdownMenuShortcut>
@@ -282,7 +282,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
 
           {isPlan && (
             <DropdownMenuItem onClick={handlePlanQuota}>
-              {t('Plan Usage')}
+              {t('channels.fields.planUsage')}
               <DropdownMenuShortcut>
                 <PackageSearch size={16} />
               </DropdownMenuShortcut>
@@ -294,7 +294,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               onClick={handleCheckRisk}
               disabled={isCheckingRisk}
             >
-              {isCheckingRisk ? t('Querying...') : t('Risk Query')}
+              {isCheckingRisk ? t('channels.tips.querying') : t('channels.titles.riskQuery')}
               <DropdownMenuShortcut>
                 {isCheckingRisk ? (
                   <Loader2 size={16} className='animate-spin' />
@@ -315,7 +315,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             }}
             className='text-destructive focus:text-destructive'
           >
-            {t('Delete')}
+            {t('common.actions.delete')}
             <DropdownMenuShortcut>
               <Trash2 size={16} />
             </DropdownMenuShortcut>
@@ -326,9 +326,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title={t('Delete Channel')}
+        title={t('channels.actions.deleteChannel')}
         desc={`Are you sure you want to delete "${channel.name}"? This action cannot be undone.`}
-        confirmText={t('Delete')}
+        confirmText={t('common.actions.delete')}
         destructive
         handleConfirm={() => {
           handleDeleteChannel(channel.id, queryClient)
@@ -339,13 +339,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
         <AlertDialogContent className='sm:max-w-md'>
           <AlertDialogHeader className='text-start'>
-            <AlertDialogTitle>{t('Risk Query')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('channels.titles.riskQuery')}</AlertDialogTitle>
             <AlertDialogDescription render={<div />}>
               {riskDetected ? (
                 <div className='space-y-2'>
-                  <p>{t('This account has been risk-controlled.')}</p>
+                  <p>{t('channels.tips.accountHasBeenRiskControlled')}</p>
                   <p>
-                    {t('Please visit')}{' '}
+                    {t('channels.fields.pleaseVisit')}{' '}
                     <a
                       href='https://open.bigmodel.cn'
                       target='_blank'
@@ -354,11 +354,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                     >
                       智谱开发者平台
                     </a>{' '}
-                    {t('for resolution steps.')}
+                    {t('channels.tips.resolutionSteps')}
                   </p>
                 </div>
               ) : (
-                <p>{t('Account status is normal.')}</p>
+                <p>{t('channels.tips.accountStatusIsNormal')}</p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -369,11 +369,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                   window.open('https://open.bigmodel.cn', '_blank', 'noopener')
                 }}
               >
-                {t('Open Platform')}
+                {t('channels.actions.openPlatform')}
               </AlertDialogCancel>
             )}
             <AlertDialogAction onClick={() => setRiskDialogOpen(false)}>
-              {t('OK')}
+              {t('channels.actions.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

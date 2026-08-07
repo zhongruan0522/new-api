@@ -3,9 +3,9 @@ package gemini
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestAdaptorConvertClaudeRequestPreservesThinkingToolChoiceAndToolResults(t *testing.T) {
@@ -84,5 +84,22 @@ func TestAdaptorConvertClaudeRequestPreservesThinkingToolChoiceAndToolResults(t 
 	}
 	if toolParts[0].FunctionResponse.GetID() != "call_1" {
 		t.Fatalf("function response id = %q, want call_1", toolParts[0].FunctionResponse.GetID())
+	}
+}
+
+
+// TestConvertToolChoiceToGeminiConfigRequired确保 channel-test 用 string "required" 作为
+// tool_choice 时,Gemini adaptor 能正确转换为 mode:"ANY",保证唯一工具被强制调用。
+func TestConvertToolChoiceToGeminiConfigRequired(t *testing.T) {
+	config := convertToolChoiceToGeminiConfig("required")
+	if config == nil || config.FunctionCallingConfig == nil {
+		t.Fatalf("expected non-nil tool config for required choice, got %+v", config)
+	}
+	if mode := string(config.FunctionCallingConfig.Mode); mode != "ANY" {
+		t.Fatalf("expected mode \"ANY\" for required tool_choice, got %q", mode)
+	}
+	if len(config.FunctionCallingConfig.AllowedFunctionNames) != 0 {
+		t.Fatalf("expected no allowed_function_names restriction for string required, got %+v",
+			config.FunctionCallingConfig.AllowedFunctionNames)
 	}
 }

@@ -7,12 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/config"
-)
-
-const (
-	maxMiniMaxVoiceIDLength = 512
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 // MiniMaxSettings 定义 MiniMax TTS 增强配置。
@@ -70,9 +66,9 @@ var defaultMiniMaxSettings = MiniMaxSettings{
 	ToneWordPattern:  `\(([^()]+)\)`,
 	ToneWordRedirect: map[string]string{},
 
-	VoiceWhitelistEnabled:    false,
-	CustomVoiceEnabled:       false,
-	CustomVoiceGroup:         "",
+	VoiceWhitelistEnabled:     false,
+	CustomVoiceEnabled:        false,
+	CustomVoiceGroup:          "",
 	CustomVoiceBillingModelId: "",
 }
 
@@ -176,11 +172,11 @@ func GetCustomVoiceConfig() (group string, billingModelId string) {
 // 只暴露标签源值（redirect map 的 key），不暴露上游真实标签（redirect map 的 value），
 // 避免前端直接展示上游标签后被现有语气词/情绪逻辑误删除。
 type CustomVoiceTagsSnapshot struct {
-	Enabled        bool     `json:"enabled"`
-	EmotionPattern string   `json:"emotion_pattern"`
-	ToneWordPattern string  `json:"tone_word_pattern"`
-	EmotionTags    []string `json:"emotion_tags"`
-	ToneWordTags   []string `json:"tone_word_tags"`
+	Enabled         bool     `json:"enabled"`
+	EmotionPattern  string   `json:"emotion_pattern"`
+	ToneWordPattern string   `json:"tone_word_pattern"`
+	EmotionTags     []string `json:"emotion_tags"`
+	ToneWordTags    []string `json:"tone_word_tags"`
 }
 
 // GetCustomVoiceTagsSnapshot 返回用户侧可见的 TTS 增强标签快照。

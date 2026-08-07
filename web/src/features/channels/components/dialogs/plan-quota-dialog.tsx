@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { VChart } from '@visactor/react-vchart'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
+import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useChartTheme } from '@/lib/use-chart-theme'
@@ -46,13 +47,13 @@ import type {
 } from '../../types'
 import { useChannels } from '../channels-provider'
 
-const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  'glm-coding-plan': '智谱 GLM 官方套餐',
-  'glm-coding-plan-international': '智谱 GLM 国际套餐',
-  'kimi-coding-plan': 'Kimi 官方套餐',
-  'minimax-coding-plan': 'MiniMax 官方套餐',
-  'minimax-coding-plan-international': 'MiniMax 国际套餐',
-  'ollama-coding-plan': 'Ollama 官方套餐',
+const PLAN_DISPLAY_NAME_KEYS: Record<string, string> = {
+  'glm-coding-plan': 'channels.fields.planGlmCodingPlan',
+  'glm-coding-plan-international': 'channels.fields.planGlmCodingPlanInternational',
+  'kimi-coding-plan': 'channels.fields.planKimiCodingPlan',
+  'minimax-coding-plan': 'channels.fields.planMinimaxCodingPlan',
+  'minimax-coding-plan-international': 'channels.fields.planMinimaxCodingPlanInternational',
+  'ollama-coding-plan': 'channels.fields.planOllamaCodingPlan',
 }
 
 const FALLBACK_MODEL_COLORS = [
@@ -167,7 +168,8 @@ function getStatusVariant(status?: string, percentage?: number): StatusVariant {
 
 function getPlanDisplayName(planName?: string): string {
   if (!planName) return ''
-  return PLAN_DISPLAY_NAMES[planName] || planName
+  const key = PLAN_DISPLAY_NAME_KEYS[planName]
+  return key ? i18next.t(key) : planName
 }
 
 function isGlmPlan(planName?: string) {
@@ -253,14 +255,18 @@ function formatResetTime(timeStr?: string): string {
   if (!timeStr) return ''
   const date = new Date(timeStr)
   if (Number.isNaN(date.getTime())) return timeStr
-  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  const month = String(date.getMonth() + 1)
+  const day = String(date.getDate())
+  const time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0')
+  return i18next.t('channels.placeholders.planMonthDayReset', { month, day, time })
 }
 
 function formatHourReset(timeStr?: string): string {
   if (!timeStr) return ''
   const date = new Date(timeStr)
   if (Number.isNaN(date.getTime())) return timeStr
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 重置`
+  const time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0')
+  return i18next.t('channels.placeholders.planHourReset', { time })
 }
 
 function flattenUsageData(
@@ -291,12 +297,12 @@ function flattenUsageData(
     }))
 
     const fields = [
-      '总用量',
+      i18next.t('channels.fields.planTotalUsage'),
       ...modelList.map((model) => String(model.modelName ?? '')),
     ].filter(Boolean)
     const values: UsagePoint[] = []
     times.forEach((time, index) => {
-      values.push({ time, value: totalArr[index] || 0, type: '总用量' })
+      values.push({ time, value: totalArr[index] || 0, type: i18next.t('channels.fields.planTotalUsage') })
       modelList.forEach((model) => {
         const usage = numberArray(model.tokensUsage)
         values.push({
@@ -319,15 +325,15 @@ function flattenUsageData(
     zread.reduce((sum, value) => sum + value, 0)
   const values: UsagePoint[] = []
   times.forEach((time, index) => {
-    values.push({ time, value: networkSearch[index] || 0, type: '联网搜索' })
-    values.push({ time, value: webRead[index] || 0, type: '网页读取' })
-    values.push({ time, value: zread[index] || 0, type: '开源仓库' })
+    values.push({ time, value: networkSearch[index] || 0, type: i18next.t('channels.fields.planNetworkSearch') })
+    values.push({ time, value: webRead[index] || 0, type: i18next.t('channels.fields.planWebRead') })
+    values.push({ time, value: zread[index] || 0, type: i18next.t('channels.fields.planOpenSourceRepo') })
   })
   return {
     values,
     total,
     summary: [],
-    fields: ['联网搜索', '网页读取', '开源仓库'],
+    fields: [i18next.t('channels.fields.planNetworkSearch'), i18next.t('channels.fields.planWebRead'), i18next.t('channels.fields.planOpenSourceRepo')],
     times,
   }
 }
@@ -343,8 +349,8 @@ function flattenPerformanceData(
   }
 
   const isLite = productLevel === 'Lite'
-  const speedLabel = isLite ? 'Lite速度' : 'Pro/Max速度'
-  const rateLabel = isLite ? 'Lite成功率' : 'Pro/Max成功率'
+  const speedLabel = isLite ? i18next.t('channels.fields.planLiteSpeed') : i18next.t('channels.fields.planProMaxSpeed')
+  const rateLabel = isLite ? i18next.t('channels.fields.planLiteSuccessRate') : i18next.t('channels.fields.planProMaxSuccessRate')
   const liteSpeed = numberArray(data.liteDecodeSpeed).map((v) =>
     Number(v.toFixed(2))
   )
@@ -407,6 +413,7 @@ function LimitCard({
 }
 
 function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
+  const { t } = useTranslation()
   if (!data) return null
   const percent = clampPercent(data.percentage)
   const variant = getStatusVariant(data.status, percent)
@@ -414,7 +421,7 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
   return (
     <div className='rounded-lg border p-4'>
       <div className='flex items-center justify-between gap-2'>
-        <div className='text-sm font-medium'>MCP 工具限额</div>
+        <div className='text-sm font-medium'>{t('channels.titles.planMcpToolLimit')}</div>
         <StatusBadge
           label={data.status || `${percent}%`}
           variant={variant}
@@ -430,7 +437,7 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
         )}
       </div>
       <Progress value={percent} aria-label={`MCP: ${percent}%`} />
-      <div className='text-muted-foreground mt-2 text-xs'>每月1号重置</div>
+      <div className='text-muted-foreground mt-2 text-xs'>{t('channels.tips.planMonthlyReset')}</div>
       {data.tools && data.tools.length > 0 && (
         <div className='mt-3 border-t pt-3'>
           {data.tools.map((tool, index) => (
@@ -453,7 +460,8 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
 }
 
 function TierLimitCard({ tier }: { tier: PlanTierInfo }) {
-  const title = tier.name === 'five_hour' ? '每5小时限额' : '每周限额'
+  const { t } = useTranslation()
+  const title = tier.name === 'five_hour' ? t('channels.titles.planFiveHourLimit') : t('channels.titles.planWeeklyLimit')
   const percent = clampPercent(tier.percentage)
   const reset = tier.resets_at
     ? tier.name === 'five_hour'
@@ -470,14 +478,14 @@ function TierLimitCard({ tier }: { tier: PlanTierInfo }) {
           reset
             ? tier.name === 'five_hour'
               ? reset
-              : `下次重置: ${reset}`
+              : `${t('channels.fields.planNextReset')}: ${reset}`
             : ''
         }
       />
       <div className='text-muted-foreground flex justify-between gap-3 px-1 text-xs'>
-        <span>已用 {formatCompactNumber(tier.used)}</span>
+        <span>{t('channels.fields.planUsed')} {formatCompactNumber(tier.used)}</span>
         <span>
-          剩余 {formatCompactNumber(tier.remaining)} /{' '}
+          {t('channels.fields.planRemaining')} {formatCompactNumber(tier.remaining)} /{' '}
           {formatCompactNumber(tier.limit)}
         </span>
       </div>
@@ -525,7 +533,7 @@ function UsageChart({ channelId }: { channelId: number }) {
     if (values.length === 0) return null
     const sampledLabels = sampleTimeLabels(times, 4)
     const colorRange = fields.map((field, index) =>
-      field === '总用量'
+      field === i18next.t('channels.fields.planTotalUsage')
         ? 'rgba(148, 163, 184, 0.85)'
         : chartColors[index % chartColors.length]
     )
@@ -608,10 +616,10 @@ function UsageChart({ channelId }: { channelId: number }) {
   }, [chartColors, fields, times, values])
 
   const ranges = [
-    { key: 0, label: '当日' },
-    { key: 7, label: '7天' },
-    { key: 15, label: '15天' },
-    { key: 30, label: '30天' },
+    { key: 0, label: t('channels.placeholders.planToday') },
+    { key: 7, label: t('channels.placeholders.plan7Days') },
+    { key: 15, label: t('channels.placeholders.plan15Days') },
+    { key: 30, label: t('channels.placeholders.plan30Days') },
   ]
 
   return (
@@ -619,8 +627,8 @@ function UsageChart({ channelId }: { channelId: number }) {
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='bg-muted inline-flex rounded-lg p-0.5'>
           {[
-            { key: 'model' as const, label: '模型' },
-            { key: 'tool' as const, label: '工具' },
+            { key: 'model' as const, label: t('channels.actions.planModelView') },
+            { key: 'tool' as const, label: t('channels.actions.planToolView') },
           ].map((item) => (
             <Button
               key={item.key}
@@ -651,7 +659,7 @@ function UsageChart({ channelId }: { channelId: number }) {
       <div className='flex flex-wrap items-baseline gap-x-4 gap-y-2'>
         <div>
           <span className='text-muted-foreground text-xs'>
-            {usageType === 'model' ? 'Tokens总量' : '工具调用次'}
+            {usageType === 'model' ? t('channels.fields.planTokensTotal') : t('channels.fields.planToolCallCount')}
           </span>
           <span className='ml-2 text-xl font-semibold'>
             {formatCompactNumber(total)}
@@ -698,12 +706,12 @@ function UsageChart({ channelId }: { channelId: number }) {
           />
         ) : (
           <div className='text-muted-foreground flex h-[120px] items-center justify-center text-sm'>
-            {t('No data')}
+            {t('channels.fields.noData')}
           </div>
         )}
       </div>
       <div className='text-muted-foreground text-right text-xs'>
-        数据延迟约10分钟
+        {t('channels.tips.planDataDelay')}
       </div>
     </section>
   )
@@ -769,7 +777,7 @@ function PerformanceChart({
             style: {
               lineWidth: 2,
               lineDash: (datum: UsagePoint) =>
-                String(datum?.type ?? '').includes('成功率') ? [4, 4] : [0],
+                (String(datum?.type ?? '').toLowerCase().includes('success') || String(datum?.type ?? '').includes('成功率')) ? [4, 4] : [0],
             },
           },
           point: { visible: false },
@@ -822,7 +830,7 @@ function PerformanceChart({
             {
               key: (datum: UsagePoint) => datum.type,
               value: (datum: UsagePoint) =>
-                datum.type.includes('成功率')
+                (datum.type.toLowerCase().includes('success') || datum.type.includes('成功率'))
                   ? `${Number(datum.value || 0).toFixed(1)}%`
                   : `${Number(datum.value || 0).toFixed(1)} tokens/s`,
             },
@@ -836,15 +844,15 @@ function PerformanceChart({
   }, [chartColors, times, values])
 
   const ranges = [
-    { key: 7, label: '7天' },
-    { key: 15, label: '15天' },
-    { key: 30, label: '30天' },
+    { key: 7, label: t('channels.placeholders.plan7Days') },
+    { key: 15, label: t('channels.placeholders.plan15Days') },
+    { key: 30, label: t('channels.placeholders.plan30Days') },
   ]
 
   return (
     <section className='space-y-3 rounded-lg border p-4'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
-        <div className='text-sm font-semibold'>系统健康度</div>
+        <div className='text-sm font-semibold'>{t('channels.titles.planSystemHealth')}</div>
         <div className='flex flex-wrap gap-1'>
           {ranges.map((item) => (
             <Button
@@ -861,12 +869,12 @@ function PerformanceChart({
       </div>
       <div className='flex flex-wrap gap-6'>
         <div>
-          <span className='text-muted-foreground text-xs'>平均速度</span>
+          <span className='text-muted-foreground text-xs'>{t('channels.fields.planAvgSpeed')}</span>
           <span className='ml-2 text-xl font-semibold'>{avgSpeed}</span>
           <span className='text-muted-foreground ml-1 text-xs'>tokens/s</span>
         </div>
         <div>
-          <span className='text-muted-foreground text-xs'>成功率</span>
+          <span className='text-muted-foreground text-xs'>{t('channels.fields.planSuccessRate')}</span>
           <span className='ml-2 text-xl font-semibold'>{avgRate}%</span>
         </div>
       </div>
@@ -887,7 +895,7 @@ function PerformanceChart({
           />
         ) : (
           <div className='text-muted-foreground flex h-[120px] items-center justify-center text-sm'>
-            {t('No data')}
+            {t('channels.fields.noData')}
           </div>
         )}
       </div>
@@ -902,6 +910,7 @@ function GlmPlanContent({
   channel: Channel
   quotaData: PlanQuotaData
 }) {
+  const { t } = useTranslation()
   const visibleLimits = [
     quotaData.token_limit,
     quotaData.weekly_limit,
@@ -918,7 +927,7 @@ function GlmPlanContent({
           <div className='flex flex-wrap gap-2'>
             {quotaData.plan_version && (
               <StatusBadge
-                label={`${quotaData.plan_version}套餐`}
+                label={`${quotaData.plan_version}${t('channels.fields.planPackage')}`}
                 variant={
                   quotaData.plan_version === '新' ? 'success' : 'warning'
                 }
@@ -935,18 +944,18 @@ function GlmPlanContent({
           </div>
         </div>
         <div className='text-muted-foreground mt-3 grid gap-2 text-xs sm:grid-cols-3'>
-          <div>生效: {quotaData.effective_date || '-'}</div>
-          <div>到期: {quotaData.expiry_date || '-'}</div>
+          <div>{t('channels.fields.planEffectiveDate')}: {quotaData.effective_date || '-'}</div>
+          <div>{t('channels.fields.planExpiryDate')}: {quotaData.expiry_date || '-'}</div>
           <div>
             {quotaData.auto_renew ? (
               <span className='text-success inline-flex items-center gap-1'>
                 <CheckCircle2 className='h-3.5 w-3.5' />
-                自动续费
+                {t('channels.actions.planAutoRenew')}
               </span>
             ) : (
               <span className='text-warning inline-flex items-center gap-1'>
                 <AlertTriangle className='h-3.5 w-3.5' />
-                未开续费
+                {t('channels.actions.planNotRenewed')}
               </span>
             )}
           </div>
@@ -957,16 +966,16 @@ function GlmPlanContent({
         className={`grid gap-3 ${visibleLimits >= 3 ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}
       >
         <LimitCard
-          title='每5小时限额'
+          title={t('channels.titles.planFiveHourLimit')}
           data={quotaData.token_limit}
           resetLabel={formatHourReset(quotaData.token_limit?.next_reset_time)}
         />
         <LimitCard
-          title='每周限额'
+          title={t('channels.titles.planWeeklyLimit')}
           data={quotaData.weekly_limit}
           resetLabel={
             formatResetTime(quotaData.weekly_limit?.next_reset_time)
-              ? `下次重置: ${formatResetTime(quotaData.weekly_limit?.next_reset_time)}`
+              ? `${t('channels.fields.planNextReset')}: ${formatResetTime(quotaData.weekly_limit?.next_reset_time)}`
               : ''
           }
         />
@@ -983,16 +992,17 @@ function GlmPlanContent({
 }
 
 function TierPlanContent({ quotaData }: { quotaData: PlanQuotaData }) {
+  const { t } = useTranslation()
   return (
     <div className='space-y-4'>
       {quotaData.credential === 'expired' && (
         <div className='border-warning/30 bg-warning/10 text-warning rounded-lg border px-4 py-3 text-sm'>
-          API Key 无效或已过期，请检查渠道配置
+          {t('channels.tips.planApiKeyInvalidOrExpired')}
         </div>
       )}
       {quotaData.credential === 'error' && (
         <div className='border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm'>
-          响应解析失败，API 格式可能已变更
+          {t('channels.tips.planResponseParseFailed')}
         </div>
       )}
 
@@ -1002,7 +1012,7 @@ function TierPlanContent({ quotaData }: { quotaData: PlanQuotaData }) {
             {getPlanDisplayName(quotaData.plan_name)}
           </div>
           {quotaData.credential === 'valid' && (
-            <StatusBadge label='有效' variant='success' copyable={false} />
+            <StatusBadge label={t('channels.actions.planValid')} variant='success' copyable={false} />
           )}
         </div>
       </div>
@@ -1020,7 +1030,7 @@ function TierPlanContent({ quotaData }: { quotaData: PlanQuotaData }) {
         </div>
       ) : (
         <div className='text-muted-foreground rounded-lg border px-4 py-10 text-center text-sm'>
-          暂无限额数据
+          {t('channels.tips.planNoQuotaData')}
         </div>
       )}
     </div>
@@ -1039,12 +1049,12 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
     try {
       const response = await getPlanQuota(currentRow.id)
       if (!response.success) {
-        throw new Error(response.message || t('Failed to query plan usage'))
+        throw new Error(response.message || t('channels.errors.failedToQueryPlanUsage'))
       }
       setQuotaData(response.data ?? null)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to query plan usage')
+        error instanceof Error ? error.message : t('channels.errors.failedToQueryPlanUsage')
       )
       setQuotaData(null)
     } finally {
@@ -1072,7 +1082,7 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[90vh] sm:max-w-5xl'>
         <DialogHeader>
-          <DialogTitle>{t('Plan Usage')}</DialogTitle>
+          <DialogTitle>{t('channels.fields.planUsage')}</DialogTitle>
           <DialogDescription>
             {currentRow.name} {currentRow.id ? `#${currentRow.id}` : ''}
             {planDisplayName ? ` · ${planDisplayName}` : ''}
@@ -1091,12 +1101,12 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
           ) : quotaData?.quota_supported === false ? (
             <div className='text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm'>
               {planDisplayName
-                ? `${planDisplayName} 的额度查询功能即将上线，敬请期待。`
-                : '该套餐的额度查询功能即将上线，敬请期待。'}
+                ? t('channels.tips.planQuotaComingSoon', { name: planDisplayName })
+                : t('channels.tips.planQuotaComingSoonGeneric')}
             </div>
           ) : (
             <div className='text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm'>
-              {t('No data')}
+              {t('channels.fields.noData')}
             </div>
           )}
         </ScrollArea>
@@ -1113,10 +1123,10 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
             ) : (
               <RefreshCw className='mr-1.5 h-4 w-4' />
             )}
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
           <Button type='button' onClick={() => onOpenChange(false)}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

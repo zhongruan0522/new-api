@@ -68,10 +68,10 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
       <Card className='gap-0 overflow-hidden py-0'>
         <CardHeader className='p-3 sm:p-5'>
           <CardTitle className='text-lg tracking-tight sm:text-xl'>
-            {t('Two-Factor Authentication')}
+            {t('profile.fields.twoFactorAuthentication')}
           </CardTitle>
           <CardDescription className='text-xs sm:text-sm'>
-            {t('Add an extra layer of security to your account')}
+            {t('profile.actions.addAnExtraLayerOfSecurityToYourAccount')}
           </CardDescription>
         </CardHeader>
 
@@ -85,17 +85,17 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                 </div>
                 <div className='space-y-1'>
                   <div className='flex items-center gap-2'>
-                    <p className='font-medium'>{t('Two-Factor Authentication')}</p>
+                    <p className='font-medium'>{t('profile.fields.twoFactorAuthentication')}</p>
                     {status.enabled ? (
                       <StatusBadge
-                        label={t('Enabled')}
+                        label={t('channels.status.enabled')}
                         variant='success'
                         showDot
                         copyable={false}
                       />
                     ) : (
                       <StatusBadge
-                        label={t('Disabled')}
+                        label={t('channels.status.disabled')}
                         variant='neutral'
                         showDot
                         copyable={false}
@@ -103,7 +103,7 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                     )}
                     {status.locked && (
                       <StatusBadge
-                        label={t('Locked')}
+                        label={t('profile.fields.locked')}
                         variant='danger'
                         showDot
                         copyable={false}
@@ -112,10 +112,10 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                   </div>
                   <p className='text-muted-foreground text-sm'>
                     {status.enabled
-                      ? t('Backup codes remaining: {{count}}', {
+                      ? t('profile.tips.backupCodesRemainingCount', {
                           count: status.backup_codes_remaining,
                         })
-                      : t('Add an extra layer of security to your account')}
+                      : t('profile.actions.addAnExtraLayerOfSecurityToYourAccount')}
                   </p>
                 </div>
               </div>
@@ -125,7 +125,7 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                   className='w-full sm:w-auto xl:w-full 2xl:w-auto'
                   onClick={() => dialogs.open('setup')}
                 >
-                  {t('Enable')}
+                  {t('channels.actions.enable')}
                 </Button>
               )}
             </div>
@@ -139,7 +139,7 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                   onClick={() => dialogs.open('backup')}
                 >
                   <RefreshCw className='mr-2 h-4 w-4' />
-                  {t('Regenerate Backup Codes')}
+                  {t('profile.fields.regenerateBackupCodes')}
                 </Button>
                 <Button
                   variant='destructive'
@@ -147,7 +147,7 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                   onClick={() => dialogs.open('disable')}
                 >
                   <AlertTriangle className='mr-2 h-4 w-4' />
-                  {t('Disable 2FA')}
+                  {t('profile.actions.disable2Fa')}
                 </Button>
               </div>
             )}

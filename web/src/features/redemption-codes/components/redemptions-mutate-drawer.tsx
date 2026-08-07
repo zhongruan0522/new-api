@@ -121,7 +121,7 @@ export function RedemptionsMutateDrawer({
           const count = result.data?.length || 0
           toast.success(
             count > 1
-              ? t('Successfully created {{count}} redemption codes', {
+              ? t('redemptionCodes.status.successfullyCreatedCountRedemptionCodes', {
                   count,
                 })
               : t(SUCCESS_MESSAGES.REDEMPTION_CREATED)
@@ -143,10 +143,10 @@ export function RedemptionsMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = `${t('Quota')} (${currencyLabel})`
+  const quotaLabel = `${t('keys.fields.quota')} (${t(currencyLabel)})`
   const quotaPlaceholder = tokensOnly
-    ? t('Enter quota in tokens')
-    : t('Enter quota in {{currency}}', { currency: currencyLabel })
+    ? t('keys.placeholders.enterQuotaInTokens')
+    : t('keys.placeholders.enterQuotaInCurrency', { currency: t(currencyLabel) })
 
   return (
     <Sheet
@@ -162,16 +162,16 @@ export function RedemptionsMutateDrawer({
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
             {isUpdate
-              ? t('Update Redemption Code')
-              : t('Create Redemption Code')}
+              ? t('redemptionCodes.fields.updateRedemptionCode')
+              : t('redemptionCodes.actions.createRedemptionCode')}
           </SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? t('Update the redemption code by providing necessary info.')
+              ? t('redemptionCodes.tips.updateTheRedemptionCodeByProvidingNecessaryInfo')
               : t(
-                  'Add new redemption code(s) by providing necessary info.'
+                  'redemptionCodes.actions.addNewRedemptionCodeSByProvidingNecessaryInfo'
                 )}{' '}
-            {t('Click save when you&apos;re done.')}
+            {t('redemptionCodes.tips.clickSaveWhenYouReDone')}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -186,12 +186,12 @@ export function RedemptionsMutateDrawer({
                 name='name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Name')}</FormLabel>
+                    <FormLabel>{t('channels.fields.name')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('Enter a name')} />
+                      <Input {...field} placeholder={t('keys.placeholders.enterAName')} />
                     </FormControl>
                     <FormDescription>
-                      {t('Name for this redemption code (1-20 characters)')}
+                      {t('redemptionCodes.tips.nameForThisRedemptionCode120Characters')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -217,9 +217,9 @@ export function RedemptionsMutateDrawer({
                     </FormControl>
                     <FormDescription>
                       {tokensOnly
-                        ? t('Enter the quota amount in tokens')
-                        : t('Enter the quota amount in {{currency}}', {
-                            currency: currencyLabel,
+                        ? t('keys.placeholders.enterTheQuotaAmountInTokens')
+                        : t('keys.placeholders.enterTheQuotaAmountInCurrency', {
+                            currency: t(currencyLabel),
                           })}
                     </FormDescription>
                     <FormMessage />
@@ -232,13 +232,13 @@ export function RedemptionsMutateDrawer({
                 name='expired_time'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Expiration Time')}</FormLabel>
+                    <FormLabel>{t('keyQuery.fields.expirationTime')}</FormLabel>
                     <div className='flex flex-col gap-2'>
                       <FormControl>
                         <DateTimePicker
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder={t('Never expires')}
+                          placeholder={t('keys.fields.neverExpires')}
                         />
                       </FormControl>
                       <div className='grid grid-cols-4 gap-1.5 sm:flex sm:gap-2'>
@@ -248,7 +248,7 @@ export function RedemptionsMutateDrawer({
                           size='sm'
                           onClick={() => handleSetExpiry(0, 0, 0)}
                         >
-                          {t('Never')}
+                          {t('keyQuery.fields.never')}
                         </Button>
                         <Button
                           type='button'
@@ -256,7 +256,7 @@ export function RedemptionsMutateDrawer({
                           size='sm'
                           onClick={() => handleSetExpiry(1, 0, 0)}
                         >
-                          {t('1 Month')}
+                          {t('keys.placeholders.value1Month')}
                         </Button>
                         <Button
                           type='button'
@@ -264,7 +264,7 @@ export function RedemptionsMutateDrawer({
                           size='sm'
                           onClick={() => handleSetExpiry(0, 7, 0)}
                         >
-                          {t('1W')}
+                          {t('redemptionCodes.placeholders.value1W')}
                         </Button>
                         <Button
                           type='button'
@@ -272,12 +272,12 @@ export function RedemptionsMutateDrawer({
                           size='sm'
                           onClick={() => handleSetExpiry(0, 1, 0)}
                         >
-                          {t('1 Day')}
+                          {t('keys.placeholders.value1Day')}
                         </Button>
                       </div>
                     </div>
                     <FormDescription>
-                      {t('Leave empty for never expires')}
+                      {t('redemptionCodes.fields.leaveEmptyForNeverExpires')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -290,21 +290,21 @@ export function RedemptionsMutateDrawer({
                   name='count'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Quantity')}</FormLabel>
+                      <FormLabel>{t('keys.fields.quantity')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type='number'
                           min='1'
                           max='100'
-                          placeholder={t('Number of codes to create')}
+                          placeholder={t('redemptionCodes.fields.numberOfCodesToCreate')}
                           onChange={(e) =>
                             field.onChange(parseInt(e.target.value, 10) || 1)
                           }
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('Create multiple redemption codes at once (1-100)')}
+                        {t('redemptionCodes.actions.createMultipleRedemptionCodesAtOnce1100')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -316,10 +316,10 @@ export function RedemptionsMutateDrawer({
         </Form>
         <SheetFooter className={sideDrawerFooterClassName()}>
           <SheetClose render={<Button variant='outline' />}>
-            {t('Close')}
+            {t('common.actions.close')}
           </SheetClose>
           <Button form='redemption-form' type='submit' disabled={isSubmitting}>
-            {isSubmitting ? t('Saving...') : t('Save Changes')}
+            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

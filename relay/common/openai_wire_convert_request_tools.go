@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 const openAIResponsesChatToolNameMaxLen = 64
@@ -209,10 +209,6 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 	}, nil
 }
 
-func convertResponsesToolsRawToChatTools(raw json.RawMessage) ([]dto.ToolCallRequest, error) {
-	return convertResponsesToolsRawToChatToolsWithToolContext(raw, nil)
-}
-
 func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	var tools []openAIResponsesFunctionTool
 	if err := common.Unmarshal(raw, &tools); err != nil {
@@ -228,10 +224,6 @@ func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, too
 		out = append(out, items...)
 	}
 	return out, nil
-}
-
-func collectChatToolsFromResponsesToolSearchOutputs(raw json.RawMessage) ([]dto.ToolCallRequest, error) {
-	return collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw, nil)
 }
 
 func collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {

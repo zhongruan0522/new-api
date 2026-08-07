@@ -113,17 +113,17 @@ export function VendorMutateDialog({
 
       if (response.success) {
         toast.success(
-          isEdit ? t('Vendor updated successfully') : t('Vendor created successfully')
+          isEdit ? t('models.status.vendorUpdatedSuccessfully') : t('models.status.vendorCreatedSuccessfully')
         )
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: ['pricing'] })
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('Operation failed'))
+        toast.error(response.message || t('channels.status.operationFailed'))
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || t('Operation failed'))
+      toast.error((error as Error)?.message || t('channels.status.operationFailed'))
     } finally {
       setIsSaving(false)
     }
@@ -134,14 +134,14 @@ export function VendorMutateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? t('Edit Vendor') : t('Create Vendor')}
+            {isEdit ? t('models.actions.editVendor') : t('models.actions.createVendor')}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? t('Update vendor information for {{name}}', {
+              ? t('models.tips.updateVendorInformationForName', {
                   name: currentVendor?.name,
                 })
-              : t('Add a new vendor to the system')}
+              : t('models.actions.addANewVendorToTheSystem')}
           </DialogDescription>
         </DialogHeader>
 
@@ -152,15 +152,15 @@ export function VendorMutateDialog({
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Vendor Name *')}</FormLabel>
+                  <FormLabel>{t('models.fields.vendorName')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('OpenAI, Anthropic, etc.')}
+                      placeholder={t('models.tips.openAiAnthropicEtc')}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('The unique name for this vendor')}
+                    {t('models.fields.uniqueNameForThisVendor')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -172,10 +172,10 @@ export function VendorMutateDialog({
               name='description'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Description')}</FormLabel>
+                  <FormLabel>{t('auditLogs.tips.description')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={t('Describe this vendor...')}
+                      placeholder={t('models.tips.describeThisVendor')}
                       rows={3}
                       {...field}
                     />
@@ -190,15 +190,15 @@ export function VendorMutateDialog({
               name='icon'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Icon')}</FormLabel>
+                  <FormLabel>{t('models.fields.icon')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('OpenAI, Anthropic, Google, etc.')}
+                      placeholder={t('models.tips.openAiAnthropicGoogleEtc')}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('@lobehub/icons key name')}
+                    {t('models.fields.lobehubIconsKeyName')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -211,13 +211,13 @@ export function VendorMutateDialog({
                 name='data_retention_days'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Data retention')}</FormLabel>
+                    <FormLabel>{t('models.fields.dataRetention')}</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
                         min={0}
                         step={1}
-                        placeholder={t('Provider-specific')}
+                        placeholder={t('models.fields.providerSpecific')}
                         value={field.value ?? ''}
                         onChange={(event) =>
                           field.onChange(
@@ -229,7 +229,7 @@ export function VendorMutateDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Use 0 for zero retention; leave empty when unknown.')}
+                      {t('models.tips.use0ForZeroRetentionLeaveEmptyWhenUnknown')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -250,10 +250,10 @@ export function VendorMutateDialog({
                       />
                     </FormControl>
                     <div className='space-y-1'>
-                      <FormLabel>{t('Training opt-out')}</FormLabel>
+                      <FormLabel>{t('models.fields.trainingOptOut')}</FormLabel>
                       <FormDescription>
                         {t(
-                          'Enable when requests are not used for upstream training by default.'
+                          'models.actions.enableWhenRequestsAreNotUsedForUpstreamTrainingBy'
                         )}
                       </FormDescription>
                       <FormMessage />
@@ -270,11 +270,11 @@ export function VendorMutateDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isSaving}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button type='submit' disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('Saving...') : isEdit ? t('Update') : t('Create')}
+                {isSaving ? t('channels.tips.saving') : isEdit ? t('channels.fields.update') : t('channels.actions.create')}
               </Button>
             </DialogFooter>
           </form>

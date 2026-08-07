@@ -7,14 +7,24 @@ import (
 	"math"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
+
+// maxTokensUpperBound guards against integer-overflow / quota-manipulation via
+// extremely large max_tokens-like fields that flow into quota pre-consumption
+// estimates. Matches the historical max_tokens validation threshold.
+const maxTokensUpperBound = math.MaxInt32 / 2
+
+// maxImageN caps the number of images requested in a single image generation
+// request. Without it, an enormous N multiplies into ImagePriceRatio and can
+// overflow the int quota, turning a charge into a balance increase.
+const maxImageN = 100
 
 func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dto.Request, err error) {
 	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
@@ -124,6 +134,9 @@ func GetAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest
 	if request.Input == nil {
 		return nil, errors.New("input is required")
 	}
+	if request.MaxOutputTokens > maxTokensUpperBound {
+		return nil, errors.New("max_output_tokens is invalid")
+	}
 	return request, nil
 }
 
@@ -223,6 +236,10 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*dto.ImageReq
 		}
 	}
 
+	if imageRequest.N > maxImageN {
+		return nil, fmt.Errorf("n must be between 1 and %d", maxImageN)
+	}
+
 	return imageRequest, nil
 }
 
@@ -232,11 +249,17 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	if err != nil {
 		return nil, err
 	}
-	if textRequest.Messages == nil || len(textRequest.Messages) == 0 {
+	if len(textRequest.Messages) == 0 {
 		return nil, errors.New("field messages is required")
 	}
 	if textRequest.Model == "" {
 		return nil, errors.New("field model is required")
+	}
+	if textRequest.MaxTokens > maxTokensUpperBound {
+		return nil, errors.New("max_tokens is invalid")
+	}
+	if textRequest.MaxTokensToSample > maxTokensUpperBound {
+		return nil, errors.New("max_tokens_to_sample is invalid")
 	}
 
 	//if textRequest.Stream {
@@ -260,8 +283,11 @@ func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenA
 		textRequest.Model = c.Param("model")
 	}
 
-	if textRequest.MaxTokens > math.MaxInt32/2 {
+	if textRequest.MaxTokens > maxTokensUpperBound {
 		return nil, errors.New("max_tokens is invalid")
+	}
+	if textRequest.MaxCompletionTokens > maxTokensUpperBound {
+		return nil, errors.New("max_completion_tokens is invalid")
 	}
 	if textRequest.Model == "" {
 		return nil, errors.New("model is required")
@@ -312,6 +338,9 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error)
 	}
 	if len(request.Contents) == 0 && len(request.Requests) == 0 {
 		return nil, errors.New("contents is required")
+	}
+	if request.GenerationConfig.MaxOutputTokens > maxTokensUpperBound {
+		return nil, errors.New("maxOutputTokens is invalid")
 	}
 
 	//if c.Query("alt") == "sse" {

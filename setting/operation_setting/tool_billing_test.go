@@ -2,6 +2,8 @@ package operation_setting
 
 import (
 	"testing"
+
+	"github.com/NookMux/NookMux/common"
 )
 
 func TestGetToolBillingPrice_WebSearchOpenAI(t *testing.T) {
@@ -21,7 +23,10 @@ func TestGetToolBillingPrice_WebSearchOpenAI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			price, ok := GetToolBillingPrice("web_search", tt.modelName, "openai", "", "")
+			price, ok := GetToolBillingPrice("web_search", map[string]string{
+				"model":    tt.modelName,
+				"provider": "openai",
+			})
 			if !ok {
 				t.Errorf("GetToolBillingPrice(web_search, %s, openai) expected to match a rule", tt.modelName)
 			}
@@ -33,7 +38,10 @@ func TestGetToolBillingPrice_WebSearchOpenAI(t *testing.T) {
 }
 
 func TestGetToolBillingPrice_WebSearchClaude(t *testing.T) {
-	price, ok := GetToolBillingPrice("web_search", "claude-3.5-sonnet", "claude", "", "")
+	price, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "claude-3.5-sonnet",
+		"provider": "claude",
+	})
 	if !ok {
 		t.Fatal("expected to match a rule")
 	}
@@ -43,7 +51,10 @@ func TestGetToolBillingPrice_WebSearchClaude(t *testing.T) {
 }
 
 func TestGetToolBillingPrice_WebSearchGemini(t *testing.T) {
-	price, ok := GetToolBillingPrice("web_search", "gemini-2.5-flash", "gemini", "", "")
+	price, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gemini-2.5-flash",
+		"provider": "gemini",
+	})
 	if !ok {
 		t.Fatal("expected to match a rule")
 	}
@@ -72,7 +83,12 @@ func TestGetToolBillingPrice_ImageGeneration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			price, ok := GetToolBillingPrice("image_generation", "gpt-4o", "openai", tt.quality, tt.size)
+			price, ok := GetToolBillingPrice("image_generation", map[string]string{
+				"model":    "gpt-4o",
+				"provider": "openai",
+				"quality":  tt.quality,
+				"size":     tt.size,
+			})
 			if !ok {
 				t.Fatalf("expected to match a rule for quality=%s size=%s", tt.quality, tt.size)
 			}
@@ -84,7 +100,12 @@ func TestGetToolBillingPrice_ImageGeneration(t *testing.T) {
 }
 
 func TestGetToolBillingPrice_ImageGeneration_UnknownReturnsFalse(t *testing.T) {
-	_, ok := GetToolBillingPrice("image_generation", "gpt-4o", "openai", "ultra", "2048x2048")
+	_, ok := GetToolBillingPrice("image_generation", map[string]string{
+		"model":    "gpt-4o",
+		"provider": "openai",
+		"quality":  "ultra",
+		"size":     "2048x2048",
+	})
 	if ok {
 		t.Error("GetToolBillingPrice(unknown quality/size) should return false")
 	}
@@ -99,13 +120,20 @@ func TestGetToolBillingPrice_DisabledRule(t *testing.T) {
 	copy(rules, original)
 	// Disable the claude web search rule
 	for i := range rules {
-		if rules[i].Provider == "claude" && rules[i].ToolType == "web_search" {
-			rules[i].Enabled = false
+		if rules[i].ToolType == "web_search" {
+			for _, cond := range rules[i].Conditions {
+				if cond.Field == "provider" && cond.Value == "claude" {
+					rules[i].Enabled = false
+				}
+			}
 		}
 	}
 	toolBillingSetting.Rules = rules
 
-	_, ok := GetToolBillingPrice("web_search", "claude-3.5-sonnet", "claude", "", "")
+	_, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "claude-3.5-sonnet",
+		"provider": "claude",
+	})
 	if ok {
 		t.Error("GetToolBillingPrice(disabled rule) should return false")
 	}
@@ -122,45 +150,23 @@ func TestGetToolBillingPrice_ZeroPriceRule(t *testing.T) {
 		ToolType:    "web_search",
 		BillingMode: ToolBillingModePerCall,
 		Price:       0,
-		Provider:    "test_provider",
-		Enabled:     true,
+		Conditions: []common.Condition{
+			{Field: "provider", Mode: common.ConditionModeEq, Value: "test_provider"},
+		},
+		Logic:   common.ConditionLogicAnd,
+		Enabled: true,
 	})
 	toolBillingSetting.Rules = rules
 
-	price, ok := GetToolBillingPrice("web_search", "any-model", "test_provider", "", "")
+	price, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "any-model",
+		"provider": "test_provider",
+	})
 	if !ok {
 		t.Fatal("expected to match the zero-price rule")
 	}
 	if price != 0 {
 		t.Errorf("expected price 0, got %v", price)
-	}
-}
-
-func TestMatchModelFilter(t *testing.T) {
-	tests := []struct {
-		name      string
-		model     string
-		filter    string
-		wantMatch bool
-	}{
-		{"empty filter matches all", "gpt-4o", "", true},
-		{"single prefix match", "gpt-4o", "gpt-4o*", true},
-		{"single prefix no match", "gpt-4o", "claude*", false},
-		{"multiple prefix match first", "gpt-4o", "gpt-4o*,claude*", true},
-		{"multiple prefix match second", "claude-3", "gpt-4o*,claude*", true},
-		{"exact match without wildcard", "gpt-4o", "gpt-4o", true},
-		{"exact no match", "gpt-4o-mini", "gpt-4o", false},
-		{"wildcard match", "o3-mini", "o3*", true},
-		{"wildcard no match", "gpt-4o", "o3*", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := matchModelFilter(tt.model, tt.filter)
-			if got != tt.wantMatch {
-				t.Errorf("matchModelFilter(%q, %q) = %v, want %v", tt.model, tt.filter, got, tt.wantMatch)
-			}
-		})
 	}
 }
 
@@ -171,7 +177,12 @@ func TestValidateToolBillingRules(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"valid rules",
+			"valid rules with conditions",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":10.0,"conditions":[{"field":"provider","mode":"eq","value":"openai"}]}]`,
+			false,
+		},
+		{
+			"valid rules without conditions",
 			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":10.0}]`,
 			false,
 		},
@@ -186,8 +197,13 @@ func TestValidateToolBillingRules(t *testing.T) {
 			true,
 		},
 		{
-			"invalid tool_type",
-			`[{"id":"test","name":"Test","tool_type":"invalid","billing_mode":"per_call","price":10.0}]`,
+			"custom tool_type is valid",
+			`[{"id":"test","name":"Test","tool_type":"code_interpreter","billing_mode":"per_call","price":10.0}]`,
+			false,
+		},
+		{
+			"tool_type with surrounding whitespace",
+			`[{"id":"test","name":"Test","tool_type":" web_search","billing_mode":"per_call","price":10.0}]`,
 			true,
 		},
 		{
@@ -204,6 +220,41 @@ func TestValidateToolBillingRules(t *testing.T) {
 			"zero price is valid",
 			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":0}]`,
 			false,
+		},
+		{
+			"invalid condition mode",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"conditions":[{"field":"x","mode":"bogus","value":"y"}]}]`,
+			true,
+		},
+		{
+			"empty condition field",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"conditions":[{"field":"","mode":"eq","value":"y"}]}]`,
+			true,
+		},
+		{
+			"invalid regex condition value",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"conditions":[{"field":"model","mode":"regex","value":"[invalid"}]}]`,
+			true,
+		},
+		{
+			"non-string regex condition value",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"conditions":[{"field":"model","mode":"regex","value":1}]}]`,
+			true,
+		},
+		{
+			"invalid condition logic",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"logic":"XOR","conditions":[{"field":"provider","mode":"eq","value":"openai"}]}]`,
+			true,
+		},
+		{
+			"lowercase condition logic is valid",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"logic":"or","conditions":[{"field":"provider","mode":"eq","value":"openai"}]}]`,
+			false,
+		},
+		{
+			"invalid numeric condition value",
+			`[{"id":"test","name":"Test","tool_type":"web_search","billing_mode":"per_call","price":1.0,"conditions":[{"field":"count","mode":"gte","value":"abc"}]}]`,
+			true,
 		},
 	}
 
@@ -238,5 +289,256 @@ func TestDefaultRulesAreValid(t *testing.T) {
 		if rule.BillingMode != ToolBillingModePerCall {
 			t.Errorf("default rule %s has unsupported billing_mode %q", rule.ID, rule.BillingMode)
 		}
+	}
+}
+
+// 测试旧格式自动迁移
+func TestMigrateLegacyRules(t *testing.T) {
+	legacyJSON := `[
+		{
+			"id": "test_legacy",
+			"name": "Test Legacy",
+			"tool_type": "image_generation",
+			"billing_mode": "per_call",
+			"price": 0.05,
+			"quality": "high",
+			"size": "1024x1024",
+			"provider": "openai",
+			"enabled": true
+		}
+	]`
+
+	migrated, didMigrate, err := MigrateLegacyRules(legacyJSON)
+	if err != nil {
+		t.Fatalf("MigrateLegacyRules failed: %v", err)
+	}
+	if !didMigrate {
+		t.Fatal("expected migration to occur for legacy format")
+	}
+
+	// 验证迁移后规则仍然有效
+	if err := ValidateToolBillingRules(migrated); err != nil {
+		t.Fatalf("migrated rules failed validation: %v", err)
+	}
+
+	// 验证迁移后能正确匹配
+	var rules []ToolBillingRule
+	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+		t.Fatalf("failed to parse migrated rules: %v", err)
+	}
+	if len(rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(rules))
+	}
+	if len(rules[0].Conditions) != 3 {
+		t.Fatalf("expected 3 conditions (quality+size+provider), got %d", len(rules[0].Conditions))
+	}
+
+	// 迁移后的规则应该能正确匹配
+	original := toolBillingSetting.Rules
+	defer func() { toolBillingSetting.Rules = original }()
+	toolBillingSetting.Rules = rules
+
+	price, ok := GetToolBillingPrice("image_generation", map[string]string{
+		"quality":  "high",
+		"size":     "1024x1024",
+		"provider": "openai",
+	})
+	if !ok {
+		t.Fatal("migrated rule should match")
+	}
+	if price != 0.05 {
+		t.Errorf("migrated rule price = %v, want 0.05", price)
+	}
+}
+
+func TestMigrateLegacyRules_ModelFilter(t *testing.T) {
+	legacyJSON := `[
+		{
+			"id": "test_model_filter",
+			"name": "Test Model Filter",
+			"tool_type": "web_search",
+			"billing_mode": "per_call",
+			"price": 0.02,
+			"model_filter": "o3*,o4*,gpt-5*",
+			"provider": "openai",
+			"enabled": true
+		}
+	]`
+
+	migrated, didMigrate, err := MigrateLegacyRules(legacyJSON)
+	if err != nil {
+		t.Fatalf("MigrateLegacyRules failed: %v", err)
+	}
+	if !didMigrate {
+		t.Fatal("expected migration to occur")
+	}
+
+	var rules []ToolBillingRule
+	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+		t.Fatalf("failed to parse migrated rules: %v", err)
+	}
+
+	// 应该有 2 个 condition: model(regex) + provider(eq)
+	if len(rules[0].Conditions) != 2 {
+		t.Fatalf("expected 2 conditions, got %d", len(rules[0].Conditions))
+	}
+
+	original := toolBillingSetting.Rules
+	defer func() { toolBillingSetting.Rules = original }()
+	toolBillingSetting.Rules = rules
+
+	// o3-mini 应该匹配
+	price, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "o3-mini",
+		"provider": "openai",
+	})
+	if !ok || price != 0.02 {
+		t.Errorf("o3-mini should match with price 0.02, got ok=%v price=%v", ok, price)
+	}
+
+	// gpt-4o 不应该匹配（因为 model_filter 是 o3*,o4*,gpt-5*）
+	_, ok = GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gpt-4o",
+		"provider": "openai",
+	})
+	if ok {
+		t.Error("gpt-4o should not match")
+	}
+}
+
+func TestMigrateLegacyRules_ModelFilterExactEntriesStayExact(t *testing.T) {
+	legacyJSON := `[
+		{
+			"id": "test_model_filter_exact",
+			"name": "Test Model Filter Exact",
+			"tool_type": "web_search",
+			"billing_mode": "per_call",
+			"price": 0.02,
+			"model_filter": "gpt-4o,gpt-4.1*",
+			"provider": "openai",
+			"enabled": true
+		}
+	]`
+
+	migrated, didMigrate, err := MigrateLegacyRules(legacyJSON)
+	if err != nil {
+		t.Fatalf("MigrateLegacyRules failed: %v", err)
+	}
+	if !didMigrate {
+		t.Fatal("expected migration to occur")
+	}
+
+	var rules []ToolBillingRule
+	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+		t.Fatalf("failed to parse migrated rules: %v", err)
+	}
+
+	original := toolBillingSetting.Rules
+	defer func() { toolBillingSetting.Rules = original }()
+	toolBillingSetting.Rules = rules
+
+	price, ok := GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gpt-4o",
+		"provider": "openai",
+	})
+	if !ok || price != 0.02 {
+		t.Fatalf("gpt-4o exact entry should match with price 0.02, got ok=%v price=%v", ok, price)
+	}
+
+	_, ok = GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gpt-4o-mini",
+		"provider": "openai",
+	})
+	if ok {
+		t.Fatal("gpt-4o-mini should not match exact gpt-4o legacy filter entry")
+	}
+
+	price, ok = GetToolBillingPrice("web_search", map[string]string{
+		"model":    "gpt-4.1-mini",
+		"provider": "openai",
+	})
+	if !ok || price != 0.02 {
+		t.Fatalf("gpt-4.1-mini wildcard entry should match with price 0.02, got ok=%v price=%v", ok, price)
+	}
+}
+
+func TestMigrateLegacyRules_ModelFilterWildcardOnlyOmitsModelCondition(t *testing.T) {
+	legacyJSON := `[
+		{
+			"id": "test_model_filter_all",
+			"name": "Test Model Filter All",
+			"tool_type": "web_search",
+			"billing_mode": "per_call",
+			"price": 0.02,
+			"model_filter": "*",
+			"provider": "openai",
+			"enabled": true
+		}
+	]`
+
+	migrated, didMigrate, err := MigrateLegacyRules(legacyJSON)
+	if err != nil {
+		t.Fatalf("MigrateLegacyRules failed: %v", err)
+	}
+	if !didMigrate {
+		t.Fatal("expected migration to occur")
+	}
+
+	var rules []ToolBillingRule
+	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+		t.Fatalf("failed to parse migrated rules: %v", err)
+	}
+	if len(rules[0].Conditions) != 1 {
+		t.Fatalf("expected only provider condition for wildcard-only model_filter, got %d", len(rules[0].Conditions))
+	}
+	if rules[0].Conditions[0].Field != "provider" {
+		t.Fatalf("expected provider condition, got %+v", rules[0].Conditions[0])
+	}
+}
+
+func TestMigrateLegacyRules_AlreadyNewFormat(t *testing.T) {
+	newFormatJSON := `[
+		{
+			"id": "already_new",
+			"name": "Already New",
+			"tool_type": "web_search",
+			"billing_mode": "per_call",
+			"price": 0.03,
+			"conditions": [{"field":"provider","mode":"eq","value":"openai"}],
+			"enabled": true
+		}
+	]`
+
+	_, didMigrate, err := MigrateLegacyRules(newFormatJSON)
+	if err != nil {
+		t.Fatalf("MigrateLegacyRules failed: %v", err)
+	}
+	if didMigrate {
+		t.Error("new format rules should not trigger migration")
+	}
+}
+
+func TestModelFilterToRegex(t *testing.T) {
+	tests := []struct {
+		filter string
+		want   string
+	}{
+		{"o3*", "^(?:o3)"},
+		{"o3*,o4*", "^(?:o3|o4)"},
+		{"o3*,o4*,gpt-5*", "^(?:o3|o4|gpt-5)"},
+		{"gpt-4o,gpt-4o-mini", "^(?:gpt-4o$|gpt-4o-mini$)"},
+		{"", ""},
+		{"*", ""},
+		// 验证正则元字符被转义
+		{"gpt-4.1*", "^(?:gpt-4\\.1)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filter, func(t *testing.T) {
+			got := modelFilterToRegex(tt.filter)
+			if got != tt.want {
+				t.Errorf("modelFilterToRegex(%q) = %q, want %q", tt.filter, got, tt.want)
+			}
+		})
 	}
 }

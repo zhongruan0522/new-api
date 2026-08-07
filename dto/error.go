@@ -3,8 +3,8 @@ package dto
 import (
 	"encoding/json"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/types"
 )
 
 //type OpenAIError struct {

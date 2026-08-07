@@ -137,11 +137,11 @@ export function UsageLogFieldsSection({
   const handleReset = () => {
     setConfig(resolveUsageLogFieldsConfig(buildDefaultUsageLogFieldsJSON()))
     setHasChanges(true)
-    toast.success(t('Reset to defaults. Click "Save Settings" to apply.'))
+    toast.success(t('common.actions.resetToDefaultsClickSaveSettingsToApply'))
   }
 
   return (
-    <SettingsSection title={t('Usage Log Field Visibility')}>
+    <SettingsSection title={t('systemSettings.fields.usageLogFieldVisibility')}>
       <div className='space-y-4'>
         {/* 总开关 */}
         <div className='space-y-1 rounded-md border p-3'>
@@ -149,9 +149,9 @@ export function UsageLogFieldsSection({
           <SettingsSwitchField
             checked={isAdminEnabled}
             onCheckedChange={handleToggleAdminEnabled}
-            label={t('Admin Details Access')}
+            label={t('systemSettings.titles.adminDetailsAccess')}
             description={t(
-              'When enabled, admins can access usage log details dialog'
+              'systemSettings.status.enabledAdminsCanAccessUsageLogDetailsDialog'
             )}
             className='border-b-0 py-0'
           />
@@ -159,9 +159,9 @@ export function UsageLogFieldsSection({
           <SettingsSwitchField
             checked={isUserEnabled}
             onCheckedChange={handleToggleUserEnabled}
-            label={t('User Details Access')}
+            label={t('systemSettings.titles.userDetailsAccess')}
             description={t(
-              'When enabled, regular users can access usage log details dialog'
+              'systemSettings.status.enabledRegularUsersCanAccessUsageLogDetailsDialog'
             )}
             className='border-b-0 py-0'
           />
@@ -176,7 +176,7 @@ export function UsageLogFieldsSection({
             disabled={!hasChanges || updateOption.isPending}
           >
             <Save className='mr-2 h-4 w-4' />
-            {updateOption.isPending ? t('Saving...') : t('Save Settings')}
+            {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
           </Button>
           <Button
             onClick={handleReset}
@@ -185,7 +185,7 @@ export function UsageLogFieldsSection({
             disabled={updateOption.isPending}
           >
             <RotateCcw className='mr-2 h-4 w-4' />
-            {t('Reset')}
+            {t('common.actions.reset')}
           </Button>
         </div>
 
@@ -195,13 +195,13 @@ export function UsageLogFieldsSection({
             <TableHeader>
               <TableRow>
                 <TableHead className='min-w-[200px]'>
-                  {t('Field / Description')}
+                  {t('systemSettings.tips.fieldDescription')}
                 </TableHead>
                 <TableHead className='w-32 text-center'>
-                  {t('Admin')}
+                  {t('systemSettings.fields.admin')}
                 </TableHead>
                 <TableHead className='w-32 text-center'>
-                  {t('User')}
+                  {t('systemSettings.fields.user')}
                 </TableHead>
               </TableRow>
             </TableHeader>

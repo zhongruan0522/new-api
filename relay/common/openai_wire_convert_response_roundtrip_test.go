@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 // Test reasoning preservation because Responses reasoning items are otherwise
@@ -53,8 +53,8 @@ func TestConvertResponsesResponseToChatCompletionResponse_PreservesReasoningAndT
 		t.Fatalf("choices len = %d, want 1", len(got.Choices))
 	}
 	msg := got.Choices[0].Message
-	if msg.ReasoningContent != "Think first" {
-		t.Fatalf("message.reasoning_content = %q, want %q", msg.ReasoningContent, "Think first")
+	if msg.ReasoningContent == nil || *msg.ReasoningContent != "Think first" {
+		t.Fatalf("message.reasoning_content = %v, want %q", msg.ReasoningContent, "Think first")
 	}
 	if msg.StringContent() != "Here you go" {
 		t.Fatalf("message.content = %q, want %q", msg.StringContent(), "Here you go")
@@ -74,6 +74,7 @@ func TestConvertResponsesResponseToChatCompletionResponse_PreservesReasoningAndT
 // Test reasoning preservation in the opposite direction because Chat responses
 // lose key gpt-5/o-series state if reasoning is discarded during rewrite.
 func TestConvertChatCompletionResponseToResponsesResponse_PreservesReasoning(t *testing.T) {
+	reasoning := "Think first"
 	chatResp := &dto.OpenAITextResponse{
 		Id:      "chatcmpl_123",
 		Object:  "chat.completion",
@@ -84,7 +85,7 @@ func TestConvertChatCompletionResponseToResponsesResponse_PreservesReasoning(t *
 			Message: dto.Message{
 				Role:             "assistant",
 				Content:          "Here you go",
-				ReasoningContent: "Think first",
+				ReasoningContent: &reasoning,
 			},
 			FinishReason: "stop",
 		}},

@@ -1,9 +1,12 @@
 package controller
 
 import (
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,7 +14,7 @@ import (
 func GetPricing(c *gin.Context) {
 	pricing := model.GetPricing()
 	userId, exists := c.Get("id")
-	usableGroup := map[string]string{}
+	var usableGroup map[string]string
 	groupRatio := map[string]float64{}
 	for s, f := range ratio_setting.GetGroupRatioCopy() {
 		groupRatio[s] = f
@@ -68,8 +71,22 @@ func ResetModelRatio(c *gin.Context) {
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置模型倍率", nil, nil)
-	c.JSON(200, gin.H{
-		"success": true,
-		"message": "重置模型倍率成功",
-	})
+	common.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
+}
+
+// ResetToolBillingRules restores tool_billing_setting.rules to the built-in
+// default rule set. The dotted key is registered via config.GlobalConfig, so
+// model.UpdateOption takes care of both the DB write and the in-memory refresh.
+func ResetToolBillingRules(c *gin.Context) {
+	defaultStr := operation_setting.DefaultToolBillingRules2JSONString()
+	err := model.UpdateOption("tool_billing_setting.rules", defaultStr)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置工具计费规则", nil, nil)
+	common.ApiSuccessI18n(c, i18n.MsgPricingResetToolBillingRulesSuccess, nil)
 }

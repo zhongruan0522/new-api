@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
 func TestAppendStreamMetrics(t *testing.T) {

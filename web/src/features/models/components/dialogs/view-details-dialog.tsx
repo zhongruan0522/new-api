@@ -95,9 +95,9 @@ export function ViewDetailsDialog({
     if (deploymentId === null || deploymentId === undefined) return
     try {
       await navigator.clipboard.writeText(String(deploymentId))
-      toast.success(t('Copied'))
+      toast.success(t('common.status.copied'))
     } catch {
-      toast.error(t('Copy failed'))
+      toast.error(t('keyQuery.actions.copyFailed'))
     }
   }
 
@@ -119,19 +119,19 @@ export function ViewDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[calc(100dvh-2rem)] overflow-hidden max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>{t('Deployment details')}</DialogTitle>
+          <DialogTitle>{t('models.titles.deploymentDetails')}</DialogTitle>
         </DialogHeader>
 
         <div className='max-h-[calc(100dvh-8.5rem)] space-y-3 overflow-y-auto py-2 pr-1 sm:max-h-[72vh] sm:space-y-4'>
           <div className='flex flex-wrap items-center justify-between gap-2'>
             <div className='text-muted-foreground text-sm'>
-              {t('Deployment ID')}:{' '}
+              {t('channels.fields.deploymentId')}:{' '}
               <span className='font-mono'>{deploymentId}</span>
             </div>
             <div className='grid grid-cols-2 gap-2 sm:flex sm:items-center'>
               <Button variant='outline' size='sm' onClick={handleCopyId}>
                 <Copy className='mr-2 h-4 w-4' />
-                {t('Copy')}
+                {t('channels.actions.copy')}
               </Button>
               <Button
                 variant='outline'
@@ -144,7 +144,7 @@ export function ViewDetailsDialog({
                 ) : (
                   <RefreshCcw className='mr-2 h-4 w-4' />
                 )}
-                {t('Refresh')}
+                {t('channels.actions.refresh')}
               </Button>
             </div>
           </div>
@@ -157,14 +157,14 @@ export function ViewDetailsDialog({
             </div>
           ) : !detailsRes?.success ? (
             <div className='text-muted-foreground py-10 text-center text-sm'>
-              {detailsRes?.message || t('Failed to fetch deployment details')}
+              {detailsRes?.message || t('models.errors.failedToFetchDeploymentDetails')}
             </div>
           ) : (
             <>
               <div className='grid gap-3 sm:grid-cols-2'>
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Status')}
+                    {t('channels.fields.status')}
                   </div>
                   <div className='mt-1 font-medium'>
                     {String(details?.status ?? '-')}
@@ -172,7 +172,7 @@ export function ViewDetailsDialog({
                 </div>
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Hardware')}
+                    {t('models.fields.hardware')}
                   </div>
                   <div className='mt-1 font-medium'>
                     {String(details?.brand_name ?? '')}{' '}
@@ -181,7 +181,7 @@ export function ViewDetailsDialog({
                 </div>
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Total GPUs')}
+                    {t('models.fields.totalGpus')}
                   </div>
                   <div className='mt-1 font-medium'>
                     {String(
@@ -191,7 +191,7 @@ export function ViewDetailsDialog({
                 </div>
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Containers')}
+                    {t('models.fields.containers')}
                   </div>
                   <div className='mt-1 font-medium'>{containers.length}</div>
                 </div>
@@ -200,7 +200,7 @@ export function ViewDetailsDialog({
               {locations.length ? (
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground text-xs'>
-                    {t('Locations')}
+                    {t('models.fields.locations')}
                   </div>
                   <div className='mt-1 flex flex-wrap gap-2 text-sm'>
                     {locations.map((x) => (
@@ -215,7 +215,7 @@ export function ViewDetailsDialog({
               {containers.length ? (
                 <div className='rounded-lg border p-3'>
                   <div className='text-muted-foreground mb-2 text-xs'>
-                    {t('Containers')}
+                    {t('models.fields.containers')}
                   </div>
                   <div className='space-y-2'>
                     {containers.map((c) => {
@@ -235,7 +235,7 @@ export function ViewDetailsDialog({
                               {id}
                             </div>
                             <div className='text-muted-foreground text-xs'>
-                              {status ? `${t('Status')}: ${status}` : ''}
+                              {status ? `${t('channels.fields.status')}: ${status}` : ''}
                             </div>
                           </div>
                           {url ? (
@@ -245,7 +245,7 @@ export function ViewDetailsDialog({
                               onClick={() => window.open(url, '_blank')}
                             >
                               <ExternalLink className='mr-2 h-4 w-4' />
-                              {t('Open')}
+                              {t('models.actions.open')}
                             </Button>
                           ) : null}
                         </div>
@@ -257,7 +257,7 @@ export function ViewDetailsDialog({
 
               <Collapsible className='rounded-lg border p-3'>
                 <CollapsibleTrigger className='cursor-pointer text-sm font-medium'>
-                  {t('Raw JSON')}
+                  {t('channels.fields.rawJson')}
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <pre className='mt-3 max-h-[360px] overflow-auto rounded-md bg-black p-3 text-xs text-gray-200'>
@@ -275,7 +275,7 @@ export function ViewDetailsDialog({
             onClick={() => onOpenChange(false)}
             className='w-full sm:w-auto'
           >
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

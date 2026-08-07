@@ -2,17 +2,27 @@ package service
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/types"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/types"
+
+	"github.com/gin-gonic/gin"
 )
+
+func newQuotaTestContext() *gin.Context {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	return c
+}
 
 func TestNewEmptyUsageRetryErrorForNativeRequest(t *testing.T) {
 	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI}}
 
-	apiErr := NewEmptyUsageRetryError(relayInfo)
+	apiErr := NewEmptyUsageRetryError(newQuotaTestContext(), relayInfo)
 	if apiErr == nil {
 		t.Fatal("expected native empty usage to return retryable error")
 	}
@@ -30,7 +40,7 @@ func TestNewEmptyUsageRetryErrorForNativeRequest(t *testing.T) {
 func TestNewEmptyUsageRetryErrorSkipsConvertedRequest(t *testing.T) {
 	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI, types.RelayFormatClaude}}
 
-	if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+	if apiErr := NewEmptyUsageRetryError(newQuotaTestContext(), relayInfo); apiErr != nil {
 		t.Fatalf("expected converted empty usage not to force retry, got %v", apiErr)
 	}
 }

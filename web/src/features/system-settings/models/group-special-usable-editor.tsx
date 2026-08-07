@@ -129,7 +129,7 @@ const OP_BADGE_MAP: Record<
 > = {
   [OP_ADD]: { variant: 'info', label: 'Add (+:)' },
   [OP_REMOVE]: { variant: 'danger', label: 'Remove (-:)' },
-  [OP_APPEND]: { variant: 'neutral', label: 'Append' },
+  [OP_APPEND]: { variant: 'neutral', label: 'common.fields.append' },
 }
 
 type GroupSpecialUsableRulesEditorProps = {
@@ -168,7 +168,7 @@ function GroupSection(props: GroupSectionProps) {
             </CollapsibleTrigger>
             <span className='font-semibold'>{props.groupName}</span>
             <StatusBadge variant='neutral' copyable={false}>
-              {props.items.length} {t('Rules')}
+              {props.items.length} {t('channels.fields.rules')}
             </StatusBadge>
           </div>
           <div className='flex items-center gap-1'>
@@ -270,7 +270,7 @@ function GroupSection(props: GroupSectionProps) {
                 <Input
                   className='flex-1'
                   value={rule.targetGroup}
-                  placeholder={t('Group Name')}
+                  placeholder={t('models.fields.groupName')}
                   onChange={(e) =>
                     props.onUpdate(rule._id, 'targetGroup', e.target.value)
                   }
@@ -279,7 +279,7 @@ function GroupSection(props: GroupSectionProps) {
                   <Input
                     className='flex-1'
                     value={rule.description}
-                    placeholder={t('Description')}
+                    placeholder={t('auditLogs.tips.description')}
                     onChange={(e) =>
                       props.onUpdate(rule._id, 'description', e.target.value)
                     }
@@ -402,10 +402,10 @@ export function GroupSpecialUsableRulesEditor(
   return (
     <Card className={sectionCardClassName}>
       <CardHeader className={sectionHeaderClassName}>
-        <CardTitle>{t('Special usable group rules')}</CardTitle>
+        <CardTitle>{t('systemSettings.fields.specialUsableGroupRules')}</CardTitle>
         <CardDescription>
           {t(
-            'Define per-group rules to add, remove, or append selectable groups for specific user groups.'
+            'systemSettings.tips.definePerGroupRulesToAddRemoveOrAppend'
           )}
         </CardDescription>
       </CardHeader>
@@ -413,7 +413,7 @@ export function GroupSpecialUsableRulesEditor(
         <div className='space-y-3'>
           {grouped.length === 0 ? (
             <p className='text-muted-foreground py-4 text-center text-sm'>
-              {t('No rules yet. Add a group below to get started.')}
+              {t('systemSettings.tips.noRulesYetAddAGroupBelowToGet')}
             </p>
           ) : (
             grouped.map((group) => (
@@ -433,7 +433,7 @@ export function GroupSpecialUsableRulesEditor(
             <Input
               className='w-[200px]'
               value={newGroupName}
-              placeholder={t('User group name')}
+              placeholder={t('systemSettings.fields.userGroupName')}
               onChange={(e) => setNewGroupName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -444,7 +444,7 @@ export function GroupSpecialUsableRulesEditor(
             />
             <Button variant='outline' size='sm' onClick={addNewGroup}>
               <Plus className='mr-1 h-4 w-4' />
-              {t('Add group rules')}
+              {t('systemSettings.actions.addGroupRules')}
             </Button>
           </div>
         </div>

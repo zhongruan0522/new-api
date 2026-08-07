@@ -30,7 +30,7 @@ export function useUserDisplay(user: AuthUser | null | undefined) {
   return useMemo(() => {
     if (!user) {
       return {
-        displayName: t('User'),
+        displayName: t('systemSettings.fields.user'),
         secondaryText: '',
         initials: 'U',
         roleLabel: '',
@@ -38,7 +38,7 @@ export function useUserDisplay(user: AuthUser | null | undefined) {
     }
 
     // Display name: priority order
-    const displayName = user.display_name || user.username || t('User')
+    const displayName = user.display_name || user.username || t('systemSettings.fields.user')
 
     // Secondary text: first available identifier
     const secondaryText = (() => {

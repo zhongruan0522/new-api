@@ -14,7 +14,6 @@ func TestDefaultGemini3CacheRatios(t *testing.T) {
 
 	for _, model := range []string{
 		"gemini-3-flash-preview",
-		"gemini-3-pro-preview",
 		"gemini-3.1-pro-preview",
 	} {
 		t.Run(model, func(t *testing.T) {

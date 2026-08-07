@@ -79,12 +79,12 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
     // Validate based on mode
     if (useBackupCode) {
       if (!isValidBackupCode(data.otp)) {
-        toast.error(t('Backup code must be in format XXXX-XXXX'))
+        toast.error(t('auth.errors.backupCodeMustBeInFormatXxxxXxxx'))
         return
       }
     } else {
       if (!isValidOTP(data.otp)) {
-        toast.error(t('Verification code must be 6 digits'))
+        toast.error(t('auth.errors.verificationCodeMustBe6Digits'))
         return
       }
     }
@@ -96,7 +96,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
       const res = await login2fa({ code })
 
       if (!res.success) {
-        toast.error(res.message || t('Invalid code'))
+        toast.error(res.message || t('auth.errors.invalidCode'))
         return
       }
 
@@ -114,13 +114,13 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
         saveUserId(userData.id)
       }
 
-      toast.success(t('Signed In'))
+      toast.success(t('auth.status.signedIn'))
       redirectToLogin() // This will redirect to dashboard via the redirect logic
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('2FA verification error:', error)
       const errorMessage =
-        error instanceof Error ? error.message : t('Verification failed')
+        error instanceof Error ? error.message : t('auth.status.verificationFailed')
       toast.error(errorMessage)
     } finally {
       setIsLoading(false)
@@ -179,12 +179,12 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                {useBackupCode ? t('Backup Code') : t('Verification Code')}
+                {useBackupCode ? t('auth.fields.backupCode') : t('auth.fields.verificationCode')}
               </FormLabel>
               <FormControl>
                 {useBackupCode ? (
                   <Input
-                    placeholder={t('Enter backup code (e.g., CAWD-OQDV)')}
+                    placeholder={t('auth.placeholders.enterBackupCodeEGCawdOqdv')}
                     {...field}
                     maxLength={BACKUP_CODE_LENGTH}
                     autoComplete='off'
@@ -219,8 +219,8 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
               </FormControl>
               <FormDescription className='text-muted-foreground text-xs'>
                 {useBackupCode
-                  ? t('Each backup code can only be used once.')
-                  : t('Verification code updates every 30 seconds.')}
+                  ? t('auth.status.eachBackupCodeCanOnlyBeUsedOnce')
+                  : t('auth.tips.verificationCodeUpdatesEvery30Seconds')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -233,7 +233,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
           disabled={!isFormValid || isLoading}
         >
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
-          {t('Verify and Sign In')}
+          {t('auth.actions.verifyAndSignIn')}
         </Button>
 
         <div className='flex items-center justify-center gap-2 text-sm'>
@@ -244,7 +244,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
             className='text-primary h-auto p-0'
             onClick={handleToggleMode}
           >
-            {useBackupCode ? t('Use authenticator code') : t('Use backup code')}
+            {useBackupCode ? t('auth.actions.useAuthenticatorCode') : t('auth.actions.useBackupCode')}
           </Button>
           <span className='text-muted-foreground'>·</span>
           <Button
@@ -254,7 +254,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
             className='text-primary h-auto p-0'
             onClick={handleBackToLogin}
           >
-            {t('Back To Login')}
+            {t('auth.actions.backToLogin')}
           </Button>
         </div>
       </form>

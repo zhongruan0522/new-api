@@ -32,10 +32,10 @@ export function TermsFooter({
   status,
 }: TermsFooterProps) {
   const { t } = useTranslation()
-  const text =
+  const leadInText =
     variant === 'sign-in'
-      ? 'By clicking sign in, you agree to our'
-      : 'By creating an account, you agree to our'
+      ? t('auth.tips.byClickingSignInYouAgreeToOur')
+      : t('auth.tips.byCreatingAnAccountYouAgreeToOur')
 
   const hasUserAgreement = Boolean(status?.user_agreement_enabled)
   const hasPrivacyPolicy = Boolean(status?.privacy_policy_enabled)
@@ -45,11 +45,11 @@ export function TermsFooter({
   }
 
   const agreementLink = {
-    label: 'User Agreement',
+    label: 'layout.fields.userAgreement',
     href: '/user-agreement',
   }
   const privacyLink = {
-    label: 'Privacy Policy',
+    label: 'layout.fields.privacyPolicy',
     href: '/privacy-policy',
   }
 
@@ -65,24 +65,24 @@ export function TermsFooter({
 
   return (
     <p className={cn('text-muted-foreground text-center text-xs', className)}>
-      {text}{' '}
+      {leadInText}{' '}
       {firstLink && (
         <a
           href={firstLink.href}
           className='hover:text-primary underline underline-offset-4'
         >
-          {firstLink.label}
+          {t(firstLink.label)}
         </a>
       )}
       {secondLink && (
         <>
           {' '}
-          {t('and')}{' '}
+          {t('auth.fields.value')}{' '}
           <a
             href={secondLink.href}
             className='hover:text-primary underline underline-offset-4'
           >
-            {secondLink.label}
+            {t(secondLink.label)}
           </a>
         </>
       )}

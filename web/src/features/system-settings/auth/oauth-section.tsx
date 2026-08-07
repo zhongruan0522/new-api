@@ -85,7 +85,7 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
       })
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -103,7 +103,7 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('OAuth Integrations')}>
+    <SettingsSection title={t('systemSettings.fields.oauthIntegrations')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -113,8 +113,8 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
 
           <Tabs defaultValue='github' className='space-y-6'>
             <TabsList className='grid w-full grid-cols-2'>
-              <TabsTrigger value='github'>{t('GitHub')}</TabsTrigger>
-              <TabsTrigger value='linuxdo'>{t('Linux DO')}</TabsTrigger>
+              <TabsTrigger value='github'>{t('profile.fields.gitHub')}</TabsTrigger>
+              <TabsTrigger value='linuxdo'>{t('systemSettings.fields.linuxDo')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value='github' className='space-y-6'>
@@ -124,9 +124,9 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 render={({ field }) => (
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
-                      <FormLabel>{t('Enable GitHub OAuth')}</FormLabel>
+                      <FormLabel>{t('systemSettings.actions.enableGitHubOauth')}</FormLabel>
                       <FormDescription>
-                        {t('Allow users to sign in and register with GitHub.')}
+                        {t('systemSettings.actions.allowUsersToSignInAndRegisterWithGitHub')}
                       </FormDescription>
                     </SettingsSwitchContent>
                     <FormControl>
@@ -144,7 +144,7 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 name='GitHubClientId'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('GitHub Client ID')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.gitHubClientId')}</FormLabel>
                     <FormControl>
                       <Input autoComplete='off' {...field} />
                     </FormControl>
@@ -158,17 +158,17 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 name='GitHubClientSecret'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('GitHub Client Secret')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.gitHubClientSecret')}</FormLabel>
                     <FormControl>
                       <Input
                         type='password'
                         autoComplete='new-password'
-                        placeholder={t('Sensitive values are not returned')}
+                        placeholder={t('systemSettings.tips.sensitiveValuesAreNotReturned')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Leave blank unless you want to update the secret.')}
+                      {t('systemSettings.tips.leaveBlankUnlessYouWantToUpdateTheSecret')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -183,9 +183,9 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 render={({ field }) => (
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
-                      <FormLabel>{t('Enable Linux DO OAuth')}</FormLabel>
+                      <FormLabel>{t('systemSettings.actions.enableLinuxDoOauth')}</FormLabel>
                       <FormDescription>
-                        {t('Allow users to sign in and register with Linux DO.')}
+                        {t('systemSettings.actions.allowUsersToSignInAndRegisterWithLinuxDo')}
                       </FormDescription>
                     </SettingsSwitchContent>
                     <FormControl>
@@ -203,7 +203,7 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 name='LinuxDOClientId'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Linux DO Client ID')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.linuxDoClientId')}</FormLabel>
                     <FormControl>
                       <Input autoComplete='off' {...field} />
                     </FormControl>
@@ -217,17 +217,17 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 name='LinuxDOClientSecret'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Linux DO Client Secret')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.linuxDoClientSecret')}</FormLabel>
                     <FormControl>
                       <Input
                         type='password'
                         autoComplete='new-password'
-                        placeholder={t('Sensitive values are not returned')}
+                        placeholder={t('systemSettings.tips.sensitiveValuesAreNotReturned')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Leave blank unless you want to update the secret.')}
+                      {t('systemSettings.tips.leaveBlankUnlessYouWantToUpdateTheSecret')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -239,7 +239,7 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
                 name='LinuxDOMinimumTrustLevel'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Linux DO Minimum Trust Level')}</FormLabel>
+                    <FormLabel>{t('systemSettings.fields.linuxDoMinimumTrustLevel')}</FormLabel>
                     <FormControl>
                       <Input autoComplete='off' placeholder='0' {...field} />
                     </FormControl>

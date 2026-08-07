@@ -50,7 +50,7 @@ export function CacheTooltip({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger
-          render={<Zap className={`size-3 flex-shrink-0 ${color}`} />}
+          render={<Zap className={`size-3 shrink-0 ${color}`} />}
         ></TooltipTrigger>
         <TooltipContent side='top'>
           <p className='text-xs'>

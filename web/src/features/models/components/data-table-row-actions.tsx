@@ -72,12 +72,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         }
       >
         <MoreHorizontal className='h-4 w-4' />
-        <span className='sr-only'>{t('Open menu')}</span>
+        <span className='sr-only'>{t('channels.actions.openMenu')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-48'>
         {/* Edit */}
         <DropdownMenuItem onClick={handleEdit}>
-          {t('Edit')}
+          {t('channels.actions.edit')}
           <DropdownMenuShortcut>
             <Pencil size={16} />
           </DropdownMenuShortcut>
@@ -89,14 +89,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         <DropdownMenuItem onClick={handleToggleStatus}>
           {isEnabled ? (
             <>
-              {t('Disable')}
+              {t('channels.actions.disable')}
               <DropdownMenuShortcut>
                 <PowerOff size={16} />
               </DropdownMenuShortcut>
             </>
           ) : (
             <>
-              {t('Enable')}
+              {t('channels.actions.enable')}
               <DropdownMenuShortcut>
                 <Power size={16} />
               </DropdownMenuShortcut>
@@ -114,7 +114,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           }}
           className='text-destructive focus:text-destructive'
         >
-          {t('Delete')}
+          {t('common.actions.delete')}
           <DropdownMenuShortcut>
             <Trash2 size={16} />
           </DropdownMenuShortcut>
@@ -124,9 +124,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title={t('Delete Model')}
+        title={t('models.actions.deleteModel')}
         desc={`Are you sure you want to delete "${model.model_name}"? This action cannot be undone.`}
-        confirmText={t('Delete')}
+        confirmText={t('common.actions.delete')}
         destructive
         handleConfirm={() => {
           handleDeleteModel(model.id, queryClient)

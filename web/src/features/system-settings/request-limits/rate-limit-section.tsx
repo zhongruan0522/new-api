@@ -75,7 +75,7 @@ const createRateLimitSchema = (t: (key: string) => string) =>
       .string()
       .optional()
       .refine(isValidJSON, {
-        message: t('Invalid JSON format or values out of allowed range'),
+        message: t('systemSettings.errors.invalidJsonFormatOrValuesOutOfAllowedRange'),
       }),
   })
 
@@ -115,13 +115,13 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('Rate Limiting')}>
+    <SettingsSection title={t('home.fields.rateLimiting')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save rate limits'
+            saveLabel='common.actions.saveRateLimits'
           />
           <DisabledSettingsNotice enabled={enabled} />
 
@@ -131,10 +131,10 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable rate limiting')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableRateLimiting')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'This controls model request rate limiting. Web/API route throttling is configured by environment variables and may still return 429.'
+                      'systemSettings.tips.controlsModelRequestRateLimitingWebApiRouteThrottling'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -154,7 +154,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitDurationMinutes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Limit period')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.limitPeriod')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -167,12 +167,12 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                         }
                       />
                       <span className='text-muted-foreground text-sm'>
-                        {t('minutes')}
+                        {t('subscriptions.fields.minutes')}
                       </span>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Time window for rate limiting')}
+                    {t('systemSettings.fields.timeWindowForRateLimiting')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -184,7 +184,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitCount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Max requests per period')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.maxRequestsPerPeriod')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -198,12 +198,12 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                         }
                       />
                       <span className='text-muted-foreground text-sm'>
-                        {t('times')}
+                        {t('systemSettings.fields.times')}
                       </span>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Including failed requests, 0 = unlimited')}
+                    {t('systemSettings.status.includingFailedRequests0Unlimited')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -215,7 +215,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitSuccessCount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Max Successful Requests')}</FormLabel>
+                  <FormLabel>{t('systemSettings.status.maxSuccessfulRequests')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -229,12 +229,12 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                         }
                       />
                       <span className='text-muted-foreground text-sm'>
-                        {t('times')}
+                        {t('systemSettings.fields.times')}
                       </span>
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('Only successful requests')}
+                    {t('systemSettings.status.onlySuccessfulRequests')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -248,7 +248,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <div className='flex items-center justify-between'>
-                  <FormLabel>{t('Group-based rate limits')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.groupBasedRateLimits')}</FormLabel>
                   <Button
                     type='button'
                     variant='outline'
@@ -258,12 +258,12 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                     {useVisualEditor ? (
                       <>
                         <Code2 className='mr-2 h-4 w-4' />
-                        {t('JSON Mode')}
+                        {t('common.fields.jsonMode')}
                       </>
                     ) : (
                       <>
                         <Palette className='mr-2 h-4 w-4' />
-                        {t('Visual Mode')}
+                        {t('common.fields.visualMode')}
                       </>
                     )}
                   </Button>
@@ -286,24 +286,24 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                 {!useVisualEditor && (
                   <FormDescription>
                     <div className='space-y-1 text-xs'>
-                      <p className='font-semibold'>{t('labelWithColon', { label: t('Format') })}</p>
+                      <p className='font-semibold'>{t('channels.fields.labelWithColon', { label: t('channels.fields.format') })}</p>
                       <ul className='list-inside list-disc space-y-0.5 pl-2'>
                         <li>
-                          {t('JSON object:')}{' '}
+                          {t('systemSettings.fields.jsonObject')}{' '}
                           {`{"groupName": [maxRequests, maxSuccess]}`}
                         </li>
                         <li>
-                          {t('labelWithColon', { label: t('Example') })}{' '}
+                          {t('channels.fields.labelWithColon', { label: t('channels.placeholders.example') })}{' '}
                           {`{"default": [200, 100], "vip": [0, 1000]}`}
                         </li>
                         <li>
                           {t(
-                            'maxRequests ≥ 0, maxSuccess ≥ 1, both ≤ 2,147,483,647'
+                            'systemSettings.tips.maxRequests0MaxSuccess1Both2147'
                           )}
                         </li>
                         <li>
                           {t(
-                            'Group config overrides global limits, shares the same period'
+                            'systemSettings.tips.groupConfigOverridesGlobalLimitsSharesTheSamePeriod'
                           )}
                         </li>
                       </ul>

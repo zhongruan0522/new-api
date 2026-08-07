@@ -25,7 +25,9 @@ func TestSumUsedQuotaAppliesLogOnlyFilters(t *testing.T) {
 			Ip:                "203.0.113.10",
 			RequestId:         "target-request",
 			UpstreamRequestId: "target-upstream",
-			Other:             `{"ua":"TargetAgent/1.0","x_title":"Target Title","http_referer":"https://target.example/path"}`,
+			Ua:                "TargetAgent/1.0",
+			XTitle:            "Target Title",
+			HttpReferer:       "https://target.example/path",
 		},
 		{
 			UserId:            2,
@@ -42,7 +44,9 @@ func TestSumUsedQuotaAppliesLogOnlyFilters(t *testing.T) {
 			Ip:                "198.51.100.20",
 			RequestId:         "other-request",
 			UpstreamRequestId: "other-upstream",
-			Other:             `{"ua":"OtherAgent/1.0","x_title":"Other Title","http_referer":"https://other.example/path"}`,
+			Ua:                "OtherAgent/1.0",
+			XTitle:            "Other Title",
+			HttpReferer:       "https://other.example/path",
 		},
 	}
 	if err := LOG_DB.Create(&logs).Error; err != nil {

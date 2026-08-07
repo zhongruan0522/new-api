@@ -3,7 +3,7 @@ package vertex
 import (
 	"encoding/json"
 
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/dto"
 )
 
 type VertexAIClaudeRequest struct {

@@ -110,7 +110,7 @@ export function SyncWizardDialog({
           response.data || {}
         toast.success(
           t(
-            'Sync completed: created {{createdModels}} models, updated {{updatedModels}}, and added {{createdVendors}} vendors.',
+            'models.status.syncCompletedCreatedCreatedModelsModelsUpdatedUpdatedModels',
             {
               createdModels: created_models || 0,
               updatedModels: updated_models || 0,
@@ -122,10 +122,10 @@ export function SyncWizardDialog({
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('Sync failed'))
+        toast.error(response.message || t('models.status.syncFailed'))
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || t('Sync failed'))
+      toast.error((error as Error)?.message || t('models.status.syncFailed'))
     } finally {
       setIsSyncing(false)
     }
@@ -137,19 +137,19 @@ export function SyncWizardDialog({
         className='flex max-h-[90vh] w-full flex-col gap-4 p-4 sm:max-w-2xl sm:p-6'
         initialFocus={!isMobile}
       >
-        <DialogHeader className='flex-shrink-0 text-start'>
-          <DialogTitle>{t('Sync Upstream Models')}</DialogTitle>
+        <DialogHeader className='shrink-0 text-start'>
+          <DialogTitle>{t('models.titles.syncUpstreamModels')}</DialogTitle>
           <DialogDescription>
-            {t('Synchronize models and vendors from an upstream source')}
+            {t('models.tips.synchronizeModelsAndVendorsFromAnUpstreamSource')}
           </DialogDescription>
         </DialogHeader>
 
         <div className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto'>
           <div className='space-y-3'>
             <div>
-              <Label className='text-base'>{t('Select Sync Source')}</Label>
+              <Label className='text-base'>{t('models.placeholders.selectSyncSource')}</Label>
               <p className='text-muted-foreground text-sm'>
-                {t('Choose where to fetch upstream metadata.')}
+                {t('models.placeholders.chooseWhereToFetchUpstreamMetadata')}
               </p>
             </div>
             <RadioGroup
@@ -189,7 +189,7 @@ export function SyncWizardDialog({
                           <span className='font-medium'>{option.label}</span>
                           {option.value === 'official' && (
                             <StatusBadge
-                              label='Default'
+                              label={t('models.status.default')}
                               variant='neutral'
                               copyable={false}
                             />
@@ -207,7 +207,7 @@ export function SyncWizardDialog({
           </div>
 
           <div className='space-y-2'>
-            <Label className='text-base'>{t('Select Language')}</Label>
+            <Label className='text-base'>{t('models.placeholders.selectLanguage')}</Label>
             <RadioGroup
               value={locale}
               onValueChange={(v) => setLocale(v as SyncLocale)}
@@ -236,19 +236,19 @@ export function SyncWizardDialog({
           <div className='bg-muted/50 rounded-lg border p-4'>
             <p className='text-muted-foreground text-sm'>
               {t(
-                'The sync will fetch missing models and vendors from the selected source. Existing records are updated only when you approve conflicts.'
+                'models.status.syncWillFetchMissingModelsAndVendorsFromThe'
               )}
             </p>
           </div>
         </div>
 
-        <DialogFooter className='flex-shrink-0 gap-2 sm:justify-end'>
+        <DialogFooter className='shrink-0 gap-2 sm:justify-end'>
           <Button
             variant='outline'
             onClick={() => onOpenChange(false)}
             disabled={isSyncing}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleSync} disabled={isSyncing}>
             {isSyncing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}

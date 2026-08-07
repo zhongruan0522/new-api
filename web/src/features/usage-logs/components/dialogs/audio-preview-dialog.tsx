@@ -67,7 +67,7 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
     setHasError(false)
   }, [clip.audio_url])
 
-  const title = clip.title || t('Untitled')
+  const title = clip.title || t('usageLogs.fields.untitled')
   const tags = clip.tags || clip.metadata?.tags || ''
   const duration = clip.duration || clip.metadata?.duration
   const imageUrl = clip.image_url || clip.image_large_url
@@ -107,7 +107,7 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
         {hasError ? (
           <div className='flex flex-wrap items-center gap-2'>
             <span className='text-destructive text-xs'>
-              {t('Audio playback failed')}
+              {t('usageLogs.status.audioPlaybackFailed')}
             </span>
             <Button
               variant='outline'
@@ -116,7 +116,7 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
               onClick={() => window.open(audioUrl, '_blank')}
             >
               <ExternalLink className='h-3 w-3' />
-              {t('Open In New Tab')}
+              {t('dashboard.actions.openInNewTab')}
             </Button>
             <Button
               variant='outline'
@@ -124,11 +124,11 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
               className='h-7 gap-1 text-xs'
               onClick={() => {
                 navigator.clipboard.writeText(audioUrl)
-                toast.success(t('Copied'))
+                toast.success(t('common.status.copied'))
               }}
             >
               <Copy className='h-3 w-3' />
-              {t('Copy Link')}
+              {t('usageLogs.actions.copyLink')}
             </Button>
           </div>
         ) : (
@@ -156,13 +156,13 @@ export function AudioPreviewDialog(props: AudioPreviewDialogProps) {
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Music className='h-5 w-5' />
-            {t('Audio Preview')}
+            {t('usageLogs.fields.audioPreview')}
           </DialogTitle>
         </DialogHeader>
 
         {clips.length === 0 ? (
           <p className='text-muted-foreground py-4 text-center text-sm'>
-            {t('None')}
+            {t('usageLogs.fields.none')}
           </p>
         ) : (
           <ScrollArea className='max-h-[60vh]'>

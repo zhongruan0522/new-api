@@ -29,7 +29,7 @@
 ## 文件组织
 
 - 功能模块放 `src/features/<feature>/`，常见结构为 `api.ts`、`types.ts`、`constants.ts`、
-  `components/`、`hooks/`、`lib/`。
+`components/`、`hooks/`、`lib/`。
 - 路由只负责装配页面和路由级校验，业务逻辑放到 feature。
 - 通用组件放 `src/components/`，基础 UI 原语放 `src/components/ui/`。
 - 通用工具放 `src/lib/`，状态放 `src/stores/`。
@@ -45,19 +45,13 @@
 
 ## i18n
 
-- React 组件中使用 `const { t } = useTranslation()`；非 React 模块可用 `i18next.t`。
-- 文案按 feature 物理拆分到 `src/i18n/locales/<locale>/<section>.json`（`<locale>` 为 `en` 或
-  `zh`，`<section>` 对应 feature，如 `auth`、`channels`、`system-settings`，共用/品牌/壳层分别用
-  `common.json` 和 `layout.json`）。每个 section 文件是扁平的 `Record<string, string>`，不包
-  `translation` 包装层；运行时在 `src/i18n/config.ts` 用对象展开合并回单一 `translation` namespace。
-- 新增用户可见文案：在相关 feature 的 `src/i18n/locales/en/<section>.json` 和
-  `src/i18n/locales/zh/<section>.json` 中各加一行；新增 section 文件后必须在
-  `src/i18n/config.ts` 里导入并展开到对应语言的 `translation`。
-- 用 `bun run i18n:sync` 校验 en/zh key 是否对齐（脚本会按 base 顺序重排各 section、产出
-  `_extras`、`_reports`，不再写回单一大文件）。
-- 常量、配置、枚举等动态 key 要登记到 `src/i18n/static-keys.ts`，或确保以 `t('...')` 字面量出现。
-- `keySeparator: false`、`nsSeparator: false`、text-as-key 模式不变；`supportedLngs` 目前只有
-  `en` 和 `zh`，不要添加未维护的语言入口。
+- React 组件中使用 `const { t } = useTranslation()`;非 React 模块可用 `i18next.t`。
+- 文案按 feature 物理拆分到 `src/i18n/locales/<locale>/<section>.json`(`<locale>` 为 en 或 zh,`<section>` 对应 feature,如 `auth`、`channels`、`system-settings`,共用/品牌/壳层分别用 `common.json` 和 `layout.json`)。每个 section 文件是扁平的 `Record<string, string>`,不包 translation 包装层;运行时在 `src/i18n/config.ts` 用对象展开合并回单一 translation namespace。
+- 用户可见文案用语义 key,格式 `<section>.<group>.<name>[.<attr>]`,前缀 `<section>` 与所在文件名一致(如 `channels.json` → `channels.fields.xxx`);`<group>` 收敛在 `fields/actions/status/errors/tips/titles/placeholders`,`<name>` 用 camelCase,section 名含连字符时前缀转 camelCase(`usage-logs` → `usageLogs`)。语义 key 为扁平字符串,禁止写成嵌套对象。
+- 新增用户可见文案:在相关 feature 的 `src/i18n/locales/en/<section>.json` 和 `src/i18n/locales/zh/<section>.json` 中各加一行;新增 section 文件后必须在 `src/i18n/config.ts` 里导入并展开到对应语言的 translation。
+- 用 `bun run i18n:sync` 校验 en/zh key 是否对齐(脚本会按 base 顺序重排各 section、产出 `_extras`、`_reports`,不再写回单一大文件)。
+- 常量、配置、枚举等动态 key 要登记到 `src/i18n/static-keys.ts`,或确保以 `t('...')` 字面量出现。
+- `keySeparator: false`、`nsSeparator: false`;`supportedLngs` 目前只有 en 和 zh,不要添加未维护的语言入口。
 
 ## 类型、表单与错误
 
@@ -73,3 +67,4 @@
 - 组件优先复用 `src/components/ui/` 和现有 feature 组件。
 - UI 应支持深浅色、主题 preset、移动端和键盘操作。
 - 不要把页面章节做成嵌套卡片；管理后台优先信息密度、清晰扫描和稳定布局。
+

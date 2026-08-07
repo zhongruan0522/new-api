@@ -30,7 +30,6 @@ const defaultBillingSettings: BillingSettings = {
   QuotaForInviter: 0,
   QuotaForInvitee: 0,
   TopUpLink: '',
-  'general_setting.docs_link': '',
   'quota_setting.free_model_pre_consumed_quota': 0,
   ModelPrice: '',
   ModelRatio: '',

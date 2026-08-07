@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/constant"
 )
 
 func TestGetRequestBodyDoesNotKeepLegacyBytesForDiskStorage(t *testing.T) {
@@ -120,9 +120,8 @@ func BenchmarkGetRequestBodyDiskStorage(b *testing.B) {
 
 	body := strings.Repeat("x", 64<<10)
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		recorder := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(recorder)
 		c.Request = httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(body))

@@ -193,7 +193,7 @@ export function MultimodalFiles() {
       return batchDeleteStoredMedia(target.items)
     },
     onSuccess: async (deleted) => {
-      toast.success(t('Deleted {{count}} file(s)', { count: deleted }))
+      toast.success(t('multimodalFiles.status.deletedCountFileS', { count: deleted }))
       setDeleteTarget(null)
       setSelectedKeys([])
       await refresh()
@@ -232,9 +232,9 @@ export function MultimodalFiles() {
     if (!url) return
     try {
       await copyToClipboard(url)
-      toast.success(t('Copied'))
+      toast.success(t('common.status.copied'))
     } catch {
-      toast.error(t('Copy failed'))
+      toast.error(t('keyQuery.actions.copyFailed'))
     }
   }
 
@@ -249,7 +249,7 @@ export function MultimodalFiles() {
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {t('Multimodal Files')}
+          {t('multimodalFiles.fields.files')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <Button
@@ -262,11 +262,11 @@ export function MultimodalFiles() {
             }}
           >
             <Trash2 />
-            {t('Delete selected')}
+            {t('multimodalFiles.actions.deleteSelected')}
           </Button>
           <Button variant='outline' onClick={() => void refresh()}>
             <RefreshCw />
-            {t('Refresh')}
+            {t('channels.actions.refresh')}
           </Button>
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
@@ -280,7 +280,7 @@ export function MultimodalFiles() {
             <Card size='sm'>
               <CardContent className='grid gap-3 lg:grid-cols-[1fr_1fr_auto]'>
                 <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-start'>{t('Start Time')}</Label>
+                  <Label htmlFor='stored-media-start'>{t('dashboard.actions.startTime')}</Label>
                   <Input
                     id='stored-media-start'
                     type='datetime-local'
@@ -293,7 +293,7 @@ export function MultimodalFiles() {
                   />
                 </div>
                 <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-end'>{t('End Time')}</Label>
+                  <Label htmlFor='stored-media-end'>{t('dashboard.fields.endTime')}</Label>
                   <Input
                     id='stored-media-end'
                     type='datetime-local'
@@ -307,10 +307,10 @@ export function MultimodalFiles() {
                 </div>
                 <div className='flex items-end gap-2'>
                   <Button onClick={() => void refresh()} className='flex-1'>
-                    {t('Query')}
+                    {t('keyQuery.titles.query')}
                   </Button>
                   <Button variant='outline' onClick={resetFilters}>
-                    {t('Reset')}
+                    {t('common.actions.reset')}
                   </Button>
                 </div>
               </CardContent>
@@ -323,21 +323,21 @@ export function MultimodalFiles() {
                     <TableRow>
                       <TableHead className='w-10'>
                         <Checkbox
-                          aria-label={t('Select visible files')}
+                          aria-label={t('multimodalFiles.placeholders.selectVisibleFiles')}
                           checked={allVisibleSelected}
                           onCheckedChange={(checked) =>
                             toggleVisible(checked === true)
                           }
                         />
                       </TableHead>
-                      <TableHead>{t('Type')}</TableHead>
-                      <TableHead>{t('ID')}</TableHead>
-                      <TableHead>{t('Created At')}</TableHead>
-                      <TableHead>{t('MIME')}</TableHead>
-                      <TableHead>{t('Size')}</TableHead>
-                      <TableHead>{t('Converted URL')}</TableHead>
+                      <TableHead>{t('channels.fields.type')}</TableHead>
+                      <TableHead>{t('channels.fields.id')}</TableHead>
+                      <TableHead>{t('multimodalFiles.status.createdAt')}</TableHead>
+                      <TableHead>{t('multimodalFiles.fields.mime')}</TableHead>
+                      <TableHead>{t('channels.fields.size')}</TableHead>
+                      <TableHead>{t('multimodalFiles.fields.convertedUrl')}</TableHead>
                       <TableHead className='w-36 text-right'>
-                        {t('Actions')}
+                        {t('channels.fields.actions')}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -345,13 +345,13 @@ export function MultimodalFiles() {
                     {mediaQuery.isLoading ? (
                       <TableRow>
                         <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('Loading...')}
+                          {t('common.tips.loading')}
                         </TableCell>
                       </TableRow>
                     ) : items.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('No multimodal files')}
+                          {t('multimodalFiles.fields.noMultimodalFiles')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -361,7 +361,7 @@ export function MultimodalFiles() {
                           <TableRow key={key}>
                             <TableCell>
                               <Checkbox
-                                aria-label={t('Select file')}
+                                aria-label={t('multimodalFiles.placeholders.selectFile')}
                                 checked={selectedKeys.includes(key)}
                                 onCheckedChange={(checked) =>
                                   toggleSelection(item, checked === true)
@@ -393,7 +393,7 @@ export function MultimodalFiles() {
                                   onClick={() => detailMutation.mutate(item)}
                                 >
                                   <Eye />
-                                  <span className='sr-only'>{t('View')}</span>
+                                  <span className='sr-only'>{t('common.actions.view')}</span>
                                 </Button>
                                 <Button
                                   size='icon-sm'
@@ -402,7 +402,7 @@ export function MultimodalFiles() {
                                   onClick={() => void copyUrl(item.url)}
                                 >
                                   <Copy />
-                                  <span className='sr-only'>{t('Copy')}</span>
+                                  <span className='sr-only'>{t('channels.actions.copy')}</span>
                                 </Button>
                                 <Button
                                   size='icon-sm'
@@ -412,7 +412,7 @@ export function MultimodalFiles() {
                                   }
                                 >
                                   <Trash2 />
-                                  <span className='sr-only'>{t('Delete')}</span>
+                                  <span className='sr-only'>{t('common.actions.delete')}</span>
                                 </Button>
                               </div>
                             </TableCell>
@@ -427,15 +427,18 @@ export function MultimodalFiles() {
 
             <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
               <div className='text-muted-foreground text-sm'>
-                {t('Selected {{selected}} of {{total}}', {
+                {t('multimodalFiles.placeholders.selectedSelectedOfTotal', {
                   selected: selectedItems.length,
                   total,
                 })}
               </div>
-              <div className='flex items-center gap-2'>
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={(value) => {
+             <div className='flex items-center gap-2'>
+                <span className='text-muted-foreground hidden whitespace-nowrap text-sm sm:inline'>
+                  {t('common.fields.rowsPerPage')}
+                </span>
+               <Select
+                 value={String(pageSize)}
+                 onValueChange={(value) => {
                     const next = Number(value)
                     if (Number.isFinite(next)) {
                       setPageSize(next)
@@ -465,7 +468,7 @@ export function MultimodalFiles() {
                     setPage((current) => Math.max(1, current - 1))
                   }}
                 >
-                  {t('Previous')}
+                  {t('common.fields.previous')}
                 </Button>
                 <span className='text-sm tabular-nums'>
                   {page} / {totalPages}
@@ -478,7 +481,7 @@ export function MultimodalFiles() {
                     setPage((current) => Math.min(totalPages, current + 1))
                   }}
                 >
-                  {t('Next')}
+                  {t('common.fields.next')}
                 </Button>
               </div>
             </div>
@@ -489,32 +492,32 @@ export function MultimodalFiles() {
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className='sm:max-w-2xl'>
           <DialogHeader>
-            <DialogTitle>{t('Multimodal Files')}</DialogTitle>
+            <DialogTitle>{t('multimodalFiles.fields.files')}</DialogTitle>
           </DialogHeader>
           {detailItem && (
             <div className='space-y-3'>
               <div className='grid gap-2 text-sm sm:grid-cols-2'>
                 <div>
-                  <span className='text-muted-foreground'>{t('ID')}: </span>
+                  <span className='text-muted-foreground'>{t('channels.fields.id')}: </span>
                   <span className='font-mono text-xs'>{detailItem.id}</span>
                 </div>
                 <div>
                   <span className='text-muted-foreground'>
-                    {t('Created At')}:{' '}
+                    {t('multimodalFiles.status.createdAt')}:{' '}
                   </span>
                   {formatTimestampToDate(detailItem.created_at)}
                 </div>
                 <div>
-                  <span className='text-muted-foreground'>{t('Type')}: </span>
+                  <span className='text-muted-foreground'>{t('channels.fields.type')}: </span>
                   {detailItem.media_type}
                 </div>
                 <div>
-                  <span className='text-muted-foreground'>{t('Size')}: </span>
+                  <span className='text-muted-foreground'>{t('channels.fields.size')}: </span>
                   {formatSize(detailItem.size_bytes)}
                 </div>
               </div>
               <div className='grid gap-1.5'>
-                <Label htmlFor='stored-media-url'>{t('Converted URL')}</Label>
+                <Label htmlFor='stored-media-url'>{t('multimodalFiles.fields.convertedUrl')}</Label>
                 <Input id='stored-media-url' value={detailItem.url} readOnly />
               </div>
               {detailItem.url && detailItem.media_type === 'image' && (
@@ -539,14 +542,14 @@ export function MultimodalFiles() {
           )}
           <DialogFooter>
             <Button variant='outline' onClick={() => setDetailOpen(false)}>
-              {t('Close')}
+              {t('common.actions.close')}
             </Button>
             <Button
               disabled={!detailItem?.url}
               onClick={() => detailItem && void copyUrl(detailItem.url)}
             >
               <Copy />
-              {t('Copy URL')}
+              {t('dashboard.actions.copyUrl')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -560,17 +563,17 @@ export function MultimodalFiles() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('Delete file')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('multimodalFiles.actions.deleteFile')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget?.mode === 'batch'
-                ? t('Delete {{count}} selected file(s)?', {
+                ? t('multimodalFiles.actions.deleteCountSelectedFileS', {
                     count: deleteTarget.items.length,
                   })
-                : t('Delete this multimodal file?')}
+                : t('multimodalFiles.actions.deleteThisMultimodalFile')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               variant='destructive'
               disabled={deleteMutation.isPending}
@@ -578,7 +581,7 @@ export function MultimodalFiles() {
                 if (deleteTarget) deleteMutation.mutate(deleteTarget)
               }}
             >
-              {t('Delete')}
+              {t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

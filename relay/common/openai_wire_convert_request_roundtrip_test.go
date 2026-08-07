@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
 )
 
 // Test assistant history and json_schema mapping because both are required for
@@ -202,8 +202,8 @@ func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCalls
 	if assistant.Role != "assistant" {
 		t.Fatalf("messages[0].role = %q, want assistant", assistant.Role)
 	}
-	if assistant.ReasoningContent != "Need tools" {
-		t.Fatalf("reasoning_content = %q, want Need tools", assistant.ReasoningContent)
+	if assistant.ReasoningContent == nil || *assistant.ReasoningContent != "Need tools" {
+		t.Fatalf("reasoning_content = %v, want Need tools", assistant.ReasoningContent)
 	}
 	toolCalls := assistant.ParseToolCalls()
 	if len(toolCalls) != 2 {

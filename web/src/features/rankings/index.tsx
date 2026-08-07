@@ -92,7 +92,7 @@ export function Rankings() {
               message={
                 rankingsQuery.error instanceof Error
                   ? rankingsQuery.error.message
-                  : t('Unable to load rankings data')
+                  : t('rankings.errors.unableToLoadRankingsData')
               }
             />
           ) : (
@@ -136,7 +136,7 @@ function RankingsError(props: { message: string }) {
   return (
     <div className='bg-card rounded-xl border border-dashed px-6 py-12 text-center'>
       <h2 className='text-foreground text-base font-semibold'>
-        {t('Unable to load rankings')}
+        {t('rankings.errors.unableToLoadRankings')}
       </h2>
       <p className='text-muted-foreground mx-auto mt-2 max-w-md text-sm'>
         {props.message}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // MiniMaxPlanQuotaData MiniMax 套餐额度数据

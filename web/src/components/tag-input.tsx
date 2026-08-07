@@ -39,7 +39,7 @@ export function TagInput({
   disabled = false,
 }: TagInputProps) {
   const { t } = useTranslation()
-  const placeholderText = placeholder ?? t('Add tags...')
+  const placeholderText = placeholder ?? t('common.actions.addTags')
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -86,7 +86,7 @@ export function TagInput({
               type='button'
               variant='ghost'
               size='icon-sm'
-              aria-label={t('Remove')}
+              aria-label={t('common.actions.remove')}
               onClick={(e) => {
                 e.stopPropagation()
                 removeTag(tag)

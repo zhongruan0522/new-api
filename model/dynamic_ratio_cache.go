@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 // parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析

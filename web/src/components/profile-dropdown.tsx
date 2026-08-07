@@ -109,12 +109,12 @@ export function ProfileDropdown() {
 
           <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
             <User className='size-4' />
-            {t('Profile')}
+            {t('layout.titles.profile')}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => navigate({ to: '/wallet' })}>
             <Wallet className='size-4' />
-            {t('Wallet')}
+            {t('layout.titles.wallet')}
           </DropdownMenuItem>
 
           {isSuperAdmin && (
@@ -127,7 +127,7 @@ export function ProfileDropdown() {
               }
             >
               <Settings className='size-4' />
-              {t('System Settings')}
+              {t('common.titles.systemSettings')}
             </DropdownMenuItem>
           )}
 
@@ -135,7 +135,7 @@ export function ProfileDropdown() {
 
           <DropdownMenuItem variant='destructive' onClick={() => setOpen(true)}>
             <LogOut className='size-4' />
-            {t('Sign out')}
+            {t('layout.actions.signOut')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

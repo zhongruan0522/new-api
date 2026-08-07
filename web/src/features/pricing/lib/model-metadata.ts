@@ -317,24 +317,24 @@ export type ApiInfo = {
 }
 
 const VENDOR_LABELS: Record<ModelVendor, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
+  openai: 'common.fields.openAi',
+  anthropic: 'common.fields.anthropic',
   google: 'Google',
   meta: 'Meta',
   mistral: 'Mistral AI',
   qwen: 'Alibaba (Qwen)',
-  deepseek: 'DeepSeek',
-  xai: 'xAI',
-  cohere: 'Cohere',
-  baidu: 'Baidu',
+  deepseek: 'common.fields.deepSeek',
+  xai: 'common.fields.xAi',
+  cohere: 'common.fields.cohere',
+  baidu: 'common.fields.baidu',
   zhipu: 'Zhipu AI',
   moonshot: 'Moonshot AI',
-  minimax: 'MiniMax',
-  tencent: 'Tencent',
-  bytedance: 'ByteDance',
-  midjourney: 'Midjourney',
+  minimax: 'common.fields.miniMax',
+  tencent: 'common.fields.tencent',
+  bytedance: 'common.fields.byteDance',
+  midjourney: 'common.fields.midjourney',
   stability: 'Stability AI',
-  unknown: 'Unknown',
+  unknown: 'channels.fields.unknown',
 }
 
 function detectVendor(name: string): ModelVendor {

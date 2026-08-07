@@ -77,24 +77,24 @@ export function CopyChannelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('Copy Channel')}</DialogTitle>
+          <DialogTitle>{t('channels.actions.copyChannel')}</DialogTitle>
           <DialogDescription>
-            {t('Create a copy of:')} <strong>{currentRow.name}</strong>
+            {t('channels.actions.createACopyOf')} <strong>{currentRow.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4 py-4'>
           <div className='space-y-2'>
-            <Label htmlFor='suffix'>{t('Name Suffix')}</Label>
+            <Label htmlFor='suffix'>{t('channels.fields.nameSuffix')}</Label>
             <Input
               id='suffix'
-              placeholder={t('_copy')}
+              placeholder={t('channels.fields.copy')}
               value={suffix}
               onChange={(e) => setSuffix(e.target.value)}
               disabled={isCopying}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('New name will be:')} {currentRow.name}
+              {t('channels.fields.newNameWillBe')} {currentRow.name}
               {suffix}
             </p>
           </div>
@@ -107,7 +107,7 @@ export function CopyChannelDialog({
               disabled={isCopying}
             />
             <Label htmlFor='reset-balance' className='text-sm font-normal'>
-              {t('Reset balance and used quota')}
+              {t('channels.actions.resetBalanceAndUsedQuota')}
             </Label>
           </div>
         </div>
@@ -118,7 +118,7 @@ export function CopyChannelDialog({
             onClick={() => onOpenChange(false)}
             disabled={isCopying}
           >
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleCopy} disabled={isCopying}>
             {isCopying && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}

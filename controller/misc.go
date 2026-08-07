@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/middleware"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/console_setting"
-	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/middleware"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/console_setting"
+	"github.com/NookMux/NookMux/setting/dashboard_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,7 +24,7 @@ func TestStatus(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
-			"message": "数据库连接失败",
+			"message": i18n.T(c, i18n.MsgMiscDBConnectionFailed),
 		})
 		return
 	}
@@ -31,10 +32,9 @@ func TestStatus(c *gin.Context) {
 	httpStats := middleware.GetStats()
 	c.JSON(http.StatusOK, gin.H{
 		"success":    true,
-		"message":    "Server is running",
+		"message":    i18n.T(c, i18n.MsgMiscServerRunning),
 		"http_stats": httpStats,
 	})
-	return
 }
 
 func GetStatus(c *gin.Context) {
@@ -94,7 +94,7 @@ func GetStatus(c *gin.Context) {
 		"privacy_policy_enabled":    legalSetting.PrivacyPolicy != "",
 		"checkin_enabled":           operation_setting.GetCheckinSetting().Enabled,
 		"version":                   common.Version,
-		"_qn":                       "new-api",
+		"_qn":                       "nookmux",
 	}
 
 	// 根据启用状态注入可选内容（开关读 dashboard_config，内容数据读 console_setting）
@@ -113,7 +113,6 @@ func GetStatus(c *gin.Context) {
 		"message": "",
 		"data":    data,
 	})
-	return
 }
 
 func GetNotice(c *gin.Context) {
@@ -124,7 +123,6 @@ func GetNotice(c *gin.Context) {
 		"message": "",
 		"data":    common.OptionMap["Notice"],
 	})
-	return
 }
 
 func GetAbout(c *gin.Context) {
@@ -135,7 +133,6 @@ func GetAbout(c *gin.Context) {
 		"message": "",
 		"data":    common.OptionMap["About"],
 	})
-	return
 }
 
 func GetUserAgreement(c *gin.Context) {
@@ -144,7 +141,6 @@ func GetUserAgreement(c *gin.Context) {
 		"message": "",
 		"data":    system_setting.GetLegalSettings().UserAgreement,
 	})
-	return
 }
 
 func GetPrivacyPolicy(c *gin.Context) {
@@ -153,7 +149,6 @@ func GetPrivacyPolicy(c *gin.Context) {
 		"message": "",
 		"data":    system_setting.GetLegalSettings().PrivacyPolicy,
 	})
-	return
 }
 
 func GetMidjourney(c *gin.Context) {
@@ -164,7 +159,6 @@ func GetMidjourney(c *gin.Context) {
 		"message": "",
 		"data":    common.OptionMap["Midjourney"],
 	})
-	return
 }
 
 func GetHomePageContent(c *gin.Context) {
@@ -175,24 +169,17 @@ func GetHomePageContent(c *gin.Context) {
 		"message": "",
 		"data":    common.OptionMap["HomePageContent"],
 	})
-	return
 }
 
 func SendEmailVerification(c *gin.Context) {
 	email := c.Query("email")
 	if err := common.Validate.Var(email, "required,email"); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的邮箱地址",
-		})
+		common.ApiErrorI18n(c, i18n.MsgSettingEmailInvalid)
 		return
 	}
 	localPart := parts[0]
@@ -208,7 +195,7 @@ func SendEmailVerification(c *gin.Context) {
 		if !allowed {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "The administrator has enabled the email domain name whitelist, and your email address is not allowed due to special symbols or it's not in the whitelist.",
+				"message": i18n.T(c, i18n.MsgMiscEmailDomainWhitelistRejected),
 			})
 			return
 		}
@@ -216,19 +203,13 @@ func SendEmailVerification(c *gin.Context) {
 	if common.EmailAliasRestrictionEnabled {
 		containsSpecialSymbols := strings.Contains(localPart, "+") || strings.Contains(localPart, ".")
 		if containsSpecialSymbols {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "管理员已启用邮箱地址别名限制，您的邮箱地址由于包含特殊符号而被拒绝。",
-			})
+			common.ApiErrorI18n(c, i18n.MsgMiscEmailAliasRejected)
 			return
 		}
 	}
 
 	if model.IsEmailAlreadyTaken(email) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "邮箱地址已被占用",
-		})
+		common.ApiErrorI18n(c, i18n.MsgMiscEmailTaken)
 		return
 	}
 	code := common.GenerateVerificationCode(6)
@@ -240,23 +221,19 @@ func SendEmailVerification(c *gin.Context) {
 	err := common.SendEmail(subject, email, content)
 	if err != nil {
 		common.SysError(fmt.Sprintf("failed to send email verification to %s: %v", email, err))
-		common.ApiErrorMsg(c, "邮件发送失败，请稍后重试或联系管理员")
+		common.ApiErrorI18n(c, i18n.MsgMiscEmailSendFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func SendPasswordResetEmail(c *gin.Context) {
 	email := c.Query("email")
 	if err := common.Validate.Var(email, "required,email"); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if model.IsEmailAlreadyTaken(email) {
@@ -287,23 +264,18 @@ func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
 	err := common.DecodeJson(c.Request.Body, &req)
 	if err != nil || req.Email == "" || req.Token == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无效的参数",
-		})
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if !common.VerifyCodeWithKey(req.Email, req.Token, common.PasswordResetPurpose) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "重置链接非法或已过期",
-		})
+		common.ApiErrorI18n(c, i18n.MsgMiscPasswordResetLinkInvalid)
 		return
 	}
 	password := common.GenerateVerificationCode(12)
 	err = model.ResetUserPasswordByEmail(req.Email, password)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError("reset user password by email failed: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	common.DeleteKey(req.Email, common.PasswordResetPurpose)
@@ -312,7 +284,6 @@ func ResetPassword(c *gin.Context) {
 		"message": "",
 		"data":    password,
 	})
-	return
 }
 
 // GetUsageLogFieldsVisible 公开接口：返回当前用户角色下使用日志详情弹窗的字段可见性配置。
@@ -337,7 +308,7 @@ func GetUsageLogFieldsVisible(c *gin.Context) {
 	fieldsMap, err := console_setting.GetUsageLogFieldsVisible()
 	if err != nil {
 		common.SysError("failed to parse usage_log_fields setting: " + err.Error())
-		common.ApiErrorMsg(c, "使用日志字段配置解析失败")
+		common.ApiErrorI18n(c, i18n.MsgMiscUsageLogFieldsParseFailed)
 		return
 	}
 
@@ -359,5 +330,4 @@ func GetUsageLogFieldsVisible(c *gin.Context) {
 			"fields":  visibleFields,
 		},
 	})
-	return
 }

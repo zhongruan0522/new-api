@@ -8,17 +8,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/relay/reasonmap"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/relay/reasonmap"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -479,14 +479,20 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						},
 					}
 				}
-			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == "" && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
-				claudeMessage.Content = message.StringContent()
+			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == nil && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
+				stringContent := message.StringContent()
+				// AWS Bedrock 等上游拒绝空字符串内容（返回 400），用占位符兜底
+				if strings.TrimSpace(stringContent) == "" {
+					stringContent = "..."
+				}
+				claudeMessage.Content = stringContent
 			} else {
 				claudeMediaMessages := make([]dto.ClaudeMediaMessage, 0)
 				if message.Role == "assistant" {
-					if message.ReasoningContent != "" || message.ReasoningSignature != "" {
+					if message.ReasoningContent != nil || message.ReasoningSignature != "" {
 						claudeThinking := dto.ClaudeMediaMessage{Type: "thinking", Signature: message.ReasoningSignature}
-						claudeThinking.Thinking = common.GetPointer[string](message.ReasoningContent)
+						reasoningText := message.GetReasoningContent()
+						claudeThinking.Thinking = common.GetPointer[string](reasoningText)
 						claudeMediaMessages = append(claudeMediaMessages, claudeThinking)
 					}
 					if message.RedactedReasoningContent != "" {
@@ -499,6 +505,10 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				for _, mediaMessage := range message.ParseContent() {
 					switch mediaMessage.Type {
 					case "text":
+						// AWS Bedrock 等上游拒绝空文本块（返回 400），跳过空 text 部分
+						if strings.TrimSpace(mediaMessage.Text) == "" {
+							continue
+						}
 						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](mediaMessage.Text),
@@ -543,9 +553,10 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				if message.ToolCalls != nil {
 					for _, toolCall := range message.ParseToolCalls() {
 						inputObj := make(map[string]any)
-						if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &inputObj); err != nil {
-							common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
-							continue
+						if args := toolCall.Function.Arguments; args != "" {
+							if err := json.Unmarshal([]byte(args), &inputObj); err != nil {
+								common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
+							}
 						}
 						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
 							Type:  "tool_use",
@@ -555,7 +566,12 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						})
 					}
 				}
-				claudeMessage.Content = claudeMediaMessages
+				// AWS Bedrock 等上游拒绝空 content 数组（返回 400），用占位符兜底
+				if len(claudeMediaMessages) == 0 {
+					claudeMessage.Content = []dto.ClaudeMediaMessage{{Type: "text", Text: common.GetPointer[string]("...")}}
+				} else {
+					claudeMessage.Content = claudeMediaMessages
+				}
 			}
 			claudeMessages = append(claudeMessages, claudeMessage)
 		}
@@ -579,10 +595,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 	tools := make([]dto.ToolCallResponse, 0)
 	fcIdx := 0
 	if claudeResponse.Index != nil {
-		fcIdx = *claudeResponse.Index - 1
-		if fcIdx < 0 {
-			fcIdx = 0
-		}
+		fcIdx = *claudeResponse.Index
 	}
 	var choice dto.ChatCompletionsStreamResponseChoice
 	if claudeResponse.Type == "message_start" {
@@ -621,11 +634,16 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 			choice.Delta.Content = claudeResponse.Delta.Text
 			switch claudeResponse.Delta.Type {
 			case "input_json_delta":
+				// 防御空 partial_json（部分上游或断流场景 delta 携带 nil 字段），避免解引用 nil 崩溃
+				arguments := ""
+				if claudeResponse.Delta.PartialJson != nil {
+					arguments = *claudeResponse.Delta.PartialJson
+				}
 				tools = append(tools, dto.ToolCallResponse{
 					Type:  "function",
 					Index: common.GetPointer(fcIdx),
 					Function: dto.FunctionResponse{
-						Arguments: *claudeResponse.Delta.PartialJson,
+						Arguments: arguments,
 					},
 				})
 			case "signature_delta":
@@ -708,7 +726,7 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 	if len(tools) > 0 {
 		choice.Message.SetToolCalls(tools)
 	}
-	choice.Message.ReasoningContent = thinkingContent.String()
+	choice.Message.SetReasoningContent(thinkingContent.String())
 	choice.Message.ReasoningSignature = thinkingSignature
 	choice.Message.RedactedReasoningContent = redactedReasoning.String()
 	fullTextResponse.Model = claudeResponse.Model
@@ -729,6 +747,60 @@ type ClaudeResponseInfo struct {
 	Done                      bool
 	ResponsesStreamConverter  relaycommon.OpenAIWireStreamConverter
 	ResponsesCompletedEmitted bool
+}
+
+func mergeClaudeUsageIntoOpenAIUsage(current *dto.Usage, claudeUsage *dto.ClaudeUsage) *dto.Usage {
+	if current == nil {
+		current = &dto.Usage{}
+	}
+	if claudeUsage == nil {
+		current.TotalTokens = current.PromptTokens + current.CompletionTokens
+		return current
+	}
+
+	cacheReadTokens := current.PromptTokensDetails.CachedTokens
+	if claudeUsage.CacheReadInputTokens > 0 {
+		cacheReadTokens = claudeUsage.CacheReadInputTokens
+	}
+
+	cacheCreationTokens := current.PromptTokensDetails.CachedCreationTokens
+	if incomingCacheCreation := claudeUsage.GetCacheCreationTotalTokens(); incomingCacheCreation > 0 {
+		cacheCreationTokens = incomingCacheCreation
+	}
+
+	cacheCreation5m := current.ClaudeCacheCreation5mTokens
+	cacheCreation1h := current.ClaudeCacheCreation1hTokens
+	if incoming5m := claudeUsage.GetCacheCreation5mTokens(); incoming5m > 0 {
+		cacheCreation5m = incoming5m
+	}
+	if incoming1h := claudeUsage.GetCacheCreation1hTokens(); incoming1h > 0 {
+		cacheCreation1h = incoming1h
+	}
+	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(cacheCreationTokens, cacheCreation5m, cacheCreation1h)
+
+	if claudeUsage.InputTokens > 0 {
+		current.PromptTokens = claudeUsage.InputTokens + cacheReadTokens + cacheCreationTokens
+	} else if current.PromptTokens == 0 && (cacheReadTokens > 0 || cacheCreationTokens > 0) {
+		current.PromptTokens = cacheReadTokens + cacheCreationTokens
+	}
+	current.InputTokens = current.PromptTokens
+	current.PromptCacheHitTokens = cacheReadTokens
+	current.PromptTokensDetails.CachedTokens = cacheReadTokens
+	current.PromptTokensDetails.CachedCreationTokens = cacheCreationTokens
+	if current.InputTokensDetails == nil {
+		current.InputTokensDetails = &dto.InputTokenDetails{}
+	}
+	current.InputTokensDetails.CachedTokens = cacheReadTokens
+	current.InputTokensDetails.CachedCreationTokens = cacheCreationTokens
+	current.ClaudeCacheCreation5mTokens = cacheCreation5m
+	current.ClaudeCacheCreation1hTokens = cacheCreation1h
+
+	if claudeUsage.OutputTokens > 0 {
+		current.CompletionTokens = claudeUsage.OutputTokens
+		current.OutputTokens = claudeUsage.OutputTokens
+	}
+	current.TotalTokens = current.PromptTokens + current.CompletionTokens
+	return current
 }
 
 func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo *ClaudeResponseInfo) *dto.ClaudeUsage {
@@ -754,10 +826,20 @@ func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo 
 	if usage.CacheCreationInputTokens == 0 && localUsage.CacheCreationInputTokens > 0 {
 		usage.CacheCreationInputTokens = localUsage.CacheCreationInputTokens
 	}
-	if usage.CacheCreation == nil && localUsage.CacheCreation != nil {
+	cacheCreation5m := 0
+	cacheCreation1h := 0
+	if usage.CacheCreation != nil {
+		cacheCreation5m = usage.CacheCreation.Ephemeral5mInputTokens
+		cacheCreation1h = usage.CacheCreation.Ephemeral1hInputTokens
+	} else if localUsage.CacheCreation != nil {
+		cacheCreation5m = localUsage.CacheCreation.Ephemeral5mInputTokens
+		cacheCreation1h = localUsage.CacheCreation.Ephemeral1hInputTokens
+	}
+	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
+	if cacheCreation5m > 0 || cacheCreation1h > 0 {
 		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
-			Ephemeral5mInputTokens: localUsage.CacheCreation.Ephemeral5mInputTokens,
-			Ephemeral1hInputTokens: localUsage.CacheCreation.Ephemeral1hInputTokens,
+			Ephemeral5mInputTokens: cacheCreation5m,
+			Ephemeral1hInputTokens: cacheCreation1h,
 		}
 	}
 	return usage
@@ -819,7 +901,7 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 
 		// message_start, 获取usage
 		if claudeResponse.Message != nil && claudeResponse.Message.Usage != nil {
-			claudeInfo.Usage = dto.ClaudeUsageToOpenAIUsage(claudeResponse.Message.Usage)
+			claudeInfo.Usage = mergeClaudeUsageIntoOpenAIUsage(claudeInfo.Usage, claudeResponse.Message.Usage)
 		}
 	} else if claudeResponse.Type == "content_block_delta" {
 		if claudeResponse.Delta != nil {
@@ -831,22 +913,9 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 			}
 		}
 	} else if claudeResponse.Type == "message_delta" {
-		// 最终的usage获取
+		// 最终的usage获取：只合并上游非零字段，避免 message_delta 缺 cache 字段时覆盖 message_start 已记录的数据。
 		if claudeResponse.Usage != nil {
-			updatedUsage := dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
-			if updatedUsage != nil {
-				if updatedUsage.PromptTokens == 0 && claudeInfo.Usage != nil && claudeInfo.Usage.PromptTokens > 0 {
-					updatedUsage.PromptTokens = claudeInfo.Usage.PromptTokens
-					updatedUsage.InputTokens = claudeInfo.Usage.InputTokens
-					updatedUsage.PromptCacheHitTokens = claudeInfo.Usage.PromptCacheHitTokens
-					updatedUsage.PromptTokensDetails = claudeInfo.Usage.PromptTokensDetails
-					updatedUsage.InputTokensDetails = claudeInfo.Usage.InputTokensDetails
-					updatedUsage.ClaudeCacheCreation5mTokens = claudeInfo.Usage.ClaudeCacheCreation5mTokens
-					updatedUsage.ClaudeCacheCreation1hTokens = claudeInfo.Usage.ClaudeCacheCreation1hTokens
-				}
-				updatedUsage.TotalTokens = updatedUsage.PromptTokens + updatedUsage.CompletionTokens
-				claudeInfo.Usage = updatedUsage
-			}
+			claudeInfo.Usage = mergeClaudeUsageIntoOpenAIUsage(claudeInfo.Usage, claudeResponse.Usage)
 		}
 
 		// 判断是否完整
@@ -957,11 +1026,24 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 	if claudeInfo.Usage.PromptTokens == 0 {
 		//上游出错
 	}
+	if claudeInfo.Usage == nil {
+		claudeInfo.Usage = &dto.Usage{}
+	}
 	if claudeInfo.Usage.CompletionTokens == 0 || !claudeInfo.Done {
 		if common.DebugEnabled {
 			common.SysLog("claude response usage is not complete, maybe upstream error")
 		}
-		claudeInfo.Usage = service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		// 只补缺失字段，不整份覆盖，保留 message_start 已拿到的 cache 计费字段。
+		fallback := service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		if claudeInfo.Usage.CompletionTokens == 0 || (!claudeInfo.Done && fallback.CompletionTokens > claudeInfo.Usage.CompletionTokens) {
+			claudeInfo.Usage.CompletionTokens = fallback.CompletionTokens
+			claudeInfo.Usage.OutputTokens = fallback.CompletionTokens
+		}
+		if claudeInfo.Usage.PromptTokens == 0 {
+			claudeInfo.Usage.PromptTokens = fallback.PromptTokens
+			claudeInfo.Usage.InputTokens = fallback.PromptTokens
+		}
+		claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 	}
 
 	if info.RelayFormat == types.RelayFormatClaude {
@@ -1068,10 +1150,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	var err *types.NewAPIError
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		err = HandleStreamResponseData(c, info, claudeInfo, data)
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	})
 	if err != nil {
 		return nil, err

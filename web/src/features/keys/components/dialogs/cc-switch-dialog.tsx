@@ -35,24 +35,24 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 const APP_CONFIGS = {
   claude: {
-    label: 'Claude',
+    label: 'systemSettings.fields.claude',
     defaultName: 'My Claude',
     modelFields: [
-      { key: 'model', labelKey: 'Primary Model', required: true },
-      { key: 'haikuModel', labelKey: 'Haiku Model', required: false },
-      { key: 'sonnetModel', labelKey: 'Sonnet Model', required: false },
-      { key: 'opusModel', labelKey: 'Opus Model', required: false },
+      { key: 'model', labelKey: 'common.fields.primaryModel', required: true },
+      { key: 'haikuModel', labelKey: 'common.fields.haikuModel', required: false },
+      { key: 'sonnetModel', labelKey: 'common.fields.sonnetModel', required: false },
+      { key: 'opusModel', labelKey: 'common.fields.opusModel', required: false },
     ],
   },
   codex: {
-    label: 'Codex',
+    label: 'common.fields.codex',
     defaultName: 'My Codex',
-    modelFields: [{ key: 'model', labelKey: 'Primary Model', required: true }],
+    modelFields: [{ key: 'model', labelKey: 'common.fields.primaryModel', required: true }],
   },
   gemini: {
-    label: 'Gemini',
+    label: 'systemSettings.fields.gemini',
     defaultName: 'My Gemini',
-    modelFields: [{ key: 'model', labelKey: 'Primary Model', required: true }],
+    modelFields: [{ key: 'model', labelKey: 'common.fields.primaryModel', required: true }],
   },
 } as const
 
@@ -138,7 +138,7 @@ export function CCSwitchDialog(props: Props) {
 
   const handleSubmit = () => {
     if (!models.model) {
-      toast.warning(t('Please select a primary model'))
+      toast.warning(t('keys.errors.pleaseSelectAPrimaryModel'))
       return
     }
     const key = props.tokenKey.startsWith('sk-')
@@ -153,12 +153,12 @@ export function CCSwitchDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Import to CC Switch')}</DialogTitle>
+          <DialogTitle>{t('keys.actions.importToCcSwitch')}</DialogTitle>
         </DialogHeader>
 
         <div className='space-y-4'>
           <div className='space-y-2'>
-            <Label>{t('Application')}</Label>
+            <Label>{t('keys.fields.application')}</Label>
             <RadioGroup
               value={app}
               onValueChange={handleAppChange}
@@ -181,7 +181,7 @@ export function CCSwitchDialog(props: Props) {
           </div>
 
           <div className='space-y-2'>
-            <Label>{t('Name')}</Label>
+            <Label>{t('channels.fields.name')}</Label>
             <ComboboxInput
               options={[]}
               value={name}
@@ -205,8 +205,8 @@ export function CCSwitchDialog(props: Props) {
                 onValueChange={(v) =>
                   setModels((prev) => ({ ...prev, [field.key]: v }))
                 }
-                placeholder={t('Select or enter model name')}
-                emptyText={t('No Models Found')}
+                placeholder={t('keys.placeholders.selectOrEnterModelName')}
+                emptyText={t('common.titles.noModelsFound')}
               />
             </div>
           ))}
@@ -214,9 +214,9 @@ export function CCSwitchDialog(props: Props) {
 
         <DialogFooter>
           <Button variant='outline' onClick={() => props.onOpenChange(false)}>
-            {t('Cancel')}
+            {t('common.actions.cancel')}
           </Button>
-          <Button onClick={handleSubmit}>{t('Open CC Switch')}</Button>
+          <Button onClick={handleSubmit}>{t('keys.actions.openCcSwitch')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

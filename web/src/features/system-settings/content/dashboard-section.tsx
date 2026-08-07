@@ -62,9 +62,9 @@ type DashboardSectionProps = {
 }
 
 const granularityOptions = [
-  { label: 'Hours', value: 'hour' },
-  { label: 'Day', value: 'day' },
-  { label: 'Week', value: 'week' },
+  { label: 'channels.fields.hours', value: 'hour' },
+  { label: 'common.fields.day', value: 'day' },
+  { label: 'common.fields.week', value: 'week' },
 ]
 
 export function DashboardSection({ defaultValues }: DashboardSectionProps) {
@@ -94,7 +94,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
   const isEnabled = form.watch('DataExportEnabled')
 
   return (
-    <SettingsSection title={t('Data Dashboard')}>
+    <SettingsSection title={t('systemSettings.titles.dataDashboard')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -107,7 +107,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable Data Dashboard')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableDataDashboard')}</FormLabel>
                 </SettingsSwitchContent>
                 <FormControl>
                   <Switch
@@ -125,7 +125,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
               name='DataExportInterval'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Refresh interval (minutes)')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.refreshIntervalMinutes')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -138,7 +138,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Keep this above 1 minute to avoid heavy database load')}
+                    {t('systemSettings.tips.keepThisAbove1MinuteToAvoidHeavyDatabase')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -150,7 +150,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
               name='DataExportDefaultTime'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Default time granularity')}</FormLabel>
+                  <FormLabel>{t('dashboard.fields.defaultTimeGranularity')}</FormLabel>
                   <Select
                     items={[
                       ...granularityOptions.map((option) => ({
@@ -164,7 +164,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('Select granularity')} />
+                        <SelectValue placeholder={t('systemSettings.placeholders.selectGranularity')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent alignItemWithTrigger={false}>
@@ -179,7 +179,7 @@ export function DashboardSection({ defaultValues }: DashboardSectionProps) {
                   </Select>
                   <FormDescription>
                     {t(
-                      'UI granularity only &mdash; data is still aggregated hourly'
+                      'systemSettings.tips.uiGranularityOnlyDataIsStillAggregatedHourly'
                     )}
                   </FormDescription>
                   <FormMessage />

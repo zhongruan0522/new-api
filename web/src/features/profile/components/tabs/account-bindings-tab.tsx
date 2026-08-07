@@ -96,17 +96,17 @@ export function AccountBindingsTab({
       const res = await unbindCustomOAuth(unbindTarget.provider_id)
       if (res.success) {
         toast.success(
-          t('Unbound {{provider}}', {
+          t('profile.fields.unboundProvider', {
             provider: unbindTarget.provider_name,
           })
         )
         await fetchCustomBindings()
         onUpdate()
       } else {
-        toast.error(res.message || t('Unbind failed'))
+        toast.error(res.message || t('profile.actions.unbindFailed'))
       }
     } catch {
-      toast.error(t('Unbind failed'))
+      toast.error(t('profile.actions.unbindFailed'))
     } finally {
       setUnbinding(false)
       setUnbindTarget(null)
@@ -153,7 +153,7 @@ export function AccountBindingsTab({
     return [
       {
         id: 'email',
-        label: t('Email'),
+        label: t('auth.fields.email'),
         icon: Mail,
         value: profile.email,
         isBound: Boolean(profile.email),
@@ -162,7 +162,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'wechat',
-        label: t('WeChat'),
+        label: t('profile.fields.chat'),
         icon: SiWechat as React.ComponentType<{ className?: string }>,
         value: undefined,
         isBound: Boolean(
@@ -173,7 +173,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'github',
-        label: t('GitHub'),
+        label: t('profile.fields.gitHub'),
         icon: SiGithub,
         value: (profile as unknown as Record<string, unknown>).github_id as
           | string
@@ -190,7 +190,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'discord',
-        label: t('Discord'),
+        label: t('profile.fields.discord'),
         icon: IconDiscord,
         value: (profile as unknown as Record<string, unknown>).discord_id as
           | string
@@ -207,7 +207,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'oidc',
-        label: t('OIDC'),
+        label: t('profile.fields.oidc'),
         icon: Shield,
         value: (profile as unknown as Record<string, unknown>).oidc_id as
           | string
@@ -227,7 +227,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'telegram',
-        label: t('Telegram'),
+        label: t('profile.fields.telegram'),
         icon: Send,
         value: (profile as unknown as Record<string, unknown>).telegram_id as
           | string
@@ -240,7 +240,7 @@ export function AccountBindingsTab({
       },
       {
         id: 'linuxdo',
-        label: t('LinuxDO'),
+        label: t('profile.fields.linuxDo'),
         icon: SiLinux as React.ComponentType<{ className?: string }>,
         value: (profile as unknown as Record<string, unknown>).linux_do_id as
           | string
@@ -278,14 +278,14 @@ export function AccountBindingsTab({
                   <p className='text-sm font-medium'>{binding.label}</p>
                   {binding.isBound && (
                     <StatusBadge
-                      label={t('Bound')}
+                      label={t('profile.fields.bound')}
                       variant='success'
                       copyable={false}
                     />
                   )}
                 </div>
                 <p className='text-muted-foreground truncate text-xs'>
-                  {binding.value || t('Not bound')}
+                  {binding.value || t('profile.fields.notBound')}
                 </p>
               </div>
             </div>
@@ -298,9 +298,9 @@ export function AccountBindingsTab({
             >
               {binding.isBound
                 ? binding.id === 'email'
-                  ? t('Change')
-                  : t('Bound')
-                : t('Bind')}
+                  ? t('profile.fields.change')
+                  : t('profile.fields.bound')
+                : t('profile.actions.bind')}
             </Button>
           </div>
         ))}
@@ -311,7 +311,7 @@ export function AccountBindingsTab({
         <>
           <Separator className='my-4' />
           <p className='text-muted-foreground mb-3 text-sm font-medium'>
-            {t('Custom OAuth')}
+            {t('profile.fields.customOauth')}
           </p>
           <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3'>
             {customProviders.map((provider) => {
@@ -333,7 +333,7 @@ export function AccountBindingsTab({
                         <p className='text-sm font-medium'>{provider.name}</p>
                         {isBound && (
                           <StatusBadge
-                            label={t('Bound')}
+                            label={t('profile.fields.bound')}
                             variant='success'
                             copyable={false}
                           />
@@ -341,8 +341,8 @@ export function AccountBindingsTab({
                       </div>
                       <p className='text-muted-foreground truncate text-xs'>
                         {isBound
-                          ? binding?.external_id || t('Bound')
-                          : t('Not bound')}
+                          ? binding?.external_id || t('profile.fields.bound')
+                          : t('profile.fields.notBound')}
                       </p>
                     </div>
                   </div>
@@ -354,7 +354,7 @@ export function AccountBindingsTab({
                       onClick={() => setUnbindTarget(binding)}
                     >
                       <Unlink className='mr-1 h-3 w-3' />
-                      {t('Unbind')}
+                      {t('profile.actions.unbind')}
                     </Button>
                   ) : (
                     <Button
@@ -363,7 +363,7 @@ export function AccountBindingsTab({
                       className='h-7 shrink-0 px-2.5 text-xs'
                       onClick={() => handleBindCustomOAuth(provider)}
                     >
-                      {t('Bind')}
+                      {t('profile.actions.bind')}
                     </Button>
                   )}
                 </div>
@@ -377,14 +377,14 @@ export function AccountBindingsTab({
       <ConfirmDialog
         open={!!unbindTarget}
         onOpenChange={(open) => !open && setUnbindTarget(null)}
-        title={t('Confirm Unbind')}
+        title={t('profile.actions.confirmUnbind')}
         desc={t(
-          'Are you sure you want to unbind {{provider}}? You will no longer be able to log in via this method.',
+          'profile.tips.sureYouWantToUnbindProviderYouWillNo',
           {
             provider: unbindTarget?.provider_name || '',
           }
         )}
-        confirmText={t('Confirm Unbind')}
+        confirmText={t('profile.actions.confirmUnbind')}
         destructive
         handleConfirm={handleUnbindCustom}
         isLoading={unbinding}

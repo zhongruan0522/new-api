@@ -216,9 +216,9 @@ function Sidebar({
           side={side}
         >
           <SheetHeader className='sr-only'>
-            <SheetTitle>{t('Sidebar')}</SheetTitle>
+            <SheetTitle>{t('common.fields.sidebar')}</SheetTitle>
             <SheetDescription>
-              {t('Displays the mobile sidebar.')}
+              {t('common.tips.displaysTheMobileSidebar')}
             </SheetDescription>
           </SheetHeader>
           <div className='flex h-full w-full flex-col'>{children}</div>
@@ -295,7 +295,7 @@ function SidebarTrigger({
       {...props}
     >
       <HugeiconsIcon icon={SidebarLeftIcon} strokeWidth={2} />
-      <span className='sr-only'>{t('Toggle Sidebar')}</span>
+      <span className='sr-only'>{t('common.fields.toggleSidebar')}</span>
     </Button>
   )
 }
@@ -303,7 +303,7 @@ function SidebarTrigger({
 function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
   const { toggleSidebar } = useSidebar()
   const { t } = useTranslation()
-  const label = t('Toggle Sidebar')
+  const label = t('common.fields.toggleSidebar')
 
   return (
     <button

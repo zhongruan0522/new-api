@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 )
 
 var timeFormat = "2006-01-02T15:04:05.000Z"
@@ -198,5 +198,8 @@ func userRedisRateLimiter(c *gin.Context, maxRequestNum int, duration int64, key
 // SearchRateLimit returns a per-user rate limiter for search endpoints.
 // 10 requests per 60 seconds per user (by user ID, not IP).
 func SearchRateLimit() func(c *gin.Context) {
-	return userRateLimitFactory(common.SearchRateLimitNum, common.SearchRateLimitDuration, "SR")
+	if common.SearchRateLimitEnable {
+		return userRateLimitFactory(common.SearchRateLimitNum, common.SearchRateLimitDuration, "SR")
+	}
+	return defNext
 }

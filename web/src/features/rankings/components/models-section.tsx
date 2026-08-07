@@ -27,11 +27,11 @@ import type { ModelHistorySeries, ModelRanking, RankingPeriod } from '../types'
 import { ModelLeaderboard } from './model-leaderboard'
 
 const PERIOD_DESCRIPTIONS: Record<RankingPeriod, string> = {
-  today: 'Hourly token usage by model across the last 24 hours',
-  week: 'Weekly token usage by model across the past few weeks',
-  month: 'Daily token usage by model across the past month',
-  year: 'Weekly token usage by model across the past year',
-  all: 'Token usage by model since launch',
+  today: 'common.tips.hourlyTokenUsageByModelAcrossTheLast24',
+  week: 'common.tips.weeklyTokenUsageByModelAcrossThePastFew',
+  month: 'common.tips.dailyTokenUsageByModelAcrossThePastMonth',
+  year: 'common.tips.weeklyTokenUsageByModelAcrossThePastYear',
+  all: 'common.tips.tokenUsageByModelSinceLaunch',
 }
 
 const TOOLTIP_MAX_ROWS = 10
@@ -141,11 +141,11 @@ export function ModelsSection(props: ModelsSectionProps) {
                 0
               )
               result.push({
-                key: t('+{{count}} more', { count: overflow.length }),
+                key: t('rankings.fields.countMore', { count: overflow.length }),
                 value: formatTokens(otherSum),
               })
             }
-            result.unshift({ key: t('labelWithColon', { label: t('Total') }), value: formatTokens(sum) })
+            result.unshift({ key: t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') }), value: formatTokens(sum) })
             return result
           },
         },
@@ -161,7 +161,7 @@ export function ModelsSection(props: ModelsSectionProps) {
         <div className='min-w-0 flex-1'>
           <h2 className='text-foreground inline-flex items-center gap-2 text-base font-semibold'>
             <BarChart3 className='text-primary size-4' />
-            {t('Top Models')}
+            {t('rankings.titles.topModels')}
           </h2>
           <p className='text-muted-foreground mt-1 text-sm'>
             {t(PERIOD_DESCRIPTIONS[props.period])}
@@ -172,7 +172,7 @@ export function ModelsSection(props: ModelsSectionProps) {
             {formatTokens(totalTokens)}
           </div>
           <div className='text-muted-foreground/80 text-[10px] font-medium tracking-widest uppercase'>
-            {t('Tokens')}
+            {t('rankings.fields.tokens')}
           </div>
         </div>
       </header>
@@ -191,7 +191,7 @@ export function ModelsSection(props: ModelsSectionProps) {
             />
           ) : (
             <div className='text-muted-foreground/80 flex h-full items-center justify-center text-xs'>
-              {t('No history data available')}
+              {t('rankings.fields.noHistoryDataAvailable')}
             </div>
           )}
         </div>
@@ -202,15 +202,15 @@ export function ModelsSection(props: ModelsSectionProps) {
         <header className='px-5 pt-4 pb-2'>
           <h3 className='text-foreground inline-flex items-center gap-2 text-sm font-semibold'>
             <Trophy className='size-3.5 text-amber-500' />
-            {t('LLM Leaderboard')}
+            {t('rankings.fields.llmLeaderboard')}
           </h3>
           <p className='text-muted-foreground/80 mt-0.5 text-xs'>
-            {t('Compare the most popular models on the platform')}
+            {t('rankings.tips.compareTheMostPopularModelsOnThePlatform')}
           </p>
         </header>
         {props.rows.length === 0 ? (
           <div className='text-muted-foreground/80 px-5 py-8 text-center text-sm'>
-            {t('No models match the selected filters')}
+            {t('rankings.tips.noModelsMatchTheSelectedFilters')}
           </div>
         ) : (
           <div className='px-5 pt-1 pb-4'>

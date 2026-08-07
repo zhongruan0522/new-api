@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/dto"
+	"github.com/NookMux/NookMux/dto"
 )
 
 func TestApplyImageAutoConvertToURL_SingleUserMessage(t *testing.T) {

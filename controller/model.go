@@ -7,17 +7,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/relay"
-	"github.com/zhongruan0522/new-api/relay/channel/minimax"
-	"github.com/zhongruan0522/new-api/relay/channel/moonshot"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/relay"
+	"github.com/NookMux/NookMux/relay/channel/minimax"
+	"github.com/NookMux/NookMux/relay/channel/moonshot"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/service"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/types"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -107,7 +108,7 @@ func ListModels(c *gin.Context, modelType int) {
 		} else {
 			tokenModelLimit = map[string]bool{}
 		}
-		for allowModel, _ := range tokenModelLimit {
+		for allowModel := range tokenModelLimit {
 			_, _, exist := ratio_setting.GetModelRatioOrPrice(allowModel)
 			if !exist {
 				continue
@@ -131,7 +132,7 @@ func ListModels(c *gin.Context, modelType int) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "get user group failed",
+				"message": i18n.T(c, i18n.MsgCommonGetUserGroupFailed),
 			})
 			return
 		}

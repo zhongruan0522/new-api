@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/zhongruan0522/new-api/model"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,7 @@ func GetAuditLogs(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "获取审计日志失败: " + err.Error(),
+			"message": i18n.T(c, i18n.MsgAuditFetchFailed) + ": " + err.Error(),
 		})
 		return
 	}

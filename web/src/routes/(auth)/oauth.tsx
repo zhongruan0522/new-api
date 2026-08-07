@@ -49,7 +49,7 @@ function OAuthComponent() {
       } catch {
         /* empty */
       }
-      toast.error(i18next.t('OAuth failed'))
+      toast.error(i18next.t('channels.status.oauthFailed'))
       navigate({ to: '/sign-in', replace: true })
     })()
   }, [navigate, search])

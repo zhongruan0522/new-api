@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,21 +14,28 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/constant"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/NookMux/NookMux/constant"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/operation_setting"
 )
 
-func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
+func streamScannerTestContext(t *testing.T) (*gin.Context, func()) {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	oldStreamingTimeout := constant.StreamingTimeout
 	constant.StreamingTimeout = 30
-	t.Cleanup(func() {
+	cleanup := func() {
 		constant.StreamingTimeout = oldStreamingTimeout
-	})
-
+	}
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	return c, cleanup
+}
+
+func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
 
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -49,6 +57,272 @@ func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
 	want := []string{`{"ok":true}`}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("data frames = %#v, want %#v", got, want)
+	}
+}
+
+func TestStreamScannerHandlerSkipsNonDataLines(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	var b strings.Builder
+	b.WriteString(": comment line\n")
+	b.WriteString("event: message\n")
+	b.WriteString("id: 12345\n")
+	for i := 0; i < 100; i++ {
+		fmt.Fprintf(&b, "data: payload_%d\n", i)
+		b.WriteString(": interleaved comment\n")
+	}
+	b.WriteString("data: [DONE]\n")
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(b.String())),
+	}
+
+	var count int
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		count++
+		return true
+	})
+	if count != 100 {
+		t.Fatalf("handled %d data frames, want 100", count)
+	}
+}
+
+func TestStreamScannerHandlerDataWithExtraSpaces(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader("data:   {\"trimmed\":true}  \r\ndata: [DONE]\n")),
+	}
+
+	var got string
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		got = data
+		return true
+	})
+	if got != `{"trimmed":true}` {
+		t.Fatalf("payload = %q, want %q", got, `{"trimmed":true}`)
+	}
+}
+
+func TestStreamScannerHandlerDoneStopsScanner(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	var b strings.Builder
+	for i := 0; i < 50; i++ {
+		fmt.Fprintf(&b, "data: {\"n\":%d}\n", i)
+	}
+	b.WriteString("data: [DONE]\n")
+	b.WriteString("data: should_not_appear\n")
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(b.String())),
+	}
+
+	var count int
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		count++
+		return true
+	})
+	if count != 50 {
+		t.Fatalf("handled %d frames, want 50 (nothing after [DONE])", count)
+	}
+}
+
+func buildSSEBody(n int) string {
+	var b strings.Builder
+	for i := 0; i < n; i++ {
+		fmt.Fprintf(&b, "data: {\"id\":%d,\"choices\":[{\"delta\":{\"content\":\"token_%d\"}}]}\n", i, i)
+	}
+	b.WriteString("data: [DONE]\n")
+	return b.String()
+}
+
+func TestStreamScannerHandlerNilInputs(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+	info := &relaycommon.RelayInfo{}
+
+	StreamScannerHandler(c, nil, info, func(data string) bool { return true })
+	StreamScannerHandler(c, &http.Response{Body: io.NopCloser(strings.NewReader(""))}, info, nil)
+}
+
+func TestStreamScannerHandlerEmptyBody(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	resp := &http.Response{
+		Body: io.NopCloser(strings.NewReader("")),
+	}
+
+	var called bool
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		called = true
+		return true
+	})
+	if called {
+		t.Fatal("handler should not run on empty upstream body")
+	}
+}
+
+func TestStreamScannerHandler1000Chunks(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	const numChunks = 1000
+	resp := &http.Response{
+		Body: io.NopCloser(strings.NewReader(buildSSEBody(numChunks))),
+	}
+	info := &relaycommon.RelayInfo{}
+
+	var count int
+	StreamScannerHandler(c, resp, info, func(data string) bool {
+		count++
+		return true
+	})
+	if count != numChunks {
+		t.Fatalf("handled %d chunks, want %d", count, numChunks)
+	}
+	if info.ReceivedResponseCount != numChunks {
+		t.Fatalf("ReceivedResponseCount = %d, want %d", info.ReceivedResponseCount, numChunks)
+	}
+}
+
+func TestStreamScannerHandlerOrderPreserved(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	const numChunks = 500
+	resp := &http.Response{
+		Body: io.NopCloser(strings.NewReader(buildSSEBody(numChunks))),
+	}
+
+	var mu sync.Mutex
+	received := make([]string, 0, numChunks)
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		mu.Lock()
+		received = append(received, data)
+		mu.Unlock()
+		return true
+	})
+
+	if len(received) != numChunks {
+		t.Fatalf("got %d chunks, want %d", len(received), numChunks)
+	}
+	for i := 0; i < numChunks; i++ {
+		want := fmt.Sprintf(`{"id":%d,"choices":[{"delta":{"content":"token_%d"}}]}`, i, i)
+		if received[i] != want {
+			t.Fatalf("chunk %d = %q, want %q", i, received[i], want)
+		}
+	}
+}
+
+func TestStreamScannerHandlerStopStopsStream(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	resp := &http.Response{
+		Body: io.NopCloser(strings.NewReader(buildSSEBody(200))),
+	}
+
+	const stopAt = 50
+	var count int
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		count++
+		return count < stopAt
+	})
+	if count != stopAt {
+		t.Fatalf("handled %d chunks before stop, want %d", count, stopAt)
+	}
+}
+
+func TestStreamScannerHandlerPingSentDuringSlowUpstream(t *testing.T) {
+	setting := operation_setting.GetGeneralSetting()
+	oldEnabled := setting.PingIntervalEnabled
+	oldSeconds := setting.PingIntervalSeconds
+	setting.PingIntervalEnabled = true
+	setting.PingIntervalSeconds = 1
+	t.Cleanup(func() {
+		setting.PingIntervalEnabled = oldEnabled
+		setting.PingIntervalSeconds = oldSeconds
+	})
+
+	_, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		for i := 0; i < 4; i++ {
+			fmt.Fprintf(pw, "data: chunk_%d\n", i)
+			time.Sleep(400 * time.Millisecond)
+		}
+		fmt.Fprint(pw, "data: [DONE]\n")
+	}()
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+
+	resp := &http.Response{Body: pr}
+	info := &relaycommon.RelayInfo{}
+
+	var count int
+	done := make(chan struct{})
+	go func() {
+		StreamScannerHandler(c, resp, info, func(data string) bool {
+			count++
+			return true
+		})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(8 * time.Second):
+		t.Fatal("timed out waiting for slow stream")
+	}
+
+	if count != 4 {
+		t.Fatalf("handled %d chunks, want 4", count)
+	}
+	if pingCount := strings.Count(recorder.Body.String(), ": PING"); pingCount < 1 {
+		t.Fatalf("expected at least one SSE ping, body=%q", recorder.Body.String())
+	}
+}
+
+func TestStreamScannerHandlerPingDisabledByRelayInfo(t *testing.T) {
+	setting := operation_setting.GetGeneralSetting()
+	oldEnabled := setting.PingIntervalEnabled
+	oldSeconds := setting.PingIntervalSeconds
+	setting.PingIntervalEnabled = true
+	setting.PingIntervalSeconds = 1
+	t.Cleanup(func() {
+		setting.PingIntervalEnabled = oldEnabled
+		setting.PingIntervalSeconds = oldSeconds
+	})
+
+	_, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+
+	resp := &http.Response{
+		Body: io.NopCloser(strings.NewReader(buildSSEBody(5))),
+	}
+	info := &relaycommon.RelayInfo{DisablePing: true}
+
+	StreamScannerHandler(c, resp, info, func(data string) bool { return true })
+
+	if pingCount := strings.Count(recorder.Body.String(), ": PING"); pingCount != 0 {
+		t.Fatalf("expected no pings when DisablePing=true, got %d", pingCount)
 	}
 }
 

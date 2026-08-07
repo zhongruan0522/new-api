@@ -24,7 +24,7 @@ import { createSectionRegistry } from '@/features/system-settings/utils/section-
 const USAGE_LOGS_SECTIONS = [
   {
     id: 'common',
-    titleKey: 'Usage Logs',
+    titleKey: 'dashboard.titles.usageLogs',
     build: () => null, // Content is rendered directly in the page component
   },
 ] as const

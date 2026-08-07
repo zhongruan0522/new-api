@@ -3,7 +3,7 @@ package common
 import (
 	"io"
 
-	rootcommon "github.com/zhongruan0522/new-api/common"
+	rootcommon "github.com/NookMux/NookMux/common"
 )
 
 // NewOutboundJSONBody wraps an already-marshaled upstream request body in

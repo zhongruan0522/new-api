@@ -72,7 +72,7 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
     try {
       const response = await updateUserLanguage(nextLanguage)
       if (!response.success) {
-        throw new Error(response.message || t('Failed to update settings'))
+        throw new Error(response.message || t('profile.errors.failedToUpdateSettings'))
       }
 
       if (auth.user) {
@@ -90,11 +90,11 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
       }
 
       props.onProfileUpdate()
-      toast.success(t('Language preference saved'))
+      toast.success(t('profile.status.languagePreferenceSaved'))
     } catch (_error) {
       setCurrentLanguage(previousLanguage)
       await i18n.changeLanguage(previousLanguage)
-      toast.error(t('Failed to update settings'))
+      toast.error(t('profile.errors.failedToUpdateSettings'))
     } finally {
       setSaving(false)
     }
@@ -102,16 +102,16 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
 
   return (
     <TitledCard
-      title={t('Language Preferences')}
-      description={t('Set the language used across the interface')}
+      title={t('profile.fields.languagePreferences')}
+      description={t('profile.status.setTheLanguageUsedAcrossTheInterface')}
       icon={<Languages className='h-4 w-4' />}
     >
       <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
         <div className='space-y-1'>
-          <div className='text-sm font-medium'>{t('Interface Language')}</div>
+          <div className='text-sm font-medium'>{t('profile.fields.interfaceLanguage')}</div>
           <p className='text-muted-foreground line-clamp-2 text-xs sm:text-sm'>
             {t(
-              'Language preferences sync across your signed-in devices and affect API error messages.'
+              'profile.tips.languagePreferencesSyncAcrossYourSignedInDevicesAnd'
             )}
           </p>
         </div>
@@ -128,7 +128,7 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
             disabled={saving}
           >
             <SelectTrigger className='w-full sm:w-48'>
-              <SelectValue placeholder={t('Select Language')} />
+              <SelectValue placeholder={t('models.placeholders.selectLanguage')} />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               <SelectGroup>

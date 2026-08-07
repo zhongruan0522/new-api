@@ -135,12 +135,12 @@ export function getPaymentIcon(
         >
           <img
             src='/waffo-logo-light.svg'
-            alt={i18next.t('Waffo')}
+            alt={i18next.t('wallet.fields.waffo')}
             className='block h-full w-full object-contain dark:hidden'
           />
           <img
             src='/waffo-logo-dark.svg'
-            alt={i18next.t('Waffo')}
+            alt={i18next.t('wallet.fields.waffo')}
             className='hidden h-full w-full object-contain dark:block'
           />
         </span>

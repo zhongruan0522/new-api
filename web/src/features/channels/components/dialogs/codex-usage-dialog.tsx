@@ -120,9 +120,9 @@ function formatDurationSeconds(
   const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
 
-  if (hours > 0) return `${hours} ${t('Hours')} ${minutes}${t('m')}`
-  if (minutes > 0) return `${minutes}${t('m')} ${secs}${t('s')}`
-  return `${secs}${t('s')}`
+  if (hours > 0) return `${hours} ${t('channels.fields.hours')} ${minutes}${t('channels.fields.m')}`
+  if (minutes > 0) return `${minutes}${t('channels.fields.m')} ${secs}${t('channels.fields.s')}`
+  return `${secs}${t('channels.fields.s')}`
 }
 
 function normalizePlanType(value: unknown): string {
@@ -204,7 +204,7 @@ function getAccountTypeBadge(
   const normalized = normalizePlanType(value)
   return (
     PLAN_TYPE_BADGE[normalized] ?? {
-      label: String(value || '') || t('Unknown'),
+      label: String(value || '') || t('channels.fields.unknown'),
       variant: 'neutral' as const,
     }
   )
@@ -245,14 +245,14 @@ function RateLimitWindow(props: RateLimitWindowProps) {
       {hasData ? (
         <div className='text-muted-foreground mt-2 space-y-1 text-xs'>
           <div>
-            {t('Reset at:')} {formatUnixSeconds(props.window?.reset_at)}
+            {t('channels.actions.resetAt')} {formatUnixSeconds(props.window?.reset_at)}
           </div>
           <div>
-            {t('Resets in:')}{' '}
+            {t('channels.fields.resetsIn')}{' '}
             {formatDurationSeconds(props.window?.reset_after_seconds, t)}
           </div>
           <div>
-            {t('Window:')}{' '}
+            {t('channels.fields.window')}{' '}
             {formatDurationSeconds(props.window?.limit_window_seconds, t)}
           </div>
         </div>
@@ -293,8 +293,8 @@ function RateLimitGroupSection(props: RateLimitGroupSectionProps) {
         )}
       </div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        <RateLimitWindow title={t('5-Hour Window')} window={fiveHourWindow} />
-        <RateLimitWindow title={t('Weekly Window')} window={weeklyWindow} />
+        <RateLimitWindow title={t('channels.placeholders.value5HourWindow')} window={fiveHourWindow} />
+        <RateLimitWindow title={t('channels.fields.weeklyWindow')} window={weeklyWindow} />
       </div>
     </section>
   )
@@ -313,10 +313,10 @@ function CopyableField(props: {
   return (
     <div className='flex items-center justify-between gap-2 py-1'>
       <div className='flex min-w-0 items-center gap-2'>
-        <span className='text-muted-foreground flex-shrink-0'>
+        <span className='text-muted-foreground shrink-0'>
           {props.icon}
         </span>
-        <span className='text-muted-foreground flex-shrink-0 text-xs'>
+        <span className='text-muted-foreground shrink-0 text-xs'>
           {props.label}
         </span>
         <span
@@ -330,7 +330,7 @@ function CopyableField(props: {
           type='button'
           variant='ghost'
           size='sm'
-          className='h-6 w-6 flex-shrink-0 p-0'
+          className='h-6 w-6 shrink-0 p-0'
           onClick={() => copyToClipboard(text)}
         >
           {hasCopied ? (
@@ -373,26 +373,26 @@ export function CodexUsageDialog({
   const statusBadge = (() => {
     if (!rateLimit || Object.keys(rateLimit).length === 0) {
       return (
-        <StatusBadge label={t('Pending')} variant='neutral' copyable={false} />
+        <StatusBadge label={t('common.status.pending')} variant='neutral' copyable={false} />
       )
     }
     if (rateLimit.allowed && !rateLimit.limit_reached) {
       return (
         <StatusBadge
-          label={t('Available')}
+          label={t('channels.fields.available')}
           variant='success'
           copyable={false}
         />
       )
     }
     return (
-      <StatusBadge label={t('Limited')} variant='danger' copyable={false} />
+      <StatusBadge label={t('channels.fields.limited')} variant='danger' copyable={false} />
     )
   })()
 
   const errorMessage =
     response?.success === false
-      ? response?.message?.trim() || t('Failed to fetch usage')
+      ? response?.message?.trim() || t('channels.errors.failedToFetchUsage')
       : ''
 
   const rawJsonText = useMemo(() => {
@@ -418,10 +418,10 @@ export function CodexUsageDialog({
       <DialogContent className='sm:max-w-3xl'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
-            {t('Codex Account & Usage')}
+            {t('channels.fields.codexAccountUsage')}
           </DialogTitle>
           <DialogDescription>
-            {t('labelWithColon', { label: t('Channel') })} <strong>{channelName || '-'}</strong>{' '}
+            {t('channels.fields.labelWithColon', { label: t('channels.fields.channel') })} <strong>{channelName || '-'}</strong>{' '}
             {channelId ? `(#${channelId})` : ''}
           </DialogDescription>
         </DialogHeader>
@@ -445,7 +445,7 @@ export function CodexUsageDialog({
                 {statusBadge}
                 {typeof response?.upstream_status === 'number' && (
                   <StatusBadge
-                    label={`${t('labelWithColon', { label: t('Status') })} ${response.upstream_status}`}
+                    label={`${t('channels.fields.labelWithColon', { label: t('channels.fields.status') })} ${response.upstream_status}`}
                     variant='neutral'
                     copyable={false}
                   />
@@ -460,7 +460,7 @@ export function CodexUsageDialog({
                   disabled={Boolean(isRefreshing)}
                 >
                   <RefreshCw className='mr-1.5 h-3.5 w-3.5' />
-                  {t('Refresh')}
+                  {t('channels.actions.refresh')}
                 </Button>
               )}
             </div>
@@ -475,7 +475,7 @@ export function CodexUsageDialog({
               />
               <CopyableField
                 icon={<Mail className='h-3.5 w-3.5' />}
-                label={t('Email')}
+                label={t('auth.fields.email')}
                 value={payload?.email}
               />
               <CopyableField
@@ -491,16 +491,16 @@ export function CodexUsageDialog({
           <div className='space-y-5'>
             <div>
               <div className='mb-1 text-sm font-medium'>
-                {t('Rate Limit Windows')}
+                {t('channels.fields.rateLimitWindows')}
               </div>
               <p className='text-muted-foreground mb-3 text-xs'>
                 {t(
-                  'Tracks current account base limits and additional metered usage on Codex upstream.'
+                  'channels.tips.tracksCurrentAccountBaseLimitsAndAdditionalMeteredUsage'
                 )}
               </p>
               <RateLimitGroupSection
-                title={t('Base Limits')}
-                description={t('Base rate limit windows for this account.')}
+                title={t('channels.fields.baseLimits')}
+                description={t('channels.tips.baseRateLimitWindowsForThisAccount')}
                 source={payload}
               />
             </div>
@@ -509,11 +509,11 @@ export function CodexUsageDialog({
               <div className='space-y-4 border-t pt-4'>
                 <div>
                   <div className='text-sm font-medium'>
-                    {t('Additional Limit')}
+                    {t('channels.fields.additionalLimit')}
                   </div>
                   <p className='text-muted-foreground text-xs'>
                     {t(
-                      'Per-feature metered windows split by model or capability.'
+                      'channels.tips.perFeatureMeteredWindowsSplitByModelOrCapability'
                     )}
                   </p>
                 </div>
@@ -522,7 +522,7 @@ export function CodexUsageDialog({
                     const limitName =
                       item.limit_name ||
                       item.metered_feature ||
-                      `${t('Additional Limit')} ${index + 1}`
+                      `${t('channels.fields.additionalLimit')} ${index + 1}`
                     return (
                       <div
                         key={`${limitName}-${item.metered_feature ?? ''}-${index}`}
@@ -530,7 +530,7 @@ export function CodexUsageDialog({
                       >
                         <RateLimitGroupSection
                           title={limitName}
-                          description={t('Additional metered capability')}
+                          description={t('channels.fields.additionalMeteredCapability')}
                           source={item}
                           meteredFeature={item.metered_feature}
                         />
@@ -549,7 +549,7 @@ export function CodexUsageDialog({
               className='hover:bg-muted/40 flex w-full items-center justify-between gap-2 p-3 transition-colors'
               onClick={() => setShowRawJson((v) => !v)}
             >
-              <div className='text-sm font-medium'>{t('Raw JSON')}</div>
+              <div className='text-sm font-medium'>{t('channels.fields.rawJson')}</div>
               {showRawJson ? (
                 <ChevronUp className='text-muted-foreground h-4 w-4' />
               ) : (
@@ -571,11 +571,11 @@ export function CodexUsageDialog({
                     ) : (
                       <Copy className='mr-1.5 h-3.5 w-3.5' />
                     )}
-                    {t('Copy')}
+                    {t('channels.actions.copy')}
                   </Button>
                 </div>
                 <ScrollArea className='max-h-[50vh]'>
-                  <pre className='bg-muted/30 m-0 p-3 text-xs break-words whitespace-pre-wrap'>
+                  <pre className='bg-muted/30 m-0 p-3 text-xs wrap-break-word whitespace-pre-wrap'>
                     {rawJsonText || '-'}
                   </pre>
                 </ScrollArea>
@@ -590,7 +590,7 @@ export function CodexUsageDialog({
             variant='outline'
             onClick={() => onOpenChange(false)}
           >
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

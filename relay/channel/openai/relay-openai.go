@@ -6,19 +6,19 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
-	"github.com/zhongruan0522/new-api/relay/helper"
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	relayconstant "github.com/NookMux/NookMux/relay/constant"
+	"github.com/NookMux/NookMux/relay/helper"
+	"github.com/NookMux/NookMux/service"
 
+	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/zhongruan0522/new-api/types"
 )
 
 func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool) error {
@@ -186,7 +186,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		completionTokens := simpleResponse.Usage.CompletionTokens
 		if completionTokens == 0 {
 			for _, choice := range simpleResponse.Choices {
-				ctkm := service.CountTextToken(choice.Message.StringContent()+choice.Message.ReasoningContent+choice.Message.Reasoning, info.UpstreamModelName)
+				ctkm := service.CountTextToken(choice.Message.StringContent()+choice.Message.GetReasoningContent(), info.UpstreamModelName)
 				completionTokens += ctkm
 			}
 		}
@@ -239,39 +239,6 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 
 	return &simpleResponse.Usage, nil
-}
-
-func streamTTSResponse(c *gin.Context, resp *http.Response) {
-	c.Writer.WriteHeaderNow()
-
-	flusher, ok := c.Writer.(http.Flusher)
-	if !ok {
-		logger.LogWarn(c, "streaming not supported")
-		_, err := io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			logger.LogWarn(c, err.Error())
-		}
-		return
-	}
-
-	buffer := make([]byte, 4096)
-	for {
-		n, err := resp.Body.Read(buffer)
-		//logger.LogInfo(c, fmt.Sprintf("streamTTSResponse read %d bytes", n))
-		if n > 0 {
-			if _, writeErr := c.Writer.Write(buffer[:n]); writeErr != nil {
-				logger.LogError(c, writeErr.Error())
-				break
-			}
-			flusher.Flush()
-		}
-		if err != nil {
-			if err != io.EOF {
-				logger.LogError(c, err.Error())
-			}
-			break
-		}
-	}
 }
 
 func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.NewAPIError, *dto.RealtimeUsage) {

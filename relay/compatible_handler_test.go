@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/zhongruan0522/new-api/service"
+	"github.com/NookMux/NookMux/service"
 )
 
 func TestCalculateStreamSpeed(t *testing.T) {

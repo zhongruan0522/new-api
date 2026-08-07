@@ -78,9 +78,9 @@ export function ForgotPasswordForm({
       if (res?.success) {
         form.reset()
         startCountdown()
-        toast.success(t('Reset email sent, please check your inbox'))
+        toast.success(t('auth.actions.resetEmailSentPleaseCheckYourInbox'))
       } else {
-        toast.error(res?.message || t('Failed to send reset email'))
+        toast.error(res?.message || t('auth.errors.failedToSendResetEmail'))
       }
     } catch (_error) {
       // Errors are handled by global interceptor
@@ -101,7 +101,7 @@ export function ForgotPasswordForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('Email')}</FormLabel>
+              <FormLabel>{t('auth.fields.email')}</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -116,8 +116,8 @@ export function ForgotPasswordForm({
           disabled={isLoading || isActive || !turnstileReady}
         >
           {isActive
-            ? t('Resend ({{seconds}}s)', { seconds: secondsLeft })
-            : t('Send reset email')}
+            ? t('auth.fields.resendSecondsS', { seconds: secondsLeft })
+            : t('auth.actions.sendResetEmail')}
           {isLoading ? <Loader2 className='animate-spin' /> : <ArrowRight />}
         </Button>
 

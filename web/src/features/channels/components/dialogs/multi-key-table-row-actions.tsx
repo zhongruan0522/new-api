@@ -42,7 +42,7 @@ export function MultiKeyTableRowActions({
           size='sm'
           onClick={() => onAction({ type: 'disable', keyIndex })}
         >
-          {t('Disable')}
+          {t('channels.actions.disable')}
         </Button>
       ) : (
         <Button
@@ -50,7 +50,7 @@ export function MultiKeyTableRowActions({
           size='sm'
           onClick={() => onAction({ type: 'enable', keyIndex })}
         >
-          {t('Enable')}
+          {t('channels.actions.enable')}
         </Button>
       )}
       <Button
@@ -58,7 +58,7 @@ export function MultiKeyTableRowActions({
         size='sm'
         onClick={() => onAction({ type: 'delete', keyIndex })}
       >
-        {t('Delete')}
+        {t('common.actions.delete')}
       </Button>
     </div>
   )

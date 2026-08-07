@@ -24,7 +24,7 @@ export function handleServerError(error: unknown) {
   // eslint-disable-next-line no-console
   console.log(error)
 
-  let errMsg = i18next.t('Something went wrong!')
+  let errMsg = i18next.t('common.tips.somethingWentWrong')
 
   if (
     error &&
@@ -32,7 +32,7 @@ export function handleServerError(error: unknown) {
     'status' in error &&
     Number(error.status) === 204
   ) {
-    errMsg = i18next.t('Content not found.')
+    errMsg = i18next.t('common.tips.contentNotFound')
   }
 
   if (error instanceof AxiosError) {

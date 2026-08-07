@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 
 	"github.com/gin-gonic/gin"
 )

@@ -141,7 +141,10 @@ export interface ChannelTestResponse {
   success: boolean
   message?: string
   error_code?: string
+  /** Response duration in seconds (backend compatibility field). */
+  time?: number
   data?: {
+    /** Response duration in milliseconds. */
     response_time?: number
     error?: string
   }
@@ -158,6 +161,20 @@ export interface FetchModelsResponse {
   success: boolean
   message?: string
   data?: unknown[]
+}
+
+export type ProxyTestStatus = 'success' | 'invalid' | 'failed'
+
+export interface ProxyTestResultData {
+  status: ProxyTestStatus
+  ip?: string
+  message?: string
+}
+
+export interface ProxyTestResponse {
+  success: boolean
+  message?: string
+  data?: ProxyTestResultData
 }
 
 export interface CopyChannelResponse {

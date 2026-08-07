@@ -66,9 +66,9 @@ export function SubscriptionsTable() {
       table={table}
       columns={columns}
       isLoading={isLoading}
-      emptyTitle={t('No subscription plans yet')}
+      emptyTitle={t('subscriptions.fields.noSubscriptionPlansYet')}
       emptyDescription={t(
-        'Click "Create Plan" to create your first subscription plan'
+        'common.tips.clickCreatePlanToCreateYourFirstSubscriptionPlan'
       )}
       skeletonKeyPrefix='subscriptions-skeleton'
     />

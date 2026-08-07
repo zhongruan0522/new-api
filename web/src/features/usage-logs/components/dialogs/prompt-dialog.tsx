@@ -50,9 +50,9 @@ export function PromptDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('Prompt Details')}</DialogTitle>
+          <DialogTitle>{t('usageLogs.titles.promptDetails')}</DialogTitle>
           <DialogDescription>
-            {t('View the complete prompt and its English translation')}
+            {t('usageLogs.actions.viewTheCompletePromptAndItsEnglishTranslation')}
           </DialogDescription>
         </DialogHeader>
 
@@ -60,14 +60,14 @@ export function PromptDialog({
           <div className='space-y-4 py-4'>
             {/* Original Prompt */}
             <div className='space-y-2'>
-              <Label className='text-sm font-semibold'>{t('Prompt')}</Label>
+              <Label className='text-sm font-semibold'>{t('keyQuery.fields.prompt')}</Label>
               <div className='bg-muted/50 relative rounded-md border p-3'>
                 <Button
                   variant='ghost'
                   size='sm'
                   className='absolute top-2 right-2 h-8 w-8 p-0'
                   onClick={() => copyToClipboard(prompt)}
-                  title={t('Copy to clipboard')}
+                  title={t('common.actions.copyToClipboard')}
                 >
                   {copiedText === prompt ? (
                     <Check className='size-4 text-green-600' />
@@ -75,7 +75,7 @@ export function PromptDialog({
                     <Copy className='size-4' />
                   )}
                 </Button>
-                <p className='pr-10 text-sm leading-relaxed break-words whitespace-pre-wrap'>
+                <p className='pr-10 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap'>
                   {prompt || '-'}
                 </p>
               </div>
@@ -85,7 +85,7 @@ export function PromptDialog({
             {promptEn && (
               <div className='space-y-2'>
                 <Label className='text-sm font-semibold'>
-                  {t('Prompt (EN)')}
+                  {t('usageLogs.fields.promptEn')}
                 </Label>
                 <div className='bg-muted/50 relative rounded-md border p-3'>
                   <Button
@@ -93,7 +93,7 @@ export function PromptDialog({
                     size='sm'
                     className='absolute top-2 right-2 h-8 w-8 p-0'
                     onClick={() => copyToClipboard(promptEn)}
-                    title={t('Copy to clipboard')}
+                    title={t('common.actions.copyToClipboard')}
                   >
                     {copiedText === promptEn ? (
                       <Check className='size-4 text-green-600' />
@@ -101,7 +101,7 @@ export function PromptDialog({
                       <Copy className='size-4' />
                     )}
                   </Button>
-                  <p className='pr-10 text-sm leading-relaxed break-words whitespace-pre-wrap'>
+                  <p className='pr-10 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap'>
                     {promptEn}
                   </p>
                 </div>

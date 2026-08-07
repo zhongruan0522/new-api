@@ -63,22 +63,22 @@ const AUDIT_SETTING_MODULES = [
 
 type AuditModuleKey = (typeof AUDIT_SETTING_MODULES)[number]
 
-// Map of module value -> i18n label key (uses audit-specific keys for consistency
-// with the audit logs viewing page).
+// Map of module value -> existing i18n translation key. These keys are shared
+// with the audit logs viewing page so module names stay consistent across the UI.
 const AUDIT_MODULE_LABEL_KEYS: Record<AuditModuleKey, string> = {
-  option: 'Audit: Module - System Settings',
-  channel: 'Audit: Module - Channels',
-  user: 'Audit: Module - Users',
-  token: 'Audit: Module - Tokens',
-  redemption: 'Audit: Module - Redemption Codes',
-  model: 'Audit: Module - Models',
-  vendor: 'Audit: Module - Vendors',
-  dynamic_ratio: 'Audit: Module - Dynamic Ratio',
-  prefill_group: 'Audit: Module - Prefill Groups',
-  db: 'Audit: Module - Database Migration',
-  performance: 'Audit: Module - Performance',
-  log: 'Audit: Module - Log Cleanup',
-  setup: 'Audit: Module - System Setup',
+  option: 'common.titles.auditModuleSystemSettings',
+  channel: 'common.titles.auditModuleChannels',
+  user: 'common.titles.auditModuleUsers',
+  token: 'common.fields.auditModuleTokens',
+  redemption: 'common.fields.auditModuleRedemptionCodes',
+  model: 'common.titles.auditModuleModels',
+  vendor: 'common.fields.auditModuleVendors',
+  dynamic_ratio: 'common.fields.auditModuleDynamicRatio',
+  prefill_group: 'common.fields.auditModulePrefillGroups',
+  db: 'common.fields.auditModuleDatabaseMigration',
+  performance: 'common.fields.auditModulePerformance',
+  log: 'common.fields.auditModuleLogCleanup',
+  setup: 'common.titles.auditModuleSystemSetup',
 }
 
 const auditSchema = z.object({
@@ -185,7 +185,7 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
     ).filter((key) => normalized[key] !== baselineRef.current[key])
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info(t('channels.fields.noChangesToSave'))
       return
     }
 
@@ -200,13 +200,13 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('Audit Log')}>
+    <SettingsSection title={t('systemSettings.fields.auditLog')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
-            saveLabel='Save audit settings'
+            saveLabel='common.actions.saveAuditSettings'
           />
           <DisabledSettingsNotice enabled={enabled} />
 
@@ -216,10 +216,10 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable Audit Log')}</FormLabel>
+                  <FormLabel>{t('systemSettings.actions.enableAuditLog')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Record administrator operations on system resources for traceability'
+                      'systemSettings.tips.recordAdministratorOperationsOnSystemResourcesForTraceability'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -235,9 +235,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
 
           <SettingsFormGridItem span='full'>
             <FormItem>
-              <FormLabel>{t('Recorded Modules')}</FormLabel>
+              <FormLabel>{t('systemSettings.fields.recordedModules')}</FormLabel>
               <FormDescription>
-                {t('Select which modules to record in the audit log')}
+                {t('systemSettings.placeholders.selectWhichModulesToRecordInTheAuditLog')}
               </FormDescription>
               <SettingsFormGrid className='pt-2'>
                 {AUDIT_SETTING_MODULES.map((moduleKey) => (
@@ -272,9 +272,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Record IP')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.recordIp')}</FormLabel>
                   <FormDescription>
-                    {t('Whether to record the operator IP address')}
+                    {t('systemSettings.tips.whetherToRecordTheOperatorIpAddress')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -293,9 +293,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Record Diff')}</FormLabel>
+                  <FormLabel>{t('systemSettings.fields.recordDiff')}</FormLabel>
                   <FormDescription>
-                    {t('Whether to record before/after data diff')}
+                    {t('systemSettings.tips.whetherToRecordBeforeAfterDataDiff')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>

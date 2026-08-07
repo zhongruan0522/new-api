@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/types"
 )
 
 //// OpenAIErrorWrapper wraps an error into an OpenAIErrorWithStatusCode
@@ -115,10 +117,13 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 }
 
 func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) {
+	if newApiErr == nil {
+		return
+	}
 	if statusCodeMappingStr == "" || statusCodeMappingStr == "{}" {
 		return
 	}
-	statusCodeMapping := make(map[string]string)
+	statusCodeMapping := make(map[string]any)
 	err := common.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
 	if err != nil {
 		return
@@ -127,8 +132,43 @@ func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) 
 		return
 	}
 	codeStr := strconv.Itoa(newApiErr.StatusCode)
-	if _, ok := statusCodeMapping[codeStr]; ok {
-		intCode, _ := strconv.Atoi(statusCodeMapping[codeStr])
+	if value, ok := statusCodeMapping[codeStr]; ok {
+		intCode, ok := parseStatusCodeMappingValue(value)
+		if !ok {
+			return
+		}
+		if newApiErr.OriginalStatusCode == 0 {
+			newApiErr.OriginalStatusCode = newApiErr.StatusCode
+		}
 		newApiErr.StatusCode = intCode
+	}
+}
+
+func parseStatusCodeMappingValue(value any) (int, bool) {
+	switch v := value.(type) {
+	case string:
+		if v == "" {
+			return 0, false
+		}
+		statusCode, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, false
+		}
+		return statusCode, true
+	case float64:
+		if v != math.Trunc(v) {
+			return 0, false
+		}
+		return int(v), true
+	case int:
+		return v, true
+	case json.Number:
+		statusCode, err := strconv.Atoi(v.String())
+		if err != nil {
+			return 0, false
+		}
+		return statusCode, true
+	default:
+		return 0, false
 	}
 }

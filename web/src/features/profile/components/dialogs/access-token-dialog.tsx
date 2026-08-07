@@ -60,17 +60,17 @@ export function AccessTokenDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Access Token')}</DialogTitle>
+          <DialogTitle>{t('profile.fields.accessToken')}</DialogTitle>
           <DialogDescription>
             {t(
-              "Your system access token for API authentication. Keep it secure and don't share it with others."
+              "common.tips.systemAccessTokenForApiAuthenticationKeepItSecure"
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className='my-6 space-y-4'>
           <div className='space-y-2'>
-            <Label htmlFor='token'>{t('Token')}</Label>
+            <Label htmlFor='token'>{t('pricing.fields.token')}</Label>
             <div className='flex gap-2'>
               <Input
                 id='token'
@@ -78,19 +78,19 @@ export function AccessTokenDialog({
                 value={token}
                 readOnly
                 className='font-mono text-xs'
-                placeholder={t('Click "Generate" to create a token')}
+                placeholder={t('common.tips.clickGenerateToCreateAToken')}
               />
               <CopyButton
                 value={token}
                 variant='outline'
                 className='size-9'
                 iconClassName='size-4'
-                tooltip={t('Copy token')}
-                aria-label={t('Copy token')}
+                tooltip={t('profile.actions.copyToken')}
+                aria-label={t('profile.actions.copyToken')}
               />
             </div>
             <p className='text-muted-foreground text-xs'>
-              {t('Use this token for API authentication')}
+              {t('profile.actions.useThisTokenForApiAuthentication')}
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function AccessTokenDialog({
             variant='outline'
             onClick={() => onOpenChange(false)}
           >
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
           <Button
             type='button'
@@ -114,7 +114,7 @@ export function AccessTokenDialog({
             ) : (
               <RefreshCw className='h-4 w-4' />
             )}
-            {generating ? t('Generating...') : t('Regenerate')}
+            {generating ? t('channels.tips.generating') : t('profile.fields.regenerate')}
           </Button>
         </DialogFooter>
       </DialogContent>

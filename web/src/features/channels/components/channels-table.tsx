@@ -25,7 +25,6 @@ import {
   getExpandedRowModel,
   type OnChangeFn,
   type SortingState,
-  type VisibilityState,
   type ExpandedState,
   type Row,
 } from '@tanstack/react-table'
@@ -38,6 +37,7 @@ import {
   DISABLED_ROW_DESKTOP,
   DISABLED_ROW_MOBILE,
   DataTablePage,
+  usePersistentColumnVisibility,
 } from '@/components/data-table'
 import { getChannels, searchChannels, getGroups } from '../api'
 import {
@@ -56,6 +56,7 @@ import type { Channel, ChannelSortBy } from '../types'
 import { useChannelsColumns } from './channels-columns'
 import { useChannels } from './channels-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
+import { shouldCommitDebouncedSearch } from '../lib/should-commit-debounced-search'
 
 const route = getRouteApi('/_authenticated/channels/')
 
@@ -75,19 +76,6 @@ function isDisabledChannelRow(channel: Channel) {
   )
 }
 
-export function shouldCommitDebouncedSearch(
-  inputValue: string,
-  debouncedValue: string,
-  currentValue: string,
-  isComposing: boolean
-) {
-  return (
-    !isComposing &&
-    debouncedValue === inputValue &&
-    debouncedValue !== currentValue
-  )
-}
-
 export function ChannelsTable() {
   const { t } = useTranslation()
   const { enableTagMode, idSort } = useChannels()
@@ -95,10 +83,10 @@ export function ChannelsTable() {
 
   // Table state
   const [sorting, setSorting] = useState<SortingState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    models: false,
-    tag: false,
-  })
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'channels-table',
+    { models: false, tag: false }
+  )
   const [rowSelection, setRowSelection] = useState({})
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
@@ -416,7 +404,7 @@ export function ChannelsTable() {
 
     return [
       {
-        label: 'All Types',
+        label: 'pricing.fields.allTypes',
         value: 'all',
         count: totalTypes,
       },
@@ -433,7 +421,7 @@ export function ChannelsTable() {
   }, [t, typeCounts, typeFilter])
 
   const groupFilterOptions = [
-    { label: t('All Groups'), value: 'all' },
+    { label: t('channels.fields.allGroups'), value: 'all' },
     ...groupOptions,
   ]
 
@@ -443,14 +431,14 @@ export function ChannelsTable() {
       columns={columns}
       isLoading={isLoading}
       isFetching={isFetching}
-      emptyTitle={t('No Channels Found')}
+      emptyTitle={t('channels.titles.noChannelsFound')}
       emptyDescription={t(
-        'No channels available. Create your first channel to get started.'
+        'channels.tips.noChannelsAvailableCreateYourFirstChannelToGet'
       )}
       skeletonKeyPrefix='channel-skeleton'
       applyHeaderSize
       toolbarProps={{
-        searchPlaceholder: t('Filter by name, ID, or key...'),
+        searchPlaceholder: t('channels.actions.filterByNameIdOrKey'),
         searchValue: globalFilterInput,
         onSearchValueChange: setGlobalFilterInput,
         onSearchCompositionStart: () => setIsGlobalFilterComposing(true),
@@ -460,7 +448,7 @@ export function ChannelsTable() {
         },
         additionalSearch: (
           <Input
-            placeholder={t('Filter by model...')}
+            placeholder={t('channels.actions.filterByModel')}
             value={modelFilterInput}
             onChange={(e) => setModelFilterInput(e.target.value)}
             onCompositionStart={() => setIsModelFilterComposing(true)}
@@ -474,19 +462,19 @@ export function ChannelsTable() {
         filters: [
           {
             columnId: 'status',
-            title: t('Status'),
+            title: t('channels.fields.status'),
             options: [...CHANNEL_STATUS_OPTIONS],
             singleSelect: true,
           },
           {
             columnId: 'type',
-            title: t('Type'),
+            title: t('channels.fields.type'),
             options: typeFilterOptions,
             singleSelect: true,
           },
           {
             columnId: 'group',
-            title: t('Group'),
+            title: t('common.fields.group'),
             options: groupFilterOptions,
             singleSelect: true,
           },

@@ -88,28 +88,28 @@ function getRelativeTime(publishDate: string | Date, t: TFunction): string {
   if (diffMs < 0) return formatDateTimeObject(pubDate)
 
   // Return relative time based on difference
-  if (diffSeconds < 60) return t('Just now')
+  if (diffSeconds < 60) return t('common.fields.justNow')
   if (diffMinutes < 60)
     return diffMinutes === 1
-      ? t('1 minute ago')
-      : t('{{count}} minutes ago', { count: diffMinutes })
+      ? t('common.placeholders.value1MinuteAgo')
+      : t('common.fields.countMinutesAgo', { count: diffMinutes })
   if (diffHours < 24)
     return diffHours === 1
-      ? t('1 hour ago')
-      : t('{{count}} hours ago', { count: diffHours })
+      ? t('common.placeholders.value1HourAgo')
+      : t('common.fields.countHoursAgo', { count: diffHours })
   if (diffDays < 7)
     return diffDays === 1
-      ? t('1 day ago')
-      : t('{{count}} days ago', { count: diffDays })
+      ? t('common.placeholders.value1DayAgo')
+      : t('common.fields.countDaysAgo', { count: diffDays })
   if (diffWeeks < 4)
     return diffWeeks === 1
-      ? t('1 week ago')
-      : t('{{count}} weeks ago', { count: diffWeeks })
+      ? t('common.placeholders.value1WeekAgo')
+      : t('common.fields.countWeeksAgo', { count: diffWeeks })
   if (diffMonths < 12)
     return diffMonths === 1
-      ? t('1 month ago')
-      : t('{{count}} months ago', { count: diffMonths })
-  if (diffYears < 2) return t('1 year ago')
+      ? t('common.placeholders.value1MonthAgo')
+      : t('common.fields.countMonthsAgo', { count: diffMonths })
+  if (diffYears < 2) return t('common.placeholders.value1YearAgo')
 
   // Over 2 years, show specific date
   return formatDateTimeObject(pubDate)
@@ -170,15 +170,15 @@ function NoticeContent({
     return (
       <EmptyState
         icon={<Bell />}
-        title={t('Loading...')}
-        description={t('Latest platform updates and notices')}
+        title={t('common.tips.loading')}
+        description={t('common.tips.latestPlatformUpdatesAndNotices')}
       />
     )
   }
 
   if (!notice) {
     return (
-      <EmptyState icon={<Bell />} title={t('No announcements at this time')} />
+      <EmptyState icon={<Bell />} title={t('common.fields.noAnnouncementsAtThisTime')} />
     )
   }
 
@@ -205,15 +205,15 @@ function AnnouncementsContent({
     return (
       <EmptyState
         icon={<Megaphone />}
-        title={t('Loading...')}
-        description={t('Latest platform updates and notices')}
+        title={t('common.tips.loading')}
+        description={t('common.tips.latestPlatformUpdatesAndNotices')}
       />
     )
   }
 
   if (announcements.length === 0) {
     return (
-      <EmptyState icon={<Megaphone />} title={t('No system announcements')} />
+      <EmptyState icon={<Megaphone />} title={t('common.titles.noSystemAnnouncements')} />
     )
   }
 
@@ -288,7 +288,7 @@ export function NotificationPopover({
             variant='ghost'
             size='icon'
             className={cn('relative size-9', className)}
-            aria-label={t('Notifications')}
+            aria-label={t('common.fields.notifications')}
           />
         }
       >
@@ -309,9 +309,9 @@ export function NotificationPopover({
         className='w-[min(26rem,calc(100vw-1rem))] gap-3 p-3'
       >
         <PopoverHeader className='gap-1 px-1'>
-          <PopoverTitle>{t('System Announcements')}</PopoverTitle>
+          <PopoverTitle>{t('common.titles.systemAnnouncements')}</PopoverTitle>
           <p className='text-muted-foreground text-xs'>
-            {t('Latest platform updates and notices')}
+            {t('common.tips.latestPlatformUpdatesAndNotices')}
           </p>
         </PopoverHeader>
 
@@ -322,11 +322,11 @@ export function NotificationPopover({
           <TabsList className='grid w-full grid-cols-2'>
             <TabsTrigger value='notice' className='gap-1.5'>
               <Bell className='size-3.5' />
-              {t('Notice')}
+              {t('common.fields.notice')}
             </TabsTrigger>
             <TabsTrigger value='announcements' className='gap-1.5'>
               <Megaphone className='size-3.5' />
-              {t('Timeline')}
+              {t('common.fields.timeline')}
             </TabsTrigger>
           </TabsList>
 
@@ -345,7 +345,7 @@ export function NotificationPopover({
 
         <div className='flex justify-end'>
           <Button size='sm' onClick={() => onOpenChange(false)}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </div>
       </PopoverContent>

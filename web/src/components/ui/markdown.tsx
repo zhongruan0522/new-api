@@ -43,7 +43,7 @@ export function Markdown({ children, className }: MarkdownProps) {
         'prose-td:border prose-th:border prose-td:px-3 prose-th:px-3',
         'prose-img:rounded-lg prose-img:shadow-sm',
         '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-        '[overflow-wrap:anywhere] break-words',
+        '[overflow-wrap:anywhere] wrap-break-word',
         className
       )}
     >

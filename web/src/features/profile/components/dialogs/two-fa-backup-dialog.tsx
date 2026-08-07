@@ -57,7 +57,7 @@ export function TwoFABackupDialog({
 
   const handleRegenerate = async () => {
     if (!code) {
-      toast.error(t('Please enter your verification code'))
+      toast.error(t('profile.errors.pleaseEnterYourVerificationCode'))
       return
     }
 
@@ -67,12 +67,12 @@ export function TwoFABackupDialog({
 
       if (response.success && response.data?.backup_codes) {
         setBackupCodes(response.data.backup_codes)
-        toast.success(t('Backup codes regenerated successfully'))
+        toast.success(t('profile.tips.backupCodesRegeneratedSuccessfully'))
       } else {
-        toast.error(response.message || t('Failed to regenerate backup codes'))
+        toast.error(response.message || t('profile.errors.failedToRegenerateBackupCodes'))
       }
     } catch (_error) {
-      toast.error(t('Failed to regenerate backup codes'))
+      toast.error(t('profile.errors.failedToRegenerateBackupCodes'))
     } finally {
       setLoading(false)
     }
@@ -99,12 +99,12 @@ export function TwoFABackupDialog({
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <RefreshCw className='h-5 w-5' />
-            {t('Regenerate Backup Codes')}
+            {t('profile.fields.regenerateBackupCodes')}
           </DialogTitle>
           <DialogDescription>
             {backupCodes.length > 0
-              ? t('Your new backup codes are ready')
-              : t('Generate new backup codes for account recovery')}
+              ? t('profile.fields.newBackupCodesAreReady')
+              : t('profile.tips.generateNewBackupCodesForAccountRecovery')}
           </DialogDescription>
         </DialogHeader>
 
@@ -114,18 +114,18 @@ export function TwoFABackupDialog({
               <Alert>
                 <AlertDescription>
                   {t(
-                    'Generating new codes will invalidate all existing backup codes.'
+                    'profile.tips.generatingNewCodesWillInvalidateAllExistingBackupCodes'
                   )}
                 </AlertDescription>
               </Alert>
 
               <div className='space-y-2'>
-                <Label htmlFor='code'>{t('Verification Code')}</Label>
+                <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
                 <Input
                   id='code'
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder={t('Enter authenticator code')}
+                  placeholder={t('profile.placeholders.enterAuthenticatorCode')}
                   maxLength={6}
                   disabled={loading}
                 />
@@ -136,7 +136,7 @@ export function TwoFABackupDialog({
               <Alert>
                 <AlertDescription>
                   {t(
-                    'Save these codes in a safe place. Each code can only be used once.'
+                    'profile.actions.saveTheseCodesInASafePlaceEachCode'
                   )}
                 </AlertDescription>
               </Alert>
@@ -160,10 +160,10 @@ export function TwoFABackupDialog({
                 size='default'
                 className='w-full'
                 iconClassName='mr-2 size-4'
-                tooltip={t('Copy all backup codes')}
-                aria-label={t('Copy all backup codes')}
+                tooltip={t('profile.actions.copyAllBackupCodes')}
+                aria-label={t('profile.actions.copyAllBackupCodes')}
               >
-                {t('Copy All Codes')}
+                {t('profile.actions.copyAllCodes')}
               </CopyButton>
             </>
           )}
@@ -177,15 +177,15 @@ export function TwoFABackupDialog({
                 onClick={() => handleOpenChange(false)}
                 disabled={loading}
               >
-                {t('Cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button onClick={handleRegenerate} disabled={loading || !code}>
                 {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {loading ? t('Generating...') : t('Generate New Codes')}
+                {loading ? t('channels.tips.generating') : t('profile.fields.generateNewCodes')}
               </Button>
             </>
           ) : (
-            <Button onClick={handleDone}>{t('Done')}</Button>
+            <Button onClick={handleDone}>{t('profile.fields.done')}</Button>
           )}
         </DialogFooter>
       </DialogContent>

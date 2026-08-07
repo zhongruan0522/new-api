@@ -14,9 +14,9 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/controller"
-	"github.com/zhongruan0522/new-api/middleware"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/controller"
+	"github.com/NookMux/NookMux/middleware"
 )
 
 type WebAssets struct {

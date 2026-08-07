@@ -2,18 +2,16 @@ package minimax
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/dto"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/types"
 )
 
 var minimaxNamePattern = regexp.MustCompile(`(?i)minimax`)
@@ -99,6 +97,7 @@ func getContentTypeByFormat(format string) string {
 		"wav":  "audio/wav",
 		"flac": "audio/flac",
 		"aac":  "audio/aac",
+		"opus": "audio/ogg",
 		"pcm":  "audio/pcm",
 	}
 	if ct, ok := contentTypeMap[format]; ok {
@@ -174,8 +173,15 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 			)
 		}
 
-		// Determine content type - default to mp3
-		contentType := "audio/mpeg"
+		audioFormat := c.GetString("minimax_audio_format")
+		if audioFormat == "" {
+			if audioReq, ok := info.Request.(*dto.AudioRequest); ok {
+				if normalizedFormat, formatErr := normalizeMiniMaxTTSAudioFormat(audioReq.ResponseFormat); formatErr == nil {
+					audioFormat = normalizedFormat
+				}
+			}
+		}
+		contentType := getContentTypeByFormat(audioFormat)
 
 		c.Data(http.StatusOK, contentType, audioData)
 	}
@@ -194,29 +200,4 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	usage.(*dto.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
 
 	return usage, nil
-}
-
-func handleChatCompletionResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	defer resp.Body.Close()
-	body, readErr := common.ReadResponseBody(resp.Body)
-	if readErr != nil {
-		return nil, types.NewErrorWithStatusCode(
-			errors.New("failed to read upstream response"),
-			types.ErrorCodeReadResponseBodyFailed,
-			http.StatusInternalServerError,
-		)
-	}
-
-	// Set response headers
-	for key, values := range resp.Header {
-		if !service.ShouldCopyUpstreamHeader(c, key, values) {
-			continue
-		}
-		for _, value := range values {
-			c.Header(key, value)
-		}
-	}
-
-	c.Data(resp.StatusCode, "application/json", body)
-	return nil, nil
 }

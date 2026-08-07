@@ -66,7 +66,7 @@ export function BalanceQueryDialog({
 
         setBalance(newBalance)
         setBalanceUpdatedTime(now)
-        toast.success(t('Balance updated successfully'))
+        toast.success(t('channels.status.balanceUpdatedSuccessfully'))
 
         // Update currentRow immediately with new balance and timestamp
         setCurrentRow({
@@ -80,11 +80,11 @@ export function BalanceQueryDialog({
           queryKey: channelsQueryKeys.lists(),
         })
       } else {
-        toast.error(response.message || t('Failed to query balance'))
+        toast.error(response.message || t('channels.errors.failedToQueryBalance'))
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('Failed to query balance')
+        error instanceof Error ? error.message : t('channels.errors.failedToQueryBalance')
       )
     } finally {
       setIsQuerying(false)
@@ -113,9 +113,9 @@ export function BalanceQueryDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('Query Balance')}</DialogTitle>
+          <DialogTitle>{t('channels.titles.queryBalance')}</DialogTitle>
           <DialogDescription>
-            {t('Update balance for:')} <strong>{currentRow.name}</strong>
+            {t('channels.fields.updateBalanceFor')} <strong>{currentRow.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +124,7 @@ export function BalanceQueryDialog({
           <div className='bg-muted/50 rounded-lg border p-4'>
             <div className='text-muted-foreground mb-2 flex items-center gap-2 text-sm'>
               <DollarSign className='h-4 w-4' />
-              <span>{t('Current Balance')}</span>
+              <span>{t('channels.fields.currentBalance')}</span>
             </div>
             <div className='text-2xl font-bold'>
               {balance !== null
@@ -132,7 +132,7 @@ export function BalanceQueryDialog({
                 : formatBalance(currentRow.balance)}
             </div>
             <div className='text-muted-foreground mt-2 text-xs'>
-              {t('Last updated:')}{' '}
+              {t('channels.status.lastUpdated')}{' '}
               {formatDate(
                 balanceUpdatedTime ?? currentRow.balance_updated_time
               )}
@@ -147,13 +147,13 @@ export function BalanceQueryDialog({
           >
             {isQuerying && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             {!isQuerying && <RefreshCw className='mr-2 h-4 w-4' />}
-            {isQuerying ? t('Querying...') : t('Update Balance')}
+            {isQuerying ? t('channels.tips.querying') : t('channels.fields.updateBalance')}
           </Button>
         </div>
 
         <DialogFooter>
           <Button variant='outline' onClick={handleClose} disabled={isQuerying}>
-            {t('Close')}
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

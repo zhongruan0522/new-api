@@ -27,11 +27,11 @@ import type { RankingPeriod, VendorRanking, VendorShareSeries } from '../types'
 import { VendorLink } from './entity-links'
 
 const PERIOD_DESCRIPTIONS: Record<RankingPeriod, string> = {
-  today: 'Token share by model author across the last 24 hours',
-  week: 'Token share by model author across the past few weeks',
-  month: 'Token share by model author across the past month',
-  year: 'Token share by model author across the past year',
-  all: 'Token share by model author since launch',
+  today: 'common.tips.tokenShareByModelAuthorAcrossTheLast24',
+  week: 'common.tips.tokenShareByModelAuthorAcrossThePastFew',
+  month: 'common.tips.tokenShareByModelAuthorAcrossThePastMonth',
+  year: 'common.tips.tokenShareByModelAuthorAcrossThePastYear',
+  all: 'common.tips.tokenShareByModelAuthorSinceLaunch',
 }
 
 /** Stable colour palette for vendors, used in both the share chart and the
@@ -208,7 +208,7 @@ export function MarketShareSection(props: MarketShareSectionProps) {
       <header className='px-5 py-4'>
         <h2 className='text-foreground inline-flex items-center gap-2 text-base font-semibold'>
           <PieChart className='text-primary size-4' />
-          {t('Market Share')}
+          {t('rankings.fields.marketShare')}
         </h2>
         <p className='text-muted-foreground mt-1 text-sm'>
           {t(PERIOD_DESCRIPTIONS[props.period])}
@@ -229,7 +229,7 @@ export function MarketShareSection(props: MarketShareSectionProps) {
             />
           ) : (
             <div className='text-muted-foreground/80 flex h-full items-center justify-center text-xs'>
-              {t('No history data available')}
+              {t('rankings.fields.noHistoryDataAvailable')}
             </div>
           )}
         </div>
@@ -239,15 +239,15 @@ export function MarketShareSection(props: MarketShareSectionProps) {
       <div className='border-t'>
         <header className='px-5 pt-4 pb-2'>
           <h3 className='text-foreground text-sm font-semibold'>
-            {t('By model author')}
+            {t('rankings.fields.modelAuthor')}
           </h3>
           <p className='text-muted-foreground/80 mt-0.5 text-xs'>
-            {t('Vendors ranked by aggregated token volume')}
+            {t('rankings.tips.vendorsRankedByAggregatedTokenVolume')}
           </p>
         </header>
         {visible.length === 0 ? (
           <div className='text-muted-foreground/80 px-5 py-8 text-center text-sm'>
-            {t('No vendor data available')}
+            {t('rankings.fields.noVendorDataAvailable')}
           </div>
         ) : (
           <div className='grid grid-cols-1 gap-x-8 px-5 pt-1 pb-4 md:grid-cols-2'>

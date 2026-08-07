@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -118,10 +118,7 @@ func (r *GeminiChatRequest) GetTokenCountMeta() *types.TokenCountMeta {
 }
 
 func (r *GeminiChatRequest) IsStream(c *gin.Context) bool {
-	if c.Query("alt") == "sse" {
-		return true
-	}
-	return false
+	return c.Query("alt") == "sse"
 }
 
 func (r *GeminiChatRequest) SetModelName(modelName string) {

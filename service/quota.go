@@ -7,15 +7,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/logger"
-	"github.com/zhongruan0522/new-api/model"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/model"
+	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -26,14 +27,12 @@ type TokenDetails struct {
 	AudioTokens int
 }
 
-const emptyUsageErrorMessage = "上游没有返回计费信息，无法扣费（可能是上游超时）"
-
 // NewEmptyUsageRetryError returns a retryable upstream error when native-format responses contain no billing usage.
-func NewEmptyUsageRetryError(relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
+func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
 	if relayInfo == nil || len(relayInfo.RequestConversionChain) > 1 {
 		return nil
 	}
-	return types.NewOpenAIError(errors.New(emptyUsageErrorMessage), types.ErrorCodeBadResponse, http.StatusBadGateway)
+	return types.NewOpenAIError(errors.New(i18n.T(ctx, i18n.MsgQuotaEmptyUsage)), types.ErrorCodeBadResponse, http.StatusBadGateway)
 }
 
 type QuotaInfo struct {
@@ -142,15 +141,15 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	quota := calculateAudioQuota(quotaInfo)
 
 	if userQuota < quota {
-		return fmt.Errorf("user quota is not enough, user quota: %s, need quota: %s", logger.FormatQuota(userQuota), logger.FormatQuota(quota))
+		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaUserNotEnough, map[string]any{"UserQuota": logger.FormatQuota(userQuota), "NeedQuota": logger.FormatQuota(quota)}))
 	}
 
 	// 认证阶段已经读取过 token，复用上下文快照避免重复查询数据库。
 	if !relayInfo.TokenUnlimited && relayInfo.TokenQuota < quota {
-		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenNotEnough, map[string]any{"TokenQuota": logger.FormatQuota(relayInfo.TokenQuota), "NeedQuota": logger.FormatQuota(quota)}))
 	}
 
-	err = PostConsumeQuota(relayInfo, quota, 0, false)
+	err = PostConsumeQuota(ctx, relayInfo, quota, 0, false)
 	if err != nil {
 		return err
 	}
@@ -220,14 +219,14 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	// record all the consume log even if quota is 0
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+		if apiErr := NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游超时）")
+		logContent += "（可能是上游超时）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -345,14 +344,14 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 	// record all the consume log even if quota is 0
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+		if apiErr := NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游出错）")
+		logContent += "（可能是上游出错）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -477,14 +476,14 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	// record all the consume log even if quota is 0
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+		if apiErr := NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
 		logType = model.LogTypeError
 		quota = 0
-		logContent += fmt.Sprintf("（可能是上游超时）")
+		logContent += "（可能是上游超时）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, relayInfo.OriginModelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -525,9 +524,9 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	return nil
 }
 
-func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
+func PreConsumeTokenQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, quota int) error {
 	if quota < 0 {
-		return errors.New("quota 不能为负数！")
+		return errors.New(i18n.T(ctx, i18n.MsgQuotaNegative))
 	}
 
 	quotaType := relayInfo.TokenQuotaType
@@ -539,14 +538,14 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 
 	// 永久限额模式：检查 TokenQuota（即 RemainQuota）
 	if quotaType == 1 && relayInfo.TokenQuota < quota {
-		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenNotEnough, map[string]any{"TokenQuota": logger.FormatQuota(relayInfo.TokenQuota), "NeedQuota": logger.FormatQuota(quota)}))
 	}
 
 	// 时段限额模式 (2, 3)：预扣减窗口额度
 	switch quotaType {
 	case 2:
 		if relayInfo.TokenQuota < quota {
-			return fmt.Errorf("token window quota is not enough, remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+			return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenWindowNotEnough, map[string]any{"TokenQuota": logger.FormatQuota(relayInfo.TokenQuota), "NeedQuota": logger.FormatQuota(quota)}))
 		}
 		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
@@ -554,7 +553,7 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 		}
 	case 3:
 		if relayInfo.TokenQuota < quota {
-			return fmt.Errorf("token quota is not enough, remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+			return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenNotEnough, map[string]any{"TokenQuota": logger.FormatQuota(relayInfo.TokenQuota), "NeedQuota": logger.FormatQuota(quota)}))
 		}
 		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
@@ -578,9 +577,9 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 	return nil
 }
 
-func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQuota int, sendEmail bool) (err error) {
+func PostConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, quota int, preConsumedQuota int, sendEmail bool) (err error) {
 	if relayInfo == nil {
-		return errors.New("relayInfo is nil")
+		return errors.New(i18n.T(ctx, i18n.MsgQuotaRelayInfoNil))
 	}
 
 	// Wallet

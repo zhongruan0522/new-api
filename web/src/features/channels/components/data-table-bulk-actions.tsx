@@ -108,16 +108,16 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={handleEnableAll}
                 className='size-8'
-                aria-label={t('Enable selected channels')}
-                title={t('Enable selected channels')}
+                aria-label={t('channels.actions.enableSelectedChannels')}
+                title={t('channels.actions.enableSelectedChannels')}
               />
             }
           >
             <Power />
-            <span className='sr-only'>{t('Enable selected channels')}</span>
+            <span className='sr-only'>{t('channels.actions.enableSelectedChannels')}</span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Enable selected channels')}</p>
+            <p>{t('channels.actions.enableSelectedChannels')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -129,16 +129,16 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={handleDisableAll}
                 className='size-8'
-                aria-label={t('Disable selected channels')}
-                title={t('Disable selected channels')}
+                aria-label={t('channels.actions.disableSelectedChannels')}
+                title={t('channels.actions.disableSelectedChannels')}
               />
             }
           >
             <PowerOff />
-            <span className='sr-only'>{t('Disable selected channels')}</span>
+            <span className='sr-only'>{t('channels.actions.disableSelectedChannels')}</span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Disable selected channels')}</p>
+            <p>{t('channels.actions.disableSelectedChannels')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -150,18 +150,18 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={() => setShowTagDialog(true)}
                 className='size-8'
-                aria-label={t('Set tag for selected channels')}
-                title={t('Set tag for selected channels')}
+                aria-label={t('channels.titles.setTagForSelectedChannels')}
+                title={t('channels.titles.setTagForSelectedChannels')}
               />
             }
           >
             <Tag />
             <span className='sr-only'>
-              {t('Set tag for selected channels')}
+              {t('channels.titles.setTagForSelectedChannels')}
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Set tag for selected channels')}</p>
+            <p>{t('channels.titles.setTagForSelectedChannels')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -173,16 +173,16 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={() => setShowDeleteConfirm(true)}
                 className='size-8'
-                aria-label={t('Delete selected channels')}
-                title={t('Delete selected channels')}
+                aria-label={t('channels.actions.deleteSelectedChannels')}
+                title={t('channels.actions.deleteSelectedChannels')}
               />
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('Delete selected channels')}</span>
+            <span className='sr-only'>{t('channels.actions.deleteSelectedChannels')}</span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('Delete selected channels')}</p>
+            <p>{t('channels.actions.deleteSelectedChannels')}</p>
           </TooltipContent>
         </Tooltip>
       </BulkActionsToolbar>
@@ -191,19 +191,19 @@ export function DataTableBulkActions<TData>({
       <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('Set Tag')}</DialogTitle>
+            <DialogTitle>{t('channels.fields.setTag')}</DialogTitle>
             <DialogDescription>
-              {t('Set a tag for')} {selectedIds.length}{' '}
-              {t('selected channel(s). Leave empty to remove tag.')}
+              {t('channels.fields.setATagFor')} {selectedIds.length}{' '}
+              {t('channels.placeholders.selectedChannelSLeaveEmptyToRemoveTag')}
             </DialogDescription>
           </DialogHeader>
 
           <div className='grid gap-4 py-4'>
             <div className='grid gap-2'>
-              <Label htmlFor='tag'>{t('Tag')}</Label>
+              <Label htmlFor='tag'>{t('channels.fields.tag')}</Label>
               <Input
                 id='tag'
-                placeholder={t('Enter tag name (optional)')}
+                placeholder={t('channels.placeholders.enterTagNameOptional')}
                 value={tagValue}
                 onChange={(e) => setTagValue(e.target.value)}
               />
@@ -218,9 +218,9 @@ export function DataTableBulkActions<TData>({
                 setTagValue('')
               }}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
-            <Button onClick={handleSetTag}>{t('Set Tag')}</Button>
+            <Button onClick={handleSetTag}>{t('channels.fields.setTag')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -229,10 +229,10 @@ export function DataTableBulkActions<TData>({
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('Delete Channels?')}</DialogTitle>
+            <DialogTitle>{t('channels.actions.deleteChannels')}</DialogTitle>
             <DialogDescription>
-              {t('Are you sure you want to delete')} {selectedIds.length}{' '}
-              {t('channel(s)? This action cannot be undone.')}
+              {t('channels.fields.sureYouWantToDelete')} {selectedIds.length}{' '}
+              {t('channels.errors.channelSThisActionCannotBeUndone')}
             </DialogDescription>
           </DialogHeader>
 
@@ -241,10 +241,10 @@ export function DataTableBulkActions<TData>({
               variant='outline'
               onClick={() => setShowDeleteConfirm(false)}
             >
-              {t('Cancel')}
+              {t('common.actions.cancel')}
             </Button>
             <Button variant='destructive' onClick={handleDeleteAll}>
-              {t('Delete')}
+              {t('common.actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

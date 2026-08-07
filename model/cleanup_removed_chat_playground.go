@@ -3,15 +3,28 @@ package model
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/zhongruan0522/new-api/common"
+	"github.com/NookMux/NookMux/common"
 	"gorm.io/gorm"
 )
+
+// markerRemovedChatPlayground is the one-shot migration marker recorded in the
+// options table once this cleanup has fully completed. Subsequent startups skip
+// the otherwise-every-start scan over the users table. Delete the row to force a
+// re-run (e.g. after importing legacy data).
+const markerRemovedChatPlayground = "data_migration.removed_chat_playground.v1.done"
 
 func cleanupRemovedChatPlaygroundData() error {
 	if DB == nil {
 		return nil
 	}
+
+	if isDataMigrationDone(markerRemovedChatPlayground) {
+		return nil
+	}
+
+	start := time.Now()
 
 	// ---------------------------------------------------------------------
 	// 1) Remove obsolete options: Chats / ChatLink / ChatLink2
@@ -37,12 +50,14 @@ func cleanupRemovedChatPlaygroundData() error {
 	// 3) Remove per-user sidebar_modules from users.setting
 	// ---------------------------------------------------------------------
 	var updatedUsers int64
+	var scannedUsers int64
 	var users []User
 	result := DB.
 		Select("id", "setting").
 		Where("setting <> '' AND setting LIKE ?", "%sidebar_modules%").
 		FindInBatches(&users, 200, func(tx *gorm.DB, _ int) error {
 			for i := range users {
+				scannedUsers++
 				u := users[i]
 				if !strings.Contains(u.Setting, "sidebar_modules") {
 					continue
@@ -64,9 +79,11 @@ func cleanupRemovedChatPlaygroundData() error {
 	if result.Error != nil {
 		return result.Error
 	}
-	if updatedUsers > 0 {
-		common.SysLog(fmt.Sprintf("removed sidebar_modules from %d users.setting", updatedUsers))
-	}
+
+	common.SysLog(fmt.Sprintf("chat playground cleanup: scanned %d users, updated %d users.setting in %s",
+		scannedUsers, updatedUsers, time.Since(start).Round(time.Millisecond)))
+
+	markDataMigrationDone(markerRemovedChatPlayground)
 	return nil
 }
 

@@ -36,7 +36,7 @@ import { useIsAdmin } from '@/hooks/use-admin'
 import { useAuthStore } from '@/stores/auth-store'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { DataTablePage } from '@/components/data-table'
+import { DataTablePage, usePersistentColumnVisibility } from '@/components/data-table'
 import {
   DEFAULT_LOGS_DATA,
   LOG_TYPE_ALL_VALUE,
@@ -73,6 +73,11 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const isMobile = useMediaQuery('(max-width: 640px)')
   const searchParams = route.useSearch()
 
+  const [columnVisibility, setColumnVisibility] = usePersistentColumnVisibility(
+    'usage-logs-table',
+    {}
+  )
+
   const {
     columnFilters,
     onColumnFiltersChange,
@@ -81,9 +86,9 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     ensurePageInRange,
   } = useTableUrlState({
     search: route.useSearch(),
-    navigate: route.useNavigate(),
-    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 20 : 100 },
-    globalFilter: { enabled: false },
+   navigate: route.useNavigate(),
+    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
+   globalFilter: { enabled: false },
     columnFilters: [
       {
         columnId: 'created_at',
@@ -135,7 +140,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       })
 
       if (!result?.success) {
-        toast.error(result?.message || t('Failed to load logs'))
+        toast.error(result?.message || t('usageLogs.errors.failedToLoadLogs'))
         return DEFAULT_LOGS_DATA
       }
 
@@ -158,11 +163,13 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     columns: columns as ColumnDef<Record<string, unknown>>[],
     state: {
       columnFilters,
+      columnVisibility,
       pagination,
     },
     enableRowSelection: false,
     onPaginationChange,
     onColumnFiltersChange,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
@@ -185,9 +192,9 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       columns={columns as ColumnDef<Record<string, unknown>>[]}
       isLoading={isLoadingData}
       isFetching={isFetching}
-      emptyTitle={t('No Logs Found')}
+      emptyTitle={t('usageLogs.titles.noLogsFound')}
       emptyDescription={t(
-        'No usage logs available. Logs will appear here once API calls are made.'
+        'usageLogs.tips.noUsageLogsAvailableLogsWillAppearHereOnce'
       )}
       skeletonKeyPrefix='usage-log-skeleton'
       tableClassName='overflow-x-auto'

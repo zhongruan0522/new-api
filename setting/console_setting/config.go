@@ -1,8 +1,8 @@
 package console_setting
 
 import (
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting/config"
 )
 
 // UsageLogFieldKey 使用日志详情弹窗中可独立控制可见性的字段标识。
@@ -106,20 +106,6 @@ type ConsoleSetting struct {
 	UsageLogFieldsAdminEnabled bool `json:"usage_log_fields_admin_enabled"`
 	// 普通用户总开关：关闭后普通用户无法访问使用日志详情弹窗
 	UsageLogFieldsUserEnabled bool `json:"usage_log_fields_user_enabled"`
-}
-
-// defaultUsageLogFields 构造字段可见性配置的默认 JSON 字符串。
-// 格式：{ "<fieldKey>": { "admin": true, "user": false }, ... }
-func defaultUsageLogFields() string {
-	defaults := UsageLogFieldsDefaults()
-	m := make(map[string]interface{}, len(defaults))
-	for _, d := range defaults {
-		m[d.Key] = map[string]interface{}{
-			"admin": d.Admin,
-			"user":  d.User,
-		}
-	}
-	return common.MapToJsonStr(m)
 }
 
 // 默认配置

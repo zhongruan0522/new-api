@@ -1,6 +1,6 @@
 package operation_setting
 
-import "github.com/zhongruan0522/new-api/setting/config"
+import "github.com/NookMux/NookMux/setting/config"
 
 type GeneralSetting struct {
 	DocsLink            string `json:"docs_link"`

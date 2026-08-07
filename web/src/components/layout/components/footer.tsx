@@ -41,11 +41,7 @@ interface FooterProps {
   className?: string
 }
 
-const NEW_API_FOOTER_ATTRIBUTION_KEY = [
-  'footer',
-  'new' + 'api',
-  'projectAttributionSuffix',
-].join('.')
+const PROJECT_ATTRIBUTION_SUFFIX_KEY = 'layout.tips.projectAttributionSuffix'
 
 function FooterLinkItem(props: { link: FooterLink }) {
   const { t } = useTranslation()
@@ -85,14 +81,14 @@ function LegalLinks(props: { leadingSeparator?: boolean }) {
   if (status?.user_agreement_enabled) {
     items.push({
       key: 'user-agreement',
-      label: t('User Agreement'),
+      label: t('layout.fields.userAgreement'),
       href: '/user-agreement',
     })
   }
   if (status?.privacy_policy_enabled) {
     items.push({
       key: 'privacy-policy',
-      label: t('Privacy Policy'),
+      label: t('layout.fields.privacyPolicy'),
       href: '/privacy-policy',
     })
   }
@@ -128,14 +124,14 @@ function ProjectAttribution(props: { currentYear: number; inline?: boolean }) {
     <span className='text-muted-foreground/45'>
       &copy; {props.currentYear}{' '}
       <a
-        href='https://github.com/zhongruan0522/new-api'
+        href='https://github.com/NookMux/NookMux'
         target='_blank'
         rel='noopener noreferrer'
         className='text-foreground/70 hover:text-foreground font-medium transition-colors'
       >
-        {t('New API')}
+        {t('layout.fields.newApi')}
       </a>
-      . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
+      . {t(PROJECT_ATTRIBUTION_SUFFIX_KEY)}
     </span>
   )
   if (props.inline) {
@@ -165,52 +161,52 @@ export function Footer(props: FooterProps) {
   const fallbackColumns = useMemo<FooterColumnProps[]>(
     () => [
       {
-        title: t('footer.columns.about.title'),
+        title: t('layout.tips.footerColumnsAboutTitle'),
         links: [
           {
-            text: t('footer.columns.about.links.aboutProject'),
+            text: t('layout.tips.footerColumnsAboutLinksAboutProject'),
             href: 'https://docs.newapi.pro/wiki/project-introduction/',
           },
           {
-            text: t('footer.columns.about.links.contact'),
+            text: t('layout.tips.footerColumnsAboutLinksContact'),
             href: 'https://docs.newapi.pro/support/community-interaction/',
           },
           {
-            text: t('footer.columns.about.links.features'),
+            text: t('layout.tips.footerColumnsAboutLinksFeatures'),
             href: 'https://docs.newapi.pro/wiki/features-introduction/',
           },
         ],
       },
       {
-        title: t('footer.columns.docs.title'),
+        title: t('layout.tips.footerColumnsDocsTitle'),
         links: [
           {
-            text: t('footer.columns.docs.links.quickStart'),
+            text: t('layout.tips.footerColumnsDocsLinksQuickStart'),
             href: 'https://docs.newapi.pro/getting-started/',
           },
           {
-            text: t('footer.columns.docs.links.installation'),
+            text: t('layout.tips.footerColumnsDocsLinksInstallation'),
             href: 'https://docs.newapi.pro/installation/',
           },
           {
-            text: t('footer.columns.docs.links.apiDocs'),
+            text: t('layout.tips.footerColumnsDocsLinksApiDocs'),
             href: 'https://docs.newapi.pro/api/',
           },
         ],
       },
       {
-        title: t('footer.columns.related.title'),
+        title: t('layout.tips.footerColumnsRelatedTitle'),
         links: [
           {
-            text: t('footer.columns.related.links.oneApi'),
+            text: t('layout.tips.footerColumnsRelatedLinksOneApi'),
             href: 'https://github.com/songquanpeng/one-api',
           },
           {
-            text: t('footer.columns.related.links.midjourney'),
+            text: t('layout.tips.footerColumnsRelatedLinksMidjourney'),
             href: 'https://github.com/novicezk/midjourney-proxy',
           },
           {
-            text: t('footer.columns.related.links.newApiKeyTool'),
+            text: t('layout.tips.footerColumnsRelatedLinksNewApiKeyTool'),
             href: 'https://github.com/Calcium-Ion/new-api-key-tool',
           },
         ],
@@ -264,7 +260,7 @@ export function Footer(props: FooterProps) {
               </span>
             </Link>
             <p className='text-muted-foreground/60 mt-3 max-w-[200px] text-xs leading-relaxed'>
-              {t('Powerful API Management Platform')}
+              {t('layout.tips.powerfulApiManagementPlatform')}
             </p>
           </div>
 
@@ -295,7 +291,7 @@ export function Footer(props: FooterProps) {
           <div className='text-muted-foreground/40 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:justify-start'>
             <span>
               &copy; {currentYear} {displayName}.{' '}
-              {props.copyright ?? t('footer.defaultCopyright')}
+              {props.copyright ?? t('layout.tips.footerDefaultCopyright')}
             </span>
             <LegalLinks leadingSeparator />
           </div>

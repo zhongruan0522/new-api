@@ -46,40 +46,40 @@ function getSystemSettingsNavGroups(t: TFunction): NavGroup[] {
   return [
     {
       id: 'system-administration',
-      title: t('System Administration'),
+      title: t('layout.titles.systemAdministration'),
       items: [
         {
-          title: t('Site & Branding'),
+          title: t('layout.fields.siteBranding'),
           icon: Settings,
           items: getSiteSectionNavItems(t),
         },
         {
-          title: t('Authentication'),
+          title: t('layout.fields.authentication'),
           icon: Shield,
           items: getAuthSectionNavItems(t),
         },
         {
-          title: t('Billing & Payment'),
+          title: t('layout.fields.billingPayment'),
           icon: CreditCard,
           items: getBillingSectionNavItems(t),
         },
         {
-          title: t('Models & Routing'),
+          title: t('layout.titles.modelsRouting'),
           icon: Box,
           items: getModelsSectionNavItems(t),
         },
         {
-          title: t('Security & Limits'),
+          title: t('layout.fields.securityLimits'),
           icon: ShieldAlert,
           items: getSecuritySectionNavItems(t),
         },
         {
-          title: t('Console Content'),
+          title: t('layout.titles.consoleContent'),
           icon: Layout,
           items: getContentSectionNavItems(t),
         },
         {
-          title: t('Operations'),
+          title: t('layout.fields.operations'),
           icon: Wrench,
           items: getOperationsSectionNavItems(t),
         },
@@ -100,7 +100,7 @@ export const SYSTEM_SETTINGS_VIEW: SidebarView = {
   pathPattern: /^\/system-settings(\/|$)/,
   parent: {
     to: '/dashboard/overview',
-    label: 'Back to Dashboard',
+    label: 'common.actions.backToDashboard',
   },
   getNavGroups: getSystemSettingsNavGroups,
 }

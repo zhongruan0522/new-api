@@ -50,7 +50,7 @@ export function useProfile() {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch profile:', error)
       if (!silent) {
-        toast.error(i18next.t('Failed to load profile'))
+        toast.error(i18next.t('profile.errors.failedToLoadProfile'))
       }
     } finally {
       if (!silent) {
@@ -72,17 +72,17 @@ export function useProfile() {
         const response = await updateUserProfile(data)
 
         if (response.success) {
-          toast.success(i18next.t('Profile updated successfully'))
+          toast.success(i18next.t('profile.status.updatedSuccessfully'))
           await refreshProfile() // Refresh profile silently
           return true
         }
 
-        toast.error(response.message || i18next.t('Failed to update profile'))
+        toast.error(response.message || i18next.t('profile.errors.failedToUpdateProfile'))
         return false
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to update profile:', error)
-        toast.error(i18next.t('Failed to update profile'))
+        toast.error(i18next.t('profile.errors.failedToUpdateProfile'))
         return false
       } finally {
         setUpdating(false)
@@ -99,17 +99,17 @@ export function useProfile() {
         const response = await updateUserSettings(data)
 
         if (response.success) {
-          toast.success(i18next.t('Settings updated successfully'))
+          toast.success(i18next.t('channels.status.settingsUpdatedSuccessfully'))
           await refreshProfile() // Refresh profile silently
           return true
         }
 
-        toast.error(response.message || i18next.t('Failed to update settings'))
+        toast.error(response.message || i18next.t('profile.errors.failedToUpdateSettings'))
         return false
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to update settings:', error)
-        toast.error(i18next.t('Failed to update settings'))
+        toast.error(i18next.t('profile.errors.failedToUpdateSettings'))
         return false
       } finally {
         setUpdating(false)

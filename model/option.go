@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting"
-	"github.com/zhongruan0522/new-api/setting/config"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/zhongruan0522/new-api/setting/performance_setting"
-	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/setting"
+	"github.com/NookMux/NookMux/setting/config"
+	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/NookMux/NookMux/setting/performance_setting"
+	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
 )
 
 type Option struct {
@@ -24,8 +24,7 @@ type Option struct {
 
 func AllOption() ([]*Option, error) {
 	var options []*Option
-	var err error
-	err = DB.Find(&options).Error
+	err := DB.Find(&options).Error
 	return options, err
 }
 
@@ -113,6 +112,7 @@ func InitOptionMap() {
 	common.OptionMap["TopUpLink"] = common.TopUpLink
 	common.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(common.QuotaPerUnit, 'f', -1, 64)
 	common.OptionMap["RetryTimes"] = strconv.Itoa(common.RetryTimes)
+	common.OptionMap["AutomaticRetryEnabled"] = strconv.FormatBool(common.AutomaticRetryEnabled)
 	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
 	common.OptionMap["DataExportDefaultTime"] = common.DataExportDefaultTime
 	common.OptionMap["DefaultCollapseSidebar"] = strconv.FormatBool(common.DefaultCollapseSidebar)
@@ -140,12 +140,16 @@ func InitOptionMap() {
 
 func loadOptionsFromDatabase() {
 	options, _ := AllOption()
+	toolBillingMigrated, migratedToolBillingRules := migrateLegacyToolBillingRulesInOptions(options)
 
 	for _, option := range options {
 		err := updateOptionMap(option.Key, option.Value)
 		if err != nil {
 			common.SysLog("failed to update option map: " + err.Error())
 		}
+	}
+	if toolBillingMigrated {
+		persistMigratedToolBillingRules(migratedToolBillingRules)
 	}
 
 	// One-time migration: if the removed toggle "quota_setting.enable_free_model_pre_consume"
@@ -171,6 +175,60 @@ func loadOptionsFromDatabase() {
 			break
 		}
 	}
+
+	// Backward-compatibility migration: AutomaticRetryEnabled was introduced as a
+	// standalone toggle. On older deployments the row may not exist yet. To avoid
+	// silently turning off an already-configured retry setup after upgrade, derive
+	// the initial enabled state from the existing RetryTimes: if an admin had set
+	// RetryTimes > 0 we treat automatic retry as enabled.
+	retryEnabledExists := false
+	for _, option := range options {
+		if option.Key == "AutomaticRetryEnabled" {
+			retryEnabledExists = true
+			break
+		}
+	}
+	if !retryEnabledExists {
+		derivedEnabled := common.RetryTimes > 0
+		common.AutomaticRetryEnabled = derivedEnabled
+		common.OptionMap["AutomaticRetryEnabled"] = strconv.FormatBool(derivedEnabled)
+		migratedOption := Option{Key: "AutomaticRetryEnabled"}
+		DB.FirstOrCreate(&migratedOption, Option{Key: "AutomaticRetryEnabled"})
+		DB.Model(&migratedOption).Update("value", strconv.FormatBool(derivedEnabled))
+	}
+
+}
+
+func migrateLegacyToolBillingRulesInOptions(options []*Option) (bool, string) {
+	for i := range options {
+		if options[i] == nil || options[i].Key != "tool_billing_setting.rules" || options[i].Value == "" {
+			continue
+		}
+		migrated, didMigrate, err := operation_setting.MigrateLegacyRules(options[i].Value)
+		if err != nil {
+			common.SysError("failed to migrate tool_billing_setting.rules: " + err.Error())
+			return false, ""
+		}
+		if !didMigrate {
+			return false, ""
+		}
+		options[i].Value = migrated
+		return true, migrated
+	}
+	return false, ""
+}
+
+func persistMigratedToolBillingRules(migrated string) {
+	migratedOption := Option{Key: "tool_billing_setting.rules"}
+	if err := DB.FirstOrCreate(&migratedOption, Option{Key: "tool_billing_setting.rules"}).Error; err != nil {
+		common.SysError("failed to create migrated tool_billing_setting.rules: " + err.Error())
+		return
+	}
+	if err := DB.Model(&migratedOption).Update("value", migrated).Error; err != nil {
+		common.SysError("failed to persist migrated tool_billing_setting.rules: " + err.Error())
+		return
+	}
+	common.SysLog("migrated tool_billing_setting.rules to conditions format")
 }
 
 func SyncOptions(frequency int) {
@@ -308,6 +366,8 @@ func updateOptionMap(key string, value string) (err error) {
 			setting.DefaultUseAutoGroup = boolValue
 		case "DynamicRatioEnabled":
 			common.DynamicRatioEnabled = boolValue
+		case "AutomaticRetryEnabled":
+			common.AutomaticRetryEnabled = boolValue
 		}
 	}
 	switch key {

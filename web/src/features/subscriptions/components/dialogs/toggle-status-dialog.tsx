@@ -31,12 +31,12 @@ export function ToggleStatusDialog() {
   if (open !== 'toggle-status' || !currentRow) return null
 
   const isEnabled = currentRow.plan.enabled
-  const title = isEnabled ? t('Confirm disable') : t('Confirm enable')
+  const title = isEnabled ? t('subscriptions.actions.confirmDisable') : t('subscriptions.actions.confirmEnable')
   const description = isEnabled
     ? t(
-        'After disabling, it will no longer be shown to users, but historical orders are not affected. Continue?'
+        'subscriptions.tips.disablingItWillNoLongerBeShownToUsers'
       )
-    : t('After enabling, the plan will be shown to users. Continue?')
+    : t('subscriptions.tips.enablingThePlanWillBeShownToUsersContinue')
 
   const handleConfirm = async () => {
     setLoading(true)
@@ -44,13 +44,13 @@ export function ToggleStatusDialog() {
       const res = await patchPlanStatus(currentRow.plan.id, !isEnabled)
       if (res.success) {
         toast.success(
-          isEnabled ? t('Disabled successfully') : t('Enabled successfully')
+          isEnabled ? t('subscriptions.status.disabledSuccessfully') : t('subscriptions.status.enabledSuccessfully')
         )
         triggerRefresh()
         setOpen(null)
       }
     } catch {
-      toast.error(t('Operation failed'))
+      toast.error(t('channels.status.operationFailed'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +64,7 @@ export function ToggleStatusDialog() {
       desc={description}
       handleConfirm={handleConfirm}
       isLoading={loading}
-      confirmText={isEnabled ? t('Disable') : t('Enable')}
+      confirmText={isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
       destructive={isEnabled}
     />
   )

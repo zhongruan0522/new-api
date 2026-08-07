@@ -3,7 +3,7 @@ package dto
 import (
 	"strings"
 
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,9 +36,7 @@ func (r *EmbeddingRequest) GetTokenCountMeta() *types.TokenCountMeta {
 	var texts = make([]string, 0)
 
 	inputs := r.ParseInput()
-	for _, input := range inputs {
-		texts = append(texts, input)
-	}
+	texts = append(texts, inputs...)
 
 	return &types.TokenCountMeta{
 		CombineText: strings.Join(texts, "\n"),

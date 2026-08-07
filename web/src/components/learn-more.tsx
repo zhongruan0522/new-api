@@ -46,7 +46,7 @@ export function LearnMore({
         className={cn('size-5', triggerProps?.className)}
         render={<Button variant='outline' size='icon' />}
       >
-        <span className='sr-only'>{t('Learn more')}</span>
+        <span className='sr-only'>{t('common.fields.learnMore')}</span>
         <CircleQuestionMark className='size-4 [&>circle]:hidden' />
       </PopoverTrigger>
       <PopoverContent

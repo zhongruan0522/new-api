@@ -223,7 +223,7 @@ export function PaymentMethodsVisualEditor({
         <div className='relative flex-1'>
           <Search className='text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4' />
           <Input
-            placeholder={t('Search payment methods...')}
+            placeholder={t('systemSettings.actions.searchPaymentMethods')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className='pl-9'
@@ -237,12 +237,12 @@ export function PaymentMethodsVisualEditor({
               }
             >
               <Lightbulb className='h-4 w-4 sm:mr-2' />
-              <span className='sm:inline'>{t('Templates')}</span>
+              <span className='sm:inline'>{t('systemSettings.fields.templates')}</span>
             </PopoverTrigger>
             <PopoverContent className='w-60'>
               <div className='space-y-2'>
                 <p className='text-muted-foreground text-xs'>
-                  {t('Quick insert common payment methods')}
+                  {t('systemSettings.tips.quickInsertCommonPaymentMethods')}
                 </p>
                 <div className='space-y-1'>
                   {PAYMENT_TEMPLATES.map((item) => (
@@ -275,7 +275,7 @@ export function PaymentMethodsVisualEditor({
             className='flex-1 sm:flex-none'
           >
             <Plus className='h-4 w-4 sm:mr-2' />
-            <span className='sm:inline'>{t('Add method')}</span>
+            <span className='sm:inline'>{t('systemSettings.actions.addMethod')}</span>
           </Button>
         </div>
       </div>
@@ -283,9 +283,9 @@ export function PaymentMethodsVisualEditor({
       {filteredMethods.length === 0 ? (
         <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm'>
           {searchText
-            ? t('No payment methods match your search')
+            ? t('systemSettings.tips.noPaymentMethodsMatchYourSearch')
             : t(
-                'No payment methods configured. Click "Add method" or use templates to get started.'
+                'common.tips.noPaymentMethodsConfiguredClickAddMethodOrUse'
               )}
         </div>
       ) : (
@@ -295,11 +295,11 @@ export function PaymentMethodsVisualEditor({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('Name')}</TableHead>
-                  <TableHead>{t('Type')}</TableHead>
-                  <TableHead>{t('Color')}</TableHead>
-                  <TableHead>{t('Min Top-up')}</TableHead>
-                  <TableHead className='text-right'>{t('Actions')}</TableHead>
+                  <TableHead>{t('channels.fields.name')}</TableHead>
+                  <TableHead>{t('channels.fields.type')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.color')}</TableHead>
+                  <TableHead>{t('systemSettings.fields.minTopUp')}</TableHead>
+                  <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -417,7 +417,7 @@ export function PaymentMethodsVisualEditor({
                   <div className='space-y-2 text-sm'>
                     <div className='flex items-center gap-2'>
                       <span className='text-muted-foreground min-w-20'>
-                        {t('labelWithColon', { label: t('Color') })}
+                        {t('channels.fields.labelWithColon', { label: t('systemSettings.fields.color') })}
                       </span>
                       <div className='flex items-center gap-2'>
                         {colorPreview && (
@@ -434,7 +434,7 @@ export function PaymentMethodsVisualEditor({
                     {method.min_topup && (
                       <div className='flex items-center gap-2'>
                         <span className='text-muted-foreground min-w-20'>
-                          {t('labelWithColon', { label: t('Min Top-up') })}
+                          {t('channels.fields.labelWithColon', { label: t('systemSettings.fields.minTopUp') })}
                         </span>
                         <span className='font-mono'>{method.min_topup}</span>
                       </div>

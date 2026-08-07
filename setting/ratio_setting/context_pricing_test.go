@@ -116,3 +116,71 @@ func TestContextPricingValidationRejectsInvalidConfigs(t *testing.T) {
 		})
 	}
 }
+
+// TestDefaultContextPricingLoaded verifies that InitRatioSettings populates the
+// context pricing map with the built-in defaults and that the per-tier match
+// logic returns sensible ratios for representative models.
+func TestDefaultContextPricingLoaded(t *testing.T) {
+	InitRatioSettings()
+	t.Cleanup(func() {
+		// Reset to empty so other tests don't observe default state.
+		_ = UpdateContextPricingByJSONString("{}")
+	})
+
+	cases := []struct {
+		model         string
+		contextTokens int
+		wantEnabled   bool
+		wantTier      string
+		wantMR        float64
+	}{
+		{model: "claude-sonnet-4.5", contextTokens: 100_000, wantEnabled: true, wantTier: "base", wantMR: 1.5},
+		{model: "claude-sonnet-4.5", contextTokens: 250_000, wantEnabled: true, wantTier: "tier_1", wantMR: 3},
+		{model: "gpt-5.6-luna", contextTokens: 100_000, wantEnabled: true, wantTier: "base", wantMR: 0.5},
+		{model: "gpt-5.6-luna", contextTokens: 300_000, wantEnabled: true, wantTier: "tier_1", wantMR: 1},
+		{model: "seed-1.6", contextTokens: 64_000, wantEnabled: true, wantTier: "base", wantMR: 0.125},
+		{model: "seed-1.6", contextTokens: 200_000, wantEnabled: true, wantTier: "tier_1", wantMR: 0.25},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.model+" "+tc.wantTier, func(t *testing.T) {
+			res, enabled, err := MatchContextPricingTier(tc.model, tc.contextTokens)
+			if err != nil {
+				t.Fatalf("MatchContextPricingTier returned error: %v", err)
+			}
+			if enabled != tc.wantEnabled {
+				t.Fatalf("enabled = %v, want %v", enabled, tc.wantEnabled)
+			}
+			if !enabled {
+				return
+			}
+			if res == nil {
+				t.Fatalf("expected non-nil result")
+			}
+			if res.TierName != tc.wantTier {
+				t.Fatalf("tier name = %q, want %q", res.TierName, tc.wantTier)
+			}
+			if res.Prices.ModelRatio != tc.wantMR {
+				t.Fatalf("model_ratio = %v, want %v", res.Prices.ModelRatio, tc.wantMR)
+			}
+		})
+	}
+}
+
+// TestDefaultContextPricingSerializationRoundtrip makes sure defaultContextPricing
+// values are valid JSON when serialized (no surprises with intPtr / MaxTokens).
+func TestDefaultContextPricingSerializationRoundtrip(t *testing.T) {
+	InitRatioSettings()
+	t.Cleanup(func() {
+		_ = UpdateContextPricingByJSONString("{}")
+	})
+
+	jsonStr := ContextPricing2JSONString()
+	if err := ValidateContextPricing(jsonStr); err != nil {
+		t.Fatalf("default context pricing failed validation: %v", err)
+	}
+
+	if len(defaultContextPricing) == 0 {
+		t.Fatalf("defaultContextPricing is empty")
+	}
+}

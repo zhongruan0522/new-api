@@ -45,16 +45,16 @@ export const AI_MODELS = [
 
 // Hero section - Gateway Features
 export const GATEWAY_FEATURES = [
-  'Cost Tracking',
-  'Model Access',
-  'Guardrails',
-  'Observability',
-  'Budgets',
-  'Load Balancing',
-  'Rate Limiting',
-  'Token Management',
-  'Prompt Caching',
-  'Pass-Through',
+  'home.fields.costTracking',
+  'common.fields.modelAccess',
+  'common.fields.guardrails',
+  'common.fields.observability',
+  'common.fields.budgets',
+  'home.fields.loadBalancing',
+  'home.fields.rateLimiting',
+  'systemSettings.titles.tokenManagement',
+  'common.fields.promptCaching',
+  'common.fields.passThrough',
 ] as const
 
 // Stats section - Default statistics
@@ -62,67 +62,67 @@ export const DEFAULT_STATS = [
   {
     value: '50',
     suffix: '+',
-    description: 'upstream services integrated',
+    description: 'home.fields.upstreamServicesIntegrated',
   },
   {
     value: '100',
     suffix: '+',
-    description: 'model billing support',
+    description: 'home.fields.modelBillingSupport',
   },
   {
     value: '50',
     suffix: '+',
-    description: 'compatible API routes',
+    description: 'home.fields.compatibleApiRoutes',
   },
   {
     value: '10',
     suffix: '+',
-    description: 'scheduling controls',
+    description: 'home.tips.schedulingControls',
   },
 ] as const
 
 // Features section - Default features
 export const DEFAULT_FEATURES = [
   {
-    title: 'Lightning Fast',
+    title: 'home.fields.lightningFast',
     description:
-      'Optimized network architecture ensures millisecond response times',
+      'home.tips.optimizedNetworkArchitectureEnsuresMillisecondResponseTimes',
     iconName: 'Zap',
   },
   {
-    title: 'Secure & Reliable',
+    title: 'home.fields.secureReliable',
     description:
-      'Enterprise-grade security with comprehensive permission management',
+      'home.placeholders.enterpriseGradeSecurityWithComprehensivePermissionManagement',
     iconName: 'Shield',
   },
   {
-    title: 'Global Coverage',
-    description: 'Multi-region deployment for stable global access',
+    title: 'home.fields.globalCoverage',
+    description: 'home.tips.multiRegionDeploymentForStableGlobalAccess',
     iconName: 'Globe',
   },
   {
-    title: 'Developer Friendly',
-    description: 'Compatible API routes for common AI application workflows',
+    title: 'home.fields.developerFriendly',
+    description: 'home.tips.compatibleApiRoutesForCommonAiApplicationWorkflows',
     iconName: 'Code',
   },
   {
-    title: 'High Performance',
-    description: 'Support for high concurrency with automatic load balancing',
+    title: 'home.fields.highPerformance',
+    description: 'home.tips.supportForHighConcurrencyWithAutomaticLoadBalancing',
     iconName: 'Gauge',
   },
   {
-    title: 'Transparent Billing',
-    description: 'Pay-as-you-go with real-time usage monitoring',
+    title: 'home.fields.transparentBilling',
+    description: 'home.tips.payAsYouGoWithRealTimeUsageMonitoring',
     iconName: 'DollarSign',
   },
   {
-    title: 'Team Collaboration',
-    description: 'Multi-user management with flexible permission allocation',
+    title: 'home.fields.teamCollaboration',
+    description: 'home.tips.multiUserManagementWithFlexiblePermissionAllocation',
     iconName: 'Users',
   },
   {
-    title: 'Open Source',
-    description: 'Community driven, self-hosted, and extensible',
+    title: 'home.actions.openSource',
+    description: 'home.tips.communityDrivenSelfHostedAndExtensible',
     iconName: 'HeartHandshake',
   },
 ] as const

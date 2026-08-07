@@ -45,9 +45,9 @@ export function useDeploymentsColumns(opts: {
   return [
     {
       accessorKey: 'id',
-      meta: { label: t('ID'), mobileHidden: true },
+      meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('ID')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
       ),
       cell: ({ row }) => {
         const id = row.original.id
@@ -59,9 +59,9 @@ export function useDeploymentsColumns(opts: {
       id: 'name',
       accessorFn: (row) =>
         row.container_name || row.deployment_name || row.name || '',
-      meta: { label: t('Name'), mobileTitle: true },
+      meta: { label: t('channels.fields.name'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Name')} />
+        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
       ),
       cell: ({ getValue }) => {
         const name = String(getValue() || '-') || '-'
@@ -79,14 +79,14 @@ export function useDeploymentsColumns(opts: {
     },
     {
       accessorKey: 'status',
-      meta: { label: t('Status'), mobileBadge: true },
-      header: t('Status'),
+      meta: { label: t('channels.fields.status'), mobileBadge: true },
+      header: t('channels.fields.status'),
       cell: ({ row }) => {
         const raw = row.original.status
         const key = normalizeDeploymentStatus(raw)
         const config = STATUS[key] || {
           label:
-            typeof raw === 'string' && raw.trim() ? raw.trim() : t('Unknown'),
+            typeof raw === 'string' && raw.trim() ? raw.trim() : t('channels.fields.unknown'),
           variant: 'neutral' as const,
         }
         return (
@@ -114,8 +114,8 @@ export function useDeploymentsColumns(opts: {
     },
     {
       accessorKey: 'provider',
-      meta: { label: t('Provider') },
-      header: t('Provider'),
+      meta: { label: t('models.fields.provider') },
+      header: t('models.fields.provider'),
       cell: ({ row }) => {
         const provider = row.original.provider
         if (!provider)
@@ -134,8 +134,8 @@ export function useDeploymentsColumns(opts: {
     },
     {
       accessorKey: 'time_remaining',
-      meta: { label: t('Time remaining') },
-      header: t('Time remaining'),
+      meta: { label: t('models.fields.timeRemaining') },
+      header: t('models.fields.timeRemaining'),
       cell: ({ row }) => {
         const status = normalizeDeploymentStatus(row.original.status)
         const remainingText =
@@ -174,7 +174,7 @@ export function useDeploymentsColumns(opts: {
             </div>
             {remainingHuman ? (
               <div className='text-muted-foreground text-xs'>
-                {t('Approx.')} {remainingHuman}
+                {t('models.tips.approx')} {remainingHuman}
               </div>
             ) : null}
           </div>
@@ -185,8 +185,8 @@ export function useDeploymentsColumns(opts: {
     },
     {
       id: 'hardware',
-      meta: { label: t('Hardware'), mobileHidden: true },
-      header: t('Hardware'),
+      meta: { label: t('models.fields.hardware'), mobileHidden: true },
+      header: t('models.fields.hardware'),
       accessorFn: (row) =>
         row.hardware_info || row.hardware_name || row.brand_name || '',
       cell: ({ row }) => {
@@ -220,9 +220,9 @@ export function useDeploymentsColumns(opts: {
     },
     {
       accessorKey: 'created_at',
-      meta: { label: t('Created'), mobileHidden: true },
+      meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Created')} />
+        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
       ),
       cell: ({ row }) => {
         const ts =
@@ -257,7 +257,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onViewLogs(id)}
-              title={t('View logs')}
+              title={t('models.actions.viewLogs')}
             >
               <Eye className='h-4 w-4' />
             </Button>
@@ -265,7 +265,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onViewDetails(id)}
-              title={t('View details')}
+              title={t('models.actions.viewDetails')}
             >
               <Info className='h-4 w-4' />
             </Button>
@@ -273,7 +273,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onUpdateConfig(id)}
-              title={t('Update configuration')}
+              title={t('models.titles.updateConfiguration')}
             >
               <Settings2 className='h-4 w-4' />
             </Button>
@@ -281,7 +281,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onExtend(id)}
-              title={t('Extend deployment')}
+              title={t('models.fields.extendDeployment')}
             >
               <Timer className='h-4 w-4' />
             </Button>
@@ -289,7 +289,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onRename(id, String(currentName))}
-              title={t('Rename deployment')}
+              title={t('models.fields.renameDeployment')}
             >
               <Pencil className='h-4 w-4' />
             </Button>
@@ -297,7 +297,7 @@ export function useDeploymentsColumns(opts: {
               variant='ghost'
               size='sm'
               onClick={() => opts.onDelete(row.original)}
-              title={t('Delete')}
+              title={t('common.actions.delete')}
             >
               <Trash2 className='h-4 w-4 text-red-500' />
             </Button>

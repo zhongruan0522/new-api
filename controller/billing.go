@@ -2,9 +2,9 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/types"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/types"
 )
 
 func GetSubscription(c *gin.Context) {
@@ -48,7 +48,6 @@ func GetSubscription(c *gin.Context) {
 		AccessUntil:        expiredTime,
 	}
 	c.JSON(200, subscription)
-	return
 }
 
 func GetUsage(c *gin.Context) {
@@ -77,5 +76,4 @@ func GetUsage(c *gin.Context) {
 		TotalUsage: amount * 100,
 	}
 	c.JSON(200, usage)
-	return
 }

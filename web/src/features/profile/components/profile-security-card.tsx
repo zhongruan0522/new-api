@@ -66,22 +66,22 @@ export function ProfileSecurityCard({
   const securityActions = [
     {
       icon: Shield,
-      title: t('Change Password'),
-      description: t('Update your password to keep your account secure'),
+      title: t('profile.fields.changePassword'),
+      description: t('profile.tips.updateYourPasswordToKeepYourAccountSecure'),
       action: () => dialogs.open('password'),
       variant: 'default' as const,
     },
     {
       icon: Key,
-      title: t('Access Token'),
-      description: t('Generate and manage your API access token'),
+      title: t('profile.fields.accessToken'),
+      description: t('profile.tips.generateAndManageYourApiAccessToken'),
       action: () => dialogs.open('token'),
       variant: 'default' as const,
     },
     {
       icon: Trash2,
-      title: t('Delete Account'),
-      description: t('Permanently delete your account and all data'),
+      title: t('profile.actions.deleteAccount'),
+      description: t('profile.tips.permanentlyDeleteYourAccountAndAllData'),
       action: () => dialogs.open('delete'),
       variant: 'destructive' as const,
     },
@@ -90,8 +90,8 @@ export function ProfileSecurityCard({
   return (
     <>
       <TitledCard
-        title={t('Security')}
-        description={t('Manage your security settings and account access')}
+        title={t('profile.fields.security')}
+        description={t('profile.tips.manageYourSecuritySettingsAndAccountAccess')}
         icon={<Shield className='h-4 w-4' />}
       >
         <div className='grid grid-cols-1 gap-2.5 sm:gap-3 md:grid-cols-3'>

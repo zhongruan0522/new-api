@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 )
 
 func cacheSetToken(token Token) error {
@@ -61,15 +61,6 @@ func cacheIncrWindowUsedQuota(key string, increment int64) error {
 func cacheIncrCycleUsedQuota(key string, increment int64) error {
 	key = common.GenerateHMAC(key)
 	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldCycleUsedQuota, increment)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func cacheSetTokenField(key string, field string, value string) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHSetField(fmt.Sprintf("token:%s", key), field, value)
 	if err != nil {
 		return err
 	}

@@ -10,8 +10,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/types"
 )
 
 func TestRelayErrorHandlerTruncatesInvalidJSONBodyInLog(t *testing.T) {
@@ -121,6 +122,70 @@ func TestRelayErrorHandlerCapsAndClosesOversizedBody(t *testing.T) {
 	}
 	if !strings.Contains(newAPIError.Error(), "upstream response body exceeds 1 MB limit") {
 		t.Fatalf("error = %q, want oversized body limit error", newAPIError.Error())
+	}
+}
+
+func TestResetStatusCodeAcceptsNumericMapping(t *testing.T) {
+	newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+
+	ResetStatusCode(newAPIError, `{"429":200}`)
+
+	if newAPIError.StatusCode != http.StatusOK {
+		t.Fatalf("StatusCode = %d, want %d", newAPIError.StatusCode, http.StatusOK)
+	}
+	if newAPIError.OriginalStatusCode != http.StatusTooManyRequests {
+		t.Fatalf("OriginalStatusCode = %d, want %d", newAPIError.OriginalStatusCode, http.StatusTooManyRequests)
+	}
+}
+
+func TestResetStatusCodeKeepsStringMapping(t *testing.T) {
+	newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+
+	ResetStatusCode(newAPIError, `{"429":"200"}`)
+
+	if newAPIError.StatusCode != http.StatusOK {
+		t.Fatalf("StatusCode = %d, want %d", newAPIError.StatusCode, http.StatusOK)
+	}
+	if newAPIError.OriginalStatusCode != http.StatusTooManyRequests {
+		t.Fatalf("OriginalStatusCode = %d, want %d", newAPIError.OriginalStatusCode, http.StatusTooManyRequests)
+	}
+}
+
+func TestResetStatusCodeRejectsInvalidMappingValues(t *testing.T) {
+	tests := []struct {
+		name    string
+		mapping string
+	}{
+		{name: "invalid string", mapping: `{"429":"not-a-status"}`},
+		{name: "fractional number", mapping: `{"429":200.5}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+
+			ResetStatusCode(newAPIError, tt.mapping)
+
+			if newAPIError.StatusCode != http.StatusTooManyRequests {
+				t.Fatalf("StatusCode = %d, want unchanged %d", newAPIError.StatusCode, http.StatusTooManyRequests)
+			}
+			if newAPIError.OriginalStatusCode != 0 {
+				t.Fatalf("OriginalStatusCode = %d, want 0 when mapping is rejected", newAPIError.OriginalStatusCode)
+			}
+		})
+	}
+}
+
+func TestResetStatusCodeDoesNotRemapOK(t *testing.T) {
+	newAPIError := &types.NewAPIError{StatusCode: http.StatusOK}
+
+	ResetStatusCode(newAPIError, `{"200":500}`)
+
+	if newAPIError.StatusCode != http.StatusOK {
+		t.Fatalf("StatusCode = %d, want unchanged %d", newAPIError.StatusCode, http.StatusOK)
+	}
+	if newAPIError.OriginalStatusCode != 0 {
+		t.Fatalf("OriginalStatusCode = %d, want 0", newAPIError.OriginalStatusCode)
 	}
 }
 
