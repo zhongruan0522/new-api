@@ -171,7 +171,7 @@ func (channel *Channel) DetectPlan() {
 	channel.ChannelInfo.PlanName = planName
 }
 
-func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
+func (channel *Channel) GetNextEnabledKey() (string, int, *types.NookMuxError) {
 	// If not in multi-key mode, return the original key string directly.
 	if !channel.ChannelInfo.IsMultiKey {
 		return channel.Key, 0, nil

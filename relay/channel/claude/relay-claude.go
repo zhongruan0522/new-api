@@ -932,7 +932,7 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 	return true
 }
 
-func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *types.NewAPIError {
+func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *types.NookMuxError {
 	var claudeResponse dto.ClaudeResponse
 	err := common.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
@@ -1084,7 +1084,7 @@ func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInf
 	return claudeInfo.ResponsesStreamConverter
 }
 
-func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *dto.ChatCompletionsStreamResponse) *types.NewAPIError {
+func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *dto.ChatCompletionsStreamResponse) *types.NookMuxError {
 	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
 	data, err := common.Marshal(response)
 	if err != nil {
@@ -1106,7 +1106,7 @@ func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.Rela
 	return nil
 }
 
-func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) *types.NewAPIError {
+func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) *types.NookMuxError {
 	if claudeInfo.ResponsesCompletedEmitted {
 		return nil
 	}
@@ -1139,7 +1139,7 @@ func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo,
 	return nil
 }
 
-func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),
 		Created:      common.GetTimestamp(),
@@ -1147,7 +1147,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 		ResponseText: strings.Builder{},
 		Usage:        &dto.Usage{},
 	}
-	var err *types.NewAPIError
+	var err *types.NookMuxError
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		err = HandleStreamResponseData(c, info, claudeInfo, data)
 		return err == nil
@@ -1160,7 +1160,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	return claudeInfo.Usage, nil
 }
 
-func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *types.NewAPIError {
+func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *types.NookMuxError {
 	var claudeResponse dto.ClaudeResponse
 	err := common.Unmarshal(data, &claudeResponse)
 	if err != nil {
@@ -1219,7 +1219,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	return nil
 }
 
-func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	claudeInfo := &ClaudeResponseInfo{

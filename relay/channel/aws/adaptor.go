@@ -153,7 +153,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	}
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
 	if a.ClientMode == ClientModeApiKey {
 		claudeAdaptor := claude.Adaptor{}
 		usage, err = claudeAdaptor.DoResponse(c, resp, info)

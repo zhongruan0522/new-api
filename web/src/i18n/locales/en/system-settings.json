@@ -429,7 +429,7 @@
   "systemSettings.errors.mustBeAValidUrl": "Must be a valid URL",
   "systemSettings.tips.nestedJsonDefiningPerGroupRulesForAddingRemoving": "Nested JSON defining per-group rules for adding (+:), removing (-:), or appending usable groups.",
   "systemSettings.fields.nestedJsonSourceGroup": "Nested JSON: source group →",
-  "systemSettings.tips.newApiNoreplyExampleCom": "New API &lt;noreply@example.com&gt;",
+  "systemSettings.tips.newApiNoreplyExampleCom": "NookMux &lt;noreply@example.com&gt;",
   "systemSettings.fields.newUserQuota": "New User Quota",
   "systemSettings.fields.noRetry": "No Retry",
   "systemSettings.tips.noAmountOptionsConfiguredAddAmountsBelowToGet": "No amount options configured. Add amounts below to get started.",

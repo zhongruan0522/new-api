@@ -171,7 +171,7 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 	return imageResponse, nil
 }
 
-func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)

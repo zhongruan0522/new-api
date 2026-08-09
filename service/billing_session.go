@@ -112,7 +112,7 @@ func (s *BillingSession) GetPreConsumedQuota() int {
 	return s.preConsumedQuota
 }
 
-func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIError {
+func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NookMuxError {
 	effectiveQuota := quota
 	if s.shouldTrust(c) {
 		effectiveQuota = 0
@@ -262,7 +262,7 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 	}
 }
 
-func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {
+func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NookMuxError) {
 	if relayInfo == nil {
 		return nil, types.NewError(
 			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingRelayInfoNil)),

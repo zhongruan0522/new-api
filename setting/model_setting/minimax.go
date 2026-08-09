@@ -45,7 +45,7 @@ type MiniMaxSettings struct {
 	// 该分组决定了定制音色整个流程的渠道走向（用于查找 MiniMax 渠道）以及计费分组倍率。
 	CustomVoiceGroup string `json:"custom_voice_group"`
 	// CustomVoiceBillingModelId 定制音色确认时的扣费模型 ID。
-	// 利用 NewAPI 的模型消费机制（ModelPrice/ModelRatio）完成扣费，避免出现无扣费或越权计费。
+	// 利用 NookMux 的模型消费机制（ModelPrice/ModelRatio）完成扣费，避免出现无扣费或越权计费。
 	CustomVoiceBillingModelId string `json:"custom_voice_billing_model_id"`
 }
 

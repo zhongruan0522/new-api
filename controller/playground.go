@@ -14,7 +14,7 @@ import (
 )
 
 func Playground(c *gin.Context) {
-	var newAPIError *types.NewAPIError
+	var newAPIError *types.NookMuxError
 
 	defer func() {
 		if newAPIError != nil {

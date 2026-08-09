@@ -28,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	textReq, ok := info.Request.(*dto.GeneralOpenAIRequest)
@@ -321,7 +321,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	return nil
 }
 
-func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent ...string) *types.NewAPIError {
+func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent ...string) *types.NookMuxError {
 	originUsage := usage
 	if usage == nil {
 		usage = &dto.Usage{

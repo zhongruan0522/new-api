@@ -68,7 +68,7 @@ func ClaudeErrorWrapperLocal(err error, code string, statusCode int) *dto.Claude
 	return claudeErr
 }
 
-func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFail bool) (newApiErr *types.NewAPIError) {
+func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFail bool) (newApiErr *types.NookMuxError) {
 	newApiErr = types.InitOpenAIError(types.ErrorCodeBadResponseStatusCode, resp.StatusCode)
 	defer CloseResponseBodyGracefully(resp)
 
@@ -116,7 +116,7 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 	return
 }
 
-func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) {
+func ResetStatusCode(newApiErr *types.NookMuxError, statusCodeMappingStr string) {
 	if newApiErr == nil {
 		return
 	}

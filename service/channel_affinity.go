@@ -26,8 +26,8 @@ const (
 	ginKeyChannelAffinityLogInfo    = "channel_affinity_log_info"
 	ginKeyChannelAffinitySkipRetry  = "channel_affinity_skip_retry_on_failure"
 
-	channelAffinityCacheNamespace           = "new-api:channel_affinity:v1"
-	channelAffinityUsageCacheStatsNamespace = "new-api:channel_affinity_usage_cache_stats:v1"
+	channelAffinityCacheNamespace           = "nookmux:channel_affinity:v1"
+	channelAffinityUsageCacheStatsNamespace = "nookmux:channel_affinity_usage_cache_stats:v1"
 )
 
 var (

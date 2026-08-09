@@ -429,7 +429,7 @@
   "systemSettings.errors.mustBeAValidUrl": "必须是有效的 URL",
   "systemSettings.tips.nestedJsonDefiningPerGroupRulesForAddingRemoving": "嵌套 JSON，定义按分组添加（+:）、移除（-:）或追加可用分组的规则。",
   "systemSettings.fields.nestedJsonSourceGroup": "嵌套 JSON：源分组 →",
-  "systemSettings.tips.newApiNoreplyExampleCom": "New API &lt;noreply@example.com&gt;",
+  "systemSettings.tips.newApiNoreplyExampleCom": "NookMux &lt;noreply@example.com&gt;",
   "systemSettings.fields.newUserQuota": "新用户配额",
   "systemSettings.fields.noRetry": "不重试",
   "systemSettings.tips.noAmountOptionsConfiguredAddAmountsBelowToGet": "未配置金额选项。在下方添加金额即可开始使用。",

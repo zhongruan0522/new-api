@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func WssHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func WssHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	adaptor := GetAdaptor(info.ApiType)

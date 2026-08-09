@@ -28,7 +28,7 @@ type TokenDetails struct {
 }
 
 // NewEmptyUsageRetryError returns a retryable upstream error when native-format responses contain no billing usage.
-func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
+func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *types.NookMuxError {
 	if relayInfo == nil || len(relayInfo.RequestConversionChain) > 1 {
 		return nil
 	}
@@ -159,7 +159,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 }
 
 func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
-	usage *dto.RealtimeUsage, extraContent string) *types.NewAPIError {
+	usage *dto.RealtimeUsage, extraContent string) *types.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.InputTokenDetails.TextTokens
@@ -264,7 +264,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	return nil
 }
 
-func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) *types.NewAPIError {
+func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) *types.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
@@ -415,7 +415,7 @@ func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData)
 		(promptCacheCreatePrice - quotaPrice)))
 }
 
-func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) *types.NewAPIError {
+func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) *types.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.PromptTokensDetails.TextTokens

@@ -45,7 +45,7 @@ const (
 type testResult struct {
 	context     *gin.Context
 	localErr    error
-	newAPIError *types.NewAPIError
+	newAPIError *types.NookMuxError
 }
 
 type channelTestPrompt struct {

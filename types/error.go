@@ -88,7 +88,7 @@ const (
 	ErrorCodePreConsumeTokenQuotaFailed ErrorCode = "pre_consume_token_quota_failed"
 )
 
-type NewAPIError struct {
+type NookMuxError struct {
 	Err            error
 	RelayError     any
 	skipRetry      bool
@@ -105,29 +105,29 @@ type NewAPIError struct {
 	exemptStrings []string
 }
 
-// Unwrap enables errors.Is / errors.As to work with NewAPIError by exposing the underlying error.
-func (e *NewAPIError) Unwrap() error {
+// Unwrap enables errors.Is / errors.As to work with NookMuxError by exposing the underlying error.
+func (e *NookMuxError) Unwrap() error {
 	if e == nil {
 		return nil
 	}
 	return e.Err
 }
 
-func (e *NewAPIError) GetErrorCode() ErrorCode {
+func (e *NookMuxError) GetErrorCode() ErrorCode {
 	if e == nil {
 		return ""
 	}
 	return e.errorCode
 }
 
-func (e *NewAPIError) GetErrorType() ErrorType {
+func (e *NookMuxError) GetErrorType() ErrorType {
 	if e == nil {
 		return ""
 	}
 	return e.errorType
 }
 
-func (e *NewAPIError) Error() string {
+func (e *NookMuxError) Error() string {
 	if e == nil {
 		return ""
 	}
@@ -138,7 +138,7 @@ func (e *NewAPIError) Error() string {
 	return e.Err.Error()
 }
 
-func (e *NewAPIError) ErrorWithStatusCode() string {
+func (e *NookMuxError) ErrorWithStatusCode() string {
 	if e == nil {
 		return ""
 	}
@@ -152,7 +152,7 @@ func (e *NewAPIError) ErrorWithStatusCode() string {
 	return fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg)
 }
 
-func (e *NewAPIError) MaskSensitiveError() string {
+func (e *NookMuxError) MaskSensitiveError() string {
 	if e == nil {
 		return ""
 	}
@@ -166,7 +166,7 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	return common.MaskSensitiveInfoWithExemptions(errStr, e.exemptStrings)
 }
 
-func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
+func (e *NookMuxError) MaskSensitiveErrorWithStatusCode() string {
 	if e == nil {
 		return ""
 	}
@@ -180,21 +180,21 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 	return fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg)
 }
 
-func (e *NewAPIError) SetMessage(message string) {
+func (e *NookMuxError) SetMessage(message string) {
 	e.Err = errors.New(message)
 }
 
 // SetExemptStrings records values (e.g. model name, group name) that should be
 // preserved during sensitive info masking. It should be called before the error
 // is serialized for the client or error log.
-func (e *NewAPIError) SetExemptStrings(strs ...string) {
+func (e *NookMuxError) SetExemptStrings(strs ...string) {
 	if e == nil {
 		return
 	}
 	e.exemptStrings = strs
 }
 
-func (e *NewAPIError) ToOpenAIError() OpenAIError {
+func (e *NookMuxError) ToOpenAIError() OpenAIError {
 	var result OpenAIError
 	switch e.errorType {
 	case ErrorTypeOpenAIError:
@@ -227,7 +227,7 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 	return result
 }
 
-func (e *NewAPIError) ToClaudeError() ClaudeError {
+func (e *NookMuxError) ToClaudeError() ClaudeError {
 	var result ClaudeError
 	switch e.errorType {
 	case ErrorTypeOpenAIError:
@@ -256,10 +256,10 @@ func (e *NewAPIError) ToClaudeError() ClaudeError {
 	return result
 }
 
-type NewAPIErrorOptions func(*NewAPIError)
+type NookMuxErrorOptions func(*NookMuxError)
 
-func NewError(err error, errorCode ErrorCode, ops ...NewAPIErrorOptions) *NewAPIError {
-	var newErr *NewAPIError
+func NewError(err error, errorCode ErrorCode, ops ...NookMuxErrorOptions) *NookMuxError {
+	var newErr *NookMuxError
 	// 保留深层传递的 new err
 	if errors.As(err, &newErr) {
 		for _, op := range ops {
@@ -267,7 +267,7 @@ func NewError(err error, errorCode ErrorCode, ops ...NewAPIErrorOptions) *NewAPI
 		}
 		return newErr
 	}
-	e := &NewAPIError{
+	e := &NookMuxError{
 		Err:        err,
 		RelayError: nil,
 		errorType:  ErrorTypeNewAPIError,
@@ -280,8 +280,8 @@ func NewError(err error, errorCode ErrorCode, ops ...NewAPIErrorOptions) *NewAPI
 	return e
 }
 
-func NewOpenAIError(err error, errorCode ErrorCode, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
-	var newErr *NewAPIError
+func NewOpenAIError(err error, errorCode ErrorCode, statusCode int, ops ...NookMuxErrorOptions) *NookMuxError {
+	var newErr *NookMuxError
 	// 保留深层传递的 new err
 	if errors.As(err, &newErr) {
 		if newErr.RelayError == nil {
@@ -305,7 +305,7 @@ func NewOpenAIError(err error, errorCode ErrorCode, statusCode int, ops ...NewAP
 	return WithOpenAIError(openaiError, statusCode, ops...)
 }
 
-func InitOpenAIError(errorCode ErrorCode, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
+func InitOpenAIError(errorCode ErrorCode, statusCode int, ops ...NookMuxErrorOptions) *NookMuxError {
 	openaiError := OpenAIError{
 		Type: string(errorCode),
 		Code: errorCode,
@@ -313,8 +313,8 @@ func InitOpenAIError(errorCode ErrorCode, statusCode int, ops ...NewAPIErrorOpti
 	return WithOpenAIError(openaiError, statusCode, ops...)
 }
 
-func NewErrorWithStatusCode(err error, errorCode ErrorCode, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
-	e := &NewAPIError{
+func NewErrorWithStatusCode(err error, errorCode ErrorCode, statusCode int, ops ...NookMuxErrorOptions) *NookMuxError {
+	e := &NookMuxError{
 		Err: err,
 		RelayError: OpenAIError{
 			Message: err.Error(),
@@ -331,7 +331,7 @@ func NewErrorWithStatusCode(err error, errorCode ErrorCode, statusCode int, ops 
 	return e
 }
 
-func WithOpenAIError(openAIError OpenAIError, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
+func WithOpenAIError(openAIError OpenAIError, statusCode int, ops ...NookMuxErrorOptions) *NookMuxError {
 	code, ok := openAIError.Code.(string)
 	if !ok {
 		if openAIError.Code != nil {
@@ -343,7 +343,7 @@ func WithOpenAIError(openAIError OpenAIError, statusCode int, ops ...NewAPIError
 	if openAIError.Type == "" {
 		openAIError.Type = "upstream_error"
 	}
-	e := &NewAPIError{
+	e := &NookMuxError{
 		RelayError: openAIError,
 		errorType:  ErrorTypeOpenAIError,
 		StatusCode: statusCode,
@@ -363,11 +363,11 @@ func WithOpenAIError(openAIError OpenAIError, statusCode int, ops ...NewAPIError
 	return e
 }
 
-func WithClaudeError(claudeError ClaudeError, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
+func WithClaudeError(claudeError ClaudeError, statusCode int, ops ...NookMuxErrorOptions) *NookMuxError {
 	if claudeError.Type == "" {
 		claudeError.Type = "upstream_error"
 	}
-	e := &NewAPIError{
+	e := &NookMuxError{
 		RelayError: claudeError,
 		errorType:  ErrorTypeClaudeError,
 		StatusCode: statusCode,
@@ -380,14 +380,14 @@ func WithClaudeError(claudeError ClaudeError, statusCode int, ops ...NewAPIError
 	return e
 }
 
-func IsChannelError(err *NewAPIError) bool {
+func IsChannelError(err *NookMuxError) bool {
 	if err == nil {
 		return false
 	}
 	return strings.HasPrefix(string(err.errorCode), "channel:")
 }
 
-func IsSkipRetryError(err *NewAPIError) bool {
+func IsSkipRetryError(err *NookMuxError) bool {
 	if err == nil {
 		return false
 	}
@@ -395,20 +395,20 @@ func IsSkipRetryError(err *NewAPIError) bool {
 	return err.skipRetry
 }
 
-func ErrOptionWithSkipRetry() NewAPIErrorOptions {
-	return func(e *NewAPIError) {
+func ErrOptionWithSkipRetry() NookMuxErrorOptions {
+	return func(e *NookMuxError) {
 		e.skipRetry = true
 	}
 }
 
-func ErrOptionWithNoRecordErrorLog() NewAPIErrorOptions {
-	return func(e *NewAPIError) {
+func ErrOptionWithNoRecordErrorLog() NookMuxErrorOptions {
+	return func(e *NookMuxError) {
 		e.recordErrorLog = common.GetPointer(false)
 	}
 }
 
-func ErrOptionWithHideErrMsg(replaceStr string) NewAPIErrorOptions {
-	return func(e *NewAPIError) {
+func ErrOptionWithHideErrMsg(replaceStr string) NookMuxErrorOptions {
+	return func(e *NookMuxError) {
 		if common.DebugEnabled {
 			fmt.Printf("ErrOptionWithHideErrMsg: %s, origin error: %s", replaceStr, e.Err)
 		}
@@ -416,7 +416,7 @@ func ErrOptionWithHideErrMsg(replaceStr string) NewAPIErrorOptions {
 	}
 }
 
-func IsRecordErrorLog(e *NewAPIError) bool {
+func IsRecordErrorLog(e *NookMuxError) bool {
 	if e == nil {
 		return false
 	}

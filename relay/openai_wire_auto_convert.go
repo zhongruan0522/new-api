@@ -18,7 +18,7 @@ import (
 // - /v1/chat/completions
 // - /v1/responses
 // - /v1/responses/compact (conversion not supported when chat-only)
-func OpenAIWireHelper(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
+func OpenAIWireHelper(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
 	info.InitChannelMeta(c)
 
 	wire, ok := info.ChannelSetting.OpenAIWireAPI.Normalize()
@@ -62,7 +62,7 @@ func OpenAIWireHelper(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPI
 	}
 }
 
-func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
+func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
 	chatReq, ok := info.Request.(*dto.GeneralOpenAIRequest)
 	if !ok {
 		return types.NewErrorWithStatusCode(
@@ -111,7 +111,7 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, openAIWireConversionOptions{}, ResponsesHelper)
 }
 
-func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
+func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
 	responsesReq, ok := info.Request.(*dto.OpenAIResponsesRequest)
 	if !ok {
 		return types.NewErrorWithStatusCode(
@@ -158,7 +158,7 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
 }
 
-type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *types.NewAPIError
+type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *types.NookMuxError
 
 func streamUpstreamWithWireConversion(
 	c *gin.Context,
@@ -167,7 +167,7 @@ func streamUpstreamWithWireConversion(
 	downstream dto.OpenAIWireAPI,
 	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
-) *types.NewAPIError {
+) *types.NookMuxError {
 	base := c.Writer
 	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions(opts))
 	if err != nil {
@@ -193,7 +193,7 @@ func nonStreamUpstreamWithWireConversion(
 	downstream dto.OpenAIWireAPI,
 	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
-) *types.NewAPIError {
+) *types.NookMuxError {
 	base := c.Writer
 	capture := newOpenAIWireCaptureWriter(base)
 	c.Writer = capture

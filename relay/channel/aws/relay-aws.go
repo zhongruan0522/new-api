@@ -207,7 +207,7 @@ func getAwsModelID(requestModel string) string {
 	return requestModel
 }
 
-func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NewAPIError, *dto.Usage) {
+func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
 
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
@@ -238,7 +238,7 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types
 	return nil, claudeInfo.Usage
 }
 
-func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NewAPIError, *dto.Usage) {
+func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
 
@@ -280,7 +280,7 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 }
 
 // Nova模型处理函数
-func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NewAPIError, *dto.Usage) {
+func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
 
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
