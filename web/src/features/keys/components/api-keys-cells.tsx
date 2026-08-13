@@ -273,7 +273,7 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
           {MASKED_API_KEY}
         </PopoverTrigger>
         <PopoverContent
-          className='w-auto max-w-[min(90vw,28rem)]'
+          className='w-[min(90vw,36rem)]'
           align='start'
         >
           <div className='space-y-2'>
@@ -285,14 +285,16 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
                   {t('common.tips.loading')}
                 </span>
               </div>
-            ) : (
+            ) : resolvedFullKey ? (
               <input
                 readOnly
-                value={resolvedFullKey || MASKED_API_KEY}
-                autoFocus
-                onFocus={(e) => e.target.select()}
-                className='bg-muted/50 w-full min-w-[280px] rounded-md border px-3 py-2 font-mono text-xs outline-none'
+                value={resolvedFullKey}
+                className='bg-muted/50 w-full min-w-0 rounded-md border px-3 py-2 font-mono text-xs outline-none'
               />
+            ) : (
+              <p className='text-muted-foreground py-2 text-xs'>
+                {t('keys.status.createdApiKeyResponseDidNotIncludeAKey')}
+              </p>
             )}
           </div>
         </PopoverContent>
