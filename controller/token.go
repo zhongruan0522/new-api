@@ -53,11 +53,12 @@ func SearchTokens(c *gin.Context) {
 	userId := c.GetInt("id")
 	keyword := c.Query("keyword")
 	token := c.Query("token")
+	group := c.Query("group")
 	all := c.Query("all") == "true" || c.Query("all") == "1"
 
 	pageInfo := common.GetPageQuery(c)
 
-	tokens, total, err := model.SearchUserTokens(userId, keyword, token, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, total, err := model.SearchUserTokens(userId, keyword, token, group, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("search user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)

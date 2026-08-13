@@ -52,7 +52,6 @@ import { StatusBadge } from '@/components/status-badge'
 import { getApiKeys, searchApiKeys } from '../api'
 import {
   API_KEY_STATUS,
-  API_KEY_STATUS_OPTIONS,
   API_KEY_STATUSES,
   ERROR_MESSAGES,
 } from '../constants'
@@ -60,6 +59,7 @@ import { type ApiKey } from '../types'
 import { ApiKeyCell, ApiKeyQuotaCell } from './api-keys-cells'
 import { useApiKeysColumns } from './api-keys-columns'
 import { useApiKeys } from './api-keys-provider'
+import { ApiKeysFilterBar } from './api-keys-filter-bar'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { DataTableRowActions } from './data-table-row-actions'
 
@@ -189,19 +189,22 @@ export function ApiKeysTable() {
     {}
   )
 
+  const searchParams = route.useSearch()
+  const nameFilter = searchParams.name ?? ''
+  const keyFilter = searchParams.key ?? ''
+  const groupFilter = searchParams.group ?? ''
+  const statusFilter = (searchParams.status ?? [])[0] ?? ''
+
   const {
-    globalFilter,
-    onGlobalFilterChange,
     columnFilters,
     onColumnFiltersChange,
     pagination,
     onPaginationChange,
     ensurePageInRange,
   } = useTableUrlState({
-    search: route.useSearch(),
+    search: searchParams,
     navigate: route.useNavigate(),
     pagination: { defaultPage: 1, defaultPageSize: 20 },
-    globalFilter: { enabled: true, key: 'filter' },
     columnFilters: [{ columnId: 'status', searchKey: 'status', type: 'array' }],
   })
 
@@ -212,22 +215,28 @@ export function ApiKeysTable() {
       'keys',
       pagination.pageIndex + 1,
       pagination.pageSize,
-      globalFilter,
+      nameFilter,
+      keyFilter,
+      groupFilter,
+      statusFilter,
       refreshTrigger,
     ],
     queryFn: async () => {
-      // If there's a global filter, use search
-      const hasFilter = globalFilter?.trim()
+      // name/key/group are server-side filters; status is applied client-side
+      // via columnFilters (row-level filter on the current page).
+      const hasServerFilter =
+        nameFilter.trim() || keyFilter.trim() || groupFilter
 
-      if (hasFilter) {
+      if (hasServerFilter) {
         const wrapSearchTerm = (value: string) =>
           value.length >= 2 && !value.includes('%') ? `%${value}%` : value
-        const normalizedTokenFilter = hasFilter.startsWith('sk-')
-          ? hasFilter.slice(3)
-          : hasFilter
+        const normalizedTokenFilter = keyFilter.startsWith('sk-')
+          ? keyFilter.slice(3)
+          : keyFilter
         const result = await searchApiKeys({
-          keyword: wrapSearchTerm(hasFilter),
-          token: wrapSearchTerm(normalizedTokenFilter),
+          keyword: wrapSearchTerm(nameFilter.trim()),
+          token: wrapSearchTerm(normalizedTokenFilter.trim()),
+          group: groupFilter || undefined,
           all: true,
           p: pagination.pageIndex + 1,
           size: pagination.pageSize,
@@ -271,7 +280,6 @@ export function ApiKeysTable() {
       columnVisibility,
       rowSelection,
       columnFilters,
-      globalFilter,
       pagination,
     },
     enableRowSelection: true,
@@ -279,13 +287,6 @@ export function ApiKeysTable() {
     getRowId: (row) => String(row.id),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const name = String(row.getValue('name')).toLowerCase()
-      const key = `sk-${row.original.key}`.toLowerCase()
-      const searchValue = String(filterValue).toLowerCase()
-
-      return name.includes(searchValue) || key.includes(searchValue)
-    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -293,12 +294,9 @@ export function ApiKeysTable() {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     onPaginationChange,
-    onGlobalFilterChange,
     onColumnFiltersChange,
     manualPagination: true,
-    pageCount: globalFilter
-      ? Math.ceil((data?.total || 0) / pagination.pageSize)
-      : Math.ceil((data?.total || 0) / pagination.pageSize),
+    pageCount: Math.ceil((data?.total || 0) / pagination.pageSize),
   })
 
   const pageCount = table.getPageCount()
@@ -317,17 +315,7 @@ export function ApiKeysTable() {
         'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
       )}
       skeletonKeyPrefix='api-keys-skeleton'
-      toolbarProps={{
-        searchPlaceholder: t('keys.actions.filterByNameOrKey'),
-        filters: [
-          {
-            columnId: 'status',
-            title: t('channels.fields.status'),
-            options: API_KEY_STATUS_OPTIONS,
-            singleSelect: true,
-          },
-        ],
-      }}
+      toolbar={<ApiKeysFilterBar table={table} />}
       mobile={<ApiKeysMobileList table={table} isLoading={isLoading} />}
       getRowClassName={(row) =>
         isDisabledApiKeyRow(row.original) ? DISABLED_ROW_DESKTOP : undefined
