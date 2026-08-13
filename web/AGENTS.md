@@ -68,3 +68,26 @@
 - UI 应支持深浅色、主题 preset、移动端和键盘操作。
 - 不要把页面章节做成嵌套卡片；管理后台优先信息密度、清晰扫描和稳定布局。
 
+## 列表/表格类页面规范
+
+管理后台凡是以"分页/可筛选的数据行列表"为主体的页面，必须使用 `DataTablePage`
+（`@/components/data-table`）+ `SectionPageLayout`（`@/components/layout`），不得
+手拼 `Table` 或用 `Card` 包裹表格。标准参照页面为"使用日志"
+（`features/usage-logs/components/usage-logs-table.tsx`）。
+
+关键约定：
+
+- **Sticky 表头**：传 `tableClassName='overflow-x-auto'` +
+  `tableHeaderClassName='bg-muted/30 sticky top-0 z-10'`，有 `size` 时配 `applyHeaderSize`。
+- **分页**：默认走 `PageFooterPortal`；无分页传 `showPagination={false}`。
+- **筛选区**：作为 `toolbar` slot 传入，简单走 `toolbarProps`，复杂传自定义节点。
+- **骨架屏/空状态**：必须用内置 `TableSkeleton` / `TableEmpty` / `MobileCardList`，
+  禁止纯文字或 `Loader2` 占位。
+- **Card 禁用**：表格、筛选区、分页区均不得包成独立圆角卡片；统计信息走
+  `afterTable` slot 或 `SectionPageLayout.Actions`。
+- **批量操作**：`enableRowSelection` + `bulkActions` slot。
+
+纯表单/配置页（如系统设置定价、公开定价目录页）不适用本规范。完整规范、Props
+列表、标准模板和检查清单见
+[docs/开发规范/list-page-table-spec.md](../docs/开发规范/list-page-table-spec.md)。
+

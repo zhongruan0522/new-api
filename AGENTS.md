@@ -100,7 +100,15 @@ setting、前端常量和 i18n。
 - 前端包管理器使用 Bun。`web/` 目录有独立 `package.json` 和 `bun.lock`。
 - 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`，适度使用knip。
 - 不允许用 mock 数据替代真实后端能力。
+- 列表/表格类页面必须使用 `DataTablePage` + `SectionPageLayout`，不得手拼 `Table`
+  或用 `Card` 包裹表格。详见 [web/AGENTS.md](web/AGENTS.md) 和
+  [docs/开发规范/list-page-table-spec.md](docs/开发规范/list-page-table-spec.md)。
+- 前端组件优先复用 `src/components/ui/`、`src/components/data-table/`、
+  `src/components/layout/` 等通用组件，避免重复造轮子。
 
 ## 文档与参考项目
 
 - `参考项目/` 仅用于比对上游实现。复制代码前必须适配本项目 API 和配置。
+- 跨模块详细开发规范文档放在 `docs/开发规范/`，根 `AGENTS.md` 和子目录
+  `AGENTS.md` 通过链接引用，避免在 AGENTS.md 中堆砌长篇规范正文。
+- `docs/AGENTS.md` 中的规则适用于 `docs/` 目录下的所有文档文件。
