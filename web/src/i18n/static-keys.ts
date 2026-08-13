@@ -28,7 +28,6 @@ export const STATIC_I18N_KEYS = [
   'about.titles.value',
   'keyQuery.titles.usageQuery',
   'multimodalFiles.fields.files',
-  'orderQuery.titles.query',
   'dynamicRatio.fields.ratio',
 
   // Sidebar views (drill-in workspaces)
