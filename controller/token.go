@@ -56,9 +56,18 @@ func SearchTokens(c *gin.Context) {
 	group := c.Query("group")
 	all := c.Query("all") == "true" || c.Query("all") == "1"
 
+	// status: 0 或缺省表示不过滤；1=启用 2=禁用 3=过期 4=额度耗尽。
+	// 与 model.SearchUserTokens 约定一致，> 0 时走后端等值过滤。
+	status := 0
+	if statusStr := c.Query("status"); statusStr != "" {
+		if parsed, err := strconv.Atoi(statusStr); err == nil {
+			status = parsed
+		}
+	}
+
 	pageInfo := common.GetPageQuery(c)
 
-	tokens, total, err := model.SearchUserTokens(userId, keyword, token, group, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, total, err := model.SearchUserTokens(userId, keyword, token, group, status, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("search user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)

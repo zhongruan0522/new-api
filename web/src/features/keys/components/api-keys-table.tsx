@@ -194,6 +194,7 @@ export function ApiKeysTable() {
   const keyFilter = searchParams.key ?? ''
   const groupFilter = searchParams.group ?? ''
   const statusFilter = (searchParams.status ?? [])[0] ?? ''
+  const statusFilterNum = statusFilter ? Number(statusFilter) : 0
 
   const {
     columnFilters,
@@ -205,7 +206,9 @@ export function ApiKeysTable() {
     search: searchParams,
     navigate: route.useNavigate(),
     pagination: { defaultPage: 1, defaultPageSize: 20 },
-    columnFilters: [{ columnId: 'status', searchKey: 'status', type: 'array' }],
+    // status 改为服务端过滤，不再作为行级 columnFilter；
+    // 否则只会过滤当前页数据，跨页结果不完整。
+    columnFilters: [],
   })
 
   // Fetch data with React Query
@@ -222,10 +225,12 @@ export function ApiKeysTable() {
       refreshTrigger,
     ],
     queryFn: async () => {
-      // name/key/group are server-side filters; status is applied client-side
-      // via columnFilters (row-level filter on the current page).
+      // name/key/group/status 均为服务端过滤；任一非空都走 /api/token/search。
       const hasServerFilter =
-        nameFilter.trim() || keyFilter.trim() || groupFilter
+        nameFilter.trim() ||
+        keyFilter.trim() ||
+        groupFilter ||
+        statusFilterNum > 0
 
       if (hasServerFilter) {
         const wrapSearchTerm = (value: string) =>
@@ -237,6 +242,7 @@ export function ApiKeysTable() {
           keyword: wrapSearchTerm(nameFilter.trim()),
           token: wrapSearchTerm(normalizedTokenFilter.trim()),
           group: groupFilter || undefined,
+          status: statusFilterNum > 0 ? statusFilterNum : undefined,
           all: true,
           p: pagination.pageIndex + 1,
           size: pagination.pageSize,

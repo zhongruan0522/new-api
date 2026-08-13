@@ -154,7 +154,7 @@ func sanitizeLikePattern(input string) (string, error) {
 
 const searchHardLimit = 100
 
-func SearchUserTokens(userId int, keyword string, token string, group string, all bool, offset int, limit int) (tokens []*Token, total int64, err error) {
+func SearchUserTokens(userId int, keyword string, token string, group string, status int, all bool, offset int, limit int) (tokens []*Token, total int64, err error) {
 	// model 层强制截断
 	if limit <= 0 || limit > searchHardLimit {
 		limit = searchHardLimit
@@ -185,6 +185,12 @@ func SearchUserTokens(userId int, keyword string, token string, group string, al
 	// group 非空才加等值过滤，空字符串保留原有不过滤行为
 	if group != "" {
 		baseQuery = baseQuery.Where("group = ?", group)
+	}
+
+	// status > 0 时按等值过滤（1=启用 2=禁用 3=过期 4=额度耗尽）；
+	// 0 或负值表示不过滤，保留原行为。等值条件三库（SQLite/MySQL/PostgreSQL）均兼容。
+	if status > 0 {
+		baseQuery = baseQuery.Where("status = ?", status)
 	}
 
 	// 非空才加 LIKE 条件，空则跳过（不过滤该字段）。all=true 时用于新 UI 的单框搜索，名称或密钥匹配其一即可。
