@@ -529,9 +529,20 @@ func SearchChannels(c *gin.Context) {
 	statusFilter := parseStatusFilter(statusParam)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+
+	// 独立字段过滤：id 精确、name/tag 模糊（>0 或非空才生效）
+	idFilter := 0
+	if idStr := c.Query("id"); idStr != "" {
+		if v, err := strconv.Atoi(idStr); err == nil && v > 0 {
+			idFilter = v
+		}
+	}
+	nameFilter := c.Query("name")
+	tagFilter := c.Query("tag")
+
 	channelData := make([]*model.Channel, 0)
 	if enableTagMode {
-		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort)
+		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -548,7 +559,7 @@ func SearchChannels(c *gin.Context) {
 			}
 		}
 	} else {
-		channels, err := model.SearchChannels(keyword, group, modelKeyword, idSort)
+		channels, err := model.SearchChannels(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,

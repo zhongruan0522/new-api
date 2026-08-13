@@ -28,11 +28,10 @@ import {
   type ExpandedState,
   type Row,
 } from '@tanstack/react-table'
-import { useDebounce, useMediaQuery } from '@/hooks'
+import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
-import { Input } from '@/components/ui/input'
 import {
   DISABLED_ROW_DESKTOP,
   DISABLED_ROW_MOBILE,
@@ -43,7 +42,6 @@ import { getChannels, searchChannels, getGroups } from '../api'
 import {
   DEFAULT_PAGE_SIZE,
   CHANNEL_STATUS,
-  CHANNEL_STATUS_OPTIONS,
 } from '../constants'
 import {
   channelsQueryKeys,
@@ -56,7 +54,7 @@ import type { Channel, ChannelSortBy } from '../types'
 import { useChannelsColumns } from './channels-columns'
 import { useChannels } from './channels-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
-import { shouldCommitDebouncedSearch } from '../lib/should-commit-debounced-search'
+import { ChannelsFilterBar } from './channels-filter-bar'
 
 const route = getRouteApi('/_authenticated/channels/')
 
@@ -68,7 +66,6 @@ const CHANNEL_SORTABLE_COLUMNS = new Set<ChannelSortBy>([
   'response_time',
   'test_time',
 ])
-const EMPTY_STRING_ARRAY: string[] = []
 
 function isDisabledChannelRow(channel: Channel) {
   return (
@@ -90,116 +87,50 @@ export function ChannelsTable() {
   const [rowSelection, setRowSelection] = useState({})
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
-  // URL state management
-  const {
-    globalFilter,
-    onGlobalFilterChange,
-    columnFilters,
-    onColumnFiltersChange,
-    pagination,
-    onPaginationChange,
-    ensurePageInRange,
-  } = useTableUrlState({
-    search: route.useSearch(),
-    navigate: route.useNavigate(),
-    pagination: {
-      defaultPage: 1,
-      defaultPageSize: isMobile ? 10 : DEFAULT_PAGE_SIZE,
-    },
-    globalFilter: { enabled: true, key: 'filter' },
-    columnFilters: [
-      { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'type', searchKey: 'type', type: 'array' },
-      { columnId: 'group', searchKey: 'group', type: 'array' },
-      { columnId: 'model', searchKey: 'model', type: 'string' },
-    ],
-  })
+  // URL state management — 仅保留分页；过滤字段由 ChannelsFilterBar 接管
+  const { pagination, onPaginationChange, ensurePageInRange } =
+    useTableUrlState({
+      search: route.useSearch(),
+      navigate: route.useNavigate(),
+      pagination: {
+        defaultPage: 1,
+        defaultPageSize: isMobile ? 10 : DEFAULT_PAGE_SIZE,
+      },
+    })
 
-  // Extract filters from column filters
-  const statusFilter =
-    (columnFilters.find((f) => f.id === 'status')?.value as string[]) ??
-    EMPTY_STRING_ARRAY
-  const typeFilter =
-    (columnFilters.find((f) => f.id === 'type')?.value as string[]) ??
-    EMPTY_STRING_ARRAY
-  const groupFilter =
-    (columnFilters.find((f) => f.id === 'group')?.value as string[]) ??
-    EMPTY_STRING_ARRAY
-  const modelFilterFromUrl =
-    (columnFilters.find((f) => f.id === 'model')?.value as string) || ''
+  // 过滤字段直接从 URL 读取（filter-bar 负责写入）
+  const searchParams = route.useSearch()
+  const idFilter = searchParams.id ?? ''
+  const nameFilter = searchParams.name ?? ''
+  const modelFilter = searchParams.model ?? ''
+  const tagFilter = searchParams.tag ?? ''
+  const typeFilterArr = searchParams.type ?? []
+  const statusFilterArr = searchParams.status ?? []
+  const groupFilterArr = searchParams.group ?? []
 
-  const globalFilterFromUrl = globalFilter ?? ''
+  const typeFilterValue =
+    typeFilterArr.length > 0 && !typeFilterArr.includes('all')
+      ? typeFilterArr[0]
+      : ''
+  const statusFilterValue =
+    statusFilterArr.length > 0 && !statusFilterArr.includes('all')
+      ? statusFilterArr[0]
+      : ''
+  const groupFilterValue =
+    groupFilterArr.length > 0 && !groupFilterArr.includes('all')
+      ? groupFilterArr[0]
+      : ''
 
-  // Local state for immediate input feedback
-  const [globalFilterInput, setGlobalFilterInput] =
-    useState(globalFilterFromUrl)
-  const [isGlobalFilterComposing, setIsGlobalFilterComposing] = useState(false)
-  const debouncedGlobalFilter = useDebounce(globalFilterInput, 500)
-  const [modelFilterInput, setModelFilterInput] = useState(modelFilterFromUrl)
-  const [isModelFilterComposing, setIsModelFilterComposing] = useState(false)
-  const debouncedModelFilter = useDebounce(modelFilterInput, 500)
-
-  // Sync local input with URL when URL changes (e.g., from back/forward navigation)
-  useEffect(() => {
-    if (!isGlobalFilterComposing) {
-      setGlobalFilterInput(globalFilterFromUrl)
-    }
-  }, [globalFilterFromUrl, isGlobalFilterComposing])
-
-  useEffect(() => {
-    if (!isModelFilterComposing) {
-      setModelFilterInput(modelFilterFromUrl)
-    }
-  }, [modelFilterFromUrl, isModelFilterComposing])
-
-  // Update URL when debounced value changes
-  useEffect(() => {
-    if (
-      shouldCommitDebouncedSearch(
-        globalFilterInput,
-        debouncedGlobalFilter,
-        globalFilterFromUrl,
-        isGlobalFilterComposing
-      )
-    ) {
-      onGlobalFilterChange?.(debouncedGlobalFilter)
-    }
-  }, [
-    debouncedGlobalFilter,
-    globalFilterFromUrl,
-    globalFilterInput,
-    isGlobalFilterComposing,
-    onGlobalFilterChange,
-  ])
-
-  useEffect(() => {
-    if (
-      shouldCommitDebouncedSearch(
-        modelFilterInput,
-        debouncedModelFilter,
-        modelFilterFromUrl,
-        isModelFilterComposing
-      )
-    ) {
-      onColumnFiltersChange((prev) => {
-        const filtered = prev.filter((f) => f.id !== 'model')
-        return debouncedModelFilter
-          ? [...filtered, { id: 'model', value: debouncedModelFilter }]
-          : filtered
-      })
-    }
-  }, [
-    debouncedModelFilter,
-    isModelFilterComposing,
-    modelFilterFromUrl,
-    modelFilterInput,
-    onColumnFiltersChange,
-  ])
-
-  const modelFilter = modelFilterFromUrl
-
-  // Determine whether to use search or regular list API
-  const shouldSearch = Boolean(globalFilter?.trim() || modelFilter.trim())
+  // 任一过滤字段非空就走 search API
+  const shouldSearch = Boolean(
+    idFilter.trim() ||
+      nameFilter.trim() ||
+      modelFilter.trim() ||
+      tagFilter.trim() ||
+      typeFilterValue ||
+      statusFilterValue ||
+      groupFilterValue
+  )
 
   const sortParams = useMemo(() => {
     const activeSort = sorting[0]
@@ -245,20 +176,13 @@ export function ChannelsTable() {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   const { data, isLoading, isFetching } = useQuery({
     queryKey: channelsQueryKeys.list({
-      keyword: globalFilter,
+      id: idFilter,
+      name: nameFilter,
       model: modelFilter,
-      group:
-        groupFilter.length > 0 && !groupFilter.includes('all')
-          ? groupFilter[0]
-          : undefined,
-      status:
-        statusFilter.length > 0 && !statusFilter.includes('all')
-          ? statusFilter[0]
-          : undefined,
-      type:
-        typeFilter.length > 0 && !typeFilter.includes('all')
-          ? Number(typeFilter[0])
-          : undefined,
+      tag: tagFilter,
+      type: typeFilterValue,
+      status: statusFilterValue,
+      group: groupFilterValue,
       tag_mode: enableTagMode,
       id_sort: idSort,
       ...sortParams,
@@ -268,20 +192,13 @@ export function ChannelsTable() {
     queryFn: async () => {
       if (shouldSearch) {
         return searchChannels({
-          keyword: globalFilter,
-          model: modelFilter,
-          group:
-            groupFilter.length > 0 && !groupFilter.includes('all')
-              ? groupFilter[0]
-              : undefined,
-          status:
-            statusFilter.length > 0 && !statusFilter.includes('all')
-              ? statusFilter[0]
-              : undefined,
-          type:
-            typeFilter.length > 0 && !typeFilter.includes('all')
-              ? Number(typeFilter[0])
-              : undefined,
+          id: idFilter.trim() ? Number(idFilter) : undefined,
+          name: nameFilter.trim() || undefined,
+          model: modelFilter.trim() || undefined,
+          tag: tagFilter.trim() || undefined,
+          type: typeFilterValue ? Number(typeFilterValue) : undefined,
+          status: statusFilterValue || undefined,
+          group: groupFilterValue || undefined,
           tag_mode: enableTagMode,
           id_sort: idSort,
           ...sortParams,
@@ -290,18 +207,9 @@ export function ChannelsTable() {
         })
       } else {
         return getChannels({
-          group:
-            groupFilter.length > 0 && !groupFilter.includes('all')
-              ? groupFilter[0]
-              : undefined,
-          status:
-            statusFilter.length > 0 && !statusFilter.includes('all')
-              ? statusFilter[0]
-              : undefined,
-          type:
-            typeFilter.length > 0 && !typeFilter.includes('all')
-              ? Number(typeFilter[0])
-              : undefined,
+          type: typeFilterValue ? Number(typeFilterValue) : undefined,
+          status: statusFilterValue || undefined,
+          group: groupFilterValue || undefined,
           tag_mode: enableTagMode,
           id_sort: idSort,
           ...sortParams,
@@ -337,23 +245,19 @@ export function ChannelsTable() {
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
       pagination,
       expanded,
-      globalFilter,
     },
     enableRowSelection: (row: Row<Channel>) => !isTagAggregateRow(row.original),
     onRowSelectionChange: setRowSelection,
     getRowId: (row) =>
       isTagAggregateRow(row) ? `tag:${row.key}` : String(row.id),
     onSortingChange: handleSortingChange,
-    onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange,
     onExpandedChange: setExpanded,
-    onGlobalFilterChange,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getSubRows: (row: Channel & { children?: Channel[] }) => row.children,
@@ -368,7 +272,7 @@ export function ChannelsTable() {
     ensurePageInRange(pageCount)
   }, [pageCount, ensurePageInRange])
 
-  // Prepare filter options from existing channel types only.
+  // 准备类型筛选选项（基于搜索结果的 type_counts），传给筛选区
   const typeFilterOptions = useMemo(() => {
     const counts = typeCounts || {}
     const typeIds = Object.entries(counts)
@@ -383,47 +287,30 @@ export function ChannelsTable() {
         return labelA.localeCompare(labelB)
       })
 
-    const selectedType = typeFilter.find((value) => value !== 'all')
-    if (selectedType) {
-      const selectedTypeId = Number(selectedType)
+    if (typeFilterValue) {
+      const selectedTypeId = Number(typeFilterValue)
       const alreadyIncluded = typeIds.some(
         (item) => item.type === selectedTypeId
       )
       if (selectedTypeId > 0 && !alreadyIncluded) {
         typeIds.push({
           type: selectedTypeId,
-          count: Number(counts[selectedType]) || 0,
+          count: Number(counts[typeFilterValue]) || 0,
         })
       }
     }
 
-    const totalTypes = Object.values(counts).reduce(
-      (sum, count) => sum + (Number(count) || 0),
-      0
-    )
+    return typeIds.map((item) => {
+      const iconName = getChannelTypeIcon(item.type)
+      return {
+        label: getChannelTypeLabel(item.type),
+        value: String(item.type),
+        iconNode: getLobeIcon(`${iconName}.Color`, 16),
+      }
+    })
+  }, [t, typeCounts, typeFilterValue])
 
-    return [
-      {
-        label: 'pricing.fields.allTypes',
-        value: 'all',
-        count: totalTypes,
-      },
-      ...typeIds.map((item) => {
-        const iconName = getChannelTypeIcon(item.type)
-        return {
-          label: getChannelTypeLabel(item.type),
-          value: String(item.type),
-          count: item.count,
-          iconNode: getLobeIcon(`${iconName}.Color`, 16),
-        }
-      }),
-    ]
-  }, [t, typeCounts, typeFilter])
-
-  const groupFilterOptions = [
-    { label: t('channels.fields.allGroups'), value: 'all' },
-    ...groupOptions,
-  ]
+  const groupFilterOptions = groupOptions
 
   return (
     <DataTablePage
@@ -437,49 +324,13 @@ export function ChannelsTable() {
       )}
       skeletonKeyPrefix='channel-skeleton'
       applyHeaderSize
-      toolbarProps={{
-        searchPlaceholder: t('channels.actions.filterByNameIdOrKey'),
-        searchValue: globalFilterInput,
-        onSearchValueChange: setGlobalFilterInput,
-        onSearchCompositionStart: () => setIsGlobalFilterComposing(true),
-        onSearchCompositionEnd: (event) => {
-          setIsGlobalFilterComposing(false)
-          setGlobalFilterInput(event.currentTarget.value)
-        },
-        additionalSearch: (
-          <Input
-            placeholder={t('channels.actions.filterByModel')}
-            value={modelFilterInput}
-            onChange={(e) => setModelFilterInput(e.target.value)}
-            onCompositionStart={() => setIsModelFilterComposing(true)}
-            onCompositionEnd={(event) => {
-              setIsModelFilterComposing(false)
-              setModelFilterInput(event.currentTarget.value)
-            }}
-            className='w-full sm:w-[150px] lg:w-[180px]'
-          />
-        ),
-        filters: [
-          {
-            columnId: 'status',
-            title: t('channels.fields.status'),
-            options: [...CHANNEL_STATUS_OPTIONS],
-            singleSelect: true,
-          },
-          {
-            columnId: 'type',
-            title: t('channels.fields.type'),
-            options: typeFilterOptions,
-            singleSelect: true,
-          },
-          {
-            columnId: 'group',
-            title: t('common.fields.group'),
-            options: groupFilterOptions,
-            singleSelect: true,
-          },
-        ],
-      }}
+      toolbar={
+        <ChannelsFilterBar
+          table={table}
+          typeOptions={typeFilterOptions}
+          groupOptions={groupFilterOptions}
+        />
+      }
       getRowClassName={(row, { isMobile }) =>
         isDisabledChannelRow(row.original)
           ? isMobile

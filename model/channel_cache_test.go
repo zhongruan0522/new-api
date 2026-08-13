@@ -130,7 +130,7 @@ func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
 		Models: "gpt-4",
 	})
 
-	channels, err := SearchChannels("", "vip%", "", false)
+	channels, err := SearchChannels("", "vip%", "", false, 0, "", "")
 	if err != nil {
 		t.Fatalf("SearchChannels error = %v", err)
 	}

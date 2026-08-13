@@ -360,7 +360,7 @@ func GetChannelsByTagWithGroup(tag string, group string, idSort bool, selectAll 
 	return channels, err
 }
 
-func SearchChannels(keyword string, group string, model string, idSort bool) ([]*Channel, error) {
+func SearchChannels(keyword string, group string, model string, idSort bool, idFilter int, nameFilter string, tagFilter string) ([]*Channel, error) {
 	var channels []*Channel
 	modelsCol := "`models`"
 
@@ -386,6 +386,17 @@ func SearchChannels(keyword string, group string, model string, idSort bool) ([]
 	whereClause := "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
 	args := []interface{}{common.String2Int(keyword), "%" + keyword + "%", keyword, "%" + keyword + "%", "%" + model + "%"}
 	baseQuery = ApplyChannelGroupFilter(baseQuery.Where(whereClause, args...), group)
+
+	// 独立过滤条件（AND 叠加），支持字段级服务端过滤
+	if idFilter > 0 {
+		baseQuery = baseQuery.Where("id = ?", idFilter)
+	}
+	if nameFilter != "" {
+		baseQuery = baseQuery.Where("name LIKE ?", "%"+nameFilter+"%")
+	}
+	if tagFilter != "" {
+		baseQuery = baseQuery.Where("tag LIKE ?", "%"+tagFilter+"%")
+	}
 
 	// 执行查询
 	err := baseQuery.Order(order).Find(&channels).Error
@@ -868,7 +879,7 @@ func GetPaginatedChannelTags(query *gorm.DB, offset int, limit int) ([]*string, 
 	return tags, err
 }
 
-func SearchTags(keyword string, group string, model string, idSort bool) ([]*string, error) {
+func SearchTags(keyword string, group string, model string, idSort bool, idFilter int, nameFilter string, tagFilter string) ([]*string, error) {
 	var tags []*string
 	modelsCol := "`models`"
 
@@ -894,6 +905,17 @@ func SearchTags(keyword string, group string, model string, idSort bool) ([]*str
 	whereClause := "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
 	args := []interface{}{common.String2Int(keyword), "%" + keyword + "%", keyword, "%" + keyword + "%", "%" + model + "%"}
 	baseQuery = ApplyChannelGroupFilter(baseQuery.Where(whereClause, args...), group)
+
+	// 独立过滤条件（AND 叠加），与 SearchChannels 保持一致
+	if idFilter > 0 {
+		baseQuery = baseQuery.Where("id = ?", idFilter)
+	}
+	if nameFilter != "" {
+		baseQuery = baseQuery.Where("name LIKE ?", "%"+nameFilter+"%")
+	}
+	if tagFilter != "" {
+		baseQuery = baseQuery.Where("tag LIKE ?", "%"+tagFilter+"%")
+	}
 
 	subQuery := baseQuery.
 		Select("tag").
