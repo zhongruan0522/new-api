@@ -142,7 +142,7 @@ func enrichLogModelIcons(logs []*Log) {
 }
 
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
-	err = LOG_DB.Model(&Log{}).Where("token_id = ?", tokenId).Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
+	err = LOG_DB.Model(&Log{}).Where("token_id = ?", tokenId).Order("created_at desc, id desc").Limit(common.MaxRecentItems).Find(&logs).Error
 	formatUserLogs(logs, 0)
 	enrichLogModelIcons(logs)
 	return logs, err
@@ -192,7 +192,7 @@ func GetLogsByTokenId(params GetLogsByTokenIdParams) (logs []*Log, total int64, 
 		return nil, 0, errors.New("查询日志失败")
 	}
 
-	err = tx.Order("id desc").Limit(params.Num).Offset(params.StartIdx).Find(&logs).Error
+	err = tx.Order("created_at desc, id desc").Limit(params.Num).Offset(params.StartIdx).Find(&logs).Error
 	if err != nil {
 		common.SysError("failed to query logs by token id: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")
@@ -484,7 +484,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	if err != nil {
 		return nil, 0, err
 	}
-	err = tx.Order("logs.id desc").Limit(num).Offset(startIdx).Find(&logs).Error
+	err = tx.Order("logs.created_at desc, logs.id desc").Limit(num).Offset(startIdx).Find(&logs).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -570,7 +570,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 		common.SysError("failed to count user logs: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")
 	}
-	err = tx.Order("logs.id desc").Limit(num).Offset(startIdx).Find(&logs).Error
+	err = tx.Order("logs.created_at desc, logs.id desc").Limit(num).Offset(startIdx).Find(&logs).Error
 	if err != nil {
 		common.SysError("failed to search user logs: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")
