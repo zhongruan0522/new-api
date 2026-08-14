@@ -374,8 +374,6 @@ export interface BatchSetTagParams {
 export interface TagOperationParams {
   tag: string
   new_tag?: string
-  priority?: number
-  weight?: number
   model_mapping?: string
   models?: string
   groups?: string

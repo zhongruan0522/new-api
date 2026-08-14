@@ -31,7 +31,6 @@ import {
   disableTagChannels,
   deleteDisabledChannels,
   fixChannelAbilities,
-  editTagChannels,
   testAllChannels,
   updateAllChannelsBalance,
   updateChannelBalance,
@@ -154,40 +153,6 @@ export async function handleUpdateChannelField(
         i18next.t('channels.status.fieldUpdatedToValue', {
           field: fieldLabel,
           value,
-        })
-      )
-      queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
-      onSuccess?.()
-    } else {
-      toast.error(response.message || i18next.t(ERROR_MESSAGES.UPDATE_FAILED))
-    }
-  } catch (_error) {
-    toast.error(i18next.t(ERROR_MESSAGES.UPDATE_FAILED))
-  }
-}
-
-/**
- * Update a specific field for all channels with a tag
- */
-export async function handleUpdateTagField(
-  tag: string,
-  fieldName: 'priority' | 'weight',
-  value: number,
-  queryClient?: QueryClient,
-  onSuccess?: () => void
-): Promise<void> {
-  try {
-    const params = { tag, [fieldName]: value }
-    const response = await editTagChannels(params)
-    if (response.success) {
-      // Show success toast with field name
-      const fieldLabel =
-        fieldName.charAt(0).toUpperCase() + fieldName.slice(1).toLowerCase()
-      toast.success(
-        i18next.t('channels.status.fieldUpdatedToValueForTagTag', {
-          field: fieldLabel,
-          value,
-          tag,
         })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })

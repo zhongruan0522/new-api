@@ -43,7 +43,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, StatusBadgeList } from '@/components/status-badge'
@@ -63,7 +62,6 @@ import {
   parseGroupsList,
   parseChannelSettings,
   handleUpdateChannelField,
-  handleUpdateTagField,
   handleUpdateChannelBalance,
   isTagAggregateRow,
   type TagRow,
@@ -106,46 +104,26 @@ function renderLimitedItems(
 }
 
 /**
+ * Read-only value cell for tag aggregate rows; null means children differ.
+ */
+function TagAggregateValue({ value }: { value: number | null }) {
+  return (
+    <span className='text-muted-foreground font-mono text-sm tabular-nums'>
+      {value === null ? '-' : value}
+    </span>
+  )
+}
+
+/**
  * Priority cell component with inline editing
  */
 function PriorityCell({ channel }: { channel: Channel }) {
-  const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const isTagRow = isTagAggregateRow(channel)
   const priority = channel.priority
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingValue, setPendingValue] = useState<number | null>(null)
 
-  // Tag row - editable with confirmation for all tag channels
-  if (isTagRow) {
-    const tag = channel.tag || ''
-    const channelCount = channel.children?.length || 0
-
-    return (
-      <>
-        <NumericSpinnerInput
-          value={priority ?? 0}
-          onChange={(value) => {
-            setPendingValue(value)
-            setConfirmOpen(true)
-          }}
-          min={-999}
-        />
-        <ConfirmDialog
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          title={t('channels.actions.confirmBatchUpdate')}
-          desc={`This will update the priority to ${pendingValue} for all ${channelCount} channel(s) with tag "${tag}". Continue?`}
-          confirmText={t('channels.fields.update')}
-          handleConfirm={() => {
-            if (pendingValue !== null) {
-              handleUpdateTagField(tag, 'priority', pendingValue, queryClient)
-            }
-            setConfirmOpen(false)
-          }}
-        />
-      </>
-    )
+  // Tag aggregate row - read-only, edit channels individually
+  if (isTagAggregateRow(channel)) {
+    return <TagAggregateValue value={priority ?? null} />
   }
 
   // Regular channel row - editable
@@ -164,43 +142,12 @@ function PriorityCell({ channel }: { channel: Channel }) {
  * Weight cell component with inline editing
  */
 function WeightCell({ channel }: { channel: Channel }) {
-  const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const isTagRow = isTagAggregateRow(channel)
   const weight = channel.weight
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingValue, setPendingValue] = useState<number | null>(null)
 
-  // Tag row - editable with confirmation for all tag channels
-  if (isTagRow) {
-    const tag = channel.tag || ''
-    const channelCount = channel.children?.length || 0
-
-    return (
-      <>
-        <NumericSpinnerInput
-          value={weight ?? 0}
-          onChange={(value) => {
-            setPendingValue(value)
-            setConfirmOpen(true)
-          }}
-          min={0}
-        />
-        <ConfirmDialog
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          title={t('channels.actions.confirmBatchUpdate')}
-          desc={`This will update the weight to ${pendingValue} for all ${channelCount} channel(s) with tag "${tag}". Continue?`}
-          confirmText={t('channels.fields.update')}
-          handleConfirm={() => {
-            if (pendingValue !== null) {
-              handleUpdateTagField(tag, 'weight', pendingValue, queryClient)
-            }
-            setConfirmOpen(false)
-          }}
-        />
-      </>
-    )
+  // Tag aggregate row - read-only, edit channels individually
+  if (isTagAggregateRow(channel)) {
+    return <TagAggregateValue value={weight ?? null} />
   }
 
   // Regular channel row - editable

@@ -782,7 +782,7 @@ func DisableChannelByTag(tag string) error {
 	return err
 }
 
-func EditChannelByTag(tag string, newTag *string, modelMapping *string, models *string, group *string, priority *int64, weight *uint, paramOverride *string, headerOverride *string) error {
+func EditChannelByTag(tag string, newTag *string, modelMapping *string, models *string, group *string, paramOverride *string, headerOverride *string) error {
 	updateData := Channel{}
 	shouldReCreateAbilities := false
 	updatedTag := tag
@@ -801,12 +801,6 @@ func EditChannelByTag(tag string, newTag *string, modelMapping *string, models *
 	if group != nil && *group != "" {
 		shouldReCreateAbilities = true
 		updateData.Group = *group
-	}
-	if priority != nil {
-		updateData.Priority = priority
-	}
-	if weight != nil {
-		updateData.Weight = weight
 	}
 	if paramOverride != nil {
 		updateData.ParamOverride = paramOverride
@@ -830,7 +824,7 @@ func EditChannelByTag(tag string, newTag *string, modelMapping *string, models *
 			}
 		}
 	} else {
-		err := UpdateAbilityByTag(tag, newTag, priority, weight)
+		err := UpdateAbilityByTag(tag, newTag)
 		if err != nil {
 			return err
 		}

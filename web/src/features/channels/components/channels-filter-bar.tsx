@@ -20,9 +20,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQueryClient, useIsFetching } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { type Table } from '@tanstack/react-table'
-import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -31,10 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DataTableViewOptions } from '@/components/data-table'
 import {
   LogsFilterField,
   LogsFilterInput,
+  LogsFilterToolbar,
 } from '@/features/usage-logs/components/logs-filter-toolbar'
 import { CHANNEL_STATUS_OPTIONS } from '../constants'
 import { channelsQueryKeys } from '../lib'
@@ -177,6 +175,16 @@ export function ChannelsFilterBar<TData>(
     !!statusInput ||
     !!groupInput
 
+  const hasExpandedFilters = !!modelInput || !!tagInput
+  const expandedFilterCount = [modelInput, tagInput].filter(Boolean).length
+  const mobileFilterCount = [
+    typeInput,
+    statusInput,
+    groupInput,
+    modelInput,
+    tagInput,
+  ].filter(Boolean).length
+
   const idField = (
     <LogsFilterField>
       <LogsFilterInput
@@ -306,44 +314,45 @@ export function ChannelsFilterBar<TData>(
   )
 
   return (
-    <div className='bg-card/50 rounded-lg border p-2.5 sm:p-3'>
-      {/* 第一行：5 个字段，大屏等宽（每列 1/5） */}
-      <div className='grid grid-cols-1 gap-2 sm:grid-cols-5'>
-        {idField}
-        {nameField}
-        {typeField}
-        {statusField}
-        {groupField}
-      </div>
-
-      {/* 第二行：2 个字段，沿用 5 列 grid 使其各占 1/5，与第一行单字段对齐；剩余 3 列留空 */}
-      <div className='mt-2 grid grid-cols-1 gap-2 sm:grid-cols-5'>
-        {modelField}
-        {tagField}
-      </div>
-
-      {/* 底部按钮行 */}
-      <div className='mt-2 flex flex-wrap items-center gap-2'>
-        <div className='ms-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={handleReset}
-            disabled={!hasActiveFilters}
-          >
-            {t('common.actions.reset')}
-          </Button>
-          <Button
-            type='button'
-            onClick={handleApply}
-            disabled={fetchingChannels > 0}
-          >
-            {fetchingChannels > 0 && <Loader2 className='animate-spin' />}
-            {t('common.actions.search')}
-          </Button>
-          <DataTableViewOptions table={props.table} />
-        </div>
-      </div>
-    </div>
+    <LogsFilterToolbar
+      table={props.table}
+      primaryFilters={
+        <>
+          {idField}
+          {nameField}
+          {typeField}
+          {statusField}
+          {groupField}
+        </>
+      }
+      advancedFilters={
+        <>
+          {modelField}
+          {tagField}
+        </>
+      }
+      mobilePinnedFilters={
+        <>
+          {idField}
+          {nameField}
+        </>
+      }
+      mobileFilters={
+        <>
+          {typeField}
+          {statusField}
+          {groupField}
+          {modelField}
+          {tagField}
+        </>
+      }
+      mobileFilterCount={mobileFilterCount}
+      hasAdvancedActiveFilters={hasExpandedFilters}
+      advancedFilterCount={expandedFilterCount}
+      hasActiveFilters={hasActiveFilters}
+      onSearch={handleApply}
+      searchLoading={fetchingChannels > 0}
+      onReset={handleReset}
+    />
   )
 }

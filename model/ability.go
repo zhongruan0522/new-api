@@ -319,16 +319,10 @@ func UpdateAbilityStatusByTag(tag string, status bool) error {
 	return DB.Model(&Ability{}).Where("tag = ?", tag).Select("enabled").Update("enabled", status).Error
 }
 
-func UpdateAbilityByTag(tag string, newTag *string, priority *int64, weight *uint) error {
+func UpdateAbilityByTag(tag string, newTag *string) error {
 	ability := Ability{}
 	if newTag != nil {
 		ability.Tag = newTag
-	}
-	if priority != nil {
-		ability.Priority = priority
-	}
-	if weight != nil {
-		ability.Weight = *weight
 	}
 	return DB.Model(&Ability{}).Where("tag = ?", tag).Updates(ability).Error
 }
