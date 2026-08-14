@@ -74,6 +74,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
+- 渠道相关的外网请求（中继、测试、模型拉取、余额/套餐查询、WebSocket 等）必须走该渠道配置的代理（`service.NewProxyHttpClient` / `NewProxyWebSocketDialer`）。
 - 待机内存相关默认值必须保守：连接池 idle 上限、prepared statement 缓存、后台 worker/goroutine 池、
   ticker 唤醒频率等常驻资源不能为追求峰值吞吐随意调大。确需调大时必须保留环境变量覆盖、同步
   `.env.example` 和中英文环境变量文档，并说明低流量/待机场景的内存影响。

@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	channelconstant "github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/service"
 )
 
 // resolveBaseURL 将套餐简写（如 "ollama-coding-plan"）解析为实际 URL。
@@ -23,11 +24,15 @@ func resolveBaseURL(baseURL string) string {
 	return baseURL
 }
 
-func FetchOllamaModels(baseURL, apiKey string) ([]OllamaModel, error) {
+// FetchOllamaModels 拉取 Ollama 模型列表；proxyURL 非空时请求经渠道代理发出。
+func FetchOllamaModels(baseURL, apiKey, proxyURL string) ([]OllamaModel, error) {
 	trimmedBase := strings.TrimRight(resolveBaseURL(baseURL), "/")
 	url := fmt.Sprintf("%s/v1/models", trimmedBase)
 
-	client := &http.Client{}
+	client, err := newOllamaHttpClient(proxyURL, 0)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %v", err)
+	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %v", err)
@@ -76,8 +81,27 @@ func FetchOllamaModels(baseURL, apiKey string) ([]OllamaModel, error) {
 	return models, nil
 }
 
+// ollamaLongPullTimeout 大模型拉取耗时较长，需要独立的超时配置。
+const ollamaLongPullTimeout = 30 * time.Minute
+
+// newOllamaHttpClient 返回经渠道代理的客户端；超时会覆盖共享客户端，需拷贝实例。
+func newOllamaHttpClient(proxyURL string, timeout time.Duration) (*http.Client, error) {
+	client, err := service.GetHttpClientWithProxy(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	if timeout <= 0 {
+		return client, nil
+	}
+	return &http.Client{
+		Transport:     client.Transport,
+		CheckRedirect: client.CheckRedirect,
+		Timeout:       timeout,
+	}, nil
+}
+
 // 拉取 Ollama 模型 (非流式)
-func PullOllamaModel(baseURL, apiKey, modelName string) error {
+func PullOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 	url := fmt.Sprintf("%s/api/pull", resolveBaseURL(baseURL))
 
 	pullRequest := OllamaPullRequest{
@@ -90,8 +114,9 @@ func PullOllamaModel(baseURL, apiKey, modelName string) error {
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
 
-	client := &http.Client{
-		Timeout: 30 * 60 * 1000 * time.Millisecond, // 30分钟超时，支持大模型
+	client, err := newOllamaHttpClient(proxyURL, ollamaLongPullTimeout)
+	if err != nil {
+		return fmt.Errorf("代理客户端创建失败: %v", err)
 	}
 	request, err := http.NewRequest("POST", url, strings.NewReader(string(requestBody)))
 	if err != nil {
@@ -118,7 +143,7 @@ func PullOllamaModel(baseURL, apiKey, modelName string) error {
 }
 
 // 流式拉取 Ollama 模型 (支持进度回调)
-func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback func(OllamaPullResponse)) error {
+func PullOllamaModelStream(baseURL, apiKey, proxyURL, modelName string, progressCallback func(OllamaPullResponse)) error {
 	url := fmt.Sprintf("%s/api/pull", resolveBaseURL(baseURL))
 
 	pullRequest := OllamaPullRequest{
@@ -131,9 +156,7 @@ func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback f
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
 
-	client := &http.Client{
-		Timeout: 60 * 60 * 1000 * time.Millisecond, // 1小时超时，支持超大模型
-	}
+	client, err := newOllamaHttpClient(proxyURL, time.Hour) // 1小时超时，支持超大模型
 	request, err := http.NewRequest("POST", url, strings.NewReader(string(requestBody)))
 	if err != nil {
 		return fmt.Errorf("创建请求失败: %v", err)
@@ -195,7 +218,7 @@ func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback f
 }
 
 // 删除 Ollama 模型
-func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
+func DeleteOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 	url := fmt.Sprintf("%s/api/delete", resolveBaseURL(baseURL))
 
 	deleteRequest := OllamaDeleteRequest{
@@ -207,7 +230,7 @@ func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
 
-	client := &http.Client{}
+	client, err := newOllamaHttpClient(proxyURL, 0)
 	request, err := http.NewRequest("DELETE", url, strings.NewReader(string(requestBody)))
 	if err != nil {
 		return fmt.Errorf("创建请求失败: %v", err)
@@ -232,7 +255,7 @@ func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
 	return nil
 }
 
-func FetchOllamaVersion(baseURL, apiKey string) (string, error) {
+func FetchOllamaVersion(baseURL, apiKey, proxyURL string) (string, error) {
 	trimmedBase := strings.TrimRight(resolveBaseURL(baseURL), "/")
 	if trimmedBase == "" {
 		return "", fmt.Errorf("baseURL 为空")
@@ -240,7 +263,10 @@ func FetchOllamaVersion(baseURL, apiKey string) (string, error) {
 
 	url := fmt.Sprintf("%s/api/version", trimmedBase)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client, err := newOllamaHttpClient(proxyURL, 10*time.Second)
+	if err != nil {
+		return "", fmt.Errorf("代理客户端创建失败: %v", err)
+	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("创建请求失败: %v", err)

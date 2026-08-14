@@ -239,9 +239,9 @@ type GlmRiskCheckResult struct {
 	RawMsg string `json:"raw_msg,omitempty"`
 }
 
-// CheckGlmRiskStatus 检测智谱账号是否被风控
+// CheckGlmRiskStatus 检测智谱账号是否被风控；proxyURL 非空时请求经渠道代理发出。
 // 调用 https://open.bigmodel.cn/api/biz/labelCustomer/isRiskCustomer
-func CheckGlmRiskStatus(apiKey string) (*GlmRiskCheckResult, error) {
+func CheckGlmRiskStatus(apiKey string, proxyURL string) (*GlmRiskCheckResult, error) {
 	url := "https://open.bigmodel.cn/api/biz/labelCustomer/isRiskCustomer"
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -252,7 +252,10 @@ func CheckGlmRiskStatus(apiKey string) (*GlmRiskCheckResult, error) {
 	// Key 放在 Authorization 头中做身份验证
 	req.Header.Set("Authorization", strings.TrimSpace(apiKey))
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client, err := newGlmHttpClient(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -297,10 +300,24 @@ func CheckGlmRiskStatus(apiKey string) (*GlmRiskCheckResult, error) {
 	}, nil
 }
 
+// newGlmHttpClient 返回经渠道代理的 GLM 后端客户端（15s 超时）。
+// 超时会覆盖共享客户端，需拷贝实例。
+func newGlmHttpClient(proxyURL string) (*http.Client, error) {
+	baseClient, err := GetHttpClientWithProxy(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{
+		Transport:     baseClient.Transport,
+		CheckRedirect: baseClient.CheckRedirect,
+		Timeout:       15 * time.Second,
+	}, nil
+}
+
 // FetchGlmPlanQuota 从智谱后端拉取套餐额度数据
 // apiKey: 渠道的 API Key
-// baseURL: 套餐的基础 URL (glm-coding-plan 或 glm-coding-plan-international)
-func FetchGlmPlanQuota(apiKey string, planBaseURL string) (*GlmPlanQuotaData, error) {
+// planBaseURL: 套餐的基础 URL (glm-coding-plan 或 glm-coding-plan-international)
+func FetchGlmPlanQuota(apiKey string, planBaseURL string, proxyURL string) (*GlmPlanQuotaData, error) {
 	apiBase := getGlmApiBase(planBaseURL)
 	if apiBase == "" {
 		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
@@ -312,7 +329,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string) (*GlmPlanQuotaData, er
 	errCh := make(chan error, 2)
 
 	go func() {
-		resp, err := fetchGlmAPI(apiBase, glmSubscriptionPath, apiKey)
+		resp, err := fetchGlmAPI(apiBase, glmSubscriptionPath, apiKey, proxyURL)
 		if err != nil {
 			errCh <- fmt.Errorf("获取订阅信息失败: %w", err)
 			return
@@ -326,7 +343,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string) (*GlmPlanQuotaData, er
 	}()
 
 	go func() {
-		resp, err := fetchGlmAPI(apiBase, glmQuotaLimitPath, apiKey)
+		resp, err := fetchGlmAPI(apiBase, glmQuotaLimitPath, apiKey, proxyURL)
 		if err != nil {
 			errCh <- fmt.Errorf("获取限额信息失败: %w", err)
 			return
@@ -366,8 +383,9 @@ func getGlmApiBase(planBaseURL string) string {
 	}
 }
 
-// fetchGlmAPI 向智谱后端发送请求，Key 由后端注入，不会暴露给客户端
-func fetchGlmAPI(baseURL, path, apiKey string) ([]byte, error) {
+// fetchGlmAPI 向智谱后端发送请求，Key 由后端注入，不会暴露给客户端；
+// proxyURL 非空时请求经渠道代理发出。
+func fetchGlmAPI(baseURL, path, apiKey, proxyURL string) ([]byte, error) {
 	url := strings.TrimRight(baseURL, "/") + path
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -380,7 +398,10 @@ func fetchGlmAPI(baseURL, path, apiKey string) ([]byte, error) {
 	req.Header.Set("Referer", "https://bigmodel.cn/")
 	req.Header.Set("Origin", "https://bigmodel.cn")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client, err := newGlmHttpClient(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -525,8 +546,9 @@ func getGlmUsageStatus(percentage int) string {
 	return "充裕"
 }
 
-// FetchGlmUsageData 代理拉取 GLM 用量图表数据，直接透传原始 JSON
-func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, startTime string, endTime string) (json.RawMessage, error) {
+// FetchGlmUsageData 代理拉取 GLM 用量图表数据，直接透传原始 JSON；
+// proxyURL 非空时请求经渠道代理发出。
+func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, startTime string, endTime string, proxyURL string) (json.RawMessage, error) {
 	apiBase := getGlmApiBase(planBaseURL)
 	if apiBase == "" {
 		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
@@ -548,7 +570,7 @@ func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, start
 		path += fmt.Sprintf("?startTime=%s&endTime=%s", url.QueryEscape(startTime), url.QueryEscape(endTime))
 	}
 
-	body, err := fetchGlmAPI(apiBase, path, apiKey)
+	body, err := fetchGlmAPI(apiBase, path, apiKey, proxyURL)
 	if err != nil {
 		return nil, err
 	}

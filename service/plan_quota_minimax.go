@@ -44,9 +44,9 @@ type minimaxResp struct {
 	} `json:"model_remains"`
 }
 
-// FetchMiniMaxPlanQuota 查询 MiniMax 套餐额度
+// FetchMiniMaxPlanQuota 查询 MiniMax 套餐额度；proxyURL 非空时请求经渠道代理发出。
 // planName: "minimax-coding-plan" 或 "minimax-coding-plan-international"
-func FetchMiniMaxPlanQuota(apiKey string, planName string) (*MiniMaxPlanQuotaData, error) {
+func FetchMiniMaxPlanQuota(apiKey string, planName string, proxyURL string) (*MiniMaxPlanQuotaData, error) {
 	apiDomain := "api.minimaxi.com"
 	if planName == "minimax-coding-plan-international" {
 		apiDomain = "api.minimax.io"
@@ -60,7 +60,15 @@ func FetchMiniMaxPlanQuota(apiKey string, planName string) (*MiniMaxPlanQuotaDat
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	baseClient, err := GetHttpClientWithProxy(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
+	client := &http.Client{
+		Transport:     baseClient.Transport,
+		CheckRedirect: baseClient.CheckRedirect,
+		Timeout:       10 * time.Second,
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("请求 MiniMax API 失败: %w", err)

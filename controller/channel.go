@@ -374,7 +374,7 @@ func FetchUpstreamModels(c *gin.Context) {
 	// 对于 Ollama 渠道，使用特殊处理
 	if channel.Type == constant.ChannelTypeOllama {
 		key := strings.Split(channel.Key, "\n")[0]
-		models, err := ollama.FetchOllamaModels(baseURL, key)
+		models, err := ollama.FetchOllamaModels(baseURL, key, channel.GetSetting().Proxy)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -1263,7 +1263,7 @@ func FetchModels(c *gin.Context) {
 			})
 			return
 		}
-		models, err := ollama.FetchOllamaModels(baseURL, key)
+		models, err := ollama.FetchOllamaModels(baseURL, key, "")
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelOllamaGetModelsFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2040,7 +2040,7 @@ func OllamaPullModel(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	err = ollama.PullOllamaModel(baseURL, key, req.ModelName)
+	err = ollama.PullOllamaModel(baseURL, key, channel.GetSetting().Proxy, req.ModelName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -2118,7 +2118,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	}
 
 	// 执行拉取
-	err = ollama.PullOllamaModelStream(baseURL, key, req.ModelName, progressCallback)
+	err = ollama.PullOllamaModelStream(baseURL, key, channel.GetSetting().Proxy, req.ModelName, progressCallback)
 
 	if err != nil {
 		errorData, _ := json.Marshal(gin.H{
@@ -2185,7 +2185,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	err = ollama.DeleteOllamaModel(baseURL, key, req.ModelName)
+	err = ollama.DeleteOllamaModel(baseURL, key, channel.GetSetting().Proxy, req.ModelName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -2235,7 +2235,7 @@ func OllamaVersion(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	version, err := ollama.FetchOllamaVersion(baseURL, key)
+	version, err := ollama.FetchOllamaVersion(baseURL, key, channel.GetSetting().Proxy)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -2276,7 +2276,7 @@ func QueryPlanQuota(c *gin.Context) {
 	switch planName {
 	case "glm-coding-plan", "glm-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchGlmPlanQuota(key, planName)
+		quotaData, err := service.FetchGlmPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
 			if errors.Is(err, service.ErrGlmKeyInvalid) {
 				common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
@@ -2293,7 +2293,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "kimi-coding-plan":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchKimiPlanQuota(key)
+		quotaData, err := service.FetchKimiPlanQuota(key, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2305,7 +2305,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "minimax-coding-plan", "minimax-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName)
+		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2378,7 +2378,7 @@ func QueryGlmUsage(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
+	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime, channel.GetSetting().Proxy)
 	if err != nil {
 		if errors.Is(err, service.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
@@ -2417,7 +2417,7 @@ func QueryRiskStatus(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	result, err := service.CheckGlmRiskStatus(key)
+	result, err := service.CheckGlmRiskStatus(key, channel.GetSetting().Proxy)
 	if err != nil {
 		if errors.Is(err, service.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)

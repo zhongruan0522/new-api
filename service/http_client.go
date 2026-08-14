@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/setting/system_setting"
 
+	"github.com/gorilla/websocket"
 	"golang.org/x/net/proxy"
 )
 
@@ -69,9 +70,52 @@ func GetHttpClient() *http.Client {
 // GetHttpClientWithProxy returns the default client or a proxy-enabled one when proxyURL is provided.
 func GetHttpClientWithProxy(proxyURL string) (*http.Client, error) {
 	if proxyURL == "" {
-		return GetHttpClient(), nil
+		if client := GetHttpClient(); client != nil {
+			return client, nil
+		}
+		return http.DefaultClient, nil
 	}
 	return NewProxyHttpClient(proxyURL)
+}
+
+// NewProxyWebSocketDialer 返回走指定代理的 WebSocket 拨号器；proxyURL 为空时返回默认拨号器。
+// gorilla/websocket 的 Proxy 函数支持 http/https/socks5/socks5h（经 golang.org/x/net/proxy）。
+func NewProxyWebSocketDialer(proxyURL string) (*websocket.Dialer, error) {
+	if proxyURL == "" {
+		return websocket.DefaultDialer, nil
+	}
+
+	parsedURL, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+
+	switch parsedURL.Scheme {
+	case "http", "https":
+		return &websocket.Dialer{
+			Proxy:  http.ProxyURL(parsedURL),
+		}, nil
+	case "socks5", "socks5h":
+		var auth *proxy.Auth
+		if parsedURL.User != nil {
+			auth = &proxy.Auth{
+				User:     parsedURL.User.Username(),
+				Password: "",
+			}
+			if password, ok := parsedURL.User.Password(); ok {
+				auth.Password = password
+			}
+		}
+		dialer, err := proxy.SOCKS5("tcp", parsedURL.Host, auth, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+		return &websocket.Dialer{
+			NetDial: dialer.Dial,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported proxy scheme: %s, must be http, https, socks5 or socks5h", parsedURL.Scheme)
+	}
 }
 
 // ResetProxyClientCache 清空代理客户端缓存，确保下次使用时重新初始化

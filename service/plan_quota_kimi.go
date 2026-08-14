@@ -63,8 +63,8 @@ func parseFloatNumber(n json.Number) float64 {
 	return parsed
 }
 
-// FetchKimiPlanQuota 查询 Kimi 套餐额度
-func FetchKimiPlanQuota(apiKey string) (*KimiPlanQuotaData, error) {
+// FetchKimiPlanQuota 查询 Kimi 套餐额度；proxyURL 非空时请求经渠道代理发出。
+func FetchKimiPlanQuota(apiKey string, proxyURL string) (*KimiPlanQuotaData, error) {
 	url := "https://api.kimi.com/coding/v1/usages"
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -74,7 +74,15 @@ func FetchKimiPlanQuota(apiKey string) (*KimiPlanQuotaData, error) {
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	baseClient, err := GetHttpClientWithProxy(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
+	client := &http.Client{
+		Transport:     baseClient.Transport,
+		CheckRedirect: baseClient.CheckRedirect,
+		Timeout:       10 * time.Second,
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("请求 Kimi API 失败: %w", err)
