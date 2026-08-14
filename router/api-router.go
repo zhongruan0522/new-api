@@ -214,7 +214,9 @@ func SetApiRouter(router *gin.Engine) {
 		ticketRoute.Use(middleware.UserAuth())
 		{
 			ticketRoute.GET("/", controller.GetUserTickets)
-			ticketRoute.GET("/admin", controller.GetAdminTickets)
+			// 管理工单列表在路由层收紧到 AdminAuth；
+			// service.ListAdminTickets 内部的角色检查保留作纵深防御
+			ticketRoute.GET("/admin", middleware.AdminAuth(), controller.GetAdminTickets)
 			ticketRoute.POST("/", controller.CreateTicket)
 			ticketRoute.GET("/:id", controller.GetTicketDetail)
 			ticketRoute.POST("/:id/reply", controller.ReplyTicket)
