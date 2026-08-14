@@ -25,11 +25,9 @@ func GetOptions(c *gin.Context) {
 	excludeLargeOptions := c.Query("exclude_large_options") == "true"
 	common.OptionMapRWMutex.Lock()
 	for k, v := range common.OptionMap {
-		if strings.HasSuffix(k, "Token") ||
-			strings.HasSuffix(k, "Secret") ||
-			strings.HasSuffix(k, "Key") ||
-			strings.HasSuffix(k, "secret") ||
-			strings.HasSuffix(k, "api_key") {
+		// 统一复用 isSensitiveOptionKey，与 GetOptionValue 的过滤口径一致，
+		// 避免新增 option 键时两处过滤规则漂移导致误暴露。
+		if isSensitiveOptionKey(k) {
 			continue
 		}
 		value := common.Interface2String(v)
