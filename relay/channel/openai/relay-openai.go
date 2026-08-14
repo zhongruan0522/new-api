@@ -58,11 +58,26 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var usage = &dto.Usage{}
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
+	var streamApiErr *types.NookMuxError
 
 	// 检查是否为音频模型
 	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
+		// 部分上游/中间网关会把 429/5xx 错误转成 HTTP 200 + SSE error 帧下发。
+		// 这里识别错误帧并保留真实上游错误，避免计费阶段因 totalTokens=0
+		// 被误记为「502 上游没有返回计费信息」。
+		if streamApiErr == nil && strings.Contains(data, `"error"`) {
+			var errFrame struct {
+				Error any `json:"error"`
+			}
+			if err := common.UnmarshalJsonStr(data, &errFrame); err == nil && errFrame.Error != nil {
+				if oaiError := dto.GetOpenAIError(errFrame.Error); oaiError != nil && oaiError.Message != "" {
+					streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+					return false
+				}
+			}
+		}
 		if lastStreamData != "" {
 			err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat)
 			if err != nil {
@@ -99,6 +114,12 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 					usage.InputTokens, usage.OutputTokens))
 			}
 		}
+	}
+
+	if streamApiErr != nil {
+		// 上游在流内返回了错误帧：真实错误已识别，直接向上暴露，不再伪造 usage。
+		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		return nil, streamApiErr
 	}
 
 	// 处理最后的响应
@@ -164,8 +185,8 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
-	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
-		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
+	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+		return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
 
 	for _, choice := range simpleResponse.Choices {
@@ -459,6 +480,16 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+	}
+
+	// 部分上游/中间网关会把 429/5xx 错误转成 HTTP 200 + error body 下发。
+	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
+	// 「502 上游没有返回计费信息」。
+	var errProbe dto.SimpleResponse
+	if probeErr := common.Unmarshal(responseBody, &errProbe); probeErr == nil {
+		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+			return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+		}
 	}
 
 	var usageResp dto.SimpleResponse

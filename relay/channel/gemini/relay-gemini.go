@@ -1166,12 +1166,25 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	var usage = &dto.Usage{}
 	var imageCount int
 	responseText := strings.Builder{}
+	var streamApiErr *types.NookMuxError
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse dto.GeminiChatResponse
 		err := common.UnmarshalJsonStr(data, &geminiResponse)
 		if err != nil {
 			logger.LogError(c, "error unmarshalling stream response: "+err.Error())
+			return false
+		}
+
+		// 上游在 HTTP 200 流内返回错误载荷（Gemini/中间网关会把 429/5xx 转成
+		// 200 + error 帧下发）：保留真实上游错误，避免计费阶段因 totalTokens=0
+		// 被误记为「502 上游没有返回计费信息」。
+		if geminiResponse.Error != nil && geminiResponse.Error.Message != "" {
+			streamApiErr = types.WithOpenAIError(types.OpenAIError{
+				Message: geminiResponse.Error.Message,
+				Type:    "upstream_error",
+				Code:    geminiResponse.Error.Status,
+			}, service.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
 			return false
 		}
 
@@ -1199,6 +1212,12 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 		return callback(data, &geminiResponse)
 	})
+
+	if streamApiErr != nil {
+		// 上游在流内返回了错误载荷：真实错误已识别，直接向上暴露，不再伪造 usage。
+		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		return nil, streamApiErr
+	}
 
 	if imageCount != 0 {
 		if usage.CompletionTokens == 0 {
@@ -1335,6 +1354,16 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	err = common.Unmarshal(responseBody, &geminiResponse)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+	}
+	// 上游在 HTTP 200 中携带错误载荷（Gemini/中间网关会把 429/5xx 转成
+	// 200 + {"error":{...}} 下发）：保留真实上游错误，避免计费阶段因
+	// totalTokens=0 被误记为「502 上游没有返回计费信息」。
+	if geminiResponse.Error != nil && geminiResponse.Error.Message != "" {
+		return nil, types.WithOpenAIError(types.OpenAIError{
+			Message: geminiResponse.Error.Message,
+			Type:    "upstream_error",
+			Code:    geminiResponse.Error.Status,
+		}, service.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
 	}
 	if len(geminiResponse.Candidates) == 0 {
 		usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)

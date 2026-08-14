@@ -167,6 +167,14 @@ type ChatCompletionsStreamResponse struct {
 	SystemFingerprint *string                               `json:"system_fingerprint"`
 	Choices           []ChatCompletionsStreamResponseChoice `json:"choices"`
 	Usage             *Usage                                `json:"usage"`
+	// Error 保留上游在 HTTP 200 的 SSE 流中直接返回的错误帧（部分网关会把
+	// 429/5xx 转成 200 + error 帧下发），用于流处理器识别真实上游错误。
+	Error any `json:"error,omitempty"`
+}
+
+// GetOpenAIError 从流式错误帧中提取 OpenAIError。
+func (c *ChatCompletionsStreamResponse) GetOpenAIError() *types.OpenAIError {
+	return GetOpenAIError(c.Error)
 }
 
 func (c *ChatCompletionsStreamResponse) IsFinished() bool {
@@ -213,6 +221,7 @@ func (c *ChatCompletionsStreamResponse) Copy() *ChatCompletionsStreamResponse {
 		Model:             c.Model,
 		SystemFingerprint: c.SystemFingerprint,
 		Choices:           choices,
+		Error:             c.Error,
 		Usage:             c.Usage,
 	}
 }

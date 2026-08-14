@@ -27,6 +27,17 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+
+	// 部分上游/中间网关会把 429/5xx 错误转成 HTTP 200 + error body 下发。
+	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
+	// 「502 上游没有返回计费信息」。
+	var errProbe dto.SimpleResponse
+	if probeErr := common.Unmarshal(responseBody, &errProbe); probeErr == nil {
+		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+			return nil, types.WithOpenAIError(*oaiError, service.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
+		}
+	}
+
 	rerankResp.Usage.PromptTokens = rerankResp.Usage.TotalTokens
 
 	c.Writer.Header().Set("Content-Type", "application/json")

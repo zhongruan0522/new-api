@@ -144,6 +144,30 @@ func ResetStatusCode(newApiErr *types.NookMuxError, statusCodeMappingStr string)
 	}
 }
 
+// UpstreamErrorStatusCode 处理「上游以 HTTP 200 携带错误载荷」的场景：
+// 优先从错误对象的 code 字段还原真实 HTTP 状态码（如 429、503，兼容数字与
+// 字符串形式），无法还原时回退为 502，保持与自动重试规则（5xx 可重试）兼容。
+func UpstreamErrorStatusCode(httpStatusCode int, errorCode any) int {
+	if httpStatusCode >= 400 {
+		return httpStatusCode
+	}
+	switch v := errorCode.(type) {
+	case int:
+		if v >= 400 && v <= 599 {
+			return v
+		}
+	case float64:
+		if v >= 400 && v <= 599 {
+			return int(v)
+		}
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n >= 400 && n <= 599 {
+			return n
+		}
+	}
+	return http.StatusBadGateway
+}
+
 func parseStatusCodeMappingValue(value any) (int, bool) {
 	switch v := value.(type) {
 	case string:

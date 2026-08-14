@@ -36,6 +36,17 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
+	// 上游在 HTTP 200 中携带错误载荷（Gemini/中间网关会把 429/5xx 转成
+	// 200 + {"error":{...}} 下发）：保留真实上游错误，避免计费阶段因
+	// totalTokens=0 被误记为「502 上游没有返回计费信息」。
+	if geminiResponse.Error != nil && geminiResponse.Error.Message != "" {
+		return nil, types.WithOpenAIError(types.OpenAIError{
+			Message: geminiResponse.Error.Message,
+			Type:    "upstream_error",
+			Code:    geminiResponse.Error.Status,
+		}, service.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
+	}
+
 	if len(geminiResponse.Candidates) == 0 && geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
 		common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 	}

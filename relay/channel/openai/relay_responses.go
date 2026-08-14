@@ -29,8 +29,8 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
-	if oaiError := responsesResponse.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
-		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
+	if oaiError := responsesResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+		return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
 
 	if responsesResponse.HasImageGenerationCall() {
@@ -92,6 +92,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	var usage = &dto.Usage{}
 	var responseTextBuilder strings.Builder
 	var responsesToChat relaycommon.OpenAIWireStreamConverter
+	var streamApiErr *types.NookMuxError
 	if info.RelayFormat == types.RelayFormatClaude {
 		responsesToChat = relaycommon.NewResponsesToChatStreamConverter(false)
 	}
@@ -117,6 +118,16 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 						c.Set("image_generation_call", true)
 						c.Set("image_generation_call_quality", streamResponse.Response.GetQuality())
 						c.Set("image_generation_call_size", streamResponse.Response.GetSize())
+					}
+				}
+			case "response.failed":
+				// 上游在 HTTP 200 流内返回 failed 事件（部分网关会把 429/5xx 转成
+				// 200 + response.failed 下发）：保留真实上游错误，避免计费阶段因
+				// totalTokens=0 被误记为「502 上游没有返回计费信息」。
+				if streamResponse.Response != nil {
+					if oaiError := streamResponse.Response.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+						streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+						return false
 					}
 				}
 			case "response.output_text.delta":
@@ -154,6 +165,12 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 		return true
 	})
+
+	if streamApiErr != nil {
+		// 上游在流内返回了 failed 事件：真实错误已识别，直接向上暴露，不再伪造 usage。
+		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		return nil, streamApiErr
+	}
 
 	if usage.CompletionTokens == 0 {
 		// 计算输出文本的 token 数量
