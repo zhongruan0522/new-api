@@ -38,7 +38,11 @@ type User struct {
 	InviterId           int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
 	DeletedAt           gorm.DeletedAt `gorm:"index"`
 	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
-	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
+	// Setting 存储用户通知配置（WebhookSecret、GotifyToken、BarkUrl 等
+	// 通知凭证）。JSON 序列化不输出（json:"-"），admin 用户列表/搜索/详情
+	// 不得批量暴露所有用户的通知凭证；用户本人通过 GetSelf（显式重建
+	// 响应）和 PUT /api/user/setting 读写。
+	Setting             string         `json:"-" gorm:"type:text;column:setting"`
 	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
 	StripeCustomer      string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
 	ImageConvertedCount int            `json:"image_converted_count" gorm:"type:int;default:0;column:image_converted_count"`
