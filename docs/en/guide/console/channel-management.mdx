@@ -32,6 +32,14 @@ If using a Coding Plan package, the `API Address` field should not be filled wit
 
 The actual upstream addresses corresponding to each plan identifier are defined in `ChannelSpecialBases` in `constant/channel.go`. After creating a plan channel, you can query plan quota usage from the channel list (currently supported for GLM, Kimi, and MiniMax).
 
+Zhipu GLM plans (`glm-coding-plan` / `glm-coding-plan-international`) support three protocol endpoints, routed automatically by request protocol:
+
+| Protocol | Official Plan (CN) | International Plan |
+| --- | --- | --- |
+| Anthropic Messages | `https://open.bigmodel.cn/api/anthropic` | `https://api.z.ai/api/anthropic` |
+| OpenAI Chat Completions | `https://open.bigmodel.cn/api/coding/paas/v4` | `https://api.z.ai/api/coding/paas/v4` |
+| OpenAI Responses | `https://open.bigmodel.cn/api/v1` | `https://api.z.ai/api/v1` |
+
 # Parameter Override Settings Documentation
 
 ## Overview

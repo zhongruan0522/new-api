@@ -32,6 +32,14 @@ title: 渠道
 
 套餐标识对应的实际上游地址定义在 `constant/channel.go` 的 `ChannelSpecialBases` 中。套餐渠道创建后，可在渠道列表中查询套餐额度使用情况（目前支持 GLM、Kimi、MiniMax）。
 
+智谱 GLM 套餐（`glm-coding-plan` / `glm-coding-plan-international`）支持三种协议端点，系统按请求协议自动路由：
+
+| 协议 | 官方套餐（国内） | 国际套餐 |
+| --- | --- | --- |
+| Anthropic Messages | `https://open.bigmodel.cn/api/anthropic` | `https://api.z.ai/api/anthropic` |
+| OpenAI Chat Completions | `https://open.bigmodel.cn/api/coding/paas/v4` | `https://api.z.ai/api/coding/paas/v4` |
+| OpenAI Responses | `https://open.bigmodel.cn/api/v1` | `https://api.z.ai/api/v1` |
+
 # 参数覆盖设置文档
 
 ## 概述
