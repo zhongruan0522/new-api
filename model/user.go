@@ -18,7 +18,9 @@ import (
 type User struct {
 	Id                  int            `json:"id"`
 	Username            string         `json:"username" gorm:"unique;index" validate:"max=20"`
-	Password            string         `json:"password" gorm:"not null;" validate:"min=8,max=20"`
+	// Password 存 bcrypt hash。查询层已 Omit("password")，序列化用 omitempty
+	// 避免输出空 "password" 字段；请求体绑定（注册/创建/改密）依赖该 json 标签，不能改为 "-"。
+	Password            string         `json:"password,omitempty" gorm:"not null;" validate:"min=8,max=20"`
 	OriginalPassword    string         `json:"original_password" gorm:"-:all"` // this field is only for Password change verification, don't save it to database!
 	DisplayName         string         `json:"display_name" gorm:"index" validate:"max=20"`
 	Role                int            `json:"role" gorm:"type:int;default:1"`   // admin, common
