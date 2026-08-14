@@ -2,224 +2,111 @@
 title: Docker Compose Configuration Guide
 ---
 
-This document details the Docker Compose configuration options for New API, applicable to various deployment scenarios.
+This document explains the structure of NookMux's current `docker-compose.yml` file and common extension patterns. The root configuration in the repository is the source of truth: it starts NookMux and Redis by default and does not include MySQL/PostgreSQL services. If you need an external database, set `SQL_DSN`.
 
-## Basic Configuration Structure
-
-The Docker Compose configuration file `docker-compose.yml` defines how the New API service and its dependent services (such as MySQL, Redis) are deployed.
-
-## Standard Configuration (Recommended for Production)
-
-Below is the standard Docker Compose configuration, suitable for most production environments:
+## Recommended Current Configuration
 
 ```yaml
-# New-API Docker Compose Configuration
-#
-# Quick Start:
-#   1. docker-compose up -d
-#   2. Access at http://localhost:3000
-#
-# Using MySQL instead of PostgreSQL:
-#   1. Comment out the postgres service and SQL_DSN line 15
-#   2. Uncomment the mysql service and SQL_DSN line 16
-#   3. Uncomment mysql in depends_on (line 28)
-#   4. Uncomment mysql_data in volumes section (line 64)
-#
-# ⚠️  IMPORTANT: Change all default passwords before deploying to production!
-
-version: '3.4' # For compatibility with older Docker versions
-
 services:
-  new-api:
-    image: calciumion/new-api:latest
-    container_name: new-api
+  nookmux:
+    image: ghcr.io/nookmux/nookmux:latest
+    container_name: nookmux
     restart: always
     command: --log-dir /app/logs
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - ./data:/data
       - ./logs:/app/logs
     environment:
-      - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
-      #      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # Point to the mysql service, uncomment if using MySQL
-      - REDIS_CONN_STRING=redis://:123456@redis:6379 # ⚠️ IMPORTANT: Change this password in production!
+      - REDIS_CONN_STRING=redis://:change_this_password@redis:6379
       - TZ=Asia/Shanghai
-      - ERROR_LOG_ENABLED=true # Whether to enable error logging
-      - BATCH_UPDATE_ENABLED=true # Whether to enable batch update
-    #      - STREAMING_TIMEOUT=300  # Streaming timeout in seconds, default is 120s. Increase if experiencing empty completions
-    #      - SESSION_SECRET=random_string  # For multi-node deployment, this random string must be changed!
-    #      - SYNC_FREQUENCY=60  # Uncomment if regular database syncing is needed
-
+      - ERROR_LOG_ENABLED=true
+      - BATCH_UPDATE_ENABLED=true
+      - SESSION_SECRET=replace_with_a_random_string
+      - CRYPTO_SECRET=replace_with_another_random_string
     depends_on:
-      - redis
-      - postgres
-    #      - mysql  # Uncomment if using MySQL
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      redis:
+        condition: service_healthy
 
   redis:
     image: redis:latest
     container_name: redis
     restart: always
-    command: ['redis-server', '--requirepass', '123456'] # ⚠️ IMPORTANT: Change this password in production!
-
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456 # ⚠️ IMPORTANT: Change this password in production!
-      POSTGRES_DB: new-api
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-#    ports:
-#      - "5432:5432"  # Uncomment if you need to access PostgreSQL from outside Docker
-
-#  mysql:
-#    image: mysql:8.2
-#    container_name: mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: 123456  # ⚠️ IMPORTANT: Change this password in production!
-#      MYSQL_DATABASE: new-api
-#    volumes:
-#      - mysql_data:/var/lib/mysql
-#    ports:
-#      - "3306:3306"  # Uncomment if you need to access MySQL from outside Docker
-
-volumes:
-  pg_data:
-#  mysql_data:
+    command: ["redis-server", "--requirepass", "change_this_password"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "change_this_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 ```
 
-## Simplified Configuration (Suitable for Testing)
+<Callout type="warn" title="Do not use the sample passwords directly">
+  The sample values `change_this_password` and `replace_with_a_random_string` must be replaced with production-only random values.
+</Callout>
 
-For testing purposes, you can use the following simplified version, which only includes the New API service itself:
+## NookMux Service Fields
+
+| Parameter | Description |
+| --- | --- |
+| `image` | Official image, currently `ghcr.io/nookmux/nookmux:latest`. |
+| `container_name` | Container name, with `nookmux` used in the example. |
+| `command` | Startup arguments. `--log-dir /app/logs` points logs to a persistent path. |
+| `ports` | Port mapping, default `3000:3000`. |
+| `volumes` | Data and log persistence. At minimum, mount `/data`. |
+| `environment` | Environment variable settings, see the [Environment Variables Configuration Guide](/en/docs/installation/config-maintenance/environment-variables). |
+| `depends_on` | Waits for Redis to become healthy before starting the app. |
+| `healthcheck` | Optional health check that verifies `/api/status` returns success. |
+
+## Database Configuration
+
+### Default SQLite
+
+If `SQL_DSN` is not set, SQLite is used and the database path defaults to `/data/one-api.db`. This is suitable for personal or small-scale deployments.
+
+### External MySQL
 
 ```yaml
-services:
-  new-api:
-    image: calciumion/new-api:latest
-    container_name: new-api
-    restart: always
-    ports:
-      - '3000:3000'
-    environment:
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./data:/data
+environment:
+  - SQL_DSN=user:password@tcp(mysql-host:3306)/nookmux?parseTime=true
 ```
 
-## Configuration Details
-
-### New API Service Configuration
-
-| Parameter        | Description                                                                    |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `image`          | Image name, usually `calciumion/new-api:latest` to get the latest version      |
-| `container_name` | Container name, customizable                                                   |
-| `restart`        | Container restart policy, recommended to set to `always` for automatic restart |
-| `command`        | Startup command, customizable startup parameters                               |
-| `ports`          | Port mapping, by default maps container's 3000 port to host's 3000 port        |
-| `volumes`        | Volume mapping, ensures data persistence                                       |
-| `environment`    | Environment variable settings, used to configure New API behavior              |
-| `depends_on`     | Dependent services, ensures startup in the correct order                       |
-| `healthcheck`    | Health check configuration, used to monitor service status                     |
-
-### Environment Variable Description
-
-New API supports various environment variable configurations. Here are some commonly used ones:
-
-| Environment Variable | Description                                         | Example                               |
-| -------------------- | --------------------------------------------------- | ------------------------------------- |
-| `SQL_DSN`            | Database connection string                          | `root:123456@tcp(mysql:3306)/new-api` |
-| `REDIS_CONN_STRING`  | Redis connection string                             | `redis://:123456@redis:6379`          |
-| `TZ`                 | Time zone setting                                   | `Asia/Shanghai`                       |
-| `SESSION_SECRET`     | Session secret (required for multi-node deployment) | `your_random_string`                  |
-| `NODE_TYPE`          | Node type (master/slave)                            | `master` or `slave`                   |
-| `SYNC_FREQUENCY`     | Sync frequency (seconds)                            | `60`                                  |
-
-For a more complete list of environment variables, please refer to the [Environment Variables Configuration Guide](/en/docs/installation/config-maintenance/environment-variables).
-
-## Multi-Node Deployment Configuration
-
-For multi-node deployment scenarios, the configuration for master and slave nodes differs slightly:
-
-### Master Node Configuration
+### External PostgreSQL
 
 ```yaml
-services:
-  new-api-master:
-    image: calciumion/new-api:latest
-    container_name: new-api-master
-    restart: always
-    ports:
-      - '3000:3000'
-    environment:
-      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://:123456@redis:6379
-      - SESSION_SECRET=your_unique_session_secret
-      - CRYPTO_SECRET=your_unique_crypto_secret
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./data:/data
+environment:
+  - SQL_DSN=postgres://user:password@postgres-host:5432/nookmux
 ```
 
-### Slave Node Configuration
+The NookMux backend must remain compatible with SQLite, MySQL, and PostgreSQL. Make sure the database character set and permissions meet production requirements.
+
+## Redis Configuration
 
 ```yaml
-services:
-  new-api-slave:
-    image: calciumion/new-api:latest
-    container_name: new-api-slave
-    restart: always
-    ports:
-      - '3001:3000' # Note the different port mapping
-    environment:
-      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://:123456@redis:6379
-      - SESSION_SECRET=your_unique_session_secret # Must be the same as the master node
-      - CRYPTO_SECRET=your_unique_crypto_secret # Must be the same as the master node
-      - NODE_TYPE=slave # Set as slave node
-      - SYNC_FREQUENCY=60
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./data-slave:/data
+environment:
+  - REDIS_CONN_STRING=redis://:password@redis:6379
 ```
 
-## Usage
+Redis can be used for caching and multi-node synchronization. If Redis is not configured, single-node deployments still work, but multi-node deployments must share the same Redis instance.
 
-### Installation
+## Multi-Node Deployment Entry Point
 
-Save the configuration as `docker-compose.yml` and then run the following command in the same directory:
+Multi-node deployments require all nodes to share the same database, the same Redis instance, and the same `SESSION_SECRET` / `CRYPTO_SECRET` values. Set the following on slave nodes:
+
+```yaml
+environment:
+  - NODE_TYPE=slave
+  - FRONTEND_BASE_URL=https://your-domain.example.com
+```
+
+For a full example, see [Cluster Deployment](/en/docs/installation/deployment-methods/cluster-deployment).
+
+## Common Commands
 
 ```bash
 docker compose up -d
-```
-
-### Viewing Logs
-
-```bash
-docker compose logs -f
-```
-
-### Stopping Services
-
-```bash
+docker compose ps
+docker compose logs -f nookmux
+docker compose pull && docker compose up -d
 docker compose down
 ```
-
-<Callout type="info" title="Tip">
-  For more information on using Docker Compose, please refer to the [Docker
-  Compose Installation
-  Guide](/en/docs/installation/deployment-methods/docker-compose-installation).
-</Callout>

@@ -1,45 +1,16 @@
 ﻿---
-title: Personal Settings
+title: Profile
 ---
 
-Here you can view account information, manage account bindings, perform security settings, and more.
+The `/profile` page is used to manage account information, security settings, and notification preferences.
 
-## View Available Models
+Main areas:
 
-Here you can view the models available to your current account. Click on a model name to copy it.
+- **Profile Info**: view account basics, balance, usage, and more.
+- **Account Bindings**: bind enabled email, WeChat, GitHub, Discord, OIDC, Telegram, LinuxDo, or custom OAuth accounts.
+- **Security Settings**: change password, manage access tokens, two-factor authentication, Passkey, and account deletion.
+- **Notification Settings**: configure balance alert thresholds and notification channels. Supported channels currently include `email`, `webhook`, `bark`, and `gotify`.
+- **Check-in Calendar**: if enabled by the administrator, view check-in status and rewards.
+- **Language Preference**: switch the current frontend language.
 
-![可用模型](/assets/guide/available-models.png)
-
-## Account Binding
-
-Here you can perform account binding operations.
-
-![账户绑定](/assets/guide/account-bind.png)
-
-## Security Settings
-
-Here you can change your password, reset your API key, and perform other related operations.
-
-![安全设置](/assets/guide/account-security.png)
-
-## Other Settings
-
-### Notification Settings
-
-Here you can configure how you receive notifications. Currently, email and Webhook are supported.
-
-![邮件通知](/assets/guide/account-notification-mail.png)
-
-![Webhook](/assets/guide/account-notification-webhook.png)
-
-### Price Settings
-
-Here you can set whether to accept models without a configured price.
-
-![价格设置](/assets/guide/account-price.png)
-
-### IP Logging
-
-Here you can choose to enable IP logging. If enabled, IP addresses will be displayed in the logs.
-
-![IP设置](/assets/guide/account-ip-log.png)
+Available bindings and security features depend on what administrators enable in **System Settings → Authentication**.

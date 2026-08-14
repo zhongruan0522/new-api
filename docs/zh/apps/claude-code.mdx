@@ -1,425 +1,114 @@
-﻿---
+---
 title: Claude Code
 ---
 
 <Callout type="info" title="项目介绍">
-  直接在你的终端中释放 Claude
-  的强大能力。瞬间搜索百万行代码库。将耗时数小时的工作流程化为一条命令。你的工具，你的工作流，你的代码库，以思维速度进化。
+  Claude Code 是 Anthropic 官方的命令行编码助手，可直接在终端中搜索代码库、编辑文件和运行命令。
 
   - 官方主页：[https://www.anthropic.com/claude-code](https://www.anthropic.com/claude-code)
+  - 网关接入官方文档：[Connect Claude Code to an LLM gateway](https://docs.anthropic.com/en/docs/claude-code/llm-gateway-connect)
 </Callout>
 
-## 效果演示
+## 安装
 
-![introduce-01.webp](/assets/claude_code/introduce-01.webp)
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
 
-![introduce-02.webp](/assets/claude_code/introduce-02.webp)
-
-### 特性
-
-| **功能分类**       | **特性**                                                       |
-| ------------------ | -------------------------------------------------------------- |
-| **代码理解**       | 深度代码库分析，利用智能代理搜索理解项目结构和依赖             |
-|                    | 自动生成高层次代码概述，快速帮助用户理解代码库               |
-| **代码编辑**       | 支持多文件协同编辑，适用于复杂代码修改                       |
-|                    | 提供符合项目模式和架构的实际可用代码建议                     |
-| **集成能力**       | 支持在终端中直接运行，无需切换上下文                         |
-|                    | 与VS Code和JetBrains IDE无缝集成，无需复制粘贴               |
-| **代码生成和优化** | 自动生成代码、创建测试、修复错误，支持从概念到提交的完整流程 |
-|                    | 为代码生成和理解优化，结合Claude Opus 4等先进模型            |
-| **安全与灵活性**   | 改动需获得用户明确授权，文件和命令操作更安全                 |
-|                    | 适应用户代码规范，支持自定义配置                             |
-| **工具链整合**     | 支持与GitHub、GitLab等工具结合，实现自动化工作流程           |
-|                    | 与测试套件、构建系统集成，增强现有开发工具                   |
-| **跨平台与扩展**   | 支持Windows、macOS、Linux操作系统                            |
-|                    | 可配置运行在SDK或GitHub Actions中，灵活适配不同需求          |
-| **主要应用场景**   | 代码库入门和理解、新成员快速上手                             |
-|                    | 代码问题修复与优化流程，从分析问题到提交PR                   |
-|                    | 项目代码重构与新功能实现                                     |
-| **用户反馈亮点**   | 提升日常开发效率，省去例行任务消耗的时间                     |
-|                    | 处理复杂多步骤任务表现优异，扩展开发可能性                   |
-
-## AI 模型配置方法
-
-### Windows 端图文指引
-
-#### 1.安装 Node.js 环境
-
-Claude Code 需要 Node.js 环境才能运行。
-
-<Callout type="info" title="Node.js 环境安装步骤">
-  - 打开浏览器访问 https://nodejs.org/
-  - 点击 "LTS"版本进行下载（推荐长期支持版本）
-  - 下载完成后双击 .msi 文件
-  - 按照安装向导完成安装，保持默认设置即可
-</Callout>
-
-<Callout type="warn" title="Windows 注意事项">
-  - 建议使用 PowerShell 而不是 CMD
-  - 如果遇到权限问题，尝试以管理员身份运行
-  - 某些杀毒软件可能会误报，需要添加白名单
-</Callout>
-
-![windows-img-01.webp](/assets/claude_code/windows-img-01.webp)
-
-![windows-img-02.webp](/assets/claude_code/windows-img-02.webp)
-
-![windows-img-03.webp](/assets/claude_code/windows-img-03.webp)
-
-![windows-img-04.webp](/assets/claude_code/windows-img-04.webp)
-
-![windows-img-05.webp](/assets/claude_code/windows-img-05.webp)
-
-<Callout type="info" title="验证安装是否成功">
-  安装完成后，打开 PowerShell 或 CMD，输入以下命令：
-
-  ```bash
-  node --version
-  npm --version
-  ```
-
-  如果显示版本号，说明安装成功。
-</Callout>
-
-#### 2.安装 Git Bash
-
-<Callout type="warn" title="Windows 注意事项">
-  Windows 环境下需要使用 Git Bash 安装 Claude code。安装完成后，环境变量设置和使用 Claude Code 仍然在普通的 PowerShell 或 CMD 中进行。
-</Callout>
-
-<Callout type="info" title="下载并安装 Git for Windows">
-  - 访问 https://git-scm.com/downloads/win
-  - 点击 "Download for Windows" 下载安装包
-  - 运行下载的 .exe 安装文件
-  - 在安装过程中保持默认设置，直接点击 "Next" 完成安装
-</Callout>
-
-![windows-img-06.webp](/assets/claude_code/windows-img-06.webp)
-
-![windows-img-07.webp](/assets/claude_code/windows-img-07.webp)
-
-![windows-img-08.webp](/assets/claude_code/windows-img-08.webp)
-
-<Callout type="info" title="验证 Git Bash 安装">
-  安装完成后，打开 Git Bash，输入以下命令验证：
-
-  ```bash
-  git --version
-  ```
-
-  如果显示版本号，说明安装成功。
-</Callout>
-
-#### 3.安装 Claude Code
-
-<Callout type="info" title="安装 Claude Code">
-  打开 PowerShell，运行以下命令：
-
-  ```bash
-  npm install -g @anthropic-ai/claude-code
-  ```
-
-  这个命令会从 npm 官方仓库下载并安装最新版本的 Claude Code。
-</Callout>
-
-![windows-img-09.webp](/assets/claude_code/windows-img-09.webp)
-
-<Callout type="info" title="将 ~/.local/bin 加入 PATH（仅当提示要求时）">
-  ```powershell
-  [Environment]::SetEnvironmentVariable('Path', ([Environment]::GetEnvironmentVariable('Path','User') + ";$HOME\.local\bin"), 'User')
-  ```
-</Callout>
-
-<Callout type="info" title="验证 Claude Code 安装">
-  安装完成后，输入以下命令检查是否安装成功：
-
-  ```bash
-  claude --version
-  ```
-
-  如果显示版本号，恭喜你！Claude Code 已经成功安装了。
-</Callout>
-
-#### 4.设置环境变量
-
-<Callout type="info" title="一键设置命令 (Windows 系统)">
-  为了让 Claude Code 连接到你的中转服务，需要设置多个环境变量：
-</Callout>
-
-```powershell
-iex (irm 'https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/claude-cli-setup.ps1')
+# 验证
+claude --version
 ```
 
-![windows-configure](/assets/claude_code/windows_configure.png)
+Windows 建议在 WSL2 或 Git Bash 环境中安装使用。
 
-#### 5.开始使用 Claude Code
+## 接入 NookMux
 
-现在你可以开始使用 Claude Code 了！
+Claude Code 通过环境变量指向网关。NookMux 提供 Anthropic Messages 兼容接口，最小配置是两个变量：
 
-<Callout type="info" title="启动 Claude Code">
-  打开 PowerShell，直接启动 Claude Code：
+| 环境变量 | 值 |
+| --- | --- |
+| `ANTHROPIC_BASE_URL` | NookMux 站点根地址，例如 `https://your-domain.com`（不要带 `/v1/messages`） |
+| `ANTHROPIC_AUTH_TOKEN` | NookMux 令牌（`sk-` 开头） |
 
-  ```bash
-  claude
-  ```
+### macOS / Linux
 
-  在特定项目中使用：
+```bash
+export ANTHROPIC_BASE_URL=https://your-domain.com
+export ANTHROPIC_AUTH_TOKEN=sk-your-nookmux-token
+claude
+```
 
-  ```bash
-  # 进入你的项目目录
-  cd C:\path\to\your\project
+要持久化，把这两行加入 `~/.zshrc` 或 `~/.bashrc` 后 `source` 生效。
 
-  # 启动 Claude Code
-  claude
-  ```
+### Windows PowerShell
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://your-domain.com"
+$env:ANTHROPIC_AUTH_TOKEN = "sk-your-nookmux-token"
+claude
+```
+
+要持久化，可写入用户级设置文件 `%USERPROFILE%\.claude\settings.json`：
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://your-domain.com",
+    "ANTHROPIC_AUTH_TOKEN": "sk-your-nookmux-token"
+  }
+}
+```
+
+<Callout type="warn" title="不要把密钥提交进仓库">
+  如需项目级 `.claude/settings.local.json`，请先将其加入 `.gitignore`，避免令牌泄漏。
 </Callout>
 
-![windows-img-11.webp](/assets/claude_code/windows-img-11.webp)
+### 在 NookMux 侧获得密钥
 
-![windows-img-12.webp](/assets/claude_code/windows-img-12.webp)
+1. 控制台「密钥」页面创建或选择令牌，复制完整 `sk-` 密钥。
+2. 确认渠道中已配置 `claude-*` 系列模型。
 
-![windows-img-13.webp](/assets/claude_code/windows-img-13.webp)
+NookMux 的 Anthropic 兼容入口支持两种认证头：`Authorization: Bearer <token>`（对应 `ANTHROPIC_AUTH_TOKEN`）和 `x-api-key: <token>`（对应 `ANTHROPIC_API_KEY`）。推荐使用 `ANTHROPIC_AUTH_TOKEN`。
 
-![windows-img-14.webp](/assets/claude_code/windows-img-14.webp)
+## 验证连接
 
-![windows-img-15.webp](/assets/claude_code/windows-img-15.webp)
+启动前可直接向网关发一条最小请求确认配置正确：
 
-<Callout type="info" title="选择模型">
-  输入命令：
+```bash
+curl -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
+  -H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model": "claude-sonnet-4-6", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}'
+```
 
-  ```bash
-  /model
-  ```
+返回以 `{"id":"msg_` 开头的 JSON 即说明地址和密钥可用。随后运行 `claude`，用 `/status` 检查 `Anthropic base URL` 是否指向您的 NookMux 站点。
 
-  按 Enter 进入，选择模型，通常使用默认设置即可。
+## 开始使用
+
+```bash
+cd /path/to/your/project
+claude
+```
+
+启动后可用 `/model` 选择模型。
+
+<Callout type="info">
+  设置 `ANTHROPIC_BASE_URL` 后，所有模型（包括官方预设模型名）都会经由 NookMux 转发，不再使用官方账号额度。
 </Callout>
 
-![windows-img-16.webp](/assets/claude_code/windows-img-16.webp)
+## 常见问题
 
-![windows-img-17.webp](/assets/claude_code/windows-img-17.webp)
+### 401 / 无效令牌
 
-> 注意：设置环境变量修改后，使用所有模型（包括官方预设模型）均调用自定义接入点，而不使用官方账号额度。
+- 确认使用的是完整 `sk-` 开头的 NookMux 令牌。
+- 若同时残留了 claude.ai 登录态或同时设置了 `ANTHROPIC_API_KEY` 与 `ANTHROPIC_AUTH_TOKEN`，可能产生凭据冲突，可运行 `/logout` 清理后重试。
 
-### MacOS 端图文指引
+### 环境变量不生效
 
-#### 1.安装 Claude Code CLI
+- 确认修改的是当前 shell 使用的配置文件（`.bashrc` / `.zshrc` / PowerShell `$PROFILE`）。
+- 重启终端或执行 `source ~/.zshrc`。
+- 验证：`echo $ANTHROPIC_BASE_URL`。
 
-打开终端
+### 会话被网关 400 拒绝
 
-![macos-img-01.webp](/assets/claude_code/macos-img-01.webp)
-
-<Callout type="info" title="安装 Claude Code">
-  打开终端，运行以下命令：
-
-  ```bash
-  curl -fsSL https://claude.ai/install.sh | bash
-  ```
-
-  可选项：出现提示后运行提供的命令
-
-  ```bash
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
-  ```
-</Callout>
-
-![macos-img-02.webp](/assets/claude_code/macos-img-02.webp)
-
-#### 2.设置环境变量
-
-为了让 Claude Code 连接到第三方中转服务，需要设置环境变量：
-
-<Callout type="info" title="一键设置 Claude Code 环境变量">
-  输入命令：
-
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/claude-cli-setup.sh | bash
-  ```
-</Callout>
-
-![macos-configure](/assets/claude_code/macos_configure.png)
-
-<Callout type="info" title="验证 Claude Code 安装">
-  安装完成后，输入以下命令检查是否安装成功：
-
-  ```bash
-  claude --version
-  ```
-
-  如果显示版本号，恭喜你！Claude Code 已经成功安装了。
-</Callout>
-
-#### 3.开始使用 Claude Code
-
-现在你可以开始使用 Claude Code 了！
-
-<Callout type="info" title="启动 Claude Code">
-  直接启动 Claude Code：
-
-  ```bash
-  claude
-  ```
-
-  在特定项目中使用：
-
-  ```bash
-  # 进入你的项目目录
-  cd /path/to/your/project
-
-  # 启动 Claude Code
-  claude
-  ```
-</Callout>
-
-![macos-img-04.webp](/assets/claude_code/macos-img-04.webp)
-
-![macos-img-05.webp](/assets/claude_code/macos-img-05.webp)
-
-![macos-img-06.webp](/assets/claude_code/macos-img-06.webp)
-
-![macos-img-07.webp](/assets/claude_code/macos-img-07.webp)
-
-![macos-img-08.webp](/assets/claude_code/macos-img-08.webp)
-
-<Callout type="info" title="选择模型 (可选)">
-  输入命令：
-
-  ```bash
-  /model
-  ```
-
-  按 Enter 进入，选择官方模型，通常使用默认模型即可。
-</Callout>
-
-![macos-img-09.webp](/assets/claude_code/macos-img-09.webp)
-
-![macos-img-10.webp](/assets/claude_code/macos-img-10.webp)
-
-![macos-img-11.webp](/assets/claude_code/macos-img-11.webp)
-
-> 注意：设置环境变量修改 `ANTHROPIC_BASE_URL` 后，使用所有模型（包括官方预设模型）均调用自定义接入点，而不使用官方账号额度。
-
-#### 4.macOS 常见问题解决
-
-<Callout type="info" title="macOS 安全设置阻止运行">
-  如果系统阻止运行 Claude Code：
-
-  - 打开"系统偏好设置" → "安全性与隐私"
-  - 点击"仍要打开"或"允许"
-  - 或者在 Terminal 中运行：`sudo spctl --master-disable`
-</Callout>
-
-### Linux 端图文指引
-
-#### 1.安装 Claude Code
-
-![linux-img-01.webp](/assets/claude_code/linux-img-01.webp)
-
-<Callout type="info" title="安装 Claude Code">
-  打开终端，运行以下命令：
-
-  ```bash
-  curl -fsSL https://claude.ai/install.sh | bash
-  ```
-
-  如果遇到权限问题，可以使用 sudo：
-
-  ```bash
-  sudo curl -fsSL https://claude.ai/install.sh | bash
-  ```
-</Callout>
-
-![linux-img-03.webp](/assets/claude_code/linux-img-03.webp)
-
-<Callout type="info" title="验证 Claude Code 安装">
-  安装完成后，输入以下命令检查是否安装成功：
-
-  ```bash
-  claude --version
-  ```
-
-  如果显示版本号，恭喜你！Claude Code 已经成功安装了。
-</Callout>
-
-#### 2.设置环境变量
-
-为了让 Claude Code 连接到你的中转服务，需要设置两个环境变量：
-
-<Callout type="info" title="一键修改环境变量">
-  输入命令：
-
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/claude-cli-setup.sh | bash
-  ```
-</Callout>
-
-![macos-configure](/assets/claude_code/macos_configure.png)
-
-#### 3.开始使用 Claude Code
-
-现在你可以开始使用 Claude Code 了！
-
-<Callout type="info" title="启动 Claude Code">
-  直接启动 Claude Code：
-
-  ```bash
-  claude
-  ```
-
-  在特定项目中使用：
-
-  ```bash
-  # 进入你的项目目录
-  cd /path/to/your/project
-
-  # 启动 Claude Code
-  claude
-  ```
-</Callout>
-
-![linux-img-03.webp](/assets/claude_code/linux-img-03.webp)
-
-![linux-img-04.webp](/assets/claude_code/linux-img-04.webp)
-
-![linux-img-05.webp](/assets/claude_code/linux-img-05.webp)
-
-<Callout type="info" title="选择模型">
-  输入命令：
-
-  ```bash
-  /model
-  ```
-
-  按 Enter 进入，选择官方模型，通常使用默认模型即可。
-</Callout>
-
-![linux-img-06.webp](/assets/claude_code/linux-img-06.webp)
-
-![linux-img-07.webp](/assets/claude_code/linux-img-07.webp)
-
-![linux-img-08.webp](/assets/claude_code/linux-img-08.webp)
-
-![linux-img-09.webp](/assets/claude_code/linux-img-09.webp)
-
-> 注意：设置环境变量修改 `ANTHROPIC_BASE_URL` 后，使用所有模型（包括官方预设模型）均调用自定义接入点，而不使用官方账号额度。
-
-#### 4.Linux 常见问题解决
-
-<Callout type="info" title="缺少依赖库">
-  某些 Linux 发行版需要安装额外依赖：
-
-  ```bash
-  # Ubuntu/Debian
-  sudo apt install build-essential
-
-  # CentOS/RHEL
-  sudo dnf groupinstall "Development Tools"
-  ```
-</Callout>
-
-<Callout type="info" title="环境变量不生效">
-  检查以下几点：
-
-  - 确认修改了正确的配置文件（`.bashrc` 或 `.zshrc`）
-  - 重新启动终端或运行 `source ~/.bashrc`
-  - 验证设置：`echo $ANTHROPIC_BASE_URL`
-</Callout>
+部分上游对 Claude Code 发送的预发布字段不完全兼容，可在 NookMux 渠道/模型映射侧确认上游支持 Anthropic Messages 协议后再重试。

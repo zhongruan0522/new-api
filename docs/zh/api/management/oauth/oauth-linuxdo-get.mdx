@@ -14,4 +14,8 @@ _openapi:
 
 🔓 无需鉴权（OAuth回调）
 
+实际运行时由通用路由 `GET /api/oauth/{provider}` 处理，此处 `provider=linuxdo`。
+必须携带由 `GET /api/oauth/state` 生成并保存在同一会话中的 `state`，以及 LinuxDO
+回调返回的 `code`。当前项目只注册了 `github` 和 `linuxdo` 两个 provider。
+
 <APIPage document={"openapi/generated/management/OAuth/get-api-oauth-linuxdo-get-api-oauth-linuxdo-384083837.json"} operations={[{"path":"/api/oauth/linuxdo","method":"get"}]} />

@@ -1,6 +1,6 @@
 ---
 title: API 参考
-description: New API 完整接口文档
+description: NookMux 当前运行时接口文档
 ---
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
@@ -14,7 +14,6 @@ import {
   Headphones,
   Radio,
   Image,
-  Video,
   FileQuestion,
   Server,
   SlidersHorizontal,
@@ -37,11 +36,21 @@ import {
 
 ## 概述
 
-New API 提供完整的 RESTful API 接口，分为 **AI 模型接口** 和 **管理接口** 两大类。您可以通过这些接口实现 AI 能力调用和系统管理功能。
+NookMux 提供 RESTful API，分为 **AI 模型接口** 和 **管理接口** 两大类。
 
-<Callout title="在线调试">
-  您可以访问 [Apifox 操练场](https://apifox.newapi.ai/) 在线测试和调试 API 接口，或浏览下方的 API 文档。
+<Callout title="当前项目契约优先">
+  本目录最初由上游 Apifox 定义生成，但 NookMux 已有独立扩展和删改。请先阅读
+  [当前项目 API 契约](/zh/docs/api/current-contract)；若生成页与该页或运行时代码冲突，以当前项目契约和代码为准。
 </Callout>
+
+<Cards>
+  <Card
+    icon={<FileText />}
+    title="当前项目 API 契约"
+    description="缺失接口、已删除接口和参数变更的代码核对结果。"
+    href="/zh/docs/api/current-contract"
+  />
+</Cards>
 
 ## AI 模型接口
 
@@ -101,12 +110,6 @@ AI 模型接口提供各种 AI 能力的调用，兼容 OpenAI API 格式。
     title="图像"
     description="AI图像生成接口。"
     href="/zh/docs/api/ai-model/images/openai/post-v1-images-generations"
-  />
-  <Card
-    icon={<Video />}
-    title="视频"
-    description="AI视频生成接口。"
-    href="/zh/docs/api/ai-model/videos/sora/createvideo"
   />
   <Card
     icon={<FileQuestion />}
@@ -190,8 +193,8 @@ AI 模型接口提供各种 AI 能力的调用，兼容 OpenAI API 格式。
   <Card
     icon={<ScrollText />}
     title="日志"
-    description="使用日志查询接口。"
-    href="/zh/docs/api/management/logs/log-get"
+    description="使用日志、审计日志与字段可见性接口。"
+    href="/zh/docs/api/current-contract"
   />
   <Card
     icon={<ChartBar />}
@@ -215,8 +218,6 @@ AI 模型接口提供各种 AI 能力的调用，兼容 OpenAI API 格式。
     icon={<ShieldAlert />}
     title="安全验证"
     description="安全验证相关接口。"
-    href="/zh/docs/api/management/security-verification/verify-status-get"
+    href="/zh/docs/api/management/security-verification/verify-post"
   />
 </Cards>
-
-

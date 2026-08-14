@@ -1,53 +1,48 @@
 ---
-title: 1Panel Panel Deployment
+title: 1Panel Deployment
 ---
 
-## Install 1Panel Panel
+This document explains how to deploy NookMux through 1Panel's container features. Different 1Panel app store versions may show different application names. If the app store does not provide NookMux, you can deploy it with a custom image.
 
-<Callout type="info" title="Install 1Panel Panel">
-  - For information on 1Panel installation, deployment, and basic features,
-  please refer to the [1Panel Official Documentation](https://1panel.cn/docs/) -
-  After completing the 1Panel installation and deployment, open your browser to
-  the prompted URL to access the 1Panel panel.
+## Prerequisites
+
+- 1Panel installed. See the [1Panel Official Documentation](https://1panel.cn/docs/) for basic usage.
+- The server has port `3000` or the external port you plan to map open.
+- For production, prepare random `SESSION_SECRET` / `CRYPTO_SECRET` values.
+
+## Method One: App Store Install
+
+If the 1Panel app store already includes a NookMux app:
+
+1. Go to **App Store** and search for `NookMux` in the AI or tools category.
+2. Click install and follow the prompts to set the app name, port, data directory, and timezone.
+3. Enable external access for the port.
+4. After installation, open the access address from the installed apps list.
+
+<Callout type="info" title="Naming compatibility">
+  Some third-party panel templates may still use the names `New API` or `New-API`. Prefer templates whose image is `ghcr.io/nookmux/nookmux:latest` or that are clearly adapted to the current NookMux project.
 </Callout>
 
-![1panel](/assets/1panel/1panel.jpg)
+## Method Two: Custom Container Deployment
 
-## Install New API
+If no ready-made app is available, create a normal container in 1Panel:
 
-<Callout type="info" title="Search for Applications">
-  Go to the application list in the App Store, find the New API application
-  under the [AI] category, and install it.
-</Callout>
+| Item | Suggested Value |
+| --- | --- |
+| Image | `ghcr.io/nookmux/nookmux:latest` |
+| Container Name | `nookmux` |
+| Port Mapping | `3000:3000` |
+| Volume Mapping | `/host/data/nookmux:/data`, `/host/logs/nookmux:/app/logs` |
+| Startup Command | `--log-dir /app/logs` |
+| Environment Variables | `TZ=Asia/Shanghai`, `SESSION_SECRET=...`, `CRYPTO_SECRET=...` |
 
-![1panel-newapi](/assets/1panel/1panel-newapi.jpg)
+If you need an external database or Redis, add:
 
-<Callout type="info" title="Install Application">
-  Configure New API application parameters on the installation page:
-</Callout>
+```text
+SQL_DSN=user:password@tcp(db-host:3306)/nookmux?parseTime=true
+REDIS_CONN_STRING=redis://:password@redis-host:6379
+```
 
-    - Name: The name of the New API application to be created
-    - Version: Select the version of New API
-    - Port: The service port for the New API application
-    - Timezone: Enter the timezone where the server is located (default Asia/Shanghai)
-    - Advanced Settings: Be sure to check external port access
+## Access and Initialization
 
-![newapi-setting](/assets/1panel/newapi-setting.jpg)
-
-<Callout type="info" title="Confirm Installation">
-  Click Confirm to start the installation. The page will automatically redirect
-  to the installed applications list. Wait for the New API application status to
-  change to Started.
-</Callout>
-
-![newapi-start](/assets/1panel/newapi-start.jpg)
-
-## Access New API
-
-<Callout type="info" title="Access Application">
-  - On the `Installed` page, click `Jump` to enter the New API WebUI page. -
-  Before use, it is recommended to set the `Default Access Address` on the
-  `Panel Settings` page.
-</Callout>
-
-![newapi-visit](/assets/1panel/newapi-visit.jpg)
+After the container starts, visit `http://Server_IP:3000`. The first visit opens the initialization page. Follow the prompts to create an administrator account and password, then start using the system.

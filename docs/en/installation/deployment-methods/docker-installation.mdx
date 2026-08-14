@@ -2,53 +2,64 @@
 title: Docker Deployment
 ---
 
-This document provides detailed steps for deploying New API using Docker.
-
-<Callout type="warn" title="Highly Recommended">
-  We highly recommend using the [Docker Compose installation
-  method](/en/docs/installation/deployment-methods/docker-compose-installation)
-  instead of manually starting Docker containers. The Docker Compose method
-  offers better configuration management, service orchestration, and deployment
-  experience.
-</Callout>
+This document explains how to run NookMux directly from the Docker image. Production still recommends [Docker Compose Deployment](/en/docs/installation/deployment-methods/docker-compose-installation) so you can manage Redis, logs, and data volumes in one place.
 
 ## Basic Requirements
 
-- Docker environment installed
-- Port: Default port 3000 is used
+- Docker installed.
+- The default listening port is `3000`.
+- You must mount `/data` to store the SQLite database and upload/cache data.
 
-## Deploy Directly Using Docker Image
-
-### Using SQLite Database (Not Recommended)
-
-```shell
-docker run --name new-api -d --restart always \
-  -p 3000:3000 \
-  -e TZ=Asia/Shanghai \
-  -v /your/data/path:/data \
-  calciumion/new-api:latest
-```
-
-<Callout type="warn" title="Note">
-  Please replace `/your/data/path` with your desired local path for data
-  storage.
-</Callout>
-
-### Using MySQL Database
+## Run with SQLite
 
 ```shell
-docker run --name new-api -d --restart always \
+docker run --name nookmux -d --restart always \
   -p 3000:3000 \
-  -e SQL_DSN="用户名:密码@tcp(数据库地址:3306)/数据库名" \
   -e TZ=Asia/Shanghai \
+  -e SESSION_SECRET=replace_with_a_random_string \
+  -e CRYPTO_SECRET=replace_with_another_random_string \
   -v /your/data/path:/data \
-  calciumion/new-api:latest
+  ghcr.io/nookmux/nookmux:latest
 ```
 
-<Callout type="warn" title="Note">
-  Please replace the database connection information in the parameters.
+<Callout type="warn" title="Data persistence">
+  Replace `/your/data/path` with a real host directory and make sure the container has read/write access. If `/data` is not mounted, data will be lost after the container is recreated.
 </Callout>
 
-## Accessing the System
+## Run with external MySQL
 
-After deployment, accessing `http://Server_IP:3000` will automatically redirect you to the initialization page. Follow the on-screen instructions to manually set up the administrator account and password (only required for the first installation), and upon completion, you can log in to the system with the newly set administrator account.
+```shell
+docker run --name nookmux -d --restart always \
+  -p 3000:3000 \
+  -e SQL_DSN="user:password@tcp(db-host:3306)/nookmux?parseTime=true" \
+  -e TZ=Asia/Shanghai \
+  -e SESSION_SECRET=replace_with_a_random_string \
+  -e CRYPTO_SECRET=replace_with_another_random_string \
+  -v /your/data/path:/data \
+  ghcr.io/nookmux/nookmux:latest
+```
+
+## Run with external PostgreSQL
+
+```shell
+docker run --name nookmux -d --restart always \
+  -p 3000:3000 \
+  -e SQL_DSN="postgres://user:password@db-host:5432/nookmux" \
+  -e TZ=Asia/Shanghai \
+  -e SESSION_SECRET=replace_with_a_random_string \
+  -e CRYPTO_SECRET=replace_with_another_random_string \
+  -v /your/data/path:/data \
+  ghcr.io/nookmux/nookmux:latest
+```
+
+## Optional: connect Redis
+
+```shell
+-e REDIS_CONN_STRING="redis://:password@redis-host:6379"
+```
+
+With Redis configured, cross-node caching and synchronization are enabled. For multi-node deployments, all nodes must use the same Redis instance and the same `SESSION_SECRET` / `CRYPTO_SECRET` values.
+
+## Access the System
+
+After deployment, visit `http://Server_IP:3000`. The first visit opens the initialization page. After completing initialization, log in with the administrator account you created.

@@ -1,6 +1,6 @@
 ---
 title: Installation & Deployment
-description: Choose the deployment method that suits you
+description: Choose the NookMux deployment method that fits your setup
 ---
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
@@ -17,7 +17,9 @@ import {
 
 ## Overview
 
-New API supports multiple deployment methods. You can choose the most suitable solution based on your technical background and usage scenario.
+NookMux is a Go-based AI API gateway and admin console. It supports Docker, Docker Compose, panel deployments, cluster deployments, and local development. For production, Docker Compose is recommended so you can manage the app, Redis, data directory, and logs in one place.
+
+The current official container image is `ghcr.io/nookmux/nookmux:latest`.
 
 ## Deployment Methods
 
@@ -25,37 +27,37 @@ New API supports multiple deployment methods. You can choose the most suitable s
   <Card
     icon={<Boxes />}
     title="Docker Compose Deployment"
-    description="Orchestrate multiple services using Docker Compose, suitable for production environments."
+    description="Deploy NookMux and Redis with the bundled compose file, suitable for production."
     href="/en/docs/installation/deployment-methods/docker-compose-installation"
   />
   <Card
     icon={<Container />}
     title="Docker Single Container Deployment"
-    description="Quick deployment using Docker image, suitable for personal use."
+    description="Run the official image directly, suitable for testing or setups with external database/Redis."
     href="/en/docs/installation/deployment-methods/docker-installation"
   />
   <Card
     icon={<Server />}
     title="1Panel Deployment"
-    description="Quick deployment via 1Panel graphical interface."
+    description="Deploy NookMux through 1Panel's container features."
     href="/en/docs/installation/deployment-methods/1panel-installation"
   />
   <Card
     icon={<Server />}
     title="Baota Panel Deployment"
-    description="Quick deployment via Baota Panel graphical interface."
+    description="Deploy NookMux through Baota Panel's Docker features."
     href="/en/docs/installation/deployment-methods/bt-docker-installation"
   />
   <Card
     icon={<Network />}
     title="Cluster Deployment Mode"
-    description="Multi-node distributed deployment for high availability and load balancing."
+    description="Use shared database and Redis across nodes for high availability and load balancing."
     href="/en/docs/installation/deployment-methods/cluster-deployment"
   />
   <Card
     icon={<Code2 />}
     title="Local Development Deployment"
-    description="Suitable for developers contributing code and customizing features."
+    description="Suitable for contributors who need coding, debugging, and feature customization."
     href="/en/docs/installation/deployment-methods/local-development"
   />
 </Cards>
@@ -66,19 +68,19 @@ New API supports multiple deployment methods. You can choose the most suitable s
   <Card
     icon={<FileCode />}
     title="docker-compose.yml Configuration"
-    description="Detailed explanation of Docker Compose configuration file parameters."
+    description="Learn the current Docker Compose file and common extension patterns."
     href="/en/docs/installation/config-maintenance/docker-compose-yml"
   />
   <Card
     icon={<Settings />}
     title="Environment Variables Configuration"
-    description="Complete environment variables configuration guide and best practices."
+    description="Common environment variables, defaults, and multi-node deployment settings."
     href="/en/docs/installation/config-maintenance/environment-variables"
   />
   <Card
     icon={<RefreshCw />}
     title="System Update"
-    description="Learn how to safely update New API to the latest version."
+    description="Learn how to safely update NookMux to the latest version."
     href="/en/docs/installation/config-maintenance/system-update"
   />
 </Cards>

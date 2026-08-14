@@ -2,14 +2,14 @@
   "title": "Settings",
   "pages": [
     "system-settings",
-    "model-settings",
+    "other-settings",
+    "payment-settings",
     "rate-settings",
+    "model-settings",
     "rate-limit-settings",
     "dashboard-settings",
-    "chat-settings",
-    "drawing-settings",
-    "payment-settings",
     "operation-settings",
-    "other-settings"
+    "chat-settings",
+    "drawing-settings"
   ]
 }

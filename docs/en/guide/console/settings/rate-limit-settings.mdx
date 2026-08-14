@@ -1,10 +1,18 @@
 ﻿---
-title: Rate Limit Settings
+title: Security & Limits
 ---
 
-Here you can configure model request rate limit related settings.
+The old "Rate Limit Settings" page is now under **System Settings → Security & Limits → Rate Limit**.
 
-Group Rate Limit Example:
+Configurable items include:
+
+- Whether model request rate limiting is enabled.
+- Maximum requests per limit window.
+- Maximum successful requests per limit window.
+- Limit window length in minutes.
+- Group-based rate limit overrides.
+
+Group rate limit example:
 
 ```json
 {
@@ -13,4 +21,4 @@ Group Rate Limit Example:
 }
 ```
 
-![Rate Limit Settings](/assets/guide/rate-limit-setting.png)
+The exact meaning within the same group follows the current page field descriptions. The Security & Limits group also includes sensitive words, SSRF protection, and audit log settings.
