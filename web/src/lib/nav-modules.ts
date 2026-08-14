@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { getStatus } from '@/lib/api'
+import { getAdminModules, getStatus } from '@/lib/api'
 
 export type ModuleAccess = { enabled: boolean; requireAuth: boolean }
 
@@ -187,21 +187,51 @@ export async function getFreshModuleAccess(
   }
 }
 
+// ----------------------------------------------------------------------------
+// Admin sidebar modules (admin-only config)
+//
+// SidebarModulesAdmin is served by `/api/status/admin_modules` (AdminAuth),
+// never by the public `/api/status`. The cached copy lives under its own
+// storage key so the public status cache stays free of admin-only data.
+// ----------------------------------------------------------------------------
+
+const ADMIN_MODULES_STORAGE_KEY = 'admin-modules'
+
+export function getCachedAdminSidebarModules(): string | null {
+  try {
+    if (typeof window === 'undefined') return null
+    return window.localStorage.getItem(ADMIN_MODULES_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function cacheAdminSidebarModules(raw: string): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ADMIN_MODULES_STORAGE_KEY, raw)
+    }
+  } catch {
+    /* empty */
+  }
+}
+
+export async function fetchAdminSidebarModules(): Promise<string> {
+  const res = await getAdminModules()
+  const raw = res?.data?.SidebarModulesAdmin ?? ''
+  cacheAdminSidebarModules(raw)
+  return raw
+}
+
 export function isSidebarModuleEnabled(
   section: string,
   module: string
 ): boolean {
-  const status = getCachedStatus()
-  if (!status) return true
-
-  const raw = status.SidebarModulesAdmin
-  if (!raw || String(raw).trim() === '') return true
+  const raw = getCachedAdminSidebarModules()
+  if (!raw || raw.trim() === '') return true
 
   try {
-    const parsed = JSON.parse(String(raw)) as Record<
-      string,
-      Record<string, boolean>
-    >
+    const parsed = JSON.parse(raw) as Record<string, Record<string, boolean>>
     const sectionConfig = parsed[section]
     if (!sectionConfig) return true
     if (sectionConfig.enabled === false) return false

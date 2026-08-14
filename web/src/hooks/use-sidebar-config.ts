@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
-import { useStatus } from '@/hooks/use-status'
+import { useAdminSidebarModules } from '@/hooks/use-admin-sidebar-modules'
 import { ROLE } from '@/lib/roles'
 import type { NavGroup, NavItem } from '@/components/layout/types'
 
@@ -216,19 +216,19 @@ function filterNavItems(
 /**
  * Filter sidebar navigation groups by admin sidebar_modules config and user role.
  *
- * Admin (status.SidebarModulesAdmin) config controls which modules are available.
+ * Admin config (SidebarModulesAdmin) is fetched from the admin-only
+ * `/api/status/admin_modules` endpoint after the user is confirmed to be an
+ * admin; it must not be read from the public status payload.
  * User role further restricts visibility: non-root admins cannot see system settings.
  */
 export function useSidebarConfig(navGroups: NavGroup[]): NavGroup[] {
-  const { status } = useStatus()
   const userRole = useAuthStore((s) => s.auth.user?.role)
+  const isAdmin = userRole !== undefined && userRole >= ROLE.ADMIN
+  const { data: sidebarModulesAdmin } = useAdminSidebarModules(isAdmin)
 
   const adminConfig = useMemo(
-    () =>
-      parseSidebarConfig(
-        status?.SidebarModulesAdmin as string | null | undefined
-      ),
-    [status?.SidebarModulesAdmin]
+    () => parseSidebarConfig(sidebarModulesAdmin),
+    [sidebarModulesAdmin]
   )
 
   // Role-based overrides: non-root admins should not see system settings

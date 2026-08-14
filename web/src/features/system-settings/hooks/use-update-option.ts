@@ -25,10 +25,12 @@ import type { UpdateOptionRequest } from '../types'
 // Configuration keys that require status refresh
 const STATUS_RELATED_KEYS = [
   'HeaderNavModules',
-  'SidebarModulesAdmin',
   'common.fields.notice',
   'LogConsumeEnabled',
 ]
+
+// Configuration keys served by the admin-only /api/status/admin_modules endpoint
+const ADMIN_MODULES_RELATED_KEYS = ['SidebarModulesAdmin']
 
 export function useUpdateOption() {
   const queryClient = useQueryClient()
@@ -55,6 +57,17 @@ export function useUpdateOption() {
         queryClient.invalidateQueries({ queryKey: ['status'] })
         try {
           window.localStorage.removeItem('status')
+        } catch {
+          /* empty */
+        }
+      }
+
+      // SidebarModulesAdmin is served by the admin-only endpoint; refresh
+      // that query/cache instead of the public status cache.
+      if (ADMIN_MODULES_RELATED_KEYS.includes(variables.key)) {
+        queryClient.invalidateQueries({ queryKey: ['admin-modules'] })
+        try {
+          window.localStorage.removeItem('admin-modules')
         } catch {
           /* empty */
         }

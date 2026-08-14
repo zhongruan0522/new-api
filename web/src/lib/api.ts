@@ -209,6 +209,16 @@ export async function getStatus() {
   return res.data?.data as Record<string, unknown>
 }
 
+// Get admin sidebar modules config (admin-only, requires auth)
+export async function getAdminModules(): Promise<{
+  success: boolean
+  message?: string
+  data?: { SidebarModulesAdmin?: string }
+}> {
+  const res = await api.get('/api/status/admin_modules')
+  return res.data
+}
+
 // Get system notice
 export async function getNotice(): Promise<{
   success: boolean

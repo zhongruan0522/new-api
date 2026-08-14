@@ -80,8 +80,10 @@ func GetStatus(c *gin.Context) {
 		"faq_enabled":           dc.FAQEnabled,
 
 		// 模块管理配置
+		// HeaderNavModules 是前台导航开关（pricing/rankings 访问提示），登录前渲染壳层需要。
+		// SidebarModulesAdmin 是管理后台侧栏模块开关，属于 admin 受限配置，
+		// 由 GET /api/status/admin_modules（AdminAuth）单独返回，不得进公开响应。
 		"HeaderNavModules":          common.OptionMap["HeaderNavModules"],
-		"SidebarModulesAdmin":       common.OptionMap["SidebarModulesAdmin"],
 		"passkey_login":             passkeySetting.Enabled,
 		"passkey_display_name":      passkeySetting.RPDisplayName,
 		"passkey_rp_id":             passkeySetting.RPID,
@@ -112,6 +114,23 @@ func GetStatus(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    data,
+	})
+}
+
+// GetStatusAdminModules 返回管理后台侧栏模块开关配置。
+// 该配置属于 admin 受限数据（后台能力结构），不能由公开 /api/status 承载，
+// 前端侧栏在确认管理员身份后请求本接口。
+func GetStatusAdminModules(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	sidebarModulesAdmin := common.OptionMap["SidebarModulesAdmin"]
+	common.OptionMapRWMutex.RUnlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"SidebarModulesAdmin": sidebarModulesAdmin,
+		},
 	})
 }
 
