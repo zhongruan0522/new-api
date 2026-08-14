@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -30,7 +30,8 @@ import {
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { CopyButton } from '@/components/copy-button'
 import { DataTableBulkActions as BulkActionsToolbar } from '@/components/data-table'
-import { deleteInvalidRedemptions } from '../api'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { deleteInvalidRedemptions, getRedemptionKey } from '../api'
 import { type Redemption } from '../types'
 import { useRedemptions } from './redemptions-provider'
 
@@ -43,18 +44,44 @@ export function DataTableBulkActions<TData>({
 }: DataTableBulkActionsProps<TData>) {
   const { t } = useTranslation()
   const { triggerRefresh } = useRedemptions()
+  const { copyToClipboard } = useCopyToClipboard({ notify: false })
   const [showDeleteInvalidConfirm, setShowDeleteInvalidConfirm] =
     useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
   const selectedRows = table.getFilteredSelectedRowModel().rows
 
-  const contentToCopy = useMemo(() => {
-    const selectedCodes = selectedRows.map((row) => {
-      const redemption = row.original as Redemption
-      return `${redemption.name}\t${redemption.key}`
-    })
-    return selectedCodes.join('\n')
-  }, [selectedRows])
+  const handleCopySelected = async (): Promise<string> => {
+    if (isCopying) return ''
+    setIsCopying(true)
+    try {
+      const lines: string[] = []
+      for (const row of selectedRows) {
+        const redemption = row.original as Redemption
+        try {
+          const res = await getRedemptionKey(redemption.id)
+          if (!res.success || !res.data?.key) {
+            throw new Error(res.message)
+          }
+          lines.push(`${redemption.name}\t${res.data.key}`)
+        } catch {
+          toast.error(
+            t('redemptionCodes.status.failedToFetchKeyFor', {
+              name: redemption.name,
+            })
+          )
+        }
+      }
+      const content = lines.join('\n')
+      if (content) {
+        await copyToClipboard(content)
+        toast.success(t('redemptionCodes.status.codesCopied'))
+      }
+      return content
+    } finally {
+      setIsCopying(false)
+    }
+  }
 
   const handleDeleteInvalid = async () => {
     setIsDeleting(true)
@@ -80,15 +107,22 @@ export function DataTableBulkActions<TData>({
   return (
     <>
       <BulkActionsToolbar table={table} entityName={t('redemptionCodes.fields.codes')}>
-        <CopyButton
-          value={contentToCopy}
-          variant='outline'
-          size='icon'
-          className='size-8'
-          tooltip={t('redemptionCodes.actions.copySelectedCodes')}
-          successTooltip={t('redemptionCodes.status.codesCopied')}
-          aria-label={t('redemptionCodes.actions.copySelectedCodes')}
-        />
+        {isCopying ? (
+          <span className='text-muted-foreground inline-flex h-8 w-8 items-center justify-center text-xs'>
+            …
+          </span>
+        ) : (
+          <CopyButton
+            value=''
+            onBeforeCopy={handleCopySelected}
+            variant='outline'
+            size='icon'
+            className='size-8'
+            tooltip={t('redemptionCodes.actions.copySelectedCodes')}
+            successTooltip={t('redemptionCodes.status.codesCopied')}
+            aria-label={t('redemptionCodes.actions.copySelectedCodes')}
+          />
+        )}
 
         <Tooltip>
           <TooltipTrigger

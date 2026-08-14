@@ -58,6 +58,14 @@ export async function getRedemption(
   return res.data
 }
 
+// Get full redemption code key by ID (explicit reveal action, audited server-side)
+export async function getRedemptionKey(
+  id: number
+): Promise<ApiResponse<{ key: string }>> {
+  const res = await api.get(`/api/redemption/${id}/key`)
+  return res.data
+}
+
 // Create redemption code(s)
 export async function createRedemption(
   data: RedemptionFormData

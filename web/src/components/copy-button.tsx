@@ -38,6 +38,11 @@ interface CopyButtonProps {
   tooltip?: string
   successTooltip?: string
   'aria-label'?: string
+  /**
+   * 复制前回调：返回实际要复制的值（如按需加载后的完整 key）。
+   * 返回空字符串表示加载失败，跳过复制。
+   */
+  onBeforeCopy?: () => Promise<string>
 }
 
 export function CopyButton({
@@ -50,6 +55,7 @@ export function CopyButton({
   tooltip,
   successTooltip,
   'aria-label': ariaLabel,
+  onBeforeCopy,
 }: CopyButtonProps) {
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
@@ -59,12 +65,22 @@ export function CopyButton({
   const resolvedAriaLabel = ariaLabel ?? resolvedTooltip
   const copiedAriaLabel = t('common.status.copied')
 
+  const handleCopy = async () => {
+    if (onBeforeCopy) {
+      const resolved = await onBeforeCopy()
+      if (!resolved) return
+      await copyToClipboard(resolved)
+      return
+    }
+    await copyToClipboard(value)
+  }
+
   const button = (
     <Button
       variant={variant}
       size={size}
       className={cn('shrink-0', className)}
-      onClick={() => copyToClipboard(value)}
+      onClick={() => void handleCopy()}
       aria-label={isCopied ? copiedAriaLabel : resolvedAriaLabel}
     >
       {isCopied ? (

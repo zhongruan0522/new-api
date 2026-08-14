@@ -35,5 +35,7 @@
   "redemptionCodes.tips.permanentlyDeleteRedemptionCode": "这将永久删除兑换码",
   "redemptionCodes.fields.updateRedemptionCode": "更新兑换码",
   "redemptionCodes.tips.updateTheRedemptionCodeByProvidingNecessaryInfo": "通过提供必要信息更新兑换码。",
-  "redemptionCodes.fields.userId": "用户 {{id}}"
+  "redemptionCodes.fields.userId": "用户 {{id}}",
+  "redemptionCodes.errors.failedToFetchKey": "获取兑换码完整码失败，请稍后重试",
+  "redemptionCodes.status.failedToFetchKeyFor": "获取兑换码 {{name}} 的完整码失败"
 }
