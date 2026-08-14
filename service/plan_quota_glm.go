@@ -20,6 +20,24 @@ const (
 	glmQuotaLimitPath   = "/api/monitor/usage/quota/limit"
 )
 
+// 智谱套餐额度类型。TOKENS_LIMIT/TIME_LIMIT 为按 Tokens 计费的 V1/V2 套餐条目，
+// CREDIT_LIMIT 为 V3 积分套餐特有的按积分计费条目（参考智谱官网前端 CREDIT_LIMIT 常量）。
+const (
+	glmLimitTypeTokens = "TOKENS_LIMIT"
+	glmLimitTypeTime   = "TIME_LIMIT"
+	glmLimitTypeCredit = "CREDIT_LIMIT"
+)
+
+// GLM 套餐版本。智谱官方前端按 V1/V2/V3 区分套餐代次：
+//   - V1：仅每 5 小时额度（unit=3），无每周额度；
+//   - V2：每 5 小时 + 每周额度（unit=6），按 Tokens 计费；
+//   - V3：额度条目 type=CREDIT_LIMIT，按积分计费。
+const (
+	glmPlanVersion1 = "V1"
+	glmPlanVersion2 = "V2"
+	glmPlanVersion3 = "V3"
+)
+
 // glmAuthFailureCode 是智谱 biz/monitor 接口在 API Key 无效或认证失败时返回的固定错误码。
 // 智谱在 Key 失效时会返回 {"code":1000,"msg":"Authentication Failed"/"身份验证失败。","success":false}，
 // 且 HTTP 状态码仍为 200，必须从响应体识别，否则会被误判为风控或空数据。
@@ -51,7 +69,8 @@ func isGlmAuthFailure(body []byte) bool {
 // GlmPlanQuotaData 聚合了智谱 GLM 套餐的所有可展示信息
 type GlmPlanQuotaData struct {
 	PlanName      string           `json:"plan_name"`
-	PlanVersion   string           `json:"plan_version"` // "新" 或 "旧"，unit=6 为新套餐
+	PlanVersion   string           `json:"plan_version,omitempty"` // 套餐代次: V1 / V2 / V3
+	IsCreditPlan  bool             `json:"is_credit_plan"`         // 是否为按积分计费的 V3 套餐
 	ProductLevel  string           `json:"product_level"`
 	ProductName   string           `json:"product_name"`
 	EffectiveDate string           `json:"effective_date"`
@@ -60,11 +79,26 @@ type GlmPlanQuotaData struct {
 	WeeklyLimit   *GlmLimitInfo    `json:"weekly_limit,omitempty"`
 	TokenLimit    *GlmLimitInfo    `json:"token_limit,omitempty"`
 	McpToolLimit  *GlmMcpLimitInfo `json:"mcp_tool_limit,omitempty"`
+	// CreditLimit 为 V3 积分套餐的 5 小时积分额度（unit=3, type=CREDIT_LIMIT）。
+	CreditLimit *GlmCreditLimitInfo `json:"credit_limit,omitempty"`
+	// CreditWeeklyLimit 为 V3 积分套餐的周积分额度（unit=6, type=CREDIT_LIMIT）。
+	CreditWeeklyLimit *GlmCreditLimitInfo `json:"credit_weekly_limit,omitempty"`
 }
 
 // GlmLimitInfo 通用限额信息
 type GlmLimitInfo struct {
 	Percentage    int    `json:"percentage"`
+	NextResetTime string `json:"next_reset_time,omitempty"`
+	Status        string `json:"status"`
+}
+
+// GlmCreditLimitInfo 积分限额信息。
+// 智谱积分套餐会同时返回已用积分（currentValue）与总额度积分（usage），
+// 官网以 "currentValue / usage 积分" 形式展示。
+type GlmCreditLimitInfo struct {
+	Percentage    int    `json:"percentage"`
+	CurrentValue  int    `json:"current_value"`
+	Usage         int    `json:"usage"`
 	NextResetTime string `json:"next_reset_time,omitempty"`
 	Status        string `json:"status"`
 }
@@ -385,59 +419,81 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 		data.AutoRenew = pkg.AutoRenew != 0
 	}
 
-	// 解析限额信息，同时判断新老套餐
-	if lim != nil && len(lim.Data.Limits) > 0 {
-		hasWeekly := false
-		for _, l := range lim.Data.Limits {
+	if lim == nil {
+		return data
+	}
+
+	hasWeekly := false
+	hasCredit := false
+	for _, l := range lim.Data.Limits {
+		switch {
+		case l.Type == glmLimitTypeCredit:
+			// 积分额度（V3 套餐）：unit=3 为 5 小时积分额度，unit=6 为周积分额度
+			hasCredit = true
+			credit := &GlmCreditLimitInfo{
+				Percentage:    l.Percentage,
+				CurrentValue:  l.CurrentValue,
+				Usage:         l.Usage,
+				NextResetTime: string(l.NextResetTime),
+				Status:        getGlmUsageStatus(l.Percentage),
+			}
 			if l.Unit == 6 {
-				hasWeekly = true
+				data.CreditWeeklyLimit = credit
+			} else {
+				data.CreditLimit = credit
 			}
-			switch {
-			case l.Unit == 6:
-				// 每周限额（新套餐特有）
-				data.WeeklyLimit = &GlmLimitInfo{
-					Percentage:    l.Percentage,
-					NextResetTime: string(l.NextResetTime),
-					Status:        getGlmUsageStatus(l.Percentage),
-				}
-			case l.Type == "TOKENS_LIMIT":
-				// 每5小时限额
-				data.TokenLimit = &GlmLimitInfo{
-					Percentage:    l.Percentage,
-					NextResetTime: string(l.NextResetTime),
-					Status:        getGlmUsageStatus(l.Percentage),
-				}
-			case l.Type == "TIME_LIMIT":
-				// MCP工具限额
-				mcp := &GlmMcpLimitInfo{
-					Percentage:    l.Percentage,
-					CurrentUsage:  fmt.Sprintf("%d/%d", l.CurrentValue, l.Usage),
-					NextResetTime: string(l.NextResetTime),
-					Status:        getGlmUsageStatus(l.Percentage),
-				}
-				toolNameMap := map[string]string{
-					"search-prime": "联网搜索",
-					"web-reader":   "网页读取",
-					"zread":        "开源仓库",
-				}
-				for _, detail := range l.UsageDetails {
-					name := detail.ModelCode
-					if mapped, ok := toolNameMap[detail.ModelCode]; ok {
-						name = mapped
-					}
-					mcp.Tools = append(mcp.Tools, GlmToolDetail{
-						Name:  name,
-						Usage: detail.Usage,
-					})
-				}
-				data.McpToolLimit = mcp
+		case l.Type == glmLimitTypeTokens && l.Unit == 6:
+			// 每周限额（V2 套餐特有）
+			hasWeekly = true
+			data.WeeklyLimit = &GlmLimitInfo{
+				Percentage:    l.Percentage,
+				NextResetTime: string(l.NextResetTime),
+				Status:        getGlmUsageStatus(l.Percentage),
 			}
+		case l.Type == glmLimitTypeTokens:
+			// 每5小时限额
+			data.TokenLimit = &GlmLimitInfo{
+				Percentage:    l.Percentage,
+				NextResetTime: string(l.NextResetTime),
+				Status:        getGlmUsageStatus(l.Percentage),
+			}
+		case l.Type == glmLimitTypeTime:
+			// MCP工具限额
+			mcp := &GlmMcpLimitInfo{
+				Percentage:    l.Percentage,
+				CurrentUsage:  fmt.Sprintf("%d/%d", l.CurrentValue, l.Usage),
+				NextResetTime: string(l.NextResetTime),
+				Status:        getGlmUsageStatus(l.Percentage),
+			}
+			toolNameMap := map[string]string{
+				"search-prime": "联网搜索",
+				"web-reader":   "网页读取",
+				"zread":        "开源仓库",
+			}
+			for _, detail := range l.UsageDetails {
+				name := detail.ModelCode
+				if mapped, ok := toolNameMap[detail.ModelCode]; ok {
+					name = mapped
+				}
+				mcp.Tools = append(mcp.Tools, GlmToolDetail{
+					Name:  name,
+					Usage: detail.Usage,
+				})
+			}
+			data.McpToolLimit = mcp
 		}
-		if hasWeekly {
-			data.PlanVersion = "新"
-		} else {
-			data.PlanVersion = "旧"
-		}
+	}
+
+	// 判定套餐代次：与智谱官方前端一致，limits 含 CREDIT_LIMIT 条目即为 V3 积分套餐；
+	// 否则按是否含每周额度（unit=6）区分 V2 / V1。
+	data.IsCreditPlan = hasCredit
+	switch {
+	case hasCredit:
+		data.PlanVersion = glmPlanVersion3
+	case hasWeekly:
+		data.PlanVersion = glmPlanVersion2
+	default:
+		data.PlanVersion = glmPlanVersion1
 	}
 
 	return data
