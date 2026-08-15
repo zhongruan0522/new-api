@@ -122,6 +122,9 @@ func PostSetup(c *gin.Context) {
 	setupRecord := model.NewSetupRecord(common.Version, time.Now().Unix())
 	if err := model.InitializeSetup(rootUser, setupRecord); err != nil {
 		if errors.Is(err, model.ErrSetupAlreadyInitialized) {
+			// 数据库已确认初始化（其他实例率先完成）：同步本进程内存状态，
+			// 否则该实例会持续对外报告未初始化直到重启。
+			constant.Setup = true
 			common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
 			return
 		}
