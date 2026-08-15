@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { type ReactNode, useRef } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -45,6 +45,10 @@ interface CopyButtonProps {
   onBeforeCopy?: () => Promise<string>
   /** 复制结果是否弹全局 toast（默认 false，仅切换图标/tooltip 反馈） */
   notify?: boolean
+  /** 禁用按钮（如按需内容仍在加载中） */
+  disabled?: boolean
+  /** 加载态：显示 spinner，替代复制图标 */
+  loading?: boolean
 }
 
 export function CopyButton({
@@ -59,12 +63,21 @@ export function CopyButton({
   'aria-label': ariaLabel,
   onBeforeCopy,
   notify = false,
+  disabled = false,
+  loading = false,
 }: CopyButtonProps) {
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard({ notify })
   // onBeforeCopy 场景下 value 可能为空占位（如批量复制），实际复制的是
   // resolved 值；两种情况都要能切换到"已复制"状态。
   const resolvedValueRef = useRef<string | null>(null)
+  // value 变化时旧 resolved 值随之失效，避免复制目标切换后 copiedText
+  // 仍匹配旧值而误显示"已复制"。
+  const prevValueRef = useRef(value)
+  if (prevValueRef.current !== value) {
+    prevValueRef.current = value
+    resolvedValueRef.current = null
+  }
   const isCopied =
     copiedText !== null &&
     (copiedText === value || copiedText === resolvedValueRef.current)
@@ -91,9 +104,12 @@ export function CopyButton({
       size={size}
       className={cn('shrink-0', className)}
       onClick={() => void handleCopy()}
+      disabled={disabled || loading}
       aria-label={isCopied ? copiedAriaLabel : resolvedAriaLabel}
     >
-      {isCopied ? (
+      {loading ? (
+        <Loader2 className={cn('animate-spin', iconClassName)} />
+      ) : isCopied ? (
         <Check className={cn('text-success', iconClassName)} />
       ) : (
         <Copy className={cn(iconClassName)} />

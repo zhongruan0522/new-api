@@ -105,23 +105,21 @@ export function DataTableBulkActions<TData>({
   return (
     <>
       <BulkActionsToolbar table={table} entityName={t('redemptionCodes.fields.codes')}>
-        {isCopying ? (
-          <span className='text-muted-foreground inline-flex h-8 w-8 items-center justify-center text-xs'>
-            …
-          </span>
-        ) : (
-          <CopyButton
-            value=''
-            onBeforeCopy={collectSelectedContent}
-            notify
-            variant='outline'
-            size='icon'
-            className='size-8'
-            tooltip={t('redemptionCodes.actions.copySelectedCodes')}
-            successTooltip={t('redemptionCodes.status.codesCopied')}
-            aria-label={t('redemptionCodes.actions.copySelectedCodes')}
-          />
-        )}
+        {/* loading 态保持 CopyButton 挂载（disabled + spinner），卸载重挂会
+            丢失组件内 copiedText 状态，导致成功复制后图标不切换 */}
+        <CopyButton
+          value=''
+          onBeforeCopy={collectSelectedContent}
+          notify
+          disabled={isCopying}
+          loading={isCopying}
+          variant='outline'
+          size='icon'
+          className='size-8'
+          tooltip={t('redemptionCodes.actions.copySelectedCodes')}
+          successTooltip={t('redemptionCodes.status.codesCopied')}
+          aria-label={t('redemptionCodes.actions.copySelectedCodes')}
+        />
 
         <Tooltip>
           <TooltipTrigger
