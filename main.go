@@ -147,7 +147,8 @@ func main() {
 		Path:     "/",
 		MaxAge:   2592000, // 30 days
 		HttpOnly: true,
-		Secure:   false,
+		// HTTPS 部署必须启用 COOKIE_SECURE，防止 30 天长期会话 cookie 经明文 HTTP 信道泄露
+		Secure:   common.GetEnvOrDefaultBool("COOKIE_SECURE", false),
 		SameSite: http.SameSiteStrictMode,
 	})
 	server.Use(sessions.Sessions("session", store))

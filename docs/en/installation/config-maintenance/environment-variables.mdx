@@ -61,6 +61,7 @@ This document lists common NookMux environment variables and their defaults. The
 | Environment Variable | Description | Default Value | Example |
 | --- | --- | --- | --- |
 | `SESSION_SECRET` | Session secret. It must be set for multi-node deployments and must be identical on every node. If set to `random_string`, startup fails immediately. | - | `SESSION_SECRET=<random>` |
+| `COOKIE_SECURE` | Whether the session cookie carries the `Secure` flag (sent only over HTTPS). Must be enabled for HTTPS deployments (or when a reverse proxy terminates TLS), otherwise the long-lived session cookie may leak over plaintext HTTP channels | `false` | `COOKIE_SECURE=true` |
 | `CRYPTO_SECRET` | Encryption secret used to encrypt sensitive database content. If unset, it reuses `SESSION_SECRET` | `SESSION_SECRET` | `CRYPTO_SECRET=<random>` |
 | `NODE_TYPE` | Node type. Nodes set to `slave` skip database migrations, root account creation, and scheduled channel checks | `master` | `NODE_TYPE=slave` |
 
