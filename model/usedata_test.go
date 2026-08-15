@@ -59,12 +59,82 @@ func snapshotCache(t *testing.T) map[string]*QuotaData {
 	defer CacheQuotaDataLock.Unlock()
 	out := make(map[string]*QuotaData, len(CacheQuotaData))
 	for k, v := range CacheQuotaData {
-		cp := *v
-		out[k] = &cp
+		out[k] = v
 	}
 	return out
 }
 
+// TestGetRankingQuotaBucketsDayOffsetAlignsToTimezone 验证天级分桶在带
+// dayOffset 时按目标时区的自然日 00:00 切分，而非 UTC 0 点（修复非 UTC
+// 启动时区下"每日"数据错位问题）。
+func TestGetRankingQuotaBucketsDayOffsetAlignsToTimezone(t *testing.T) {
+	setupQuotaDataTestDB(t)
+
+	offset := int64(8 * 3600) // UTC+8
+	// UTC+8 的 2026-08-15 自然日起点 = Unix 1786723200（UTC 8-14 16:00）。
+	dayStart := int64(1786723200)
+	// 两条数据分别是本地 00:30 和本地 10:30，同属 UTC+8 的 8-15 当天，
+	// 但分属 UTC 的 8-14 和 8-15 两天。
+	rows := []QuotaData{
+		{UserID: 1, Username: "u1", ModelName: "m1", CreatedAt: dayStart + 30*60, TokenUsed: 100},
+		{UserID: 1, Username: "u1", ModelName: "m1", CreatedAt: dayStart + 10*3600 + 30*60, TokenUsed: 50},
+	}
+	for i := range rows {
+		if err := DB.Create(&rows[i]).Error; err != nil {
+			t.Fatalf("seed quota_data: %v", err)
+		}
+	}
+
+	buckets, err := GetRankingQuotaBuckets(0, dayStart+24*3600, 24*3600, offset)
+	if err != nil {
+		t.Fatalf("GetRankingQuotaBuckets: %v", err)
+	}
+	if len(buckets) != 1 {
+		t.Fatalf("expected 1 day bucket aligned to UTC+8 midnight, got %d: %+v", len(buckets), buckets)
+	}
+	if buckets[0].Bucket != dayStart {
+		t.Fatalf("bucket = %d, want %d (UTC+8 midnight)", buckets[0].Bucket, dayStart)
+	}
+	if buckets[0].Tokens != 150 {
+		t.Fatalf("tokens = %d, want 150", buckets[0].Tokens)
+	}
+
+	// 无偏移（UTC 切分）时同样的数据应产生 2 个桶，证明偏移确实改变了边界。
+	utcBuckets, err := GetRankingQuotaBuckets(0, dayStart+24*3600, 24*3600, 0)
+	if err != nil {
+		t.Fatalf("GetRankingQuotaBuckets (utc): %v", err)
+	}
+	if len(utcBuckets) != 2 {
+		t.Fatalf("expected 2 UTC day buckets, got %d: %+v", len(utcBuckets), utcBuckets)
+	}
+}
+
+// TestGetRankingQuotaBucketsHourlyIgnoresOffset 验证小时级分桶不受 dayOffset
+// 影响（小时边界与时区无关）。
+func TestGetRankingQuotaBucketsHourlyIgnoresOffset(t *testing.T) {
+	setupQuotaDataTestDB(t)
+
+	base := int64(1786752000)
+	rows := []QuotaData{
+		{UserID: 1, Username: "u1", ModelName: "m1", CreatedAt: base + 60, TokenUsed: 10},
+		{UserID: 1, Username: "u1", ModelName: "m1", CreatedAt: base + 3600 + 60, TokenUsed: 20},
+	}
+	for i := range rows {
+		if err := DB.Create(&rows[i]).Error; err != nil {
+			t.Fatalf("seed quota_data: %v", err)
+		}
+	}
+
+	for _, offset := range []int64{0, 8 * 3600} {
+		buckets, err := GetRankingQuotaBuckets(base, base+2*3600, 3600, offset)
+		if err != nil {
+			t.Fatalf("GetRankingQuotaBuckets(offset=%d): %v", offset, err)
+		}
+		if len(buckets) != 2 {
+			t.Fatalf("offset=%d: expected 2 hourly buckets, got %d", offset, len(buckets))
+		}
+	}
+}
 // TestLogQuotaDataTrackTokensDisabled 验证禁用 track_tokens 时 token 不累计。
 func TestLogQuotaDataTrackTokensDisabled(t *testing.T) {
 	setupQuotaDataTestDB(t)

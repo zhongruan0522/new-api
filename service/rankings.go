@@ -106,7 +106,6 @@ type VendorShareSeries struct {
 
 type rankingPeriodConfig struct {
 	id          string
-	duration    time.Duration
 	bucketSize  int64
 	labelLayout string
 	hasPrevious bool
@@ -165,7 +164,8 @@ func GetRankingsSnapshot(period string) (*RankingsResponse, error) {
 	}
 	cacheKey := fmt.Sprintf("%s-m%d-v%d-u%d", config.id, modelLimit, vendorLimit, userTopN)
 
-	now := time.Now()
+	// 周期边界统一按后端启动时区（TZ 环境变量）计算，不使用请求方时区。
+	now := common.NowInStartupTimezone()
 	cacheTTL := rankingCacheTTL()
 	rankingCacheMu.Lock()
 	if item, ok := rankingCache[cacheKey]; ok && now.Before(item.expiresAt) {
@@ -197,21 +197,67 @@ func rankingCacheTTL() time.Duration {
 	return time.Duration(interval) * time.Minute
 }
 
+// rankingConfig 返回各排行榜周期配置。周期均为启动时区（TZ 环境变量）下的
+// 自然日历周期：今天=当日 00:00 至今、本周=本周一 00:00 至今、本月=本月 1 日
+// 至今、今年=本年 1 月 1 日至今，而非滚动 24h/7*24h 窗口。
 func rankingConfig(period string) (rankingPeriodConfig, error) {
 	switch period {
 	case "", "week":
-		return rankingPeriodConfig{id: "week", duration: 7 * 24 * time.Hour, bucketSize: 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
+		return rankingPeriodConfig{id: "week", bucketSize: 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
 	case "today":
-		return rankingPeriodConfig{id: "today", duration: 24 * time.Hour, bucketSize: 3600, labelLayout: "15:04", hasPrevious: true}, nil
+		return rankingPeriodConfig{id: "today", bucketSize: 3600, labelLayout: "15:04", hasPrevious: true}, nil
 	case "month":
-		return rankingPeriodConfig{id: "month", duration: 30 * 24 * time.Hour, bucketSize: 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
+		return rankingPeriodConfig{id: "month", bucketSize: 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
 	case "year":
-		return rankingPeriodConfig{id: "year", duration: 365 * 24 * time.Hour, bucketSize: 7 * 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
+		return rankingPeriodConfig{id: "year", bucketSize: 7 * 24 * 3600, labelLayout: "Jan 2", hasPrevious: true}, nil
 	case "all":
 		return rankingPeriodConfig{id: "all", bucketSize: 30 * 24 * 3600, labelLayout: "Jan 2006"}, nil
 	default:
 		return rankingPeriodConfig{}, fmt.Errorf("invalid ranking period: %s", period)
 	}
+}
+
+// rankingTimeRange 计算当前周期的时间范围（Unix 秒），基于启动时区的自然
+// 日历边界。all 周期无下界。
+func rankingTimeRange(config rankingPeriodConfig, now time.Time) (int64, int64) {
+	endTime := now.Unix()
+	loc := now.Location()
+	var start time.Time
+	switch config.id {
+	case "today":
+		start = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	case "week":
+		// 自然周从周一开始（ISO 8601 约定）。
+		offset := (int(now.Weekday()) + 6) % 7
+		start = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -offset)
+	case "month":
+		start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+	case "year":
+		start = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, loc)
+	default:
+		return 0, endTime
+	}
+	return start.Unix(), endTime
+}
+
+// previousRankingTimeRange 计算上一个完整自然周期的时间范围（Unix 秒），
+// 用于环比（今天 vs 昨天、本周 vs 上周）。loc 必须与当前周期相同的时区。
+func previousRankingTimeRange(config rankingPeriodConfig, currentStart int64, loc *time.Location) (int64, int64) {
+	currentStartTime := time.Unix(currentStart, 0).In(loc)
+	var previousStart time.Time
+	switch config.id {
+	case "today":
+		previousStart = currentStartTime.AddDate(0, 0, -1)
+	case "week":
+		previousStart = currentStartTime.AddDate(0, 0, -7)
+	case "month":
+		previousStart = currentStartTime.AddDate(0, -1, 0)
+	case "year":
+		previousStart = currentStartTime.AddDate(-1, 0, 0)
+	default:
+		return 0, 0
+	}
+	return previousStart.Unix(), currentStart - 1
 }
 
 func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*RankingsResponse, error) {
@@ -230,14 +276,14 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 	if err != nil {
 		return nil, err
 	}
-	currentBuckets, err := model.GetRankingQuotaBuckets(startTime, endTime, config.bucketSize)
+	currentBuckets, err := model.GetRankingQuotaBuckets(startTime, endTime, config.bucketSize, rankingDayOffset())
 	if err != nil {
 		return nil, err
 	}
 
 	var previousTotals []model.RankingQuotaTotal
 	if config.hasPrevious {
-		previousStart, previousEnd := previousRankingTimeRange(config, startTime)
+		previousStart, previousEnd := previousRankingTimeRange(config, startTime, now.Location())
 		previousTotals, err = model.GetRankingQuotaTotals(previousStart, previousEnd)
 		if err != nil {
 			return nil, err
@@ -266,20 +312,6 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 		ModelsHistory:      modelHistory,
 		VendorShareHistory: vendorHistory,
 	}, nil
-}
-
-func rankingTimeRange(config rankingPeriodConfig, now time.Time) (int64, int64) {
-	endTime := now.Unix()
-	if config.duration <= 0 {
-		return 0, endTime
-	}
-	return now.Add(-config.duration).Unix(), endTime
-}
-
-func previousRankingTimeRange(config rankingPeriodConfig, currentStart int64) (int64, int64) {
-	previousEnd := currentStart - 1
-	previousStart := time.Unix(currentStart, 0).Add(-config.duration).Unix()
-	return previousStart, previousEnd
 }
 
 func buildRankingModelMeta(modelNames []string) (map[string]rankingModelMeta, error) {
@@ -625,12 +657,19 @@ func sortedRankingBuckets(bucketSet map[int64]struct{}) []int64 {
 	return buckets
 }
 
+// rankingDayOffset 返回启动时区相对 UTC 的偏移（秒），用于把天级及以上
+// 分桶边界从 UTC 对齐到启动时区的自然日 00:00。
+func rankingDayOffset() int64 {
+	_, offset := common.NowInStartupTimezone().Zone()
+	return int64(offset)
+}
+
 func rankingBucketTs(bucket int64) string {
 	return time.Unix(bucket, 0).UTC().Format(time.RFC3339)
 }
 
 func rankingBucketLabel(bucket int64, config rankingPeriodConfig) string {
-	return time.Unix(bucket, 0).Format(config.labelLayout)
+	return time.Unix(bucket, 0).In(common.StartupLocation()).Format(config.labelLayout)
 }
 
 func rankingRankMap(totals []model.RankingQuotaTotal) map[string]int {

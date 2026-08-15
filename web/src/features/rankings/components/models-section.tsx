@@ -27,10 +27,10 @@ import type { ModelHistorySeries, ModelRanking, RankingPeriod } from '../types'
 import { ModelLeaderboard } from './model-leaderboard'
 
 const PERIOD_DESCRIPTIONS: Record<RankingPeriod, string> = {
-  today: 'common.tips.hourlyTokenUsageByModelAcrossTheLast24',
-  week: 'common.tips.weeklyTokenUsageByModelAcrossThePastFew',
-  month: 'common.tips.dailyTokenUsageByModelAcrossThePastMonth',
-  year: 'common.tips.weeklyTokenUsageByModelAcrossThePastYear',
+  today: 'common.tips.hourlyTokenUsageByModelToday',
+  week: 'common.tips.dailyTokenUsageByModelThisWeek',
+  month: 'common.tips.dailyTokenUsageByModelThisMonth',
+  year: 'common.tips.weeklyTokenUsageByModelThisYear',
   all: 'common.tips.tokenUsageByModelSinceLaunch',
 }
 
