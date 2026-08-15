@@ -24,13 +24,17 @@ import { fetchUserSidebarModules } from '@/lib/nav-modules'
  *
  * 管理员在「侧栏模块」中关闭面向用户的模块（chat.playground、使用日志、
  * 充值、工单等）时，普通用户的侧栏与路由守卫必须同样受控。该配置由
- * `/api/status/user_modules`（UserAuth）下发：服务端剥离 admin 段，仅含
- * 面向用户的开关，登录即可拉取。原始配置缓存在独立 storage key 下，
- * 供非 React 路由守卫（isSidebarModuleEnabled）读取。
+ * `/api/status/user_modules`（UserAuth）下发：服务端对非管理员剥离
+ * admin 段，管理员返回全量。
+ *
+ * query key 编入 isAdmin：同一 URL 的响应内容随角色变化，管理员与普通
+ * 用户在同页面会话切换（401 后重新登录）时不得复用彼此的缓存。
+ * 原始配置缓存在独立 storage key 下，供非 React 路由守卫
+ * （isSidebarModuleEnabled）读取。
  */
-export function useUserSidebarModules(enabled: boolean) {
+export function useUserSidebarModules(enabled: boolean, isAdmin: boolean) {
   return useQuery({
-    queryKey: ['user-modules'],
+    queryKey: ['user-modules', isAdmin],
     queryFn: async () => {
       const raw = await fetchUserSidebarModules()
       return raw

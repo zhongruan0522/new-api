@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { getAdminModules, getStatus, getUserModules } from '@/lib/api'
+import { getStatus, getUserModules } from '@/lib/api'
 
 export type ModuleAccess = { enabled: boolean; requireAuth: boolean }
 
@@ -190,44 +190,17 @@ export async function getFreshModuleAccess(
 // ----------------------------------------------------------------------------
 // Sidebar modules
 //
-// SidebarModulesAdmin 配置按受众拆分为两条读取路径：
-// - 管理员：`/api/status/admin_modules`（AdminAuth），返回含 admin 段的全量配置，
-//   缓存在 `admin-modules` key 下。
-// - 所有登录用户：`/api/status/user_modules`（UserAuth），服务端已剥离 admin 段，
-//   只含 chat/console/personal/support 等面向用户的开关，缓存在 `user-modules`
-//   key 下。普通用户的侧栏过滤与路由守卫（isSidebarModuleEnabled）都消费它，
-//   管理员的 admin 段开关仍由 admin 缓存承载。
-// 两条路径都不进公开 `/api/status` 缓存。
+// SidebarModulesAdmin 配置统一由 `/api/status/user_modules`（UserAuth）
+// 下发并缓存在 `user-modules` key 下：服务端对非管理员剥离 admin 段，
+// 管理员返回全量。侧栏过滤（useSidebarConfig）与路由守卫
+// （isSidebarModuleEnabled）都消费这一份缓存，普通用户与管理员的模块
+// 开关同时受控。配置不进公开 `/api/status` 缓存。
+//
+// `/api/status/admin_modules`（AdminAuth）保留给管理端按需拉取全量
+// 配置，不参与侧栏渲染与路由守卫。
 // ----------------------------------------------------------------------------
 
-const ADMIN_MODULES_STORAGE_KEY = 'admin-modules'
 const USER_MODULES_STORAGE_KEY = 'user-modules'
-
-export function getCachedAdminSidebarModules(): string | null {
-  try {
-    if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(ADMIN_MODULES_STORAGE_KEY)
-  } catch {
-    return null
-  }
-}
-
-export function cacheAdminSidebarModules(raw: string): void {
-  try {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(ADMIN_MODULES_STORAGE_KEY, raw)
-    }
-  } catch {
-    /* empty */
-  }
-}
-
-export async function fetchAdminSidebarModules(): Promise<string> {
-  const res = await getAdminModules()
-  const raw = res?.data?.SidebarModulesAdmin ?? ''
-  cacheAdminSidebarModules(raw)
-  return raw
-}
 
 export function getCachedUserSidebarModules(): string | null {
   try {
@@ -251,8 +224,8 @@ export function cacheUserSidebarModules(raw: string): void {
 export function clearSidebarModulesCaches(): void {
   try {
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(ADMIN_MODULES_STORAGE_KEY)
       window.localStorage.removeItem(USER_MODULES_STORAGE_KEY)
+      window.localStorage.removeItem('admin-modules')
     }
   } catch {
     /* empty */
@@ -270,7 +243,7 @@ export function isSidebarModuleEnabled(
   section: string,
   module: string
 ): boolean {
-  const raw = getCachedUserSidebarModules() ?? getCachedAdminSidebarModules()
+  const raw = getCachedUserSidebarModules()
   if (!raw || raw.trim() === '') return true
 
   try {

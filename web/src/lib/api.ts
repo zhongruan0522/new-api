@@ -209,18 +209,8 @@ export async function getStatus() {
   return res.data?.data as Record<string, unknown>
 }
 
-// Get admin sidebar modules config (admin-only, requires auth)
-export async function getAdminModules(): Promise<{
-  success: boolean
-  message?: string
-  data?: { SidebarModulesAdmin?: string }
-}> {
-  const res = await api.get('/api/status/admin_modules')
-  return res.data
-}
-
 // Get user-visible sidebar modules config (any logged-in user; the admin
-// section is stripped server-side)
+// section is stripped server-side for non-admin callers)
 export async function getUserModules(): Promise<{
   success: boolean
   message?: string

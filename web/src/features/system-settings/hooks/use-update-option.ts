@@ -62,14 +62,12 @@ export function useUpdateOption() {
         }
       }
 
-      // SidebarModulesAdmin is served by the admin-only endpoint (admin
-      // section) and the user-visible endpoint (stripped); refresh both
-      // query caches instead of the public status cache.
+      // SidebarModulesAdmin is served by the user-visible endpoint
+      // (role-stripped); refresh both role-scoped query caches instead of
+      // the public status cache.
       if (ADMIN_MODULES_RELATED_KEYS.includes(variables.key)) {
-        queryClient.invalidateQueries({ queryKey: ['admin-modules'] })
         queryClient.invalidateQueries({ queryKey: ['user-modules'] })
         try {
-          window.localStorage.removeItem('admin-modules')
           window.localStorage.removeItem('user-modules')
         } catch {
           /* empty */
