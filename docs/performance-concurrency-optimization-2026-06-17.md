@@ -88,7 +88,7 @@
   - 支持 Brotli 的现代浏览器直接拿 `.br`。
   - 只支持 gzip 的客户端继续走原有 `gin-contrib/gzip` 动态压缩。
   - 不支持压缩的客户端继续拿原始资源。
-- `router/web-router.go` 在动态 gzip 中间件之前优先命中 `.br` 静态资源，命中后设置：
+- `router/web_router.go` 在动态 gzip 中间件之前优先命中 `.br` 静态资源，命中后设置：
   - `Content-Encoding: br`
   - `Vary: Accept-Encoding`
   - 原始资源对应的 `Content-Type`

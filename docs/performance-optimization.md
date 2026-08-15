@@ -195,7 +195,7 @@ HTTP transport：
 
 **问题**
 
-`relay/channel/siliconflow/relay-siliconflow.go` 直接调用 `encoding/json` 的 `Marshal`/`Unmarshal`，违反 `common/AGENTS.md` 中"JSON 序列化必须走 `common/json.go` 包装函数"的规则。
+`relay/channel/siliconflow/relay_siliconflow.go` 直接调用 `encoding/json` 的 `Marshal`/`Unmarshal`，违反 `common/AGENTS.md` 中"JSON 序列化必须走 `common/json.go` 包装函数"的规则。
 
 **修复**
 
