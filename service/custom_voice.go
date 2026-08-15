@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -212,8 +213,13 @@ func resolveMiniMaxUpstream(group string) (*minimaxUpstream, error) {
 }
 
 // doUpstreamRequest 执行上游 HTTP 请求并返回状态码与响应体。
-func doUpstreamRequest(url string, contentType string, body io.Reader, apiKey string) (int, []byte, error) {
-	req, err := http.NewRequest(http.MethodPost, url, body)
+// 必须走渠道配置的代理（GetHttpClientWithProxy），redirect 由受控 client
+// 的 checkRedirect 复查，不允许裸 http.Client 出站。
+// 通过 request context 保留 90s 超时（relay client 全局超时可能为 0）。
+func doUpstreamRequest(up *minimaxUpstream, url string, contentType string, body io.Reader, apiKey string) (int, []byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), customVoicePreviewTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -221,7 +227,10 @@ func doUpstreamRequest(url string, contentType string, body io.Reader, apiKey st
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	client := &http.Client{Timeout: customVoicePreviewTimeout}
+	client, err := GetHttpClientWithProxy(up.channel.GetSetting().Proxy)
+	if err != nil {
+		return 0, nil, errors.New("上游服务暂不可用，请稍后重试")
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, nil, errors.New("上游服务暂不可用，请稍后重试")
@@ -592,7 +601,7 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 	if up.groupId != "" {
 		url += "?GroupId=" + up.groupId
 	}
-	status, body, err := doUpstreamRequest(url, writer.FormDataContentType(), &buf, up.apiKey)
+	status, body, err := doUpstreamRequest(up, url, writer.FormDataContentType(), &buf, up.apiKey)
 	if err != nil {
 		return customVoiceFileID{}, err
 	}
@@ -626,7 +635,7 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 	if up.groupId != "" {
 		url += "?GroupId=" + up.groupId
 	}
-	status, respBody, err := doUpstreamRequest(url, "application/json", bytes.NewReader(bodyBytes), up.apiKey)
+	status, respBody, err := doUpstreamRequest(up, url, "application/json", bytes.NewReader(bodyBytes), up.apiKey)
 	if err != nil {
 		return "", err
 	}
