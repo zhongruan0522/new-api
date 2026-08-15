@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAdminSidebarModules } from '@/hooks/use-admin-sidebar-modules'
+import { useUserSidebarModules } from '@/hooks/use-user-sidebar-modules'
 import { ROLE } from '@/lib/roles'
 import type { NavGroup, NavItem } from '@/components/layout/types'
 
@@ -214,32 +215,44 @@ function filterNavItems(
 }
 
 /**
- * Filter sidebar navigation groups by admin sidebar_modules config and user role.
+ * Filter sidebar navigation groups by sidebar_modules config and user role.
  *
- * Admin config (SidebarModulesAdmin) is fetched from the admin-only
- * `/api/status/admin_modules` endpoint after the user is confirmed to be an
- * admin; it must not be read from the public status payload.
- * User role further restricts visibility: non-root admins cannot see system settings.
+ * 面向用户的模块开关（chat/console/personal/support）由 UserAuth 级
+ * `/api/status/user_modules` 下发，对所有登录用户生效；管理员额外拉取
+ * `/api/status/admin_modules` 获取 admin 段全量配置。两路配置合并后
+ * 过滤侧栏；非 root 管理员始终隐藏系统设置。
  */
 export function useSidebarConfig(navGroups: NavGroup[]): NavGroup[] {
   const userRole = useAuthStore((s) => s.auth.user?.role)
-  const isAdmin = userRole !== undefined && userRole >= ROLE.ADMIN
+  const isLoggedIn = userRole !== undefined
+  const isAdmin = isLoggedIn && userRole >= ROLE.ADMIN
   const { data: sidebarModulesAdmin } = useAdminSidebarModules(isAdmin)
+  const { data: sidebarModulesUser } = useUserSidebarModules(isLoggedIn)
 
   const adminConfig = useMemo(
     () => parseSidebarConfig(sidebarModulesAdmin),
     [sidebarModulesAdmin]
   )
+  const userConfig = useMemo(
+    () => parseSidebarConfig(sidebarModulesUser),
+    [sidebarModulesUser]
+  )
 
-  // Role-based overrides: non-root admins should not see system settings
+  // 合并两路配置：面向用户的段以 user_modules 为准（服务端已剥离 admin 段，
+  // 管理员视角下 user_modules 不含 admin 段，admin 段取 admin_modules 全量）。
   const effectiveConfig = useMemo(() => {
-    if (userRole === ROLE.SUPER_ADMIN) return adminConfig
-    const config = { ...adminConfig }
+    const merged: SidebarModulesAdminConfig = isLoggedIn
+      ? { ...userConfig, ...(isAdmin ? { admin: adminConfig.admin } : {}) }
+      : adminConfig
+
+    // Role-based overrides: non-root admins should not see system settings
+    if (userRole === ROLE.SUPER_ADMIN) return merged
+    const config = { ...merged }
     if (config.admin) {
       config.admin = { ...config.admin, setting: false }
     }
     return config
-  }, [adminConfig, userRole])
+  }, [isLoggedIn, isAdmin, userConfig, adminConfig, userRole])
 
   const filteredNavGroups = useMemo(
     () =>

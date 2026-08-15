@@ -219,6 +219,17 @@ export async function getAdminModules(): Promise<{
   return res.data
 }
 
+// Get user-visible sidebar modules config (any logged-in user; the admin
+// section is stripped server-side)
+export async function getUserModules(): Promise<{
+  success: boolean
+  message?: string
+  data?: { SidebarModulesAdmin?: string }
+}> {
+  const res = await api.get('/api/status/user_modules')
+  return res.data
+}
+
 // Get system notice
 export async function getNotice(): Promise<{
   success: boolean

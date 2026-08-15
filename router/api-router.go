@@ -22,6 +22,9 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/setup", anonymousRequestBodyLimit, controller.PostSetup)
 		apiRouter.GET("/status", controller.GetStatus)
 		apiRouter.GET("/status/admin_modules", middleware.AdminAuth(), controller.GetStatusAdminModules)
+		// 面向用户的侧栏模块开关（chat/console/personal/support），登录即可见；
+		// 管理段由服务端剥离，仅 admin_modules（AdminAuth）下发
+		apiRouter.GET("/status/user_modules", middleware.UserAuth(), controller.GetStatusUserModules)
 		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
 		apiRouter.GET("/status/test", middleware.AdminAuth(), controller.TestStatus)
