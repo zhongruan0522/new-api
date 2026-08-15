@@ -506,6 +506,41 @@ func ShouldSkipRetryAfterChannelAffinityFailure(c *gin.Context) bool {
 	return b
 }
 
+// ClearCurrentChannelAffinityCache 删除当前请求命中的亲和粘性条目。
+// 用于亲和渠道被禁用或不可用时按配置驱逐过期粘性，避免后续请求继续命中失效渠道。
+func ClearCurrentChannelAffinityCache(c *gin.Context) bool {
+	if c == nil {
+		return false
+	}
+	cacheKey, _, ok := getChannelAffinityContext(c)
+	if !ok || cacheKey == "" {
+		return false
+	}
+
+	cache := getChannelAffinityCache()
+	deleted, err := cache.DeleteMany([]string{cacheKey})
+	if err != nil {
+		common.SysError(fmt.Sprintf("channel affinity cache delete current failed: err=%v", err))
+		return false
+	}
+	c.Set(ginKeyChannelAffinitySkipRetry, false)
+	for _, ok := range deleted {
+		if ok {
+			return true
+		}
+	}
+	return false
+}
+
+// ShouldKeepChannelAffinityOnChannelDisabled 返回"渠道被禁用后是否保留粘性条目"配置。
+func ShouldKeepChannelAffinityOnChannelDisabled() bool {
+	setting := operation_setting.GetChannelAffinitySetting()
+	if setting == nil {
+		return false
+	}
+	return setting.KeepOnChannelDisabled
+}
+
 func MarkChannelAffinityUsed(c *gin.Context, selectedGroup string, channelID int) {
 	if c == nil || channelID <= 0 {
 		return

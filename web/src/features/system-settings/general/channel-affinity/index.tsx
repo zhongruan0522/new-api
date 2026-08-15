@@ -106,6 +106,9 @@ export function ChannelAffinitySection(props: Props) {
   const [switchOnSuccess, setSwitchOnSuccess] = useState(
     props.defaultValues['channel_affinity_setting.switch_on_success']
   )
+  const [keepOnChannelDisabled, setKeepOnChannelDisabled] = useState(
+    props.defaultValues['channel_affinity_setting.keep_on_channel_disabled']
+  )
   const [maxEntries, setMaxEntries] = useState(
     props.defaultValues['channel_affinity_setting.max_entries']
   )
@@ -141,6 +144,9 @@ export function ChannelAffinitySection(props: Props) {
     setEnabled(props.defaultValues['channel_affinity_setting.enabled'])
     setSwitchOnSuccess(
       props.defaultValues['channel_affinity_setting.switch_on_success']
+    )
+    setKeepOnChannelDisabled(
+      props.defaultValues['channel_affinity_setting.keep_on_channel_disabled']
     )
     setMaxEntries(props.defaultValues['channel_affinity_setting.max_entries'])
     setDefaultTtl(
@@ -236,6 +242,14 @@ export function ChannelAffinitySection(props: Props) {
         updates.push({
           key: 'channel_affinity_setting.switch_on_success',
           value: String(switchOnSuccess),
+        })
+      if (
+        keepOnChannelDisabled !==
+        props.defaultValues['channel_affinity_setting.keep_on_channel_disabled']
+      )
+        updates.push({
+          key: 'channel_affinity_setting.keep_on_channel_disabled',
+          value: String(keepOnChannelDisabled),
         })
       if (
         maxEntries !==
@@ -403,6 +417,15 @@ export function ChannelAffinitySection(props: Props) {
           label={t('systemSettings.actions.switchAffinityOnSuccess')}
           description={t(
             'systemSettings.status.ifTheAffinityChannelFailsAndRetrySucceedsOn'
+          )}
+        />
+
+        <SettingsSwitchField
+          checked={keepOnChannelDisabled}
+          onCheckedChange={setKeepOnChannelDisabled}
+          label={t('systemSettings.actions.keepAffinityOnChannelDisabled')}
+          description={t(
+            'systemSettings.status.whenEnabledKeepTheAffinityEntryEvenIfThe'
           )}
         />
 
