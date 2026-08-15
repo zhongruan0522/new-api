@@ -210,6 +210,9 @@ func UpdateRedemption(c *gin.Context) {
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
+	// 与列表/详情口径一致：更新响应不回传完整 key，完整 key 只能通过
+	// GetRedemptionKey 按需查看（留痕）获取。
+	cleanRedemption.Key = ""
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

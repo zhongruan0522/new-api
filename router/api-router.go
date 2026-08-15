@@ -240,7 +240,8 @@ func SetApiRouter(router *gin.Engine) {
 			redemptionRoute.GET("/", controller.GetAllRedemptions)
 			redemptionRoute.GET("/search", controller.SearchRedemptions)
 			redemptionRoute.GET("/:id", controller.GetRedemption)
-			redemptionRoute.GET("/:id/key", controller.GetRedemptionKey)
+			// 完整兑换码 key 的按需查看响应必须 no-store，避免浏览器/中间代理缓存
+			redemptionRoute.GET("/:id/key", middleware.DisableCache(), controller.GetRedemptionKey)
 			redemptionRoute.POST("/", controller.AddRedemption)
 			redemptionRoute.PUT("/", controller.UpdateRedemption)
 			redemptionRoute.DELETE("/invalid", controller.DeleteInvalidRedemption)
