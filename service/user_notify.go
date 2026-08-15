@@ -127,16 +127,10 @@ func sendBarkNotify(barkURL string, data dto.Notify) error {
 			return fmt.Errorf("bark request failed with status code: %d", resp.StatusCode)
 		}
 	} else {
-		// SSRF防护：验证Bark URL（非Worker模式）
-		fetchSetting := system_setting.GetFetchSetting()
-		if err := common.ValidateURLWithFetchSetting(finalURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
-			return fmt.Errorf("request reject: %v", err)
-		}
-
-		// 直接发送请求
-		req, err = http.NewRequest(http.MethodGet, finalURL, nil)
+		// SSRF防护：初始校验 + 连接时复查（非Worker模式，防 DNS rebinding）
+		req, err = NewSSRFValidatedRequest(http.MethodGet, finalURL, nil)
 		if err != nil {
-			return fmt.Errorf("failed to create bark request: %v", err)
+			return fmt.Errorf("request reject: %v", err)
 		}
 
 		// 设置User-Agent
@@ -221,16 +215,10 @@ func sendGotifyNotify(gotifyUrl string, gotifyToken string, priority int, data d
 			return fmt.Errorf("gotify request failed with status code: %d", resp.StatusCode)
 		}
 	} else {
-		// SSRF防护：验证Gotify URL（非Worker模式）
-		fetchSetting := system_setting.GetFetchSetting()
-		if err := common.ValidateURLWithFetchSetting(finalURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
-			return fmt.Errorf("request reject: %v", err)
-		}
-
-		// 直接发送请求
-		req, err = http.NewRequest(http.MethodPost, finalURL, bytes.NewBuffer(payloadBytes))
+		// SSRF防护：初始校验 + 连接时复查（非Worker模式，防 DNS rebinding）
+		req, err = NewSSRFValidatedRequest(http.MethodPost, finalURL, bytes.NewBuffer(payloadBytes))
 		if err != nil {
-			return fmt.Errorf("failed to create gotify request: %v", err)
+			return fmt.Errorf("request reject: %v", err)
 		}
 
 		// 设置请求头

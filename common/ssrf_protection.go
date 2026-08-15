@@ -318,20 +318,14 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 	return nil
 }
 
-// ValidateURLWithFetchSetting 使用FetchSetting配置验证URL
-func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string, applyIPFilterForDomain bool) error {
-	// 如果SSRF防护被禁用，直接返回成功
-	if !enableSSRFProtection {
-		return nil
-	}
-
-	// 解析端口范围配置
+// BuildSSRFProtection 从 FetchSetting 形态的参数构建 SSRF 防护配置。
+// allowedPorts 支持 "80"、"8000-9000" 端口范围格式，解析失败返回错误。
+func BuildSSRFProtection(allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string, applyIPFilterForDomain bool) (*SSRFProtection, error) {
 	allowedPortInts, err := parsePortRanges(allowedPorts)
 	if err != nil {
-		return fmt.Errorf("request reject - invalid port configuration: %v", err)
+		return nil, fmt.Errorf("invalid port configuration: %v", err)
 	}
-
-	protection := &SSRFProtection{
+	return &SSRFProtection{
 		AllowPrivateIp:         allowPrivateIp,
 		DomainFilterMode:       domainFilterMode,
 		DomainList:             domainList,
@@ -339,6 +333,37 @@ func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPriva
 		IpList:                 ipList,
 		AllowedPorts:           allowedPortInts,
 		ApplyIPFilterForDomain: applyIPFilterForDomain,
+	}, nil
+}
+
+// CheckConnectedIP 在连接时刻复查实际连接的 IP 是否符合规则。
+// ValidateURL 的 net.LookupIP 与 transport 实际拨号是两次独立解析，
+// TTL=0 的权威 DNS 可以在校验后切换应答（DNS rebinding），使校验时返回
+// 公网 IP、连接时返回内网 IP。本方法供拨号阶段对最终连接的 IP 复查，
+// 确保校验规则与实际连接目标一致。
+func (p *SSRFProtection) CheckConnectedIP(ip net.IP) error {
+	if p.IsIPAccessAllowed(ip) {
+		return nil
+	}
+	if isPrivateIP(ip) && !p.AllowPrivateIp {
+		return fmt.Errorf("connected IP %s is not allowed (private address, possible DNS rebinding)", ip.String())
+	}
+	if p.IpFilterMode {
+		return fmt.Errorf("connected IP %s is not in the ip whitelist", ip.String())
+	}
+	return fmt.Errorf("connected IP %s is in the ip blacklist", ip.String())
+}
+
+// ValidateURLWithFetchSetting 使用FetchSetting配置验证URL
+func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string, applyIPFilterForDomain bool) error {
+	// 如果SSRF防护被禁用，直接返回成功
+	if !enableSSRFProtection {
+		return nil
+	}
+
+	protection, err := BuildSSRFProtection(allowPrivateIp, domainFilterMode, ipFilterMode, domainList, ipList, allowedPorts, applyIPFilterForDomain)
+	if err != nil {
+		return fmt.Errorf("request reject - invalid port configuration: %v", err)
 	}
 	return protection.ValidateURL(urlStr)
 }

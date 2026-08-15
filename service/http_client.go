@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -22,10 +23,113 @@ var (
 	proxyClients    = make(map[string]*http.Client)
 )
 
-func checkRedirect(req *http.Request, via []*http.Request) error {
+// ssrfRecheckKey 是请求级 SSRF 复查标记的 context key。
+// 携带该标记的请求会在 transport 拨号时刻对实际连接 IP 复查私网/IP 规则，
+// 用于消除 ValidateURL（校验时解析）与实际连接（连接时解析）之间的
+// DNS rebinding 窗口。未携带标记的请求（如管理员配置的渠道上游）不受影响。
+type ssrfRecheckKey struct{}
+
+// WithSSRFRecheck 返回携带 SSRF 连接时复查配置的 ctx。
+// 后续对该 ctx 内发起的每一次 TCP 连接（含 redirect 后续跳转，redirect
+// 请求继承初始请求的 context）都会在拨号前复查目标 IP。
+func WithSSRFRecheck(ctx context.Context, protection *common.SSRFProtection) context.Context {
+	if protection == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, ssrfRecheckKey{}, protection)
+}
+
+// recheckProtectionFromContext 取出拨号时复查配置；无标记返回 nil。
+func recheckProtectionFromContext(ctx context.Context) *common.SSRFProtection {
+	if ctx == nil {
+		return nil
+	}
+	protection, _ := ctx.Value(ssrfRecheckKey{}).(*common.SSRFProtection)
+	return protection
+}
+
+// dialContextWithSSRFRecheck 包装基础 DialContext，在连接时刻执行 SSRF 复查。
+//
+// Go transport 在调用 DialContext 前已完成目标域名的 DNS 解析，addr 参数
+// 即最终要连接的 IP——在该点复查可保证"校验的 IP = 连接的 IP"，彻底消除
+// ValidateURL（校验时解析）与实际连接（连接时再次解析）之间的 DNS
+// rebinding 窗口。每次 redirect 跳转与 Happy Eyeballs 的每次拨号尝试
+// 都会经过本函数，整条重定向链均在复查范围内。
+//
+// 未携带复查标记的请求行为与基础 DialContext 完全一致。
+// 走 HTTP(S)_PROXY / 渠道代理的请求不应附加标记：此时 transport 拨的是
+// 代理地址，目标域名由代理解析，本地复查没有意义。
+func dialContextWithSSRFRecheck(base func(ctx context.Context, network, addr string) (net.Conn, error)) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		protection := recheckProtectionFromContext(ctx)
+		if protection == nil {
+			return base(ctx, network, addr)
+		}
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, fmt.Errorf("ssrf recheck: invalid dial address %q: %v", addr, err)
+		}
+		ip := net.ParseIP(host)
+		if ip == nil {
+			// transport 已完成解析，addr 必然是 IP；防御异常路径。
+			return nil, fmt.Errorf("ssrf recheck: dial address %q is not an IP", addr)
+		}
+		if err := protection.CheckConnectedIP(ip); err != nil {
+			return nil, err
+		}
+		return base(ctx, network, addr)
+	}
+}
+
+// buildFetchSSRFProtection 按 FetchSetting 构建 SSRF 防护配置。
+func buildFetchSSRFProtection() (*common.SSRFProtection, error) {
 	fetchSetting := system_setting.GetFetchSetting()
+	if !fetchSetting.EnableSSRFProtection {
+		return nil, nil
+	}
+	return common.BuildSSRFProtection(
+		fetchSetting.AllowPrivateIp,
+		fetchSetting.DomainFilterMode,
+		fetchSetting.IpFilterMode,
+		fetchSetting.DomainList,
+		fetchSetting.IpList,
+		fetchSetting.AllowedPorts,
+		fetchSetting.ApplyIPFilterForDomain,
+	)
+}
+
+// NewSSRFValidatedRequest 构建经过 SSRF 校验并携带连接时复查标记的 HTTP 请求。
+//
+// 面向用户可控 URL（webhook / bark / gotify / 文件下载等）。除初始 URL 的
+// 静态校验（ValidateURL）外，请求 context 携带复查配置，transport 拨号时刻
+// 对实际连接 IP 再次复查，消除校验与连接两次 DNS 解析之间的 DNS rebinding
+// 窗口；redirect 由 client 的 checkRedirect 复查后仍继承本标记，整条跳转链
+// 均在防护范围内。
+//
+// SSRF 防护关闭时不附加标记，行为与 http.NewRequest 一致。
+func NewSSRFValidatedRequest(method, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateURLWithCurrentFetchSetting(url); err != nil {
+		return nil, err
+	}
+	if protection, proErr := buildFetchSSRFProtection(); proErr == nil && protection != nil {
+		req = req.WithContext(WithSSRFRecheck(req.Context(), protection))
+	}
+	return req, nil
+}
+
+// validateURLWithCurrentFetchSetting 用当前 FetchSetting 静态校验 URL。
+func validateURLWithCurrentFetchSetting(urlStr string) error {
+	fetchSetting := system_setting.GetFetchSetting()
+	return common.ValidateURLWithFetchSetting(urlStr, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain)
+}
+
+func checkRedirect(req *http.Request, via []*http.Request) error {
 	urlStr := req.URL.String()
-	if err := common.ValidateURLWithFetchSetting(urlStr, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
+	if err := validateURLWithCurrentFetchSetting(urlStr); err != nil {
 		return fmt.Errorf("redirect to %s blocked: %v", urlStr, err)
 	}
 	if len(via) >= 10 {
@@ -35,12 +139,19 @@ func checkRedirect(req *http.Request, via []*http.Request) error {
 }
 
 func newRelayTransport(proxyFunc func(*http.Request) (*url.URL, error)) *http.Transport {
+	baseDialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
 	transport := &http.Transport{
 		MaxIdleConns:        common.RelayMaxIdleConns,
 		MaxIdleConnsPerHost: common.RelayMaxIdleConnsPerHost,
 		IdleConnTimeout:     time.Duration(common.RelayIdleConnTimeout) * time.Second,
 		ForceAttemptHTTP2:   true,
 		Proxy:               proxyFunc,
+		// 拨号时刻复查携带 SSRF 标记的请求实际连接的 IP，消除校验与连接
+		// 两次 DNS 解析之间的 rebinding 窗口；未标记的请求零影响。
+		DialContext: dialContextWithSSRFRecheck(baseDialer.DialContext),
 	}
 	if common.TLSInsecureSkipVerify {
 		transport.TLSClientConfig = common.InsecureTLSConfig
@@ -174,6 +285,7 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 
 		// 创建 SOCKS5 代理拨号器
 		// proxy.SOCKS5 使用 tcp 参数，所有 TCP 连接包括 DNS 查询都将通过代理进行。行为与 socks5h 相同
+		// 目标域名由代理解析，本地不附加 SSRF 复查标记（见 dialContextWithSSRFRecheck）。
 		dialer, err := proxy.SOCKS5("tcp", parsedURL.Host, auth, proxy.Direct)
 		if err != nil {
 			return nil, err

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"net"
 	"strings"
 	"testing"
 )
@@ -52,5 +53,25 @@ func TestValidateURLAppliesIPFilterToResolvedDomains(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "private IP address not allowed") {
 		t.Fatalf("error = %q, want private IP rejection", err.Error())
+	}
+}
+
+func TestCheckConnectedIP(t *testing.T) {
+	protection := &SSRFProtection{AllowPrivateIp: false, DomainFilterMode: false, IpFilterMode: false}
+
+	if err := protection.CheckConnectedIP(net.ParseIP("8.8.8.8")); err != nil {
+		t.Fatalf("public IP should pass: %v", err)
+	}
+	err := protection.CheckConnectedIP(net.ParseIP("127.0.0.1"))
+	if err == nil {
+		t.Fatal("loopback IP should be rejected at connect time")
+	}
+	if !strings.Contains(err.Error(), "127.0.0.1") {
+		t.Fatalf("error should mention the rejected IP, got %q", err.Error())
+	}
+
+	allowPrivate := &SSRFProtection{AllowPrivateIp: true, DomainFilterMode: false, IpFilterMode: false}
+	if err := allowPrivate.CheckConnectedIP(net.ParseIP("192.168.1.1")); err != nil {
+		t.Fatalf("private IP should pass when AllowPrivateIp is set: %v", err)
 	}
 }
