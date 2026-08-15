@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/glebarez/sqlite"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/types"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

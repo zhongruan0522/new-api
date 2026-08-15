@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/relay/channel"
@@ -17,6 +16,7 @@ import (
 	"github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/reasoning"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {

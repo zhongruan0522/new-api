@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/controller"
 	"github.com/NookMux/NookMux/middleware"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 type WebAssets struct {

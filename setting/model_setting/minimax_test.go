@@ -128,8 +128,8 @@ func TestGetCustomVoiceTagsSnapshot_EmptyMapsReturnNil(t *testing.T) {
 	defer func() { *GetMiniMaxSettings() = prev }()
 
 	*GetMiniMaxSettings() = MiniMaxSettings{
-		Enabled:         true,
-		EmotionRedirect: map[string]string{},
+		Enabled:          true,
+		EmotionRedirect:  map[string]string{},
 		ToneWordRedirect: map[string]string{},
 	}
 	snap := GetCustomVoiceTagsSnapshot()
@@ -301,10 +301,10 @@ func TestApplyMiniMaxTTSPolicy_TTSEmotionPlusParenTag(t *testing.T) {
 	prev := *GetMiniMaxSettings()
 	defer func() { *GetMiniMaxSettings() = prev }()
 	*GetMiniMaxSettings() = MiniMaxSettings{
-		Enabled:         true,
-		EmotionPattern:  `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
-		EmotionRedirect: map[string]string{},
-		ToneWordPattern: `\(([^()]+)\)`,
+		Enabled:          true,
+		EmotionPattern:   `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		EmotionRedirect:  map[string]string{},
+		ToneWordPattern:  `\(([^()]+)\)`,
 		ToneWordRedirect: map[string]string{},
 	}
 	res := ApplyMiniMaxTTSPolicy("speech-02-hd", "alloy", `<tts emotion="happy">文本(laugh)</tts>`, "mp3")
@@ -326,10 +326,10 @@ func TestApplyMiniMaxTTSPolicy_OptionalEmotionDefaultPattern(t *testing.T) {
 	prev := *GetMiniMaxSettings()
 	defer func() { *GetMiniMaxSettings() = prev }()
 	*GetMiniMaxSettings() = MiniMaxSettings{
-		Enabled:         true,
-		EmotionPattern:  defaultMiniMaxSettings.EmotionPattern, // 新默认正则
-		EmotionRedirect: map[string]string{},                  // 空 map：emotion 直传 xxxx
-		ToneWordPattern: defaultMiniMaxSettings.ToneWordPattern,
+		Enabled:          true,
+		EmotionPattern:   defaultMiniMaxSettings.EmotionPattern, // 新默认正则
+		EmotionRedirect:  map[string]string{},                   // 空 map：emotion 直传 xxxx
+		ToneWordPattern:  defaultMiniMaxSettings.ToneWordPattern,
 		ToneWordRedirect: map[string]string{},
 	}
 	input := `<tts emotion="xxxx">在线上真实用户流量中，速度提升了 60% 至 85%。</tts>`

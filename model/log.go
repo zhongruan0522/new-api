@@ -16,24 +16,24 @@ import (
 )
 
 type Log struct {
-	Id                int    `json:"id" gorm:"index:idx_created_at_id,priority:1;index:idx_user_id_id,priority:2"`
-	UserId            int    `json:"user_id" gorm:"index;index:idx_user_id_id,priority:1"`
-	CreatedAt         int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
-	Type              int    `json:"type" gorm:"index:idx_created_at_type"`
-	Content           string `json:"content"`
-	Username          string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
-	TokenName         string `json:"token_name" gorm:"index;default:''"`
-	ModelName         string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	Quota             int    `json:"quota" gorm:"default:0"`
-	PromptTokens      int    `json:"prompt_tokens" gorm:"default:0"`
-	CompletionTokens  int    `json:"completion_tokens" gorm:"default:0"`
-	UseTime           int    `json:"use_time" gorm:"default:0"`
-	IsStream          bool   `json:"is_stream"`
-	ChannelId         int    `json:"channel" gorm:"index"`
-	ChannelName       string `json:"channel_name" gorm:"->"`
-	TokenId           int    `json:"token_id" gorm:"default:0;index"`
-	Group             string `json:"group" gorm:"index"`
-	Ip                string `json:"ip" gorm:"index;default:''"`
+	Id               int    `json:"id" gorm:"index:idx_created_at_id,priority:1;index:idx_user_id_id,priority:2"`
+	UserId           int    `json:"user_id" gorm:"index;index:idx_user_id_id,priority:1"`
+	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
+	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
+	Content          string `json:"content"`
+	Username         string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
+	TokenName        string `json:"token_name" gorm:"index;default:''"`
+	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
+	Quota            int    `json:"quota" gorm:"default:0"`
+	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
+	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
+	UseTime          int    `json:"use_time" gorm:"default:0"`
+	IsStream         bool   `json:"is_stream"`
+	ChannelId        int    `json:"channel" gorm:"index"`
+	ChannelName      string `json:"channel_name" gorm:"->"`
+	TokenId          int    `json:"token_id" gorm:"default:0;index"`
+	Group            string `json:"group" gorm:"index"`
+	Ip               string `json:"ip" gorm:"index;default:''"`
 	// 客户端请求头，原存于 Other JSON，现独立为列以便检索与裁剪。
 	// 使用显式 text 类型而非依赖 string+default:''，避免 MySQL 下因带默认值
 	// 被生成为 varchar(191)，导致长 UA/Referer 在严格模式下写入失败或被截断。
@@ -152,13 +152,13 @@ func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 // 仅供 TokenAuthReadOnly 只读接口使用：tokenId 由后端从认证上下文强制注入，
 // 调用方无法跨 token 查询。
 type GetLogsByTokenIdParams struct {
-	TokenId         int
-	StartTimestamp  int64
-	EndTimestamp    int64
-	ModelName       string
-	LogType         int
-	StartIdx        int
-	Num             int
+	TokenId        int
+	StartTimestamp int64
+	EndTimestamp   int64
+	ModelName      string
+	LogType        int
+	StartIdx       int
+	Num            int
 }
 
 // GetLogsByTokenId 按 token_id 分页查询日志，支持时间段、模型筛选。

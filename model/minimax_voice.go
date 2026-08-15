@@ -26,9 +26,9 @@ const (
 //   - Allowed 控制单条音色是否可用；类型必须为 Created 才允许用于 TTS。
 //   - 用户的创建/确认流程写入 OperatorKind=user，管理员新建为 admin。
 type MiniMaxVoice struct {
-	Id        int64  `json:"id" gorm:"primaryKey;autoIncrement"`
-	CreatedAt int64  `json:"created_at" gorm:"bigint;index:idx_minimax_voice_created_at"`
-	UpdatedAt int64  `json:"updated_at" gorm:"bigint"`
+	Id        int64 `json:"id" gorm:"primaryKey;autoIncrement"`
+	CreatedAt int64 `json:"created_at" gorm:"bigint;index:idx_minimax_voice_created_at"`
+	UpdatedAt int64 `json:"updated_at" gorm:"bigint"`
 	// Type 状态/类型：preview（试听中）或 created（已创建）。
 	Type string `json:"type" gorm:"type:varchar(16);index:idx_minimax_voice_type;not null"`
 	// OperatorId 操作人 ID：用户创建音色为用户 ID，管理员新建为管理员 ID。

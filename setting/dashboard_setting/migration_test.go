@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/glebarez/sqlite"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/console_setting"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

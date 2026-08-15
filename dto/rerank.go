@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type RerankRequest struct {

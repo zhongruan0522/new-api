@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/i18n"
@@ -11,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type RetryParam struct {

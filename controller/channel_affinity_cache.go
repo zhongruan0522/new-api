@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/service"
+	"github.com/gin-gonic/gin"
 )
 
 func GetChannelAffinityCacheStats(c *gin.Context) {

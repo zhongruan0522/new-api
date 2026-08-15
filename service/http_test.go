@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
+	"github.com/gin-gonic/gin"
 )
 
 func TestShouldCopyUpstreamHeaderSkipsLocalRequestIdAndCapturesUpstreamId(t *testing.T) {

@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/model"
+	"github.com/gin-gonic/gin"
 )
 
 func getTokenForFeedback(c *gin.Context) (*model.Token, error) {

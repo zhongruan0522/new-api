@@ -93,7 +93,7 @@ func NewProxyWebSocketDialer(proxyURL string) (*websocket.Dialer, error) {
 	switch parsedURL.Scheme {
 	case "http", "https":
 		return &websocket.Dialer{
-			Proxy:  http.ProxyURL(parsedURL),
+			Proxy: http.ProxyURL(parsedURL),
 		}, nil
 	case "socks5", "socks5h":
 		var auth *proxy.Auth

@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/logger"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 const (

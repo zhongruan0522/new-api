@@ -4,8 +4,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/constant"
+	"github.com/gin-gonic/gin"
 )
 
 func TestGenRelayInfoOpenAI_StreamOptionsByChannelType(t *testing.T) {

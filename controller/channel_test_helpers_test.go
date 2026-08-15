@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/model"
+	"github.com/gin-gonic/gin"
 )
 
 func newChannelTestValidateContext() *gin.Context {
@@ -399,12 +399,12 @@ func TestIsChannelTestReasoningModel(t *testing.T) {
 
 func TestResolveChannelTestTokenBudget(t *testing.T) {
 	cases := []struct {
-		name             string
-		modelName        string
-		endpointType     string
-		isTool           bool
-		wantMaxTokens    uint
-		wantCompletion   uint
+		name           string
+		modelName      string
+		endpointType   string
+		isTool         bool
+		wantMaxTokens  uint
+		wantCompletion uint
 	}{
 		{
 			name:           "plain chat model gets baseline headroom",

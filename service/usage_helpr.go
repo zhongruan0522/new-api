@@ -1,10 +1,10 @@
 package service
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/gin-gonic/gin"
 )
 
 //func GetPromptTokens(textRequest dto.GeneralOpenAIRequest, relayMode int) (int, error) {

@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/samber/lo"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
@@ -19,6 +17,8 @@ import (
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list

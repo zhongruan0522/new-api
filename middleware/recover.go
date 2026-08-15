@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
+	"github.com/gin-gonic/gin"
 )
 
 func RelayPanicRecover() gin.HandlerFunc {

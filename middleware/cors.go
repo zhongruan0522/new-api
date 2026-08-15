@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"github.com/NookMux/NookMux/common"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/NookMux/NookMux/common"
 )
 
 func CORS() gin.HandlerFunc {

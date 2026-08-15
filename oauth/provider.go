@@ -3,8 +3,8 @@ package oauth
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/model"
+	"github.com/gin-gonic/gin"
 )
 
 // Provider defines the interface for OAuth providers

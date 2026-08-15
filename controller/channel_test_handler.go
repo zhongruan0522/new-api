@@ -17,8 +17,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/samber/lo"
-	"github.com/tidwall/gjson"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
@@ -33,6 +31,8 @@ import (
 	"github.com/NookMux/NookMux/setting/operation_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"github.com/NookMux/NookMux/types"
+	"github.com/samber/lo"
+	"github.com/tidwall/gjson"
 
 	"github.com/gin-gonic/gin"
 )

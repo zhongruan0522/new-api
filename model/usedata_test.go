@@ -135,6 +135,7 @@ func TestGetRankingQuotaBucketsHourlyIgnoresOffset(t *testing.T) {
 		}
 	}
 }
+
 // TestLogQuotaDataTrackTokensDisabled 验证禁用 track_tokens 时 token 不累计。
 func TestLogQuotaDataTrackTokensDisabled(t *testing.T) {
 	setupQuotaDataTestDB(t)

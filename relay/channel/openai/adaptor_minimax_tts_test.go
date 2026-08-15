@@ -5,13 +5,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	channelconstant "github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/gin-gonic/gin"
 )
 
 func withMiniMaxSettings(t *testing.T, cfg model_setting.MiniMaxSettings, fn func()) {

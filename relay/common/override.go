@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/NookMux/NookMux/common"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"github.com/NookMux/NookMux/common"
 )
 
 var negativeIndexRegexp = regexp.MustCompile(`\.(-\d+)`)

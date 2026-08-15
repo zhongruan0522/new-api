@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/dto"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
+	"github.com/gin-gonic/gin"
 )
 
 type openAIWireStreamOptions struct {

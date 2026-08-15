@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
+	"github.com/gin-gonic/gin"
 )
 
 func TestLoginHidesDatabaseErrors(t *testing.T) {

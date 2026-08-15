@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/service"
+	"github.com/gin-gonic/gin"
 )
 
 // setupMutex 保护安装流程的进程内 check-then-act 竞态：并发安装请求在检查

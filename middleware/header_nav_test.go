@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"github.com/NookMux/NookMux/common"
-	"github.com/NookMux/NookMux/model"
 	"gorm.io/gorm"
 )
 

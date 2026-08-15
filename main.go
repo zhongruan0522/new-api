@@ -10,10 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/controller"
 	"github.com/NookMux/NookMux/i18n"
@@ -25,6 +21,10 @@ import (
 	"github.com/NookMux/NookMux/setting/dashboard_setting"
 	_ "github.com/NookMux/NookMux/setting/performance_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 //go:embed web/dist

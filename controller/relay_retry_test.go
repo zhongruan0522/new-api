@@ -5,11 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/operation_setting"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 func TestShouldRetryUsesNumericUpstreamErrorCode(t *testing.T) {

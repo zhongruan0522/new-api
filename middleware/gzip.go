@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/NookMux/NookMux/constant"
 	"github.com/andybalholm/brotli"
 	"github.com/gin-gonic/gin"
-	"github.com/NookMux/NookMux/constant"
 )
 
 type readCloser struct {

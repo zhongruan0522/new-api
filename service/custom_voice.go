@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/shopspring/decimal"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/model_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 // 定制音色流程的常量与校验规则。

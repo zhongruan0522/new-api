@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func TestRelayErrorHandlerTruncatesInvalidJSONBodyInLog(t *testing.T) {

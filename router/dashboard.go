@@ -1,10 +1,10 @@
 package router
 
 import (
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/controller"
 	"github.com/NookMux/NookMux/middleware"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
 )
 
 func SetDashboardRouter(router *gin.Engine) {

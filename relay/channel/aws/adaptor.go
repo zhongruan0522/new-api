@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
-	"github.com/pkg/errors"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 )

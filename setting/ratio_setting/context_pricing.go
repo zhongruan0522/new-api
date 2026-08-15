@@ -199,6 +199,7 @@ func validateContextPricingTierPrices(modelName string, tierIndex int, tier rawC
 	}
 	return nil
 }
+
 // defaultContextPricing provides built-in tiered pricing for models that use
 // context-tiered billing (e.g., Anthropic Claude Sonnet 4+ above 200K tokens,
 // OpenAI gpt-5.4+ above 272K tokens, Google Gemini 2.5+ Pro above 200K tokens,

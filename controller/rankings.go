@@ -3,11 +3,11 @@ package controller
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/dashboard_setting"
+	"github.com/gin-gonic/gin"
 )
 
 func GetRankings(c *gin.Context) {

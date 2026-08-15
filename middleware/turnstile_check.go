@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/NookMux/NookMux/common"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/NookMux/NookMux/common"
 )
 
 type turnstileCheckResponse struct {
