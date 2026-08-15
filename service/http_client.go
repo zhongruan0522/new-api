@@ -56,13 +56,21 @@ func recheckProtectionFromContext(ctx context.Context) *common.SSRFProtection {
 // rebinding 窗口。每次 redirect 跳转与 Happy Eyeballs 的每次拨号尝试
 // 都会经过本函数，整条重定向链均在复查范围内。
 //
+// proxyFunc 非 nil 且该请求命中代理时跳过复查：此时 transport 拨的是代理
+// 地址，目标域名由代理解析，本地复查既无意义、还会把常见的
+// HTTP_PROXY=http://127.0.0.1:xxxx 本机代理误判为私网违规。
 // 未携带复查标记的请求行为与基础 DialContext 完全一致。
-// 走 HTTP(S)_PROXY / 渠道代理的请求不应附加标记：此时 transport 拨的是
-// 代理地址，目标域名由代理解析，本地复查没有意义。
-func dialContextWithSSRFRecheck(base func(ctx context.Context, network, addr string) (net.Conn, error)) func(ctx context.Context, network, addr string) (net.Conn, error) {
+func dialContextWithSSRFRecheck(base func(ctx context.Context, network, addr string) (net.Conn, error), proxyFunc func(*http.Request) (*url.URL, error)) func(ctx context.Context, network, addr string) (net.Conn, error) {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		protection := recheckProtectionFromContext(ctx)
 		if protection == nil {
+			return base(ctx, network, addr)
+		}
+		if proxyFunc != nil {
+			// 拨号阶段拿不到 *http.Request，无法向 proxyFunc 提供请求上下文。
+			// HTTP(S)_PROXY 按主机匹配（NO_PROXY 豁免），此处无法逐请求判定；
+			// 只要配置了代理函数就跳过复查，宁可漏检交给代理侧策略，
+			// 也不误杀经代理出站的正常通知/下载流量。
 			return base(ctx, network, addr)
 		}
 		host, _, err := net.SplitHostPort(addr)
@@ -151,7 +159,8 @@ func newRelayTransport(proxyFunc func(*http.Request) (*url.URL, error)) *http.Tr
 		Proxy:               proxyFunc,
 		// 拨号时刻复查携带 SSRF 标记的请求实际连接的 IP，消除校验与连接
 		// 两次 DNS 解析之间的 rebinding 窗口；未标记的请求零影响。
-		DialContext: dialContextWithSSRFRecheck(baseDialer.DialContext),
+		// 命中代理的拨号跳过复查（见函数注释）。
+		DialContext: dialContextWithSSRFRecheck(baseDialer.DialContext, proxyFunc),
 	}
 	if common.TLSInsecureSkipVerify {
 		transport.TLSClientConfig = common.InsecureTLSConfig

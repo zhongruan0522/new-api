@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/NookMux/NookMux/common"
@@ -35,7 +36,7 @@ func TestDialContextSSRFRecheckBlocksPrivateIPAtConnectTime(t *testing.T) {
 	// 请求 URL 是合法公网域名（绕过静态校验的形态用 Transport 自定义拨号
 	// 直接构造），但携带复查标记后，直接拨私网 IP 必须被拒绝。
 	baseDialer := &net.Dialer{}
-	dial := dialContextWithSSRFRecheck(baseDialer.DialContext)
+	dial := dialContextWithSSRFRecheck(baseDialer.DialContext, nil)
 
 	_, port, err := net.SplitHostPort(server.Listener.Addr().String())
 	if err != nil {
@@ -59,11 +60,35 @@ func TestDialContextSSRFRecheckAllowsUnmarkedRequests(t *testing.T) {
 	defer server.Close()
 
 	baseDialer := &net.Dialer{}
-	dial := dialContextWithSSRFRecheck(baseDialer.DialContext)
+	dial := dialContextWithSSRFRecheck(baseDialer.DialContext, nil)
 
 	conn, err := dial(context.Background(), "tcp", server.Listener.Addr().String())
 	if err != nil {
 		t.Fatalf("unmarked dial to %s should pass: %v", server.Listener.Addr().String(), err)
+	}
+	conn.Close()
+}
+
+// TestDialContextSSRFRecheckSkipsWhenProxyConfigured 证明配置了代理函数的
+// transport 跳过拨号复查：transport 此时拨的是代理地址（常见为本机
+// HTTP_PROXY=127.0.0.1:xxxx），对它做私网复查会误杀所有经代理出站的
+// 通知/下载流量。
+func TestDialContextSSRFRecheckSkipsWhenProxyConfigured(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "ok")
+	}))
+	defer server.Close()
+
+	baseDialer := &net.Dialer{}
+	proxyFunc := func(*http.Request) (*url.URL, error) {
+		return url.Parse("http://127.0.0.1:7890")
+	}
+	dial := dialContextWithSSRFRecheck(baseDialer.DialContext, proxyFunc)
+
+	ctx := WithSSRFRecheck(context.Background(), testSSRFProtection())
+	conn, err := dial(ctx, "tcp", server.Listener.Addr().String())
+	if err != nil {
+		t.Fatalf("dial with proxy configured should skip recheck, got error: %v", err)
 	}
 	conn.Close()
 }
