@@ -29,6 +29,23 @@ func TestOptionUpdateValueToStringRejectsCompositeValues(t *testing.T) {
 	}
 }
 
+// PasswordLoginEnabled/PasswordRegisterEnabled 是布尔功能开关而非 secret，
+// GetOptions 必须继续返回它们，否则认证设置页回落到前端默认值。
+func TestIsSensitiveOptionKeyExemptsPasswordFeatureToggles(t *testing.T) {
+	if isSensitiveOptionKey("PasswordLoginEnabled") {
+		t.Fatal("PasswordLoginEnabled is a boolean feature toggle, must not be filtered")
+	}
+	if isSensitiveOptionKey("PasswordRegisterEnabled") {
+		t.Fatal("PasswordRegisterEnabled is a boolean feature toggle, must not be filtered")
+	}
+	// secret 类 Password 键仍必须被过滤
+	for _, key := range []string{"Password", "SMTPPassword", "oauth_password", "PasswordResetSecret"} {
+		if !isSensitiveOptionKey(key) {
+			t.Fatalf("key %q must be treated as sensitive", key)
+		}
+	}
+}
+
 func TestPricingJsonMapOptionValidation(t *testing.T) {
 	if !isPricingJsonMapOptionKey("ModelRatio") {
 		t.Fatal("ModelRatio should support JSON map incremental updates")

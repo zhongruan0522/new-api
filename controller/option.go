@@ -98,7 +98,18 @@ func isPricingJsonMapOptionKey(key string) bool {
 	return ok
 }
 
+// nonSensitivePasswordOptionKeys 显式豁免的功能开关：
+// PasswordLoginEnabled / PasswordRegisterEnabled 只是布尔开关，
+// 认证设置页需要读取实际值；真正的 secret 类 Password 键不受豁免。
+var nonSensitivePasswordOptionKeys = map[string]struct{}{
+	"PasswordLoginEnabled":    {},
+	"PasswordRegisterEnabled": {},
+}
+
 func isSensitiveOptionKey(key string) bool {
+	if _, ok := nonSensitivePasswordOptionKeys[key]; ok {
+		return false
+	}
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
 		strings.HasSuffix(key, "Key") ||
