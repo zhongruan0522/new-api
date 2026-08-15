@@ -69,11 +69,8 @@ func CheckSetup() {
 		// No setup record exists, check if we have a root user
 		if RootUserExists() {
 			common.SysLog("system is not initialized, but root user exists")
-			// Create setup record
-			newSetup := Setup{
-				Version:       common.Version,
-				InitializedAt: time.Now().Unix(),
-			}
+			// Create setup record（固定主键，与 InitializeSetup 的占位约定一致）
+			newSetup := NewSetupRecord(common.Version, time.Now().Unix())
 			err := DB.Create(&newSetup).Error
 			if err != nil {
 				common.SysLog("failed to create setup record: " + err.Error())

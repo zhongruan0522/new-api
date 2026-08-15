@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -12,8 +13,9 @@ import (
 	"github.com/NookMux/NookMux/service"
 )
 
-// setupMutex 保护安装流程的 check-then-act 竞态：并发安装请求在检查
+// setupMutex 保护安装流程的进程内 check-then-act 竞态：并发安装请求在检查
 // constant.Setup / RootUserExists 与实际写入之间可能交错。
+// 跨进程/多实例安全由 model.InitializeSetup 的数据库事务 + 固定主键占位保证。
 var setupMutex sync.Mutex
 
 type Setup struct {
@@ -79,6 +81,7 @@ func PostSetup(c *gin.Context) {
 	}
 
 	// If root doesn't exist, validate and create admin account
+	var rootUser *model.User
 	if !rootExists {
 		// Validate username length: max 12 characters to align with model.User validation
 		if len(req.Username) > 12 {
@@ -103,7 +106,7 @@ func PostSetup(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgSetupSystemError)
 			return
 		}
-		rootUser := model.User{
+		rootUser = &model.User{
 			Username:    req.Username,
 			Password:    hashedPassword,
 			Role:        common.RoleRootUser,
@@ -112,27 +115,21 @@ func PostSetup(c *gin.Context) {
 			AccessToken: nil,
 			Quota:       100000000,
 		}
-		err = model.DB.Create(&rootUser).Error
-		if err != nil {
-			common.SysError("setup: failed to create root user: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgSetupCreateAdminFailed)
+	}
+
+	// 数据库事务 + 固定主键占位：多实例并发初始化时，只有一个实例能成功
+	// 写入 setup 记录，其余实例按"已初始化"返回，不会创建重复 root 用户。
+	setupRecord := model.NewSetupRecord(common.Version, time.Now().Unix())
+	if err := model.InitializeSetup(rootUser, setupRecord); err != nil {
+		if errors.Is(err, model.ErrSetupAlreadyInitialized) {
+			common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
 			return
 		}
-	}
-
-	// Update setup status
-	constant.Setup = true
-
-	setup := model.Setup{
-		Version:       common.Version,
-		InitializedAt: time.Now().Unix(),
-	}
-	err = model.DB.Create(&setup).Error
-	if err != nil {
-		common.SysError("setup: failed to create setup record: " + err.Error())
+		common.SysError("setup: failed to initialize: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgSetupInitFailed)
 		return
 	}
+	constant.Setup = true
 
 	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录。
 	// 审计元数据区分「新建 root 用户」与「复用已有 root 用户」两种初始化路径。
