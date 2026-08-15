@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ReactNode } from 'react'
+import { type ReactNode, useRef } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -43,6 +43,8 @@ interface CopyButtonProps {
    * 返回空字符串表示加载失败，跳过复制。
    */
   onBeforeCopy?: () => Promise<string>
+  /** 复制结果是否弹全局 toast（默认 false，仅切换图标/tooltip 反馈） */
+  notify?: boolean
 }
 
 export function CopyButton({
@@ -56,10 +58,16 @@ export function CopyButton({
   successTooltip,
   'aria-label': ariaLabel,
   onBeforeCopy,
+  notify = false,
 }: CopyButtonProps) {
   const { t } = useTranslation()
-  const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
-  const isCopied = copiedText === value
+  const { copiedText, copyToClipboard } = useCopyToClipboard({ notify })
+  // onBeforeCopy 场景下 value 可能为空占位（如批量复制），实际复制的是
+  // resolved 值；两种情况都要能切换到"已复制"状态。
+  const resolvedValueRef = useRef<string | null>(null)
+  const isCopied =
+    copiedText !== null &&
+    (copiedText === value || copiedText === resolvedValueRef.current)
   const resolvedTooltip = tooltip ?? t('common.actions.copyToClipboard')
   const resolvedSuccessTooltip = successTooltip ?? t('common.status.copiedb7c3ca')
   const resolvedAriaLabel = ariaLabel ?? resolvedTooltip
@@ -69,9 +77,11 @@ export function CopyButton({
     if (onBeforeCopy) {
       const resolved = await onBeforeCopy()
       if (!resolved) return
+      resolvedValueRef.current = resolved
       await copyToClipboard(resolved)
       return
     }
+    resolvedValueRef.current = null
     await copyToClipboard(value)
   }
 

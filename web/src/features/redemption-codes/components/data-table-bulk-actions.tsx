@@ -30,7 +30,6 @@ import {
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { CopyButton } from '@/components/copy-button'
 import { DataTableBulkActions as BulkActionsToolbar } from '@/components/data-table'
-import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { deleteInvalidRedemptions, getRedemptionKey } from '../api'
 import { type Redemption } from '../types'
 import { useRedemptions } from './redemptions-provider'
@@ -44,14 +43,18 @@ export function DataTableBulkActions<TData>({
 }: DataTableBulkActionsProps<TData>) {
   const { t } = useTranslation()
   const { triggerRefresh } = useRedemptions()
-  const { copyToClipboard } = useCopyToClipboard({ notify: false })
   const [showDeleteInvalidConfirm, setShowDeleteInvalidConfirm] =
     useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   const selectedRows = table.getFilteredSelectedRowModel().rows
 
-  const handleCopySelected = async (): Promise<string> => {
+  /**
+   * 收集选中兑换码的完整内容（逐个按需请求完整 key，服务端留痕）。
+   * 只负责收集并返回拼接结果；实际复制与成功/失败提示由 CopyButton
+   * 统一处理，避免重复写剪贴板和失败时误报成功。
+   */
+  const collectSelectedContent = async (): Promise<string> => {
     if (isCopying) return ''
     setIsCopying(true)
     try {
@@ -72,12 +75,7 @@ export function DataTableBulkActions<TData>({
           )
         }
       }
-      const content = lines.join('\n')
-      if (content) {
-        await copyToClipboard(content)
-        toast.success(t('redemptionCodes.status.codesCopied'))
-      }
-      return content
+      return lines.join('\n')
     } finally {
       setIsCopying(false)
     }
@@ -114,7 +112,8 @@ export function DataTableBulkActions<TData>({
         ) : (
           <CopyButton
             value=''
-            onBeforeCopy={handleCopySelected}
+            onBeforeCopy={collectSelectedContent}
+            notify
             variant='outline'
             size='icon'
             className='size-8'
