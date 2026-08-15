@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { Check, Copy, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -72,12 +72,11 @@ export function CopyButton({
   // resolved 值；两种情况都要能切换到"已复制"状态。
   const resolvedValueRef = useRef<string | null>(null)
   // value 变化时旧 resolved 值随之失效，避免复制目标切换后 copiedText
-  // 仍匹配旧值而误显示"已复制"。
-  const prevValueRef = useRef(value)
-  if (prevValueRef.current !== value) {
-    prevValueRef.current = value
+  // 仍匹配旧值而误显示"已复制"。必须在提交后的 effect 中失效：render 期
+  // 直接写 ref 在并发渲染下可能作用于被放弃的渲染。
+  useEffect(() => {
     resolvedValueRef.current = null
-  }
+  }, [value])
   const isCopied =
     copiedText !== null &&
     (copiedText === value || copiedText === resolvedValueRef.current)
