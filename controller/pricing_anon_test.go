@@ -86,10 +86,9 @@ func TestGetPricingAnonymousStripsEnableGroups(t *testing.T) {
 		t.Fatal("expected at least one pricing item")
 	}
 	for i, item := range anonBody.Data {
-		if groups, ok := item["enable_groups"]; ok {
-			if list, isList := groups.([]any); isList && len(list) > 0 {
-				t.Fatalf("item %d: anonymous pricing response must not expose enable_groups, got %v", i, groups)
-			}
+		// 匿名响应必须完全不包含 enable_groups 字段（而非 "enable_groups": null）
+		if _, ok := item["enable_groups"]; ok {
+			t.Fatalf("item %d: anonymous pricing response must not contain enable_groups field, got %v", i, item["enable_groups"])
 		}
 	}
 

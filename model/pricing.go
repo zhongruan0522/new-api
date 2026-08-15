@@ -39,7 +39,9 @@ type Pricing struct {
 	AudioRatio             *float64                    `json:"audio_ratio,omitempty"`
 	AudioCompletionRatio   *float64                    `json:"audio_completion_ratio,omitempty"`
 	ContextPricing         *types.ContextPricingConfig `json:"context_pricing,omitempty"`
-	EnableGroup            []string                    `json:"enable_groups"`
+	// omitempty：匿名 pricing 响应置 nil 时整个字段不出现在 JSON 中，
+	// 避免输出 "enable_groups": null。
+	EnableGroup            []string                    `json:"enable_groups,omitempty"`
 	SupportedEndpointTypes []constant.EndpointType     `json:"supported_endpoint_types"`
 }
 
