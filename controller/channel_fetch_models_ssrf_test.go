@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/system_setting"
 
@@ -73,8 +76,10 @@ func fetchModelsRedirectProbeURL(baseURL string) string {
 }
 
 // TestFetchModelsRedirectBlockedByControlledClient 证明修复生效：
-// FetchModels 现在用 service.GetHttpClient()，其 CheckRedirect 会对 redirect
-// 目标复查 SSRF 规则并拦截跳转。
+// FetchModels 用 service.GetHttpClient()，其 CheckRedirect 会对 redirect
+// 目标复查 SSRF 规则并拦截跳转。测试通过 gin 上下文实际调用 FetchModels
+// 处理器，覆盖完整链路（初始校验 → 请求 → redirect 复查）；若生产代码
+// 换回裸 http.Client，本用例会因跳转未被拦截而失败。
 func TestFetchModelsRedirectBlockedByControlledClient(t *testing.T) {
 	overrideFetchModelsSSRFSetting(t)
 	ensureFetchModelsSSRFHttpClient()
@@ -92,26 +97,37 @@ func TestFetchModelsRedirectBlockedByControlledClient(t *testing.T) {
 		t.Fatalf("redirect target should be rejected by SSRF rules, but passed: %s", blockedRedirectTarget)
 	}
 
-	// 核心断言：受控 client 在跟随 redirect 时被 CheckRedirect 拦截。
-	req, err := http.NewRequest(http.MethodGet, probeURL, nil)
-	if err != nil {
-		t.Fatalf("build request: %v", err)
+	// 核心断言：实际调用 FetchModels，受控 client 拦截 redirect 后返回 500。
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	body := fmt.Sprintf(`{"base_url":%q,"type":%d,"key":"sk-test"}`, originURL, constant.ChannelTypeOpenAI)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/channel/fetch_models", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	FetchModels(c)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 from FetchModels when redirect is blocked, got %d, body: %s", w.Code, w.Body.String())
 	}
-	resp, err := service.GetHttpClient().Do(req)
-	if err == nil {
-		defer resp.Body.Close()
-		t.Fatalf("expected redirect to be blocked by CheckRedirect, got status %d", resp.StatusCode)
+	var resp struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
 	}
-	if !strings.Contains(err.Error(), "redirect to") || !strings.Contains(err.Error(), "blocked") {
-		t.Fatalf("expected SSRF redirect block error, got: %v", err)
+	if err := common.DecodeJson(bytes.NewReader(w.Body.Bytes()), &resp); err != nil {
+		t.Fatalf("decode response: %v, body: %s", err, w.Body.String())
+	}
+	if resp.Success {
+		t.Fatalf("expected success=false, body: %s", w.Body.String())
+	}
+	if !strings.Contains(resp.Message, "redirect to") || !strings.Contains(resp.Message, "blocked") {
+		t.Fatalf("expected SSRF redirect block error message, got: %s", resp.Message)
 	}
 }
 
-// TestFetchModelsBareClientFollowsRedirectUnblocked 固定"问题存在"的证据：
-// 修复前的裸 &http.Client{} 无 CheckRedirect，同一场景下 redirect 不被拦截，
-// 攻击者可达被 SSRF 规则禁止的目标。若有人把受控 client 换回裸 client，
-// 该用例与上一用例的组合仍能暴露回归。
-func TestFetchModelsBareClientFollowsRedirectUnblocked(t *testing.T) {
+// TestFetchModelsBareClientRegression 固定回归证据：同一场景下裸
+// &http.Client{} 会跟随 redirect 到达被禁止的目标。这证明上一用例失败时
+// （即 FetchModels 被改回裸 client）暴露的是真实攻击路径，而非误报。
+func TestFetchModelsBareClientRegression(t *testing.T) {
 	overrideFetchModelsSSRFSetting(t)
 
 	originURL, blockedRedirectTarget := newFetchModelsRedirectServers(t)
