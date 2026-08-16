@@ -264,6 +264,12 @@ func fulfillOrder(event stripe.Event, referenceId string, customerId string) err
 			log.Println("充值订单已处理，跳过重复入账:", referenceId)
 			return nil
 		}
+		// 订单本地不存在是终态：重投也无法入账，返回 nil 让 webhook 回 2xx，
+		// 避免 Stripe 无限重投；其余错误（数据库故障等）保持 5xx 触发重试。
+		if errors.Is(err, model.ErrTopUpNotFound) {
+			log.Println("充值订单不存在，视为终态跳过入账:", referenceId)
+			return nil
+		}
 		log.Println(err.Error(), referenceId)
 		return err
 	}
