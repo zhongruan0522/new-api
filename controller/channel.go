@@ -1302,7 +1302,9 @@ func FetchModels(c *gin.Context) {
 		return
 	}
 
-	client := &http.Client{}
+	// 复用带 CheckRedirect 的受控 client：每次跳转都会复查 SSRF 规则，
+	// 防止初始校验通过后经 301/302/307/308 重定向探测内网或外带认证头。
+	client := service.GetHttpClient()
 	var url string
 	switch req.Type {
 	case constant.ChannelTypeZhipu_v4:
