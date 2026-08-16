@@ -18,12 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { HelpCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatLogQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/use-admin'
 import { useAuthStore } from '@/stores/auth-store'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { getLogStats, getUserLogStats } from '../api'
 import { DEFAULT_LOG_STATS } from '../constants'
 import { getDefaultTimeRange } from '../lib/utils'
@@ -36,11 +42,26 @@ function StatBadge(props: {
   label: string
   value: string | number
   accent: string
+  tip?: string
 }) {
   return (
     <span className='border-border/60 bg-muted/25 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-xs shadow-xs'>
       <span className={cn('h-3.5 w-0.5 rounded-full', props.accent)} />
-      <span className='text-muted-foreground'>{props.label}</span>
+      <span className='text-muted-foreground inline-flex items-center gap-1'>
+        {props.label}
+        {props.tip && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <HelpCircle className='text-muted-foreground/60 size-3 cursor-help' />
+              }
+            />
+            <TooltipContent side='bottom' className='max-w-xs'>
+              {props.tip}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </span>
       <span className='text-foreground/85 font-mono font-semibold tabular-nums'>
         {props.value}
       </span>
@@ -137,16 +158,19 @@ export function CommonLogsStats() {
         label={t('usageLogs.fields.value')}
         value={sensitiveVisible ? formatLogQuota(stats?.quota || 0) : '••••'}
         accent='bg-sky-500/70'
+        tip={t('usageLogs.tips.valueDescription')}
       />
       <StatBadge
         label={t('usageLogs.fields.rpm')}
         value={stats?.rpm || 0}
         accent='bg-rose-500/65'
+        tip={t('usageLogs.tips.rpmDescription')}
       />
       <StatBadge
         label={t('usageLogs.fields.tpm')}
         value={stats?.tpm || 0}
         accent='bg-slate-400/70'
+        tip={t('usageLogs.tips.tpmDescription')}
       />
     </div>
   )
