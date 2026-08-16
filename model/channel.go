@@ -378,6 +378,12 @@ func normalizeSearchChannelsLimit(limit int) int {
 	return limit
 }
 
+// NormalizeChannelSearchLimit 供 controller 在计算分页 offset 前统一 page_size，
+// 与 SQL LIMIT 使用同一有效值，避免 page_size 超上限时因两者不一致丢数据。
+func NormalizeChannelSearchLimit(pageSize int) int {
+	return normalizeSearchChannelsLimit(pageSize)
+}
+
 // buildSearchChannelsQuery 构造渠道搜索的基础查询（keyword/group/model/id/name/tag
 // 条件），供分页查询与 total/type_counts 聚合查询复用，避免三份 where 复制。
 func buildSearchChannelsQuery(keyword string, group string, model string, idFilter int, nameFilter string, tagFilter string) *gorm.DB {
