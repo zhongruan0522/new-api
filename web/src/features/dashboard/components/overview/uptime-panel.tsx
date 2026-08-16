@@ -103,7 +103,7 @@ export function UptimePanel() {
       loading={loading}
       empty={!groups.length}
       emptyMessage={t('dashboard.fields.noUptimeMonitoringConfigured')}
-      height='h-80'
+      height='h-72'
       contentClassName='p-0'
       headerActions={
         <Button
@@ -120,7 +120,7 @@ export function UptimePanel() {
         </Button>
       }
     >
-      <ScrollArea className='h-80'>
+      <ScrollArea className='h-72'>
         <div>
           {groups.map((group, groupIdx) => (
             <div key={group.categoryName}>
