@@ -220,6 +220,16 @@ export async function getUserModules(): Promise<{
   return res.data
 }
 
+// Get admin-only system info (build version). Requires admin session.
+export async function getSystemInfo(): Promise<{
+  success: boolean
+  message?: string
+  data?: { version?: string }
+}> {
+  const res = await api.get('/api/status/system_info')
+  return res.data
+}
+
 // Get system notice
 export async function getNotice(): Promise<{
   success: boolean

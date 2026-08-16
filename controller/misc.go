@@ -96,7 +96,6 @@ func GetStatus(c *gin.Context) {
 		"user_agreement_enabled":    legalSetting.UserAgreement != "",
 		"privacy_policy_enabled":    legalSetting.PrivacyPolicy != "",
 		"checkin_enabled":           operation_setting.GetCheckinSetting().Enabled,
-		"version":                   common.Version,
 		"_qn":                       "nookmux",
 	}
 
@@ -115,6 +114,19 @@ func GetStatus(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    data,
+	})
+}
+
+// GetStatusSystemInfo 返回构建版本号（AdminAuth）。
+// 版本指纹属于管理语义，不得进匿名可达的 /api/status 公开响应，
+// 由本接口在确认管理员身份后单独下发。
+func GetStatusSystemInfo(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"version": common.Version,
+		},
 	})
 }
 
