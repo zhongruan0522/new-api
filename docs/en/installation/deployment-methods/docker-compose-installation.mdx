@@ -77,6 +77,10 @@ docker compose logs -f nookmux
 
 Visit `http://Server_IP:3000`. The first visit opens the initialization page. Follow the prompts to create an administrator account, then log in.
 
+<Callout type="warn" title="Security window during first-time initialization">
+  The initialization endpoint (`/api/setup`) is anonymous until initialization completes. If a fresh instance is exposed to the public internet, an external visitor could register the root administrator account before you do. Complete the first-time initialization from an internal network, or restrict access to port `3000` (in particular the `/api/setup` path) with a firewall/security group first and open it up after initialization. Once initialization is complete, the endpoint is automatically disabled: further calls to `/api/setup` are rejected.
+</Callout>
+
 ## Stop services
 
 ```shell
