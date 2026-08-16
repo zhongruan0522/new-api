@@ -63,6 +63,8 @@ func InitEnv() {
 		CryptoSecret = os.Getenv("CRYPTO_SECRET")
 	} else {
 		CryptoSecret = SessionSecret
+		log.Println("WARNING: CRYPTO_SECRET not set, falling back to SESSION_SECRET. Multi-instance deployments must set CRYPTO_SECRET explicitly, otherwise signed URLs (/mcp/image|video) will be rejected across instances after restart.")
+		log.Println("警告：未设置 CRYPTO_SECRET，将回落使用 SESSION_SECRET。多实例部署必须显式配置 CRYPTO_SECRET，否则重启后签名 URL（/mcp/image|video）会跨实例互拒。")
 	}
 	if os.Getenv("SQLITE_PATH") != "" {
 		SQLitePath = os.Getenv("SQLITE_PATH")
