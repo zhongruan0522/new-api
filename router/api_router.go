@@ -28,7 +28,9 @@ func SetApiRouter(router *gin.Engine) {
 		// 管理段由服务端剥离，仅 admin_modules（AdminAuth）下发。
 		// 响应内容随调用者角色变化，必须 no-store 防止管理员响应被共享缓存重放
 		apiRouter.GET("/status/user_modules", middleware.UserAuth(), middleware.DisableCache(), controller.GetStatusUserModules)
-		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
+		// uptime 状态会触发服务端向 Uptime Kuma 实例的内网请求，
+		// 必须登录后才可触发，避免匿名用户借其探测内网
+		apiRouter.GET("/uptime/status", middleware.UserAuth(), controller.GetUptimeKumaStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
 		apiRouter.GET("/status/test", middleware.AdminAuth(), controller.TestStatus)
 		apiRouter.GET("/notice", controller.GetNotice)
