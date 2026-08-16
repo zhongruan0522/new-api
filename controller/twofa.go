@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
@@ -360,6 +361,21 @@ func Verify2FALogin(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgTwoFASessionInvalid)
 		return
 	}
+	// 校验 pending session 时效：时间戳缺失（旧 session）或已超过
+	// SecureVerificationTimeout 的 pending session 一律拒绝（fail-closed），
+	// 防止攻击者在长 cookie 有效期内反复尝试 TOTP/备用码。
+	pendingSetAt := session.Get("pending_2fa_set_at")
+	setAt, ok := pendingSetAt.(int64)
+	if !ok || time.Now().Unix()-setAt >= SecureVerificationTimeout {
+		session.Delete("pending_username")
+		session.Delete("pending_user_id")
+		session.Delete("pending_2fa_set_at")
+		if err := session.Save(); err != nil {
+			common.SysError("clear expired pending 2fa session failed: " + err.Error())
+		}
+		common.ApiErrorI18n(c, i18n.MsgTwoFASessionExpired)
+		return
+	}
 	// 获取用户信息
 	user, err := model.GetUserById(userId, false)
 	if err != nil {
@@ -409,6 +425,7 @@ func Verify2FALogin(c *gin.Context) {
 	// 2FA验证成功，清理pending会话信息并完成登录
 	session.Delete("pending_username")
 	session.Delete("pending_user_id")
+	session.Delete("pending_2fa_set_at")
 	session.Save()
 
 	setupLogin(user, c)
