@@ -540,7 +540,22 @@ func SearchChannels(c *gin.Context) {
 	nameFilter := c.Query("name")
 	tagFilter := c.Query("tag")
 
+	// 分页参数在查询前解析（非 tag_mode 分支下推到 SQL 分页）
+	page, _ := strconv.Atoi(c.DefaultQuery("p", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
 	channelData := make([]*model.Channel, 0)
+	// 非 tag_mode 分支的 type_counts 聚合与 status/type 过滤均下推到 SQL，
+	// 由 model.SearchChannelsWithMeta 一并返回，避免全量加载到内存。
+	var typeCounts map[int64]int64
+	var total int64
+
 	if enableTagMode {
 		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
 		if err != nil {
@@ -559,7 +574,15 @@ func SearchChannels(c *gin.Context) {
 			}
 		}
 	} else {
-		channels, err := model.SearchChannels(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
+		typeParam := c.Query("type")
+		typeFilter := -1
+		if typeParam != "" {
+			if tp, err := strconv.Atoi(typeParam); err == nil {
+				typeFilter = tp
+			}
+		}
+
+		channels, cnt, counts, err := model.SearchChannelsWithMeta(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter, statusFilter, typeFilter, (page-1)*pageSize, pageSize)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -568,66 +591,68 @@ func SearchChannels(c *gin.Context) {
 			return
 		}
 		channelData = channels
+		total = cnt
+		typeCounts = counts
 	}
 
-	if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
-		filtered := make([]*model.Channel, 0, len(channelData))
-		for _, ch := range channelData {
-			if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
-				continue
-			}
-			if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
-				continue
-			}
-			filtered = append(filtered, ch)
-		}
-		channelData = filtered
-	}
-
-	// calculate type counts for search results
-	typeCounts := make(map[int64]int64)
-	for _, channel := range channelData {
-		typeCounts[int64(channel.Type)]++
-	}
-
-	typeParam := c.Query("type")
-	typeFilter := -1
-	if typeParam != "" {
-		if tp, err := strconv.Atoi(typeParam); err == nil {
-			typeFilter = tp
-		}
-	}
-
-	if typeFilter >= 0 {
-		filtered := make([]*model.Channel, 0, len(channelData))
-		for _, ch := range channelData {
-			if ch.Type == typeFilter {
+	if enableTagMode {
+		// tag 聚合走不同路径（渠道数受 tag 限制），保留内存过滤与分页。
+		// 语义与非 tag_mode 分支一致：status 过滤 → type_counts 统计 →
+		// type 过滤 → 分页。
+		if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
+			filtered := make([]*model.Channel, 0, len(channelData))
+			for _, ch := range channelData {
+				if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
+					continue
+				}
+				if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
+					continue
+				}
 				filtered = append(filtered, ch)
 			}
+			channelData = filtered
 		}
-		channelData = filtered
+
+		// calculate type counts for search results
+		typeCounts = make(map[int64]int64)
+		for _, channel := range channelData {
+			typeCounts[int64(channel.Type)]++
+		}
+
+		typeParam := c.Query("type")
+		typeFilter := -1
+		if typeParam != "" {
+			if tp, err := strconv.Atoi(typeParam); err == nil {
+				typeFilter = tp
+			}
+		}
+
+		if typeFilter >= 0 {
+			filtered := make([]*model.Channel, 0, len(channelData))
+			for _, ch := range channelData {
+				if ch.Type == typeFilter {
+					filtered = append(filtered, ch)
+				}
+			}
+			channelData = filtered
+		}
+
+		total = int64(len(channelData))
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("p", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-
-	total := len(channelData)
 	startIdx := (page - 1) * pageSize
-	if startIdx > total {
-		startIdx = total
+	if startIdx > int(total) {
+		startIdx = int(total)
 	}
 	endIdx := startIdx + pageSize
-	if endIdx > total {
-		endIdx = total
+	if endIdx > int(total) {
+		endIdx = int(total)
 	}
 
-	pagedData := channelData[startIdx:endIdx]
+	pagedData := channelData
+	if enableTagMode {
+		pagedData = channelData[startIdx:endIdx]
+	}
 
 	for _, datum := range pagedData {
 		clearChannelInfo(datum)

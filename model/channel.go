@@ -360,8 +360,27 @@ func GetChannelsByTagWithGroup(tag string, group string, idSort bool, selectAll 
 	return channels, err
 }
 
-func SearchChannels(keyword string, group string, model string, idSort bool, idFilter int, nameFilter string, tagFilter string) ([]*Channel, error) {
-	var channels []*Channel
+// searchChannelsDefaultLimit / searchChannelsMaxLimit 限定渠道搜索的单页加载量：
+// 搜索结果历史上无 LIMIT 全量加载，渠道量大时放大内存/CPU 消耗。
+const (
+	searchChannelsDefaultLimit = 100
+	searchChannelsMaxLimit     = 500
+)
+
+// normalizeSearchChannelsLimit 规范化 limit：<=0 取默认上限，>上限截断防滥用。
+func normalizeSearchChannelsLimit(limit int) int {
+	if limit <= 0 {
+		return searchChannelsDefaultLimit
+	}
+	if limit > searchChannelsMaxLimit {
+		return searchChannelsMaxLimit
+	}
+	return limit
+}
+
+// buildSearchChannelsQuery 构造渠道搜索的基础查询（keyword/group/model/id/name/tag
+// 条件），供分页查询与 total/type_counts 聚合查询复用，避免三份 where 复制。
+func buildSearchChannelsQuery(keyword string, group string, model string, idFilter int, nameFilter string, tagFilter string) *gorm.DB {
 	modelsCol := "`models`"
 
 	// 如果是 PostgreSQL，使用双引号
@@ -375,12 +394,6 @@ func SearchChannels(keyword string, group string, model string, idSort bool, idF
 		baseURLCol = `"base_url"`
 	}
 
-	order := "LOWER(name) asc, id asc"
-	if idSort {
-		order = "id desc"
-	}
-
-	// 构造基础查询
 	baseQuery := DB.Model(&Channel{}).Omit("key")
 
 	whereClause := "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
@@ -397,13 +410,96 @@ func SearchChannels(keyword string, group string, model string, idSort bool, idF
 	if tagFilter != "" {
 		baseQuery = baseQuery.Where("tag LIKE ?", "%"+tagFilter+"%")
 	}
+	return baseQuery
+}
 
-	// 执行查询
-	err := baseQuery.Order(order).Find(&channels).Error
+// searchChannelsOrder 返回渠道搜索的排序子句。
+func searchChannelsOrder(idSort bool) string {
+	if idSort {
+		return "id desc"
+	}
+	return "LOWER(name) asc, id asc"
+}
+
+func SearchChannels(keyword string, group string, model string, idSort bool, idFilter int, nameFilter string, tagFilter string, offset int, limit int) ([]*Channel, error) {
+	var channels []*Channel
+
+	// 执行查询（SQL 层分页，避免全量加载）
+	err := buildSearchChannelsQuery(keyword, group, model, idFilter, nameFilter, tagFilter).
+		Order(searchChannelsOrder(idSort)).
+		Offset(offset).
+		Limit(normalizeSearchChannelsLimit(limit)).
+		Find(&channels).Error
 	if err != nil {
 		return nil, err
 	}
 	return channels, nil
+}
+
+// SearchChannelsWithMeta 在 SearchChannels 的分页查询之外，一并返回跨页聚合：
+// total 为满足 where 条件的记录总数，typeCounts 为按 type 分组的计数。
+//
+// statusFilter 语义与控制器历史内存过滤保持一致，直接下推到 SQL：
+//   - 传入 common.ChannelStatusEnabled（1）→ 只统计 enabled；
+//   - 传入 0 → 只统计非 enabled（status != 1）；
+//   - 传入 -1 → 不过滤。
+//
+// typeFilter 只作用于 items 与 total，不参与 typeCounts 聚合（与原实现
+// "status 过滤后、type 过滤前统计 type_counts" 的语义一致）。
+func SearchChannelsWithMeta(keyword string, group string, model string, idSort bool, idFilter int, nameFilter, tagFilter string, statusFilter int, typeFilter int, offset int, limit int) ([]*Channel, int64, map[int64]int64, error) {
+	applyStatusFilter := func(query *gorm.DB) *gorm.DB {
+		if statusFilter == common.ChannelStatusEnabled {
+			return query.Where("status = ?", common.ChannelStatusEnabled)
+		}
+		if statusFilter == 0 {
+			return query.Where("status != ?", common.ChannelStatusEnabled)
+		}
+		return query
+	}
+
+	// type_counts：where（keyword/group/id/name/tag + status）聚合，不带 type 条件
+	typeCounts := make(map[int64]int64)
+	type typeCountResult struct {
+		Type  int64 `gorm:"column:type"`
+		Count int64 `gorm:"column:count"`
+	}
+	var typeCountResults []typeCountResult
+	err := applyStatusFilter(buildSearchChannelsQuery(keyword, group, model, idFilter, nameFilter, tagFilter)).
+		Select("type, count(*) as count").
+		Group("type").
+		Find(&typeCountResults).Error
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	for _, r := range typeCountResults {
+		typeCounts[r.Type] = r.Count
+	}
+
+	// total：where + status + type
+	var total int64
+	countQuery := applyStatusFilter(buildSearchChannelsQuery(keyword, group, model, idFilter, nameFilter, tagFilter))
+	if typeFilter >= 0 {
+		countQuery = countQuery.Where("type = ?", typeFilter)
+	}
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, 0, nil, err
+	}
+
+	// items：where + status + type + 分页
+	itemsQuery := applyStatusFilter(buildSearchChannelsQuery(keyword, group, model, idFilter, nameFilter, tagFilter))
+	if typeFilter >= 0 {
+		itemsQuery = itemsQuery.Where("type = ?", typeFilter)
+	}
+	var channels []*Channel
+	err = itemsQuery.
+		Order(searchChannelsOrder(idSort)).
+		Offset(offset).
+		Limit(normalizeSearchChannelsLimit(limit)).
+		Find(&channels).Error
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	return channels, total, typeCounts, nil
 }
 
 func GetChannelById(id int, selectAll bool) (*Channel, error) {
