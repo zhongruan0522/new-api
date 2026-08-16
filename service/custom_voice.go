@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -599,7 +600,7 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 
 	url := up.baseURL + "/files/upload"
 	if up.groupId != "" {
-		url += "?GroupId=" + up.groupId
+		url += "?" + buildGroupIdQuery(up.groupId)
 	}
 	status, body, err := doUpstreamRequest(up, url, writer.FormDataContentType(), &buf, up.apiKey)
 	if err != nil {
@@ -633,7 +634,7 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 
 	url := up.baseURL + "/voice_clone"
 	if up.groupId != "" {
-		url += "?GroupId=" + up.groupId
+		url += "?" + buildGroupIdQuery(up.groupId)
 	}
 	status, respBody, err := doUpstreamRequest(up, url, "application/json", bytes.NewReader(bodyBytes), up.apiKey)
 	if err != nil {
@@ -808,6 +809,15 @@ func cleanupExpiredCustomVoicePreviews() error {
 func getCustomVoiceGroupAndBilling() (string, string) {
 	group, billing := model_setting.GetCustomVoiceConfig()
 	return strings.TrimSpace(group), strings.TrimSpace(billing)
+}
+
+// buildGroupIdQuery 构造上游 GroupId 查询串（已 URL 编码）。
+// groupId 来自渠道 Other 字段（管理员填写），含 &/# 等字符时未编码会污染
+// 上游请求参数，因此统一经 url.Values 编码后输出。
+func buildGroupIdQuery(groupId string) string {
+	q := url.Values{}
+	q.Set("GroupId", groupId)
+	return q.Encode()
 }
 
 // isDuplicateKeyErr 判断是否为唯一键冲突错误（跨数据库兼容）。
