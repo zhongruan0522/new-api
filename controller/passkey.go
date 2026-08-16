@@ -486,6 +486,14 @@ func AdminResetPasskey(c *gin.Context) {
 		return
 	}
 
+	// 角色层级检查：非 root 管理员不能重置同级或更高级用户的 passkey，
+	// 匹配 ManageUser / AdminDisable2FA 的既有模式。
+	myRole := c.GetInt("role")
+	if myRole <= user.Role && myRole != common.RoleRootUser {
+		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+
 	count, err := model.CountPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("count passkeys failed: " + err.Error())
