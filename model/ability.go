@@ -119,7 +119,30 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 	return GetChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId)
 }
 
+func chooseChannelIDFromAbilities(abilities []Ability, preferredAPIType int, relayFormat types.RelayFormat) int {
+	if len(abilities) == 0 {
+		return 0
+	}
+	abilities = preferAbilitiesByRequestFormat(abilities, preferredAPIType, relayFormat)
+	weightSum := uint(0)
+	for _, ability := range abilities {
+		weightSum += ability.Weight + 10
+	}
+	weight := common.GetRandomInt(int(weightSum))
+	for _, ability := range abilities {
+		weight -= int(ability.Weight) + 10
+		if weight <= 0 {
+			return ability.ChannelId
+		}
+	}
+	return 0
+}
+
 func GetChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
+	return getChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, false)
+}
+
+func getChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -135,27 +158,8 @@ func GetChannelWithRelayFormat(group string, model string, priorityIndex int, pr
 	if err != nil {
 		return nil, err
 	}
-	channel := Channel{}
-	if len(abilities) > 0 {
-		// Prefer explicit OpenAI wire settings before the broader API-type preference.
-		// Fall back to all channels if none match (format conversion).
-		abilities = preferAbilitiesByRequestFormat(abilities, preferredAPIType, relayFormat)
-		// Randomly choose one
-		weightSum := uint(0)
-		for _, ability_ := range abilities {
-			weightSum += ability_.Weight + 10
-		}
-		// Randomly choose one
-		weight := common.GetRandomInt(int(weightSum))
-		for _, ability_ := range abilities {
-			weight -= int(ability_.Weight) + 10
-			//log.Printf("weight: %d, ability weight: %d", weight, *ability_.Weight)
-			if weight <= 0 {
-				channel.Id = ability_.ChannelId
-				break
-			}
-		}
-	} else {
+	channel := Channel{Id: chooseChannelIDFromAbilities(abilities, preferredAPIType, relayFormat)}
+	if channel.Id == 0 {
 		// If exclusion left no candidates at current priority, fall through to next lower priority
 		// 如果排除后在当前优先级无候选渠道，降级到下一个优先级
 		if excludeChannelId > 0 {
@@ -168,23 +172,21 @@ func GetChannelWithRelayFormat(group string, model string, priorityIndex int, pr
 				if fallbackErr = fallbackQuery.Order("weight DESC").Find(&abilities).Error; fallbackErr != nil {
 					return nil, nil
 				}
-				if len(abilities) == 0 {
-					return nil, nil
-				}
-				abilities = preferAbilitiesByRequestFormat(abilities, preferredAPIType, relayFormat)
-				weightSum := uint(0)
-				for _, ability_ := range abilities {
-					weightSum += ability_.Weight + 10
-				}
-				weight := common.GetRandomInt(int(weightSum))
-				for _, ability_ := range abilities {
-					weight -= int(ability_.Weight) + 10
-					if weight <= 0 {
-						channel.Id = ability_.ChannelId
-						break
-					}
-				}
+				channel.Id = chooseChannelIDFromAbilities(abilities, preferredAPIType, relayFormat)
 			}
+		}
+		// No alternative exists: retry the original priority without exclusion so
+		// one-channel and final-priority setups still honor RetryTimes.
+		if channel.Id == 0 && excludeChannelId > 0 && allowExcludedFallback {
+			fallbackQuery, fallbackErr := getChannelQuery(group, model, priorityIndex, 0)
+			if fallbackErr != nil {
+				return nil, fallbackErr
+			}
+			abilities = nil
+			if fallbackErr = fallbackQuery.Order("weight DESC").Find(&abilities).Error; fallbackErr != nil {
+				return nil, fallbackErr
+			}
+			channel.Id = chooseChannelIDFromAbilities(abilities, preferredAPIType, relayFormat)
 		}
 		if channel.Id == 0 {
 			return nil, nil

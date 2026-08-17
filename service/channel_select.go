@@ -14,13 +14,14 @@ import (
 )
 
 type RetryParam struct {
-	Ctx              *gin.Context
-	TokenGroup       string
-	ModelName        string
-	Retry            *int
-	RelayFormat      types.RelayFormat
-	ExcludeChannelId int // 同优先级内重试时排除上次失败的渠道
-	resetNextTry     bool
+	Ctx                          *gin.Context
+	TokenGroup                   string
+	ModelName                    string
+	Retry                        *int
+	RelayFormat                  types.RelayFormat
+	ExcludeChannelId             int  // 同优先级内重试时排除上次失败的渠道
+	AllowExcludedChannelFallback bool // 无备用渠道时是否允许回到刚失败的渠道
+	resetNextTry                 bool
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -115,7 +116,15 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			priorityIndex := priorityRetry / 2
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityIndex: %d", autoGroup, priorityIndex)
 
-			channel, _ = model.GetRandomSatisfiedChannelWithRelayFormat(autoGroup, param.ModelName, priorityIndex, preferredAPIType, param.RelayFormat, param.ExcludeChannelId)
+			channel, _ = model.GetRandomSatisfiedChannelWithRelayFormatForRetry(
+				autoGroup,
+				param.ModelName,
+				priorityIndex,
+				preferredAPIType,
+				param.RelayFormat,
+				param.ExcludeChannelId,
+				param.AllowExcludedChannelFallback,
+			)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -164,7 +173,15 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 		}
 	} else {
 		priorityIndex := param.GetRetry() / 2
-		channel, err = model.GetRandomSatisfiedChannelWithRelayFormat(param.TokenGroup, param.ModelName, priorityIndex, preferredAPIType, param.RelayFormat, param.ExcludeChannelId)
+		channel, err = model.GetRandomSatisfiedChannelWithRelayFormatForRetry(
+			param.TokenGroup,
+			param.ModelName,
+			priorityIndex,
+			preferredAPIType,
+			param.RelayFormat,
+			param.ExcludeChannelId,
+			param.AllowExcludedChannelFallback,
+		)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}
