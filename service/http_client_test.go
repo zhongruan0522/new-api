@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+
+	"github.com/gorilla/websocket"
 )
 
 func TestInitHttpClientAppliesRelayTransportLimits(t *testing.T) {
@@ -48,4 +50,42 @@ func TestInitHttpClientAppliesRelayTransportLimits(t *testing.T) {
 	if transport.IdleConnTimeout != 17*time.Second {
 		t.Fatalf("IdleConnTimeout = %s, want 17s", transport.IdleConnTimeout)
 	}
+}
+
+func TestNewProxyWebSocketDialer(t *testing.T) {
+	// 空代理返回默认拨号器。
+	dialer, err := NewProxyWebSocketDialer("")
+	if err != nil {
+		t.Fatalf("empty proxy returned error: %v", err)
+	}
+	if dialer != defaultWebSocketDialerForCompare() {
+		t.Fatal("empty proxy should return the default dialer")
+	}
+
+	// http 代理返回携带 Proxy 函数的独立拨号器。
+	dialer, err = NewProxyWebSocketDialer("http://127.0.0.1:8080")
+	if err != nil {
+		t.Fatalf("http proxy returned error: %v", err)
+	}
+	if dialer == nil || dialer.Proxy == nil {
+		t.Fatal("http proxy dialer should have a Proxy function")
+	}
+
+	// socks5 代理返回携带 NetDial 的独立拨号器。
+	dialer, err = NewProxyWebSocketDialer("socks5://user:pass@127.0.0.1:1080")
+	if err != nil {
+		t.Fatalf("socks5 proxy returned error: %v", err)
+	}
+	if dialer == nil || dialer.NetDial == nil {
+		t.Fatal("socks5 proxy dialer should have a NetDial function")
+	}
+
+	// 非法 scheme 必须报错而不是静默直连。
+	if _, err = NewProxyWebSocketDialer("ftp://127.0.0.1:21"); err == nil {
+		t.Fatal("unsupported scheme should return an error")
+	}
+}
+
+func defaultWebSocketDialerForCompare() *websocket.Dialer {
+	return websocket.DefaultDialer
 }

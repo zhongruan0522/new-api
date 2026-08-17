@@ -10,8 +10,10 @@ import (
 // 修改系统设置时，before 必须能被记录，而不是始终为 nil。
 //
 // 该用例复现 controller.UpdateOption 的调用路径：
-//   before = {"key":"Foo","value":"old"} （修复前传 nil）
-//   after  = {"key":"Foo","value":"new"}
+//
+//	before = {"key":"Foo","value":"old"} （修复前传 nil）
+//	after  = {"key":"Foo","value":"new"}
+//
 // 期望 before_data 与 after_data 同时存在，且各自包含对应值。
 func TestSerializeAuditDiff_OptionUpdateBeforeAndAfter(t *testing.T) {
 	before := map[string]interface{}{"key": "Foo", "value": "old"}

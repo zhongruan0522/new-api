@@ -6,7 +6,6 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
@@ -15,6 +14,7 @@ import (
 	"github.com/NookMux/NookMux/relay/helper"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) *dto.Usage {
@@ -113,7 +113,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	return usage
 }
 
-func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*types.NewAPIError, *dto.Usage) {
+func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*types.NookMuxError, *dto.Usage) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)

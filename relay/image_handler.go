@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	imageReq, ok := info.Request.(*dto.ImageRequest)

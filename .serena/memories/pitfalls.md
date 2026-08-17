@@ -117,6 +117,19 @@
 
 ---
 
+## 工具链 — Serena 配置
+
+### 手改 project.yml 用旧字段名或不全字段
+**后果**:Serena 加载时检测到旧字段名(如 `languages`)或缺字段,标记 incomplete,自动重写整个文件 —— 改名字段被追加到文件末尾、自定义中文注释被官方模板注释强制覆盖(`save()` 的 `transfer_yaml_comments(force_update_all=True)`),git diff 全是噪音。
+**规则**:改 `.serena/project.yml` 必须用最新 schema 字段名(参考 `参考项目/serena/src/serena/config/serena_config.py` 的 `RENAMED_FIELDS` 与 dataclass 字段)且字段齐全;注释保持与官方模板 `src/serena/resources/project.template.yml` 完全一致(逐字节,包括 `e.g.` 与 `e.g.,` 的差异);项目的中文维护说明写到 memories,不写进 project.yml 注释。
+**场景**:`languages` → `language_servers` 是 1.7 前后的改名;round-trip 验证方式:用 serena 真实源码 `ProjectConfig.load()` + `save()`,文件应字节级不变。
+
+### 全局配置丢失导致索引爆炸
+**后果**:全局 `~/.serena/serena_config.yml` 的 `ignored_paths` 含 `node_modules`/`dist`/`参考项目` 等;若机器换环境全局配置缺失,只靠 gitignore 的忽略不够快,Serena 会尝试索引 web/node_modules 和参考项目。
+**规则**:project.yml 的 `ignored_paths` 显式包含 `web/node_modules`、`web/dist`、`.serena/cache`、`参考项目` 等重目录(显式比依赖全局更稳定),以 `*` 开头的模式必须加引号(YAML alias 限制)。
+
+---
+
 ## 跨层 — 流程
 
 ### 不读子目录 AGENTS.md 就改代码

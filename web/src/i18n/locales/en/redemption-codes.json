@@ -35,5 +35,7 @@
   "redemptionCodes.tips.permanentlyDeleteRedemptionCode": "This will permanently delete redemption code",
   "redemptionCodes.fields.updateRedemptionCode": "Update Redemption Code",
   "redemptionCodes.tips.updateTheRedemptionCodeByProvidingNecessaryInfo": "Update the redemption code by providing necessary info.",
-  "redemptionCodes.fields.userId": "User {{id}}"
+  "redemptionCodes.fields.userId": "User {{id}}",
+  "redemptionCodes.errors.failedToFetchKey": "Failed to fetch the full redemption code, please try again later",
+  "redemptionCodes.status.failedToFetchKeyFor": "Failed to fetch the full code for {{name}}"
 }

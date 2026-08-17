@@ -40,9 +40,9 @@ import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
-// 列表默认展示脱敏 key：sk- + 等长 *（与历史 UI 一致用 12 位星号占位）。
+// 列表默认展示全脱敏 key，不泄露任何前缀信息。
 // 真实密钥仅在复制/查看/新建/重置时通过 /api/token/{id}/key 等接口获取。
-const MASKED_API_KEY = `sk-${'*'.repeat(12)}`
+const MASKED_API_KEY = '*'.repeat(16)
 
 type QuotaLimit = {
   expired: boolean
@@ -273,7 +273,7 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
           {MASKED_API_KEY}
         </PopoverTrigger>
         <PopoverContent
-          className='w-auto max-w-[min(90vw,28rem)]'
+          className='w-[min(90vw,36rem)]'
           align='start'
         >
           <div className='space-y-2'>
@@ -285,14 +285,16 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
                   {t('common.tips.loading')}
                 </span>
               </div>
-            ) : (
+            ) : resolvedFullKey ? (
               <input
                 readOnly
-                value={resolvedFullKey || MASKED_API_KEY}
-                autoFocus
-                onFocus={(e) => e.target.select()}
-                className='bg-muted/50 w-full min-w-[280px] rounded-md border px-3 py-2 font-mono text-xs outline-none'
+                value={resolvedFullKey}
+                className='bg-muted/50 w-full min-w-0 rounded-md border px-3 py-2 font-mono text-xs outline-none'
               />
+            ) : (
+              <p className='text-muted-foreground py-2 text-xs'>
+                {t('keys.status.createdApiKeyResponseDidNotIncludeAKey')}
+              </p>
             )}
           </div>
         </PopoverContent>

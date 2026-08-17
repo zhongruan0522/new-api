@@ -1,7 +1,12 @@
-﻿---
+---
 title: About
 ---
 
-The About page in the navigation bar can be configured in System Settings -> Other Settings.
+The top navigation **About** page is controlled by the `About` field in **System Settings -> Site and Brand -> System Information**.
 
-![About](/assets/guide/about.png)
+- Leave it blank: show the default project description and the `NookMux/NookMux` repository link.
+- Set a URL: the page opens the address in an embedded iframe.
+- Set HTML: render the content as HTML.
+- Set any other text: render it as Markdown.
+
+Related implementation: `web/src/features/about/index.tsx`.

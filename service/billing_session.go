@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/logger"
 	"github.com/NookMux/NookMux/model"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type BillingSession struct {
@@ -112,7 +112,7 @@ func (s *BillingSession) GetPreConsumedQuota() int {
 	return s.preConsumedQuota
 }
 
-func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIError {
+func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NookMuxError {
 	effectiveQuota := quota
 	if s.shouldTrust(c) {
 		effectiveQuota = 0
@@ -262,7 +262,7 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 	}
 }
 
-func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {
+func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NookMuxError) {
 	if relayInfo == nil {
 		return nil, types.NewError(
 			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingRelayInfoNil)),

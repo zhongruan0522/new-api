@@ -5,7 +5,7 @@
   "orderQuery.actions.copyOrderNumber": "复制订单号",
   "orderQuery.fields.noOrdersFound": "未找到订单",
   "orderQuery.fields.number": "订单号",
-  "orderQuery.titles.query": "订单查询",
+  "orderQuery.titles.query": "历史订单",
   "orderQuery.fields.payment": "支付",
   "orderQuery.fields.paymentMethod": "付款方式",
   "orderQuery.actions.searchByOrderNumber": "按订单号搜索...",

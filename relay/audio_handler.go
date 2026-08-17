@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	audioReq, ok := info.Request.(*dto.AudioRequest)

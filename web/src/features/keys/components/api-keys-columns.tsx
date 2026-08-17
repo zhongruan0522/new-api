@@ -61,6 +61,22 @@ function useGroupRatios(): Record<string, number> {
   return data ?? {}
 }
 
+function renderApiKeyCell({ row }: { row: { original: ApiKey } }) {
+  return <ApiKeyCell apiKey={row.original} />
+}
+
+function renderApiKeyQuotaCell({ row }: { row: { original: ApiKey } }) {
+  return <ApiKeyQuotaCell apiKey={row.original} />
+}
+
+function renderModelLimitsCell({ row }: { row: { original: ApiKey } }) {
+  return <ModelLimitsCell apiKey={row.original} />
+}
+
+function renderIpRestrictionsCell({ row }: { row: { original: ApiKey } }) {
+  return <IpRestrictionsCell apiKey={row.original} />
+}
+
 export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
   const { t } = useTranslation()
   const groupRatios = useGroupRatios()
@@ -123,7 +139,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       id: 'key',
       accessorKey: 'key',
       header: t('channels.fields.apiKey'),
-      cell: ({ row }) => <ApiKeyCell apiKey={row.original} />,
+      cell: renderApiKeyCell,
       enableSorting: false,
       meta: { label: t('channels.fields.apiKey') },
     },
@@ -133,7 +149,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('keys.fields.quota')} />
       ),
-      cell: ({ row }) => <ApiKeyQuotaCell apiKey={row.original} />,
+      cell: renderApiKeyQuotaCell,
       meta: { label: t('keys.fields.quota') },
     },
     {
@@ -183,7 +199,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('channels.titles.models')} />
       ),
-      cell: ({ row }) => <ModelLimitsCell apiKey={row.original} />,
+      cell: renderModelLimitsCell,
       enableSorting: false,
       meta: { label: t('channels.titles.models'), mobileHidden: true },
     },
@@ -193,7 +209,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('keys.fields.ipRestriction')} />
       ),
-      cell: ({ row }) => <IpRestrictionsCell apiKey={row.original} />,
+      cell: renderIpRestrictionsCell,
       enableSorting: false,
       meta: { label: t('keys.fields.ipRestriction'), mobileHidden: true },
     },

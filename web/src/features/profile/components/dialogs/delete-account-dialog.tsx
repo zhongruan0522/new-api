@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { api } from '@/lib/api'
+import { clearSidebarModulesCaches } from '@/lib/nav-modules'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -80,6 +81,8 @@ export function DeleteAccountDialog({
 
         reset()
         localStorage.removeItem('user')
+        // 侧栏模块配置是登录用户/管理员受限数据，注销账号时一并清理
+        clearSidebarModulesCaches()
         navigate({ to: '/sign-in' })
       } else {
         toast.error(response.message || t('profile.errors.failedToDeleteAccount'))

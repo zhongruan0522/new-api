@@ -374,7 +374,7 @@ func FetchUpstreamModels(c *gin.Context) {
 	// 对于 Ollama 渠道，使用特殊处理
 	if channel.Type == constant.ChannelTypeOllama {
 		key := strings.Split(channel.Key, "\n")[0]
-		models, err := ollama.FetchOllamaModels(baseURL, key)
+		models, err := ollama.FetchOllamaModels(baseURL, key, channel.GetSetting().Proxy)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -529,9 +529,35 @@ func SearchChannels(c *gin.Context) {
 	statusFilter := parseStatusFilter(statusParam)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+
+	// 独立字段过滤：id 精确、name/tag 模糊（>0 或非空才生效）
+	idFilter := 0
+	if idStr := c.Query("id"); idStr != "" {
+		if v, err := strconv.Atoi(idStr); err == nil && v > 0 {
+			idFilter = v
+		}
+	}
+	nameFilter := c.Query("name")
+	tagFilter := c.Query("tag")
+
+	// 分页参数在查询前解析（非 tag_mode 分支下推到 SQL 分页）
+	page, _ := strconv.Atoi(c.DefaultQuery("p", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
 	channelData := make([]*model.Channel, 0)
+	// 非 tag_mode 分支的 type_counts 聚合与 status/type 过滤均下推到 SQL，
+	// 由 model.SearchChannelsWithMeta 一并返回，避免全量加载到内存。
+	var typeCounts map[int64]int64
+	var total int64
+
 	if enableTagMode {
-		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort)
+		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -548,7 +574,15 @@ func SearchChannels(c *gin.Context) {
 			}
 		}
 	} else {
-		channels, err := model.SearchChannels(keyword, group, modelKeyword, idSort)
+		typeParam := c.Query("type")
+		typeFilter := -1
+		if typeParam != "" {
+			if tp, err := strconv.Atoi(typeParam); err == nil {
+				typeFilter = tp
+			}
+		}
+
+		channels, cnt, counts, err := model.SearchChannelsWithMeta(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter, statusFilter, typeFilter, (page-1)*pageSize, pageSize)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -557,66 +591,68 @@ func SearchChannels(c *gin.Context) {
 			return
 		}
 		channelData = channels
+		total = cnt
+		typeCounts = counts
 	}
 
-	if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
-		filtered := make([]*model.Channel, 0, len(channelData))
-		for _, ch := range channelData {
-			if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
-				continue
-			}
-			if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
-				continue
-			}
-			filtered = append(filtered, ch)
-		}
-		channelData = filtered
-	}
-
-	// calculate type counts for search results
-	typeCounts := make(map[int64]int64)
-	for _, channel := range channelData {
-		typeCounts[int64(channel.Type)]++
-	}
-
-	typeParam := c.Query("type")
-	typeFilter := -1
-	if typeParam != "" {
-		if tp, err := strconv.Atoi(typeParam); err == nil {
-			typeFilter = tp
-		}
-	}
-
-	if typeFilter >= 0 {
-		filtered := make([]*model.Channel, 0, len(channelData))
-		for _, ch := range channelData {
-			if ch.Type == typeFilter {
+	if enableTagMode {
+		// tag 聚合走不同路径（渠道数受 tag 限制），保留内存过滤与分页。
+		// 语义与非 tag_mode 分支一致：status 过滤 → type_counts 统计 →
+		// type 过滤 → 分页。
+		if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
+			filtered := make([]*model.Channel, 0, len(channelData))
+			for _, ch := range channelData {
+				if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
+					continue
+				}
+				if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
+					continue
+				}
 				filtered = append(filtered, ch)
 			}
+			channelData = filtered
 		}
-		channelData = filtered
+
+		// calculate type counts for search results
+		typeCounts = make(map[int64]int64)
+		for _, channel := range channelData {
+			typeCounts[int64(channel.Type)]++
+		}
+
+		typeParam := c.Query("type")
+		typeFilter := -1
+		if typeParam != "" {
+			if tp, err := strconv.Atoi(typeParam); err == nil {
+				typeFilter = tp
+			}
+		}
+
+		if typeFilter >= 0 {
+			filtered := make([]*model.Channel, 0, len(channelData))
+			for _, ch := range channelData {
+				if ch.Type == typeFilter {
+					filtered = append(filtered, ch)
+				}
+			}
+			channelData = filtered
+		}
+
+		total = int64(len(channelData))
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("p", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-
-	total := len(channelData)
 	startIdx := (page - 1) * pageSize
-	if startIdx > total {
-		startIdx = total
+	if startIdx > int(total) {
+		startIdx = int(total)
 	}
 	endIdx := startIdx + pageSize
-	if endIdx > total {
-		endIdx = total
+	if endIdx > int(total) {
+		endIdx = int(total)
 	}
 
-	pagedData := channelData[startIdx:endIdx]
+	pagedData := channelData
+	if enableTagMode {
+		pagedData = channelData[startIdx:endIdx]
+	}
 
 	for _, datum := range pagedData {
 		clearChannelInfo(datum)
@@ -926,8 +962,6 @@ func DeleteDisabledChannel(c *gin.Context) {
 type ChannelTag struct {
 	Tag            string  `json:"tag"`
 	NewTag         *string `json:"new_tag"`
-	Priority       *int64  `json:"priority"`
-	Weight         *uint   `json:"weight"`
 	ModelMapping   *string `json:"model_mapping"`
 	Models         *string `json:"models"`
 	Groups         *string `json:"groups"`
@@ -1004,7 +1038,7 @@ func EditTagChannels(c *gin.Context) {
 		}
 		channelTag.HeaderOverride = common.GetPointer[string](trimmed)
 	}
-	err = model.EditChannelByTag(channelTag.Tag, channelTag.NewTag, channelTag.ModelMapping, channelTag.Models, channelTag.Groups, channelTag.Priority, channelTag.Weight, channelTag.ParamOverride, channelTag.HeaderOverride)
+	err = model.EditChannelByTag(channelTag.Tag, channelTag.NewTag, channelTag.ModelMapping, channelTag.Models, channelTag.Groups, channelTag.ParamOverride, channelTag.HeaderOverride)
 	if err != nil {
 		common.SysError("failed to edit channels by tag: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -1252,7 +1286,7 @@ func FetchModels(c *gin.Context) {
 			})
 			return
 		}
-		models, err := ollama.FetchOllamaModels(baseURL, key)
+		models, err := ollama.FetchOllamaModels(baseURL, key, "")
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelOllamaGetModelsFailed, map[string]any{"Error": err.Error()})
 			return
@@ -1293,7 +1327,9 @@ func FetchModels(c *gin.Context) {
 		return
 	}
 
-	client := &http.Client{}
+	// 复用带 CheckRedirect 的受控 client：每次跳转都会复查 SSRF 规则，
+	// 防止初始校验通过后经 301/302/307/308 重定向探测内网或外带认证头。
+	client := service.GetHttpClient()
 	var url string
 	switch req.Type {
 	case constant.ChannelTypeZhipu_v4:
@@ -2029,7 +2065,7 @@ func OllamaPullModel(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	err = ollama.PullOllamaModel(baseURL, key, req.ModelName)
+	err = ollama.PullOllamaModel(baseURL, key, channel.GetSetting().Proxy, req.ModelName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -2107,7 +2143,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	}
 
 	// 执行拉取
-	err = ollama.PullOllamaModelStream(baseURL, key, req.ModelName, progressCallback)
+	err = ollama.PullOllamaModelStream(baseURL, key, channel.GetSetting().Proxy, req.ModelName, progressCallback)
 
 	if err != nil {
 		errorData, _ := json.Marshal(gin.H{
@@ -2174,7 +2210,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	err = ollama.DeleteOllamaModel(baseURL, key, req.ModelName)
+	err = ollama.DeleteOllamaModel(baseURL, key, channel.GetSetting().Proxy, req.ModelName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -2224,7 +2260,7 @@ func OllamaVersion(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	version, err := ollama.FetchOllamaVersion(baseURL, key)
+	version, err := ollama.FetchOllamaVersion(baseURL, key, channel.GetSetting().Proxy)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -2265,7 +2301,7 @@ func QueryPlanQuota(c *gin.Context) {
 	switch planName {
 	case "glm-coding-plan", "glm-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchGlmPlanQuota(key, planName)
+		quotaData, err := service.FetchGlmPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
 			if errors.Is(err, service.ErrGlmKeyInvalid) {
 				common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
@@ -2282,7 +2318,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "kimi-coding-plan":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchKimiPlanQuota(key)
+		quotaData, err := service.FetchKimiPlanQuota(key, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2294,7 +2330,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "minimax-coding-plan", "minimax-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName)
+		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2367,7 +2403,7 @@ func QueryGlmUsage(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
+	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime, channel.GetSetting().Proxy)
 	if err != nil {
 		if errors.Is(err, service.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
@@ -2406,7 +2442,7 @@ func QueryRiskStatus(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	result, err := service.CheckGlmRiskStatus(key)
+	result, err := service.CheckGlmRiskStatus(key, channel.GetSetting().Proxy)
 	if err != nil {
 		if errors.Is(err, service.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)

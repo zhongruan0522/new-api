@@ -1,106 +1,36 @@
-﻿---
-title: 项目介绍
-description: 了解 New API，新一代 AI 网关与资产管理系统
 ---
-
-import { Callout } from 'fumadocs-ui/components/callout';
-
-<div className="my-8 text-center">
-  <img
-    src="/assets/logo.png"
-    alt="New API Logo"
-    className="mx-auto"
-    width="120"
-    height="120"
-  />
-  <h1 className="mt-4 mb-2 text-4xl font-bold">New API</h1>
-  <img
-    src="/assets/trendshift.svg"
-    alt="NewAPI Trendshift Badge"
-    className="mx-auto mt-4"
-    style={{ width: '250px', height: '55px' }}
-    width="250"
-    height="55"
-  />
-</div>
+title: 项目介绍
+description: 了解 NookMux，自用定制版 AI API 网关 / 代理项目
+---
 
 ## 概述
 
-New API 是新一代 AI 基座平台，为您的 AI 应用提供统一的基础设施。承载所有 AI 应用，管理您的数字资产，连接未来的统一接口平台。
+NookMux 是基于 [newapi](https://github.com/QuantumNous/new-api) 的自用定制版 AI API 网关 / 代理项目。项目用于个人学习、研究与自用场景，提供统一 API 入口、渠道管理、计费、日志、用户和控制台管理能力。
 
-<Callout type="info">
-  New API 无缝集成全球主流 AI 服务提供商，包括 OpenAI、Anthropic、Google
-  Gemini、DeepSeek、Midjourney、Suno 等 30+ 模型服务。
-</Callout>
+当前仓库地址：<https://github.com/NookMux/NookMux>
 
-### 核心特性
+## 项目定位
 
-- **统一接口**：一个 API 端点接入所有 AI 服务，兼容 OpenAI 标准格式
-- **智能路由**：多渠道负载均衡、故障自动切换、加权随机分发
-- **精细计费**：支持按次数/按量计费、预付费充值、多倍率配置
-- **安全管控**：令牌权限管理、模型访问控制、API 调用审计
-- **数据洞察**：实时数据看板、用量统计、成本分析
-- **多租户架构**：完美适配个人开发者、团队协作与企业级部署
+- 面向自托管和自用场景，不承诺稳定性、可用性或长期维护。
+- 兼容常见 OpenAI 风格接口，并聚合多个上游模型服务。
+- 提供管理后台，用于维护渠道、模型、API 密钥、用户、计费和审计日志。
+- 项目基于上游 newapi 定制，不代表上游项目立场，也不保证与上游保持同步。
 
-## 许可证
+## 核心能力
 
-New API 采用 **GNU AGPLv3** 开源协议，只要遵守开源协议即可免费使用。
+- **统一入口**：通过统一 API 网关接入多个上游供应商。
+- **渠道调度**：支持渠道分组、权重、优先级、重试、自动禁用/恢复和渠道亲和性。
+- **计费管理**：支持模型价格、模型倍率、分组倍率、动态倍率、缓存/音频/工具调用价格和充值。
+- **安全控制**：支持 API 密钥权限、模型访问控制、速率限制、敏感词、SSRF 防护和审计日志。
+- **运营后台**：提供数据看板、使用日志、用户管理、兑换码、钱包、订单查询和系统设置。
+- **多模态扩展**：支持图片、视频、音频、自定义音色和多模态文件资源管理等能力，具体取决于渠道与模型配置。
 
-<Callout type="warn">
-  在使用 New API 之前，请阅读[项目
-  LICENSE](https://github.com/QuantumNous/new-api/blob/main/LICENSE)
-  中的完整许可条款。
-</Callout>
+## 许可证与使用限制
 
-### 开源许可证（AGPLv3）
+本项目采用 **GNU AGPLv3** 许可证。使用、部署或二次分发时，应遵守 AGPL-3.0、本项目及上游项目的版权声明，并自行确保不违反相关上游服务提供商的服务条款。
 
-在 AGPLv3 下，您可以自由地使用、修改和分发 New API。
-
-**主要条款：**
-
-- 可自由使用、修改和分发
-- 完整许可文本：[GNU AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html)
-- **核心义务**：如果您修改并作为网络服务（SaaS）部署，您必须在 AGPLv3 下提供完整的源代码
-
-### 商业授权
-
-如果您所在的组织政策不允许使用 AGPLv3 许可的软件，或您希望规避 AGPLv3 的开源义务，请发送邮件至：[support@quantumnous.com](mailto:support@quantumnous.com)
-
-### 贡献
-
-所有对 New API 的贡献均在 AGPLv3 下授权。
-
-**提交贡献即表示：**
-
-- 您的代码在 AGPLv3 下授权给本项目和所有用户
-- 您保留贡献的版权
-
-### 附加条款
-
-- 许可证政策可能通过官方渠道（GitHub、网站）更新
-- 如有争议，请参阅正式的 [LICENSE](https://github.com/QuantumNous/new-api/blob/main/LICENSE) 文档
+请勿将本项目用于中转、分发、倒卖厂商 Plan 或其他违反第三方服务条款的行为。
 
 ## 免责声明
 
-<Callout type="error">在使用 New API 之前，请阅读并理解这些重要声明。</Callout>
-
-**1. AI 提供商服务条款**
-
-用户必须遵守所有适用的 AI 提供商服务条款，包括 [OpenAI 使用条款](https://openai.com/policies/terms-of-use)、Anthropic 政策以及其他相关提供商协议。
-
-**2. 教育和个人用途**
-
-本项目主要用于个人学习和研究。不保证稳定性，开源许可证下可能不提供官方技术支持。
-
-**3. AI 法规合规**
-
-用户必须遵守相关 AI 法规，包括[《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm)和其他适用的 AI 治理框架。
-
-**4. 地方法律法规**
-
-用户有责任确保遵守适用于其司法管辖区和使用场景的所有地方、国家和国际法律法规。
-
-<Callout type="warn">
-  New API
-  按"原样"提供，不提供任何形式的保证。开发者和维护者对使用本软件产生的任何损害或法律问题不承担责任。
-</Callout>
+本项目仅供个人学习与自用，不提供任何形式的技术支持。若因部署、修改或使用本项目产生第三方争议、服务风险、账号风险或合规问题，均由使用者自行承担。

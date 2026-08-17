@@ -3,80 +3,40 @@ title: AionUi - Free, Open-Source Desktop Office Agent
 ---
 
 <Callout type="info">
-  🚀 AionUi is a free, local, open-source Cowork that supports multiple AI agents such as Gemini CLI, Claude Code, Codex, OpenCode, Qwen Code, Goose CLI, Auggie, and more. It provides a complete GUI interface and WebUI remote access functionality, serving as an open-source alternative to Cowork.
+  AionUi is a free, local, open-source Cowork client that supports Gemini CLI, Claude Code, Codex, OpenCode, Qwen Code, Goose CLI, Auggie, and more. It provides a complete GUI and WebUI remote access.
 </Callout>
 
-    - Official Website: `<https://www.aionui.com>`
-    - GitHub Repository: `<https://github.com/iOfficeAI/AionUi>`
-    - Download Address: `<https://github.com/iOfficeAI/AionUi/releases>`
-
-![AionUi Logo](/assets/aionui/aionui—logo.png)
+- Official Website: [https://www.aionui.com](https://www.aionui.com)
+- GitHub Repository: [https://github.com/iOfficeAI/AionUi](https://github.com/iOfficeAI/AionUi)
+- Download Address: [https://github.com/iOfficeAI/AionUi/releases](https://github.com/iOfficeAI/AionUi/releases)
 
 ## Core Features
 
-### 💬 Multi-Session Chat
-- **Multi-Session + Independent Context** - Open multiple chat sessions simultaneously, each session has independent context memory
-- **Local Storage** - All conversation data is saved in a local SQLite database and will not be lost
+- **Multi-Session Chat**: Independent contexts for each session, with conversation data stored locally.
+- **Multi-Model Support**: Supports OpenAI, Claude, Gemini, Qwen, and other mainstream models, plus local models such as Ollama and LM Studio.
+- **Multi-Agent Mode**: Run multiple AI agents at the same time and manage them through MCP.
+- **File Management**: File tree browsing, drag-and-drop uploads, and AI-assisted organization.
+- **Preview Panel**: Previews PDF, Office, code, Markdown, images, and other formats, with live editing support.
+- **Multi-Channel Access**: WebUI remote access, Telegram integration, and Feishu integration.
 
-### 🤖 Multi-Model Support
-- **Multi-Platform Support** - Supports mainstream models like Gemini, OpenAI, Claude, Qwen, flexible switching
-- **Local Model Support** - Supports local model deployment like Ollama, LM Studio
+## Integration
 
-### 🤝 Multi-Agent Mode
-- **Run Multiple AI Agents Simultaneously** - Can run multiple AI agents simultaneously (such as Gemini CLI, Claude Code, Codex, OpenCode, Qwen Code, Goose CLI, Auggie, etc.)
-- **MCP Unified Management** - Unified management and configuration of all agents through Model Context Protocol (MCP), simplifying operations
-- **Skills Configuration** - Support configuring dedicated Skills for different agents to extend agent capabilities
-- **Assistant Customization** - Support custom assistant configuration to create personalized AI workflows
-- **Independent Configuration** - Each agent can be configured and used independently without interference
-- **Flexible Switching** - Flexibly switch between different agents to meet various scenario needs
+AionUi connects to NookMux through an OpenAI-compatible interface.
 
-### 🗂️ File Management
-- **File Tree Browsing + Drag & Drop Upload** - Browse files like folders, support drag and drop files or folders for one-click import
-- **Smart Organization** - Let AI help organize folders with automatic classification
+### Parameters
 
-### 📄 Preview Panel
-- **9+ Format Preview** - Supports PDF, Word, Excel, PPT, code, Markdown, images, and other formats
-- **Real-time Tracking + Editable** - Automatically tracks file changes, supports real-time editing and debugging of Markdown, code, HTML
+- Provider Type: OpenAI / OpenAI-compatible
+- API Key: NookMux token (`sk-` prefix)
+- API Address: NookMux site address + `/v1`, for example `https://your-domain.com/v1`
 
-### 🎨 AI Image Generation & Editing
-- **Intelligent Image Generation** - Supports multiple image generation models like Gemini 2.5 Flash Image Preview, Nano, Banana
-- **Image Recognition & Editing** - AI-driven image analysis and editing features
+### Configuration Steps
 
-### 🌐 Multi-Channel Access
-- **WebUI Remote Access** - Access from any device on the network via browser, supports mobile devices
-- **Telegram Integration** - Support interaction through Telegram bot
-- **Feishu Integration** - Support access and interaction through Feishu
-- **Local Data Security** - All data stored in local SQLite database, suitable for server deployment
-
-## NewAPI Configuration Steps
-
-1. **Copy API key in NewAPI**
-   ![Copy API Key](/assets/aionui/copy_apikey.png)
-
-2. **Open AionUi Settings**
-   - Enter the settings page in AionUi
-   - Find the Model Configuration Tab
-   - Click "Add Model"
-   ![Open Settings](/assets/aionui/add-model-1.png)
-
-3. **Add New Provider**
-   - Click "Add Model"
-   - Select NewAPI
-   ![Add NewAPI Provider](/assets/aionui/newapi_provider.png)
-
-4. **Configure API Information**
-   - API Address: Fill in your NewAPI site address (format: `https://your-domain.com/v1`)
-   - API Key: Paste the API Key copied from NewAPI console
-
-5. **Add Models**
-   - Select the model to add from the dropdown
-   - Model name should match the model name configured in NewAPI
-   - Select the appropriate request protocol
-
-6. **Start Using**
-   - Return to the chat page
-   - Select the configured NewAPI model to start a conversation
-
+1. Create a token on the NookMux console's "Keys" page and copy it.
+2. Open AionUi settings, go to "Model Configuration", and click "Add Model".
+3. Choose the OpenAI / OpenAI-compatible provider type.
+4. Fill in the API address and API key.
+5. Add a model: pick or enter the model name so it matches the name configured in NookMux, then choose the appropriate request protocol.
+6. Return to the chat page and start a conversation with the configured model.
 
 ## Related Links
 

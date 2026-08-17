@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"github.com/NookMux/NookMux/common"
-	"github.com/NookMux/NookMux/model"
 )
 
 func TestEmailBindUsesPostJsonBody(t *testing.T) {

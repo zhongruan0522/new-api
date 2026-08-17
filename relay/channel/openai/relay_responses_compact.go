@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
@@ -25,8 +25,8 @@ func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, 
 	if err := common.Unmarshal(responseBody, &compactResp); err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
-	if oaiError := compactResp.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
-		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
+	if oaiError := compactResp.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+		return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
 
 	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)

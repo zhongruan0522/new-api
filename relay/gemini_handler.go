@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	geminiReq, ok := info.Request.(*dto.GeminiChatRequest)
@@ -132,7 +132,7 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	return nil
 }
 
-func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	isBatch := strings.HasSuffix(c.Request.URL.Path, "batchEmbedContents")

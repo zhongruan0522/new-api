@@ -17,15 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  ArrowDown,
-  ArrowUp,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+  type ColumnDef,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { Plus, RefreshCw } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -34,6 +32,7 @@ import { ROLE } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import { getGroups } from '@/features/users/api'
 import { SectionPageLayout } from '@/components/layout'
+import { DataTablePage } from '@/components/data-table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -67,14 +64,6 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   createDynamicRatioRule,
   deleteDynamicRatioRule,
   getDynamicRatioRules,
@@ -84,6 +73,7 @@ import {
   updateDynamicRatioRule,
 } from './api'
 import type { DynamicRatioRule, DynamicRatioRulePayload } from './types'
+import { useDynamicRatioColumns } from './components/dynamic-ratio-columns'
 
 type RuleFormState = {
   group: string
@@ -137,7 +127,6 @@ function ruleToForm(rule: DynamicRatioRule | null): RuleFormState {
     weekdays = parsed.map((day: unknown) => Number(day))
   }
 
-  // 将 JSON 数组解码为逗号分隔的文本
   let models = ''
   if (rule.models) {
     try {
@@ -217,35 +206,6 @@ function buildPayload(form: RuleFormState): DynamicRatioRulePayload {
     ratio,
     priority,
     enable: form.enable,
-  }
-}
-
-function formatWeekdays(value: string, everyDayLabel: string): string {
-  if (!value) return everyDayLabel
-  const parsed = JSON.parse(value) as unknown
-  if (!Array.isArray(parsed) || parsed.length === 0) return everyDayLabel
-  return parsed
-    .map((day) => {
-      const weekday = WEEKDAYS.find((item) => item.value === Number(day))
-      return weekday?.label ?? String(day)
-    })
-    .join(', ')
-}
-
-function getRatioVariant(ratio: number) {
-  if (ratio > 3) return 'destructive'
-  if (ratio > 1.5) return 'secondary'
-  return 'outline'
-}
-
-function formatModels(value: string, allModelsLabel: string): string {
-  if (!value) return allModelsLabel
-  try {
-    const parsed = JSON.parse(value) as unknown
-    if (!Array.isArray(parsed) || parsed.length === 0) return allModelsLabel
-    return parsed.join(', ')
-  } catch {
-    return value || allModelsLabel
   }
 }
 
@@ -394,6 +354,33 @@ export function DynamicRatio() {
   const error = rulesQuery.error || statusQuery.error || groupsQuery.error
   const errorMessage = error instanceof Error ? error.message : null
 
+  const { mutate: updateRuleMutate } = updateRuleMutation
+  const { mutate: reorderMutate } = reorderMutation
+
+  const columnActions = useMemo(
+    () => ({
+      canEdit,
+      onToggleEnable: (rule: DynamicRatioRule, enable: boolean) =>
+        updateRuleMutate({ ...rule, enable }),
+      onMoveUp: (index: number) => handleMove(index, -1),
+      onMoveDown: (index: number) => handleMove(index, 1),
+      onEdit: (rule: DynamicRatioRule) => openEditDialog(rule),
+      onDelete: (rule: DynamicRatioRule) => setDeleteTarget(rule),
+      rulesCount: rules.length,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canEdit, rules.length, updateRuleMutate, reorderMutate]
+  )
+
+  const columns = useDynamicRatioColumns(columnActions) as ColumnDef<DynamicRatioRule>[]
+
+  const table = useReactTable({
+    data: rules,
+    columns,
+    state: {},
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   return (
     <>
       <SectionPageLayout>
@@ -419,15 +406,22 @@ export function DynamicRatio() {
           </Button>
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
-          <div className='space-y-4'>
-            {errorMessage && (
-              <div className='border-destructive/40 text-destructive rounded-lg border px-3 py-2 text-sm'>
-                {errorMessage}
-              </div>
-            )}
+          {errorMessage && (
+            <div className='border-destructive/40 text-destructive mb-2.5 rounded-lg border px-3 py-2 text-sm'>
+              {errorMessage}
+            </div>
+          )}
 
-            <Card size='sm'>
-              <CardContent className='grid gap-3 sm:grid-cols-3'>
+          <DataTablePage
+            table={table}
+            columns={columns}
+            isLoading={rulesQuery.isLoading}
+            showPagination={false}
+            hideMobile
+            tableClassName='overflow-x-auto'
+            tableHeaderClassName='bg-muted/30 sticky top-0 z-10'
+            afterTable={
+              <div className='grid gap-3 sm:grid-cols-3'>
                 <div>
                   <div className='text-muted-foreground text-xs'>
                     {t('channels.fields.status')}
@@ -452,141 +446,9 @@ export function DynamicRatio() {
                     {statusQuery.data?.timezone || '-'}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card size='sm'>
-              <CardContent className='p-0'>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                       <TableHead className='w-16'>{t('channels.status.enabled')}</TableHead>
-                       <TableHead>{t('common.fields.group')}</TableHead>
-                       <TableHead>{t('channels.titles.models')}</TableHead>
-                       <TableHead>{t('dynamicRatio.fields.concurrency')}</TableHead>
-                       <TableHead>{t('dynamicRatio.fields.weekdays')}</TableHead>
-                       <TableHead>{t('dynamicRatio.fields.timeRange')}</TableHead>
-                       <TableHead>{t('dynamicRatio.fields.ratio794f65')}</TableHead>
-                       <TableHead>{t('channels.fields.priority')}</TableHead>
-                       <TableHead className='w-40 text-right'>
-                         {t('channels.fields.actions')}
-                       </TableHead>
-                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rulesQuery.isLoading ? (
-                       <TableRow>
-                         <TableCell colSpan={9} className='h-24 text-center'>
-                           {t('common.tips.loading')}
-                         </TableCell>
-                       </TableRow>
-                     ) : rules.length === 0 ? (
-                       <TableRow>
-                         <TableCell colSpan={9} className='h-24 text-center'>
-                           {t('dynamicRatio.fields.noDynamicRatioRules')}
-                         </TableCell>
-                       </TableRow>
-                    ) : (
-                      rules.map((rule, index) => (
-                        <TableRow key={rule.id}>
-                          <TableCell>
-                            <Switch
-                              size='sm'
-                              checked={rule.enable !== false}
-                              disabled={!canEdit}
-                              onCheckedChange={(checked) =>
-                                updateRuleMutation.mutate({
-                                  ...rule,
-                                  enable: checked,
-                                })
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                             <Badge variant='outline'>{rule.group}</Badge>
-                           </TableCell>
-                           <TableCell className='max-w-48 truncate'>
-                             {formatModels(rule.models, t('dynamicRatio.titles.allModels'))}
-                           </TableCell>
-                          <TableCell>
-                            {rule.concurrency ? (
-                              <Badge variant='secondary'>
-                                {rule.concurrency}
-                              </Badge>
-                            ) : (
-                              <span className='text-muted-foreground'>
-                                {t('dynamicRatio.fields.any')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatWeekdays(rule.weekdays, t('dynamicRatio.fields.daily'))}
-                          </TableCell>
-                          <TableCell>
-                            {rule.start_time && rule.end_time ? (
-                              `${rule.start_time} - ${rule.end_time}`
-                            ) : (
-                              <span className='text-muted-foreground'>
-                                {t('dynamicRatio.fields.any')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getRatioVariant(rule.ratio)}>
-                              {rule.ratio}x
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{rule.priority ?? 0}</TableCell>
-                          <TableCell>
-                            <div className='flex justify-end gap-1'>
-                              <Button
-                                size='icon-sm'
-                                variant='ghost'
-                                disabled={!canEdit || index === 0}
-                                onClick={() => handleMove(index, -1)}
-                              >
-                                <ArrowUp />
-                                <span className='sr-only'>{t('dynamicRatio.fields.moveUp')}</span>
-                              </Button>
-                              <Button
-                                size='icon-sm'
-                                variant='ghost'
-                                disabled={!canEdit || index === rules.length - 1}
-                                onClick={() => handleMove(index, 1)}
-                              >
-                                <ArrowDown />
-                                <span className='sr-only'>
-                                  {t('dynamicRatio.fields.moveDown')}
-                                </span>
-                              </Button>
-                              <Button
-                                size='icon-sm'
-                                variant='ghost'
-                                disabled={!canEdit}
-                                onClick={() => openEditDialog(rule)}
-                              >
-                                <Pencil />
-                                <span className='sr-only'>{t('channels.actions.edit')}</span>
-                              </Button>
-                              <Button
-                                size='icon-sm'
-                                variant='destructive'
-                                disabled={!canEdit}
-                                onClick={() => setDeleteTarget(rule)}
-                              >
-                                <Trash2 />
-                                <span className='sr-only'>{t('common.actions.delete')}</span>
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            }
+          />
         </SectionPageLayout.Content>
       </SectionPageLayout>
 

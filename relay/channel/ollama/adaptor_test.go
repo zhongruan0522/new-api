@@ -1,6 +1,7 @@
 package ollama
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -166,7 +167,7 @@ func TestFetchOllamaModelsUsesOpenAICompatibleEndpoint(t *testing.T) {
 	}))
 	defer server.Close()
 
-	models, err := FetchOllamaModels(server.URL, "ollama")
+	models, err := FetchOllamaModels(server.URL, "ollama", "")
 	if err != nil {
 		t.Fatalf("FetchOllamaModels returned error: %v", err)
 	}
@@ -252,7 +253,7 @@ func TestFetchOllamaModelsResolvesPlanBaseURL(t *testing.T) {
 	}
 	defer func() { channelconstant.ChannelSpecialBases["ollama-coding-plan"] = origURL }()
 
-	models, err := FetchOllamaModels("ollama-coding-plan", "test-key")
+	models, err := FetchOllamaModels("ollama-coding-plan", "test-key", "")
 	if err != nil {
 		t.Fatalf("FetchOllamaModels returned error: %v", err)
 	}
@@ -281,11 +282,59 @@ func TestFetchOllamaVersionResolvesPlanBaseURL(t *testing.T) {
 	}
 	defer func() { channelconstant.ChannelSpecialBases["ollama-coding-plan"] = origURL }()
 
-	version, err := FetchOllamaVersion("ollama-coding-plan", "test-key")
+	version, err := FetchOllamaVersion("ollama-coding-plan", "test-key", "")
 	if err != nil {
 		t.Fatalf("FetchOllamaVersion returned error: %v", err)
 	}
 	if version != "0.6.5" {
 		t.Fatalf("version = %q, want %q", version, "0.6.5")
+	}
+}
+
+// TestFetchOllamaModelsRoutesThroughProxy 验证配置 proxyURL 后请求经代理转发。
+func TestFetchOllamaModelsRoutesThroughProxy(t *testing.T) {
+	// 目标上游：普通 httptest 服务，不应被直连访问到。
+	upstreamRequests := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upstreamRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"direct"}]}`))
+	}))
+	defer upstream.Close()
+
+	// 伪 HTTP 代理：收到绝对形态请求后转发给上游，并记录转发次数。
+	proxiedRequests := 0
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxiedRequests++
+		outReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, r.URL.String(), nil)
+		if err != nil {
+			t.Errorf("proxy failed to build request: %v", err)
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		resp, err := http.DefaultClient.Do(outReq)
+		if err != nil {
+			t.Errorf("proxy upstream request failed: %v", err)
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		w.WriteHeader(resp.StatusCode)
+		_, _ = io.Copy(w, resp.Body)
+	}))
+	defer proxyServer.Close()
+
+	models, err := FetchOllamaModels(upstream.URL, "test-key", proxyServer.URL)
+	if err != nil {
+		t.Fatalf("FetchOllamaModels returned error: %v", err)
+	}
+	if len(models) != 1 || models[0].Name != "direct" {
+		t.Fatalf("models = %+v, want one model named direct", models)
+	}
+	if proxiedRequests != 1 {
+		t.Fatalf("proxied request count = %d, want 1", proxiedRequests)
+	}
+	if upstreamRequests != 1 {
+		t.Fatalf("upstream request count = %d, want 1 (reached via proxy)", upstreamRequests)
 	}
 }

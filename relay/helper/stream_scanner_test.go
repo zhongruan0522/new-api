@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/constant"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/gin-gonic/gin"
 )
 
 func streamScannerTestContext(t *testing.T) (*gin.Context, func()) {

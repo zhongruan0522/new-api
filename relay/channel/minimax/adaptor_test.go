@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/gin-gonic/gin"
 )
 
 // withMiniMaxSettings 临时替换全局 MiniMaxSettings，测试结束自动恢复。

@@ -2,23 +2,25 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/shopspring/decimal"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/model_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 // 定制音色流程的常量与校验规则。
@@ -212,8 +214,13 @@ func resolveMiniMaxUpstream(group string) (*minimaxUpstream, error) {
 }
 
 // doUpstreamRequest 执行上游 HTTP 请求并返回状态码与响应体。
-func doUpstreamRequest(url string, contentType string, body io.Reader, apiKey string) (int, []byte, error) {
-	req, err := http.NewRequest(http.MethodPost, url, body)
+// 必须走渠道配置的代理（GetHttpClientWithProxy），redirect 由受控 client
+// 的 checkRedirect 复查，不允许裸 http.Client 出站。
+// 通过 request context 保留 90s 超时（relay client 全局超时可能为 0）。
+func doUpstreamRequest(up *minimaxUpstream, url string, contentType string, body io.Reader, apiKey string) (int, []byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), customVoicePreviewTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -221,7 +228,10 @@ func doUpstreamRequest(url string, contentType string, body io.Reader, apiKey st
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	client := &http.Client{Timeout: customVoicePreviewTimeout}
+	client, err := GetHttpClientWithProxy(up.channel.GetSetting().Proxy)
+	if err != nil {
+		return 0, nil, errors.New("上游服务暂不可用，请稍后重试")
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, nil, errors.New("上游服务暂不可用，请稍后重试")
@@ -590,9 +600,9 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 
 	url := up.baseURL + "/files/upload"
 	if up.groupId != "" {
-		url += "?GroupId=" + up.groupId
+		url += "?" + buildGroupIdQuery(up.groupId)
 	}
-	status, body, err := doUpstreamRequest(url, writer.FormDataContentType(), &buf, up.apiKey)
+	status, body, err := doUpstreamRequest(up, url, writer.FormDataContentType(), &buf, up.apiKey)
 	if err != nil {
 		return customVoiceFileID{}, err
 	}
@@ -624,9 +634,9 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 
 	url := up.baseURL + "/voice_clone"
 	if up.groupId != "" {
-		url += "?GroupId=" + up.groupId
+		url += "?" + buildGroupIdQuery(up.groupId)
 	}
-	status, respBody, err := doUpstreamRequest(url, "application/json", bytes.NewReader(bodyBytes), up.apiKey)
+	status, respBody, err := doUpstreamRequest(up, url, "application/json", bytes.NewReader(bodyBytes), up.apiKey)
 	if err != nil {
 		return "", err
 	}
@@ -799,6 +809,15 @@ func cleanupExpiredCustomVoicePreviews() error {
 func getCustomVoiceGroupAndBilling() (string, string) {
 	group, billing := model_setting.GetCustomVoiceConfig()
 	return strings.TrimSpace(group), strings.TrimSpace(billing)
+}
+
+// buildGroupIdQuery 构造上游 GroupId 查询串（已 URL 编码）。
+// groupId 来自渠道 Other 字段（管理员填写），含 &/# 等字符时未编码会污染
+// 上游请求参数，因此统一经 url.Values 编码后输出。
+func buildGroupIdQuery(groupId string) string {
+	q := url.Values{}
+	q.Set("GroupId", groupId)
+	return q.Encode()
 }
 
 // isDuplicateKeyErr 判断是否为唯一键冲突错误（跨数据库兼容）。

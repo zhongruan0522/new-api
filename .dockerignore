@@ -7,7 +7,7 @@ Makefile
 docs
 .eslintcache
 .gocache
-/new-api
+/NookMux
 /web/node_modules
 /web/classic/node_modules
 /web/default/node_modules

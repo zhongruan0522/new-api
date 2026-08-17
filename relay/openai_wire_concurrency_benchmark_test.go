@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
@@ -21,6 +20,7 @@ import (
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {

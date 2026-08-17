@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func TestRelayErrorHandlerTruncatesInvalidJSONBodyInLog(t *testing.T) {
@@ -126,7 +126,7 @@ func TestRelayErrorHandlerCapsAndClosesOversizedBody(t *testing.T) {
 }
 
 func TestResetStatusCodeAcceptsNumericMapping(t *testing.T) {
-	newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+	newAPIError := &types.NookMuxError{StatusCode: http.StatusTooManyRequests}
 
 	ResetStatusCode(newAPIError, `{"429":200}`)
 
@@ -139,7 +139,7 @@ func TestResetStatusCodeAcceptsNumericMapping(t *testing.T) {
 }
 
 func TestResetStatusCodeKeepsStringMapping(t *testing.T) {
-	newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+	newAPIError := &types.NookMuxError{StatusCode: http.StatusTooManyRequests}
 
 	ResetStatusCode(newAPIError, `{"429":"200"}`)
 
@@ -162,7 +162,7 @@ func TestResetStatusCodeRejectsInvalidMappingValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			newAPIError := &types.NewAPIError{StatusCode: http.StatusTooManyRequests}
+			newAPIError := &types.NookMuxError{StatusCode: http.StatusTooManyRequests}
 
 			ResetStatusCode(newAPIError, tt.mapping)
 
@@ -177,7 +177,7 @@ func TestResetStatusCodeRejectsInvalidMappingValues(t *testing.T) {
 }
 
 func TestResetStatusCodeDoesNotRemapOK(t *testing.T) {
-	newAPIError := &types.NewAPIError{StatusCode: http.StatusOK}
+	newAPIError := &types.NookMuxError{StatusCode: http.StatusOK}
 
 	ResetStatusCode(newAPIError, `{"200":500}`)
 

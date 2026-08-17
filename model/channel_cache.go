@@ -95,13 +95,29 @@ func SyncChannelCache(frequency int) {
 }
 
 func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
-	return GetRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId)
+	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId, false)
+}
+
+// GetRandomSatisfiedChannelForRetry is the non-wire-specific retry selector.
+func GetRandomSatisfiedChannelForRetry(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
+	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId, allowExcludedFallback)
 }
 
 func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
+	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, false)
+}
+
+// GetRandomSatisfiedChannelWithRelayFormatForRetry prefers a different channel
+// but can reuse the excluded channel when the caller explicitly allows it and
+// no alternative remains.
+func GetRandomSatisfiedChannelWithRelayFormatForRetry(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
+	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, allowExcludedFallback)
+}
+
+func getRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId)
+		return getChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, allowExcludedFallback)
 	}
 
 	channelSyncLock.RLock()
@@ -122,7 +138,7 @@ func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priori
 
 	if len(channels) == 1 {
 		if channel, ok := channelsIDM[channels[0]]; ok {
-			if excludeChannelId > 0 && channel.Id == excludeChannelId {
+			if excludeChannelId > 0 && channel.Id == excludeChannelId && !allowExcludedFallback {
 				return nil, nil
 			}
 			return channel, nil
@@ -148,6 +164,7 @@ func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priori
 		priorityIndex = len(uniquePriorities) - 1
 	}
 	targetPriority := int64(sortedUniquePriorities[priorityIndex])
+	originalTargetPriority := targetPriority
 
 	// get the priority for the given priority index
 	var sumWeight = 0
@@ -177,6 +194,18 @@ func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priori
 					sumWeight += channel.GetWeight()
 					targetChannels = append(targetChannels, channel)
 				}
+			}
+		}
+	}
+
+	// If there is no different channel at this or a lower priority, retry the
+	// original eligible channel instead of ending the whole retry loop early.
+	if len(targetChannels) == 0 && excludeChannelId > 0 && allowExcludedFallback {
+		targetPriority = originalTargetPriority
+		for _, channelId := range channels {
+			if channel, ok := channelsIDM[channelId]; ok && channel.GetPriority() == targetPriority {
+				sumWeight += channel.GetWeight()
+				targetChannels = append(targetChannels, channel)
 			}
 		}
 	}

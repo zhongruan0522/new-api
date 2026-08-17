@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-gonic/gin"
 )
 
 func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Request) error {

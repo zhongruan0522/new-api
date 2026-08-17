@@ -326,6 +326,9 @@ export interface SearchChannelsParams {
   model?: string
   status?: string
   type?: number
+  id?: number
+  name?: string
+  tag?: string
   id_sort?: boolean
   tag_mode?: boolean
   sort_by?: ChannelSortBy
@@ -371,8 +374,6 @@ export interface BatchSetTagParams {
 export interface TagOperationParams {
   tag: string
   new_tag?: string
-  priority?: number
-  weight?: number
   model_mapping?: string
   models?: string
   groups?: string

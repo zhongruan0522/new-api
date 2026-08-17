@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 // SystemPerformanceCheck 检查系统性能中间件
@@ -38,7 +38,7 @@ func SystemPerformanceCheck() gin.HandlerFunc {
 }
 
 // checkSystemPerformance 检查系统性能是否超过阈值
-func checkSystemPerformance() *types.NewAPIError {
+func checkSystemPerformance() *types.NookMuxError {
 	config := common.GetPerformanceMonitorConfig()
 	if !config.Enabled {
 		return nil

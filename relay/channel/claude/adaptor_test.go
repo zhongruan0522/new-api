@@ -401,7 +401,6 @@ func buildOpenAIWeatherToolRequest(model string, reasoningEffort string) *dto.Ge
 	}
 }
 
-
 // TestAdaptorConvertOpenAIRequestRequiredToolChoiceMapsToAny 确保 channel-test 用 string
 // "required" 作为 tool_choice 时,Claude adaptor 会把它映射为 anthropic {"type":"any"},
 // 即强制模型必须调用工具(在只声明一个工具时等价于强制调用该工具)。

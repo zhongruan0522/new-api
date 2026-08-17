@@ -45,7 +45,7 @@ func EnableChannel(channelId int, usingKey string, channelName string) {
 	}
 }
 
-func ShouldDisableChannel(channelType int, err *types.NewAPIError) bool {
+func ShouldDisableChannel(channelType int, err *types.NookMuxError) bool {
 	if !common.AutomaticDisableChannelEnabled {
 		return false
 	}
@@ -102,7 +102,7 @@ func ShouldDisableChannel(channelType int, err *types.NewAPIError) bool {
 	return search
 }
 
-func ShouldEnableChannel(newAPIError *types.NewAPIError, status int) bool {
+func ShouldEnableChannel(newAPIError *types.NookMuxError, status int) bool {
 	if !common.AutomaticEnableChannelEnabled {
 		return false
 	}

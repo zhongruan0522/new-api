@@ -3,10 +3,10 @@ package controller
 import (
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/service"
+	"github.com/gin-gonic/gin"
 )
 
 type createTicketRequest struct {

@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/middleware"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/system_setting"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

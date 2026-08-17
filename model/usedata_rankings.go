@@ -31,11 +31,14 @@ func GetRankingQuotaTotals(startTime int64, endTime int64) ([]RankingQuotaTotal,
 	return rows, err
 }
 
-func GetRankingQuotaBuckets(startTime int64, endTime int64, bucketSize int64) ([]RankingQuotaBucket, error) {
+// GetRankingQuotaBuckets 按模型和时间段聚合 token 用量。
+// bucketSize 为桶大小（秒）；dayOffset 为天级桶在 Unix 纪元上的偏移（秒），
+// 用于把 86400 桶边界从 UTC 对齐到指定时区的自然日（如 +8 时区传 8*3600）。
+func GetRankingQuotaBuckets(startTime int64, endTime int64, bucketSize int64, dayOffset int64) ([]RankingQuotaBucket, error) {
 	if bucketSize <= 0 {
 		bucketSize = 3600
 	}
-	bucketExpr := rankingBucketExpr(bucketSize)
+	bucketExpr := rankingBucketExpr(bucketSize, dayOffset)
 	var rows []RankingQuotaBucket
 	query := DB.Table("quota_data").
 		Select(fmt.Sprintf("model_name, %s as bucket, sum(token_used) as tokens", bucketExpr)).
@@ -48,7 +51,18 @@ func GetRankingQuotaBuckets(startTime int64, endTime int64, bucketSize int64) ([
 	return rows, err
 }
 
-func rankingBucketExpr(bucketSize int64) string {
+func rankingBucketExpr(bucketSize int64, dayOffset int64) string {
+	if dayOffset != 0 && bucketSize%86400 == 0 {
+		// 天级及以上桶按指定偏移切分，使桶边界落在目标时区的自然日 00:00。
+		offsetExpr := fmt.Sprintf("(%d)", dayOffset)
+		if dayOffset > 0 {
+			offsetExpr = fmt.Sprintf("(+%d)", dayOffset)
+		}
+		if common.UsingMySQL {
+			return fmt.Sprintf("(FLOOR((created_at + %s) / %d) * %d) - %s", offsetExpr, bucketSize, bucketSize, offsetExpr)
+		}
+		return fmt.Sprintf("((((created_at + %s) / %d) * %d) - %s)", offsetExpr, bucketSize, bucketSize, offsetExpr)
+	}
 	if common.UsingMySQL {
 		return fmt.Sprintf("FLOOR(created_at / %d) * %d", bucketSize, bucketSize)
 	}

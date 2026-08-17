@@ -1,13 +1,17 @@
 ---
-title: System Settings
+title: System Settings Overview
 ---
 
-Here you can configure NewAPI worker, mail server, and login and registration related settings.
+The current NookMux system settings entry is `/system-settings/site`. After entering it, the sidebar switches to a "System Management" view and is split into 7 groups:
 
-![System Settings 1](/assets/guide/system-setting-1.png)
+| Group | Route Prefix | Description |
+| --- | --- | --- |
+| Site & Branding | `/system-settings/site` | System name, server address, docs link, logo, about page, home page, terms, privacy policy, top navigation, sidebar modules |
+| Authentication | `/system-settings/auth` | Password login and registration, email restrictions, OAuth, Passkey, Turnstile |
+| Billing & Payments | `/system-settings/billing` | New user quota, top-ups, payments, model pricing, group pricing, check-in rewards |
+| Models & Routing | `/system-settings/models` | Global model settings, Gemini, Claude, Grok, MiniMax, channel affinity |
+| Security & Limits | `/system-settings/security` | Rate limiting, sensitive words, SSRF protection, audit logs |
+| Console Content | `/system-settings/content` | Data dashboard, announcements, API address, FAQ, Uptime Kuma, usage log fields |
+| Operations | `/system-settings/operations` | System behavior, monitoring alerts, SMTP, Worker, log maintenance, database maintenance, performance, update checks |
 
-![System Settings 2](/assets/guide/system-setting-2.png)
-
-![System Settings 3](/assets/guide/system-setting-3.png)
-
-![System Settings 4](/assets/guide/system-setting-4.png)
+The old "System Settings / Model-Related Settings / Ratio Settings / Rate Limit Settings / Data Dashboard / Chat Settings / Drawing Settings / Payment Settings / Operations Settings / Other Settings" pages are no longer the current structure.

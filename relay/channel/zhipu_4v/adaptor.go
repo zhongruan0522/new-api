@@ -72,7 +72,13 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 			if hasSpecialPlan && specialPlan.OpenAIBaseURL != "" {
 				switch info.RelayMode {
 				case relayconstant.RelayModeResponses, relayconstant.RelayModeResponsesCompact:
-					return fmt.Sprintf("%s/responses", specialPlan.OpenAIBaseURL), nil
+					// 智谱 GLM 套餐的 Responses 协议端点独立于 Chat Completions 端点，
+					// 不能拼在 coding/paas/v4 下（该路径下 /responses 返回 404）。
+					responsesBase := specialPlan.ResponsesBaseURL
+					if responsesBase == "" {
+						responsesBase = specialPlan.OpenAIBaseURL
+					}
+					return fmt.Sprintf("%s/responses", responsesBase), nil
 				default:
 					return fmt.Sprintf("%s/chat/completions", specialPlan.OpenAIBaseURL), nil
 				}
@@ -114,7 +120,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	return channel.DoApiRequest(a, c, info, requestBody)
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
 	switch info.RelayFormat {
 	case types.RelayFormatClaude:
 		adaptor := claude.Adaptor{}

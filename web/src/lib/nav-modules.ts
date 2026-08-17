@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { getStatus } from '@/lib/api'
+import { getStatus, getUserModules } from '@/lib/api'
 
 export type ModuleAccess = { enabled: boolean; requireAuth: boolean }
 
@@ -187,21 +187,67 @@ export async function getFreshModuleAccess(
   }
 }
 
+// ----------------------------------------------------------------------------
+// Sidebar modules
+//
+// SidebarModulesAdmin 配置统一由 `/api/status/user_modules`（UserAuth）
+// 下发并缓存在 `user-modules` key 下：服务端对非管理员剥离 admin 段，
+// 管理员返回全量。侧栏过滤（useSidebarConfig）与路由守卫
+// （isSidebarModuleEnabled）都消费这一份缓存，普通用户与管理员的模块
+// 开关同时受控。配置不进公开 `/api/status` 缓存。
+//
+// `/api/status/admin_modules`（AdminAuth）保留给管理端按需拉取全量
+// 配置，不参与侧栏渲染与路由守卫。
+// ----------------------------------------------------------------------------
+
+const USER_MODULES_STORAGE_KEY = 'user-modules'
+
+export function getCachedUserSidebarModules(): string | null {
+  try {
+    if (typeof window === 'undefined') return null
+    return window.localStorage.getItem(USER_MODULES_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function cacheUserSidebarModules(raw: string): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(USER_MODULES_STORAGE_KEY, raw)
+    }
+  } catch {
+    /* empty */
+  }
+}
+
+export function clearSidebarModulesCaches(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(USER_MODULES_STORAGE_KEY)
+      window.localStorage.removeItem('admin-modules')
+    }
+  } catch {
+    /* empty */
+  }
+}
+
+export async function fetchUserSidebarModules(): Promise<string> {
+  const res = await getUserModules()
+  const raw = res?.data?.SidebarModulesAdmin ?? ''
+  cacheUserSidebarModules(raw)
+  return raw
+}
+
 export function isSidebarModuleEnabled(
   section: string,
   module: string
 ): boolean {
-  const status = getCachedStatus()
-  if (!status) return true
-
-  const raw = status.SidebarModulesAdmin
-  if (!raw || String(raw).trim() === '') return true
+  const raw = getCachedUserSidebarModules()
+  if (!raw || raw.trim() === '') return true
 
   try {
-    const parsed = JSON.parse(String(raw)) as Record<
-      string,
-      Record<string, boolean>
-    >
+    const parsed = JSON.parse(raw) as Record<string, Record<string, boolean>>
     const sectionConfig = parsed[section]
     if (!sectionConfig) return true
     if (sectionConfig.enabled === false) return false

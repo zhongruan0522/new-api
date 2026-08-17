@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type MiniMaxImageRequest struct {
@@ -171,7 +171,7 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 	return imageResponse, nil
 }
 
-func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)

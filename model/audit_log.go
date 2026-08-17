@@ -16,19 +16,19 @@ type AuditLog struct {
 
 // 审计模块常量。取值需稳定，前端与控制器通过常量引用，避免拼写不一致。
 const (
-	AuditModuleOption         = "option"          // 系统设置
-	AuditModuleChannel        = "channel"         // 渠道
-	AuditModuleUser           = "user"            // 用户
-	AuditModuleToken          = "token"           // 令牌
-	AuditModuleRedemption     = "redemption"      // 兑换码
-	AuditModuleModel          = "model"           // 模型
-	AuditModuleVendor         = "vendor"          // 供应商
-	AuditModuleDynamicRatio   = "dynamic_ratio"   // 动态倍率
-	AuditModulePrefillGroup   = "prefill_group"   // 预填充分组
-	AuditModuleDB             = "db"              // 数据库迁移
-	AuditModulePerformance    = "performance"     // 性能管理
-	AuditModuleLog            = "log"             // 日志清理
-	AuditModuleSetup          = "setup"           // 系统初始化
+	AuditModuleOption          = "option"           // 系统设置
+	AuditModuleChannel         = "channel"          // 渠道
+	AuditModuleUser            = "user"             // 用户
+	AuditModuleToken           = "token"            // 令牌
+	AuditModuleRedemption      = "redemption"       // 兑换码
+	AuditModuleModel           = "model"            // 模型
+	AuditModuleVendor          = "vendor"           // 供应商
+	AuditModuleDynamicRatio    = "dynamic_ratio"    // 动态倍率
+	AuditModulePrefillGroup    = "prefill_group"    // 预填充分组
+	AuditModuleDB              = "db"               // 数据库迁移
+	AuditModulePerformance     = "performance"      // 性能管理
+	AuditModuleLog             = "log"              // 日志清理
+	AuditModuleSetup           = "setup"            // 系统初始化
 	AuditModuleDashboardConfig = "dashboard_config" // 仪表板配置
 	AuditModuleVoice           = "voice"            // 音色管理
 )

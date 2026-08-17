@@ -30,8 +30,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
-	var err *types.NewAPIError
+func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
+	var err *types.NookMuxError
 	switch info.RelayMode {
 	case relayconstant.RelayModeImagesGenerations, relayconstant.RelayModeImagesEdits:
 		err = relay.ImageHelper(c, info)
@@ -53,8 +53,8 @@ func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIErro
 	return err
 }
 
-func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
-	var err *types.NewAPIError
+func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
+	var err *types.NookMuxError
 	if strings.Contains(c.Request.URL.Path, "embed") {
 		err = relay.GeminiEmbeddingHandler(c, info)
 	} else {
@@ -70,7 +70,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	//originalModel := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 
 	var (
-		newAPIError *types.NewAPIError
+		newAPIError *types.NookMuxError
 		ws          *websocket.Conn
 	)
 
@@ -188,6 +188,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		RelayFormat: relayFormat,
 	}
 	lastFailedChannelId := 0
+	allowFailedChannelFallback := false
 
 	// When the global automatic-retry toggle is off, only the first attempt runs.
 	// The configured RetryTimes and status-code rules are preserved so toggling
@@ -202,8 +203,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		// retry%2==1 表示同优先级重试：排除上次失败的渠道
 		if retryParam.GetRetry()%2 == 1 {
 			retryParam.ExcludeChannelId = lastFailedChannelId
+			retryParam.AllowExcludedChannelFallback = allowFailedChannelFallback
 		} else {
 			retryParam.ExcludeChannelId = 0
+			retryParam.AllowExcludedChannelFallback = false
 		}
 
 		channel, channelErr := getChannel(c, relayInfo, retryParam)
@@ -244,9 +247,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
 
-		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		channelWillBeDisabled := processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		allowFailedChannelFallback = !channelWillBeDisabled
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		if !shouldRetry(c, newAPIError, maxRetry-retryParam.GetRetry()) {
 			break
 		}
 	}
@@ -298,7 +302,7 @@ func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
 	return meta
 }
 
-func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *types.NewAPIError) {
+func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *types.NookMuxError) {
 	if info.ChannelMeta == nil {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
@@ -337,7 +341,7 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	return channel, nil
 }
 
-func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) bool {
+func shouldRetry(c *gin.Context, openaiErr *types.NookMuxError, retryTimes int) bool {
 	if openaiErr == nil {
 		return false
 	}
@@ -379,7 +383,7 @@ func shouldRetryByHTTPStatusCode(statusCode int) bool {
 	return operation_setting.ShouldRetryByStatusCode(statusCode)
 }
 
-func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {
+func shouldRetryByNumericErrorCode(openaiErr *types.NookMuxError) bool {
 	if openaiErr == nil {
 		return false
 	}
@@ -394,11 +398,12 @@ func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {
 	return operation_setting.ShouldRetryByStatusCode(code)
 }
 
-func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
+func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NookMuxError) bool {
 	logger.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, common.LocalLogPreview(err.Error())))
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
-	if service.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan {
+	channelWillBeDisabled := service.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan
+	if channelWillBeDisabled {
 		common.RelayGo(func() {
 			service.DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
@@ -440,6 +445,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
 	}
 
+	return channelWillBeDisabled
 }
 
 func RelayNotImplemented(c *gin.Context) {

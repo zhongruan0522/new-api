@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	channelconstant "github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/relay/channel"
@@ -16,6 +15,7 @@ import (
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 // Adaptor 对接字节跳动（火山方舟 Ark）。
@@ -134,7 +134,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	return channel.DoApiRequest(a, c, info, requestBody)
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
 	if info.RelayFormat == types.RelayFormatClaude {
 		delegate := &claude.Adaptor{}
 		delegate.Init(info)

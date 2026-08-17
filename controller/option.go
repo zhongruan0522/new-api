@@ -25,11 +25,9 @@ func GetOptions(c *gin.Context) {
 	excludeLargeOptions := c.Query("exclude_large_options") == "true"
 	common.OptionMapRWMutex.Lock()
 	for k, v := range common.OptionMap {
-		if strings.HasSuffix(k, "Token") ||
-			strings.HasSuffix(k, "Secret") ||
-			strings.HasSuffix(k, "Key") ||
-			strings.HasSuffix(k, "secret") ||
-			strings.HasSuffix(k, "api_key") {
+		// 统一复用 isSensitiveOptionKey，与 GetOptionValue 的过滤口径一致，
+		// 避免新增 option 键时两处过滤规则漂移导致误暴露。
+		if isSensitiveOptionKey(k) {
 			continue
 		}
 		value := common.Interface2String(v)
@@ -100,7 +98,18 @@ func isPricingJsonMapOptionKey(key string) bool {
 	return ok
 }
 
+// nonSensitivePasswordOptionKeys 显式豁免的功能开关：
+// PasswordLoginEnabled / PasswordRegisterEnabled 只是布尔开关，
+// 认证设置页需要读取实际值；真正的 secret 类 Password 键不受豁免。
+var nonSensitivePasswordOptionKeys = map[string]struct{}{
+	"PasswordLoginEnabled":    {},
+	"PasswordRegisterEnabled": {},
+}
+
 func isSensitiveOptionKey(key string) bool {
+	if _, ok := nonSensitivePasswordOptionKeys[key]; ok {
+		return false
+	}
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
 		strings.HasSuffix(key, "Key") ||

@@ -5,7 +5,7 @@
   "orderQuery.actions.copyOrderNumber": "Copy order number",
   "orderQuery.fields.noOrdersFound": "No orders found",
   "orderQuery.fields.number": "Order number",
-  "orderQuery.titles.query": "Order Query",
+  "orderQuery.titles.query": "Order History",
   "orderQuery.fields.payment": "Payment",
   "orderQuery.fields.paymentMethod": "Payment Method",
   "orderQuery.actions.searchByOrderNumber": "Search by order number...",

@@ -147,7 +147,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 		}
 
 		if err := validateTopUpCallback(topUp, PaymentProviderStripe, PaymentMethodStripe, ""); err != nil {
-			return errors.New("充值订单状态错误")
+			return err
 		}
 
 		// Atomic status flip: only succeed if the order is still pending.
@@ -163,7 +163,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 			return result.Error
 		}
 		if result.RowsAffected == 0 {
-			return errors.New("充值订单状态错误")
+			return ErrTopUpStatusInvalid
 		}
 
 		quota = topUp.Money * common.QuotaPerUnit
@@ -177,6 +177,11 @@ func Recharge(referenceId string, customerId string) (err error) {
 
 	if err != nil {
 		common.SysError("topup failed: " + err.Error())
+		// 保留 ErrTopUpStatusInvalid 的 sentinel 类型，供 Stripe webhook 侧
+		// errors.Is 判断"订单已处理（重复投递）"与真实入账失败。
+		if errors.Is(err, ErrTopUpStatusInvalid) {
+			return err
+		}
 		return errors.New("充值失败，请稍后重试")
 	}
 

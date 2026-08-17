@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -80,8 +81,10 @@ func GetStatus(c *gin.Context) {
 		"faq_enabled":           dc.FAQEnabled,
 
 		// 模块管理配置
+		// HeaderNavModules 是前台导航开关（pricing/rankings 访问提示），登录前渲染壳层需要。
+		// SidebarModulesAdmin 是管理后台侧栏模块开关，属于 admin 受限配置，
+		// 由 GET /api/status/admin_modules（AdminAuth）单独返回，不得进公开响应。
 		"HeaderNavModules":          common.OptionMap["HeaderNavModules"],
-		"SidebarModulesAdmin":       common.OptionMap["SidebarModulesAdmin"],
 		"passkey_login":             passkeySetting.Enabled,
 		"passkey_display_name":      passkeySetting.RPDisplayName,
 		"passkey_rp_id":             passkeySetting.RPID,
@@ -93,7 +96,6 @@ func GetStatus(c *gin.Context) {
 		"user_agreement_enabled":    legalSetting.UserAgreement != "",
 		"privacy_policy_enabled":    legalSetting.PrivacyPolicy != "",
 		"checkin_enabled":           operation_setting.GetCheckinSetting().Enabled,
-		"version":                   common.Version,
 		"_qn":                       "nookmux",
 	}
 
@@ -113,6 +115,95 @@ func GetStatus(c *gin.Context) {
 		"message": "",
 		"data":    data,
 	})
+}
+
+// GetStatusSystemInfo 返回构建版本号（AdminAuth）。
+// 版本指纹属于管理语义，不得进匿名可达的 /api/status 公开响应，
+// 由本接口在确认管理员身份后单独下发。
+func GetStatusSystemInfo(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"version": common.Version,
+		},
+	})
+}
+
+// GetStatusAdminModules 返回管理后台侧栏模块开关配置。
+// 该配置属于 admin 受限数据（后台能力结构），不能由公开 /api/status 承载，
+// 前端侧栏在确认管理员身份后请求本接口。
+func GetStatusAdminModules(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	sidebarModulesAdmin := common.OptionMap["SidebarModulesAdmin"]
+	common.OptionMapRWMutex.RUnlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"SidebarModulesAdmin": sidebarModulesAdmin,
+		},
+	})
+}
+
+// GetStatusUserModules 返回当前登录用户可见的侧栏模块开关配置（UserAuth）。
+//
+// 该配置同时约束普通用户侧栏（chat/console/personal/support 段）与路由守卫，
+// 只下发给已登录调用者，不进公开 /api/status。管理段（admin section）描述
+// 后台能力结构，非管理员调用者会被剥离，仅管理员可见。
+func GetStatusUserModules(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	sidebarModulesAdmin := common.OptionMap["SidebarModulesAdmin"]
+	common.OptionMapRWMutex.RUnlock()
+
+	role := c.GetInt("role")
+	if role >= common.RoleAdminUser {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"SidebarModulesAdmin": sidebarModulesAdmin,
+			},
+		})
+		return
+	}
+
+	// 非管理员：剥离 admin 段后再下发。原始值为空/非法 JSON 时直接透传，
+	// 前端解析失败会回落默认配置（与旧行为一致）。
+	stripped, ok := stripAdminSidebarSection(sidebarModulesAdmin)
+	if !ok {
+		stripped = sidebarModulesAdmin
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"SidebarModulesAdmin": stripped,
+		},
+	})
+}
+
+// stripAdminSidebarSection 从 SidebarModulesAdmin JSON 中移除 admin 段。
+// 返回 (结果JSON, 是否成功)；输入为空或非法 JSON 时返回 false。
+func stripAdminSidebarSection(raw string) (string, bool) {
+	if strings.TrimSpace(raw) == "" {
+		return "", false
+	}
+	var config map[string]json.RawMessage
+	if err := common.Unmarshal([]byte(raw), &config); err != nil {
+		return "", false
+	}
+	if _, exists := config["admin"]; !exists {
+		// 没有 admin 段无需重序列化
+		return raw, true
+	}
+	delete(config, "admin")
+	out, err := common.Marshal(config)
+	if err != nil {
+		return "", false
+	}
+	return string(out), true
 }
 
 func GetNotice(c *gin.Context) {

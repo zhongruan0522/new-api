@@ -5,13 +5,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

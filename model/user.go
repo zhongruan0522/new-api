@@ -16,35 +16,41 @@ import (
 // User if you add sensitive fields, don't forget to clean them in setupLogin function.
 // Otherwise, the sensitive information will be saved on local storage in plain text!
 type User struct {
-	Id                  int            `json:"id"`
-	Username            string         `json:"username" gorm:"unique;index" validate:"max=20"`
-	Password            string         `json:"password" gorm:"not null;" validate:"min=8,max=20"`
-	OriginalPassword    string         `json:"original_password" gorm:"-:all"` // this field is only for Password change verification, don't save it to database!
-	DisplayName         string         `json:"display_name" gorm:"index" validate:"max=20"`
-	Role                int            `json:"role" gorm:"type:int;default:1"`   // admin, common
-	Status              int            `json:"status" gorm:"type:int;default:1"` // enabled, disabled
-	Email               string         `json:"email" gorm:"index" validate:"max=50"`
-	GitHubId            string         `json:"github_id" gorm:"column:github_id;index"`
-	VerificationCode    string         `json:"verification_code" gorm:"-:all"`                         // this field is only for Email verification, don't save it to database!
-	AccessToken         *string        `json:"-" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
-	Quota               int            `json:"quota" gorm:"type:int;default:0"`
-	UsedQuota           int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
-	RequestCount        int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
-	Group               string         `json:"group" gorm:"type:varchar(64);default:'default'"`
-	AffCode             string         `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
-	AffCount            int            `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
-	AffQuota            int            `json:"aff_quota" gorm:"type:int;default:0;column:aff_quota"`           // 邀请剩余额度
-	AffHistoryQuota     int            `json:"aff_history_quota" gorm:"type:int;default:0;column:aff_history"` // 邀请历史额度
-	InviterId           int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
-	DeletedAt           gorm.DeletedAt `gorm:"index"`
-	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
-	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
-	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
-	StripeCustomer      string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
-	ImageConvertedCount int            `json:"image_converted_count" gorm:"type:int;default:0;column:image_converted_count"`
-	VideoConvertedCount int            `json:"video_converted_count" gorm:"type:int;default:0;column:video_converted_count"`
-	CreatedAt           int64          `json:"created_at" gorm:"bigint;index"`
-	LastLoginAt         int64          `json:"last_login_at" gorm:"bigint"`
+	Id       int    `json:"id"`
+	Username string `json:"username" gorm:"unique;index" validate:"max=20"`
+	// Password 存 bcrypt hash。查询层已 Omit("password")，序列化用 omitempty
+	// 避免输出空 "password" 字段；请求体绑定（注册/创建/改密）依赖该 json 标签，不能改为 "-"。
+	Password         string         `json:"password,omitempty" gorm:"not null;" validate:"min=8,max=20"`
+	OriginalPassword string         `json:"original_password" gorm:"-:all"` // this field is only for Password change verification, don't save it to database!
+	DisplayName      string         `json:"display_name" gorm:"index" validate:"max=20"`
+	Role             int            `json:"role" gorm:"type:int;default:1"`   // admin, common
+	Status           int            `json:"status" gorm:"type:int;default:1"` // enabled, disabled
+	Email            string         `json:"email" gorm:"index" validate:"max=50"`
+	GitHubId         string         `json:"github_id" gorm:"column:github_id;index"`
+	VerificationCode string         `json:"verification_code" gorm:"-:all"`                         // this field is only for Email verification, don't save it to database!
+	AccessToken      *string        `json:"-" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
+	Quota            int            `json:"quota" gorm:"type:int;default:0"`
+	UsedQuota        int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
+	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
+	Group            string         `json:"group" gorm:"type:varchar(64);default:'default'"`
+	AffCode          string         `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
+	AffCount         int            `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
+	AffQuota         int            `json:"aff_quota" gorm:"type:int;default:0;column:aff_quota"`           // 邀请剩余额度
+	AffHistoryQuota  int            `json:"aff_history_quota" gorm:"type:int;default:0;column:aff_history"` // 邀请历史额度
+	InviterId        int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	LinuxDOId        string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
+	// Setting 存储用户通知配置（WebhookSecret、GotifyToken、BarkUrl 等
+	// 通知凭证）。JSON 序列化不输出（json:"-"），admin 用户列表/搜索/详情
+	// 不得批量暴露所有用户的通知凭证；用户本人通过 GetSelf（显式重建
+	// 响应）和 PUT /api/user/setting 读写。
+	Setting             string `json:"-" gorm:"type:text;column:setting"`
+	Remark              string `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
+	StripeCustomer      string `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
+	ImageConvertedCount int    `json:"image_converted_count" gorm:"type:int;default:0;column:image_converted_count"`
+	VideoConvertedCount int    `json:"video_converted_count" gorm:"type:int;default:0;column:video_converted_count"`
+	CreatedAt           int64  `json:"created_at" gorm:"bigint;index"`
+	LastLoginAt         int64  `json:"last_login_at" gorm:"bigint"`
 }
 
 func (user *User) ToBaseUser() *UserBase {

@@ -8,10 +8,10 @@ require (
 	github.com/abema/go-mp4 v1.7.1
 	github.com/andybalholm/brotli v1.2.2
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
-	github.com/aws/aws-sdk-go-v2 v1.43.2
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.32
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.56.2
-	github.com/aws/smithy-go v1.27.5
+	github.com/aws/aws-sdk-go-v2 v1.43.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1
+	github.com/aws/smithy-go v1.27.7
 	github.com/bytedance/gopkg v0.1.4
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-contrib/gzip v1.2.6
@@ -27,7 +27,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/grafana/pyroscope-go v1.4.1
+	github.com/grafana/pyroscope-go v1.4.2
 	github.com/jfreymuth/oggvorbis v1.0.5
 	github.com/jinzhu/copier v0.4.0
 	github.com/joho/godotenv v1.5.1
@@ -47,15 +47,15 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	github.com/tiktoken-go/tokenizer v0.8.1
 	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
-	golang.org/x/crypto v0.54.0
-	golang.org/x/image v0.44.0
+	golang.org/x/crypto v0.55.0
+	golang.org/x/image v0.45.0
 	golang.org/x/net v0.57.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
-	gorm.io/driver/postgres v1.6.1
+	gorm.io/driver/postgres v1.6.2
 	gorm.io/gorm v1.31.2
 )
 
@@ -63,9 +63,9 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
 	github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.15 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.33 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.33 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.16 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/bytedance/sonic v1.15.2 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect

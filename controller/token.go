@@ -53,11 +53,21 @@ func SearchTokens(c *gin.Context) {
 	userId := c.GetInt("id")
 	keyword := c.Query("keyword")
 	token := c.Query("token")
+	group := c.Query("group")
 	all := c.Query("all") == "true" || c.Query("all") == "1"
+
+	// status: 0 或缺省表示不过滤；1=启用 2=禁用 3=过期 4=额度耗尽。
+	// 与 model.SearchUserTokens 约定一致，> 0 时走后端等值过滤。
+	status := 0
+	if statusStr := c.Query("status"); statusStr != "" {
+		if parsed, err := strconv.Atoi(statusStr); err == nil {
+			status = parsed
+		}
+	}
 
 	pageInfo := common.GetPageQuery(c)
 
-	tokens, total, err := model.SearchUserTokens(userId, keyword, token, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, total, err := model.SearchUserTokens(userId, keyword, token, group, status, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("search user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -200,20 +210,20 @@ func GetTokenUsage(c *gin.Context) {
 			"model_limits_enabled": token.ModelLimitsEnabled,
 			"expires_at":           expiredAt,
 			// 以下字段为密钥用量查询页面所需，供前端按 KEY 类型展示额度与周期信息。
-			"quota_type":              effectiveQuotaType,
-			"created_time":            token.CreatedTime,
-			"accessed_time":           token.AccessedTime,
-			"window_hours":            token.WindowHours,
-			"window_quota":            token.WindowQuota,
-			"window_used_quota":       token.WindowUsedQuota,
-			"window_start_hour":       token.WindowStartHour,
-			"window_start_time":       token.WindowStartTime,
-			"window_next_reset_time":  windowNextResetTime,
-			"cycle_days":              token.CycleDays,
-			"cycle_quota":             token.CycleQuota,
-			"cycle_used_quota":        token.CycleUsedQuota,
-			"cycle_start_time":        token.CycleStartTime,
-			"cycle_next_reset_time":   cycleNextResetTime,
+			"quota_type":             effectiveQuotaType,
+			"created_time":           token.CreatedTime,
+			"accessed_time":          token.AccessedTime,
+			"window_hours":           token.WindowHours,
+			"window_quota":           token.WindowQuota,
+			"window_used_quota":      token.WindowUsedQuota,
+			"window_start_hour":      token.WindowStartHour,
+			"window_start_time":      token.WindowStartTime,
+			"window_next_reset_time": windowNextResetTime,
+			"cycle_days":             token.CycleDays,
+			"cycle_quota":            token.CycleQuota,
+			"cycle_used_quota":       token.CycleUsedQuota,
+			"cycle_start_time":       token.CycleStartTime,
+			"cycle_next_reset_time":  cycleNextResetTime,
 		},
 	})
 }

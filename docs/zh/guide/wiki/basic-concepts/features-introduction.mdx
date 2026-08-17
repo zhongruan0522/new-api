@@ -1,42 +1,40 @@
-﻿---
+---
 title: 特性说明
 ---
 
-1. 🎨 全新的UI界面（部分界面还待更新）
-2. 🌍 多语言支持（待完善）
-3. 🎨 添加[Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy)接口支持
-4. 💰 支持在线充值功能，可在系统设置中设置：
-   - [x] 易支付
-5. 🔍 支持用key查询使用额度：
-   - 配合项目[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)可实现用key查询使用
-6. 📑 分页支持选择每页显示数量
-7. 🔄 支持 SQLite 数据库存储，开箱即用，轻量便捷
-8. 💵 支持模型按次数收费，可在 系统设置-运营设置 中设置
-9. ⚖️ 支持渠道 **加权随机**
-10. 📈 数据看板（控制台）
-11. 🔒 可设置令牌能调用的模型
-12. 🤖 支持Telegram授权登录：
-    1. 系统设置-配置登录注册-允许通过Telegram登录
-    2. 对[@Botfather](https://t.me/botfather)输入指令/setdomain
-    3. 选择你的bot，然后输入http(s)://你的网站地址/login
-    4. Telegram Bot 名称是bot username 去掉@后的字符串
-13. 🎵 添加 [Suno API](https://github.com/Suno-API/Suno-API)接口支持
-14. 🔄 支持Rerank模型，目前兼容Cohere和Jina，可接入Dify
-15. ⚡ **[OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime/integration)** - 支持OpenAI的Realtime API，支持Azure渠道
-16. 支持使用路由/chat2link 进入聊天界面
-17. 🧠 支持通过模型名称后缀设置 reasoning effort：
-    1. OpenAI o系列模型
-       - 添加后缀 `-high` 设置为 high reasoning effort (例如: `o3-mini-high`)
-       - 添加后缀 `-medium` 设置为 medium reasoning effort (例如: `o3-mini-medium`)
-       - 添加后缀 `-low` 设置为 low reasoning effort (例如: `o3-mini-low`)
-    2. Claude 思考模型
-       - 添加后缀 `-thinking` 启用思考模式 (例如: `claude-3-7-sonnet-20250219-thinking`)
-18. 🔄 模型限流，支持在 `系统设置-速率限制设置` 中设置模型限流，支持设置总请求数限制和成功请求数限制
-19. 💰 缓存计费支持，开启后可以在缓存命中时按照设定的比例计费：
-    1. 在 `系统设置-运营设置` 中设置 提示缓存倍率 选项
-    2. 在渠道中设置 提示缓存倍率，范围 0-1，例如设置为 0.5 表示缓存命中时按照 50% 计费
-    3. 支持的渠道：
-    - [x] OpenAI
-    - [x] Azure
-    - [x] DeepSeek
-    - [ ] Claude
+以下特性按当前仓库实现核对，旧上游文档中的固定截图、旧菜单名称和 `/chat2link` 等入口不再作为当前项目事实。
+
+## API 网关与上游渠道
+
+- 统一代理 OpenAI、Anthropic、Gemini、Azure、AWS、OpenRouter、DeepSeek、Moonshot、智谱、MiniMax、Ollama、SiliconFlow、ByteDance、小米等渠道类型。
+- 支持渠道分组、权重、优先级、标签聚合、批量管理、渠道测试和余额/套餐额度查询。
+- 支持 Coding Plan 特殊 Base 标识，如 `glm-coding-plan`、`kimi-coding-plan`、`minimax-coding-plan`、`xiaomi-coding-plan` 等。
+- 支持渠道参数覆盖，可按请求内容、模型、路径和内置变量动态调整请求体或 Header。
+
+## 计费与额度
+
+- 默认 `QuotaPerUnit = 500000`，即 1 美元对应 500,000 配额点数。
+- 支持模型固定价格、模型倍率、补全倍率、分组倍率、分组间倍率覆盖和动态倍率。
+- 支持缓存价格、音频价格、上下文分段价格、工具调用价格等更细粒度计费。
+- 支持钱包充值、兑换码、邀请奖励、订单查询和可选订阅/支付能力。
+
+## 控制台与运维
+
+- React 19 + TypeScript + Rsbuild 管理后台。
+- 侧边栏包含体验中心、常规、个人、支持、管理员等分区，可在系统设置中控制模块显示。
+- 支持数据看板、API 密钥、使用日志、多模态文件、用户、渠道、模型、兑换码、动态倍率、审计日志等管理页面。
+- 支持系统公告、FAQ、API 地址、Uptime Kuma 状态页和使用日志字段可见性配置。
+
+## 身份、安全与审计
+
+- 支持密码登录/注册、邮箱限制、GitHub/LinuxDo OAuth、Passkey、Turnstile 等身份能力。
+- 用户个人资料页支持账号绑定、通知偏好、两步验证、访问令牌和安全设置。
+- 支持模型请求速率限制、敏感词、SSRF 防护、审计日志。
+- 管理员对系统资源的增删改会记录审计日志，便于追溯。
+
+## 分析与性能
+
+- 支持通过环境变量注入 Google Analytics 4 与 Umami 统计脚本。
+- 支持 `ENABLE_PPROF=true` 启用 pprof 调试服务器。
+- 支持 Pyroscope 持续性能分析。
+- 支持磁盘缓存、性能监控阈值、日志清理和数据库维护工具。

@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/logger"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 
 // PreConsumeBilling 根据用户计费偏好创建 BillingSession 并执行预扣费。
 // 会话存储在 relayInfo.Billing 上，供后续 Settle / Refund 使用。
-func PreConsumeBilling(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
+func PreConsumeBilling(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *types.NookMuxError {
 	session, apiErr := NewBillingSession(c, relayInfo, preConsumedQuota)
 	if apiErr != nil {
 		return apiErr

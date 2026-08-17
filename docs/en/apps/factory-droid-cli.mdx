@@ -3,167 +3,104 @@ title: Factory Droid CLI
 ---
 
 <Callout type="info" title="Project Introduction">
-  Droid CLI is a command-line tool developed by Factory AI, designed to run as an AI software engineering agent. It allows users to interact with various large language models through the terminal, build, debug, and refactor code, and even create complete applications.
+  Droid CLI is a command-line AI software engineering agent developed by Factory AI. It supports custom model gateways through BYOK (Bring Your Own Key).
 
   - Official Homepage: [https://factory.ai/product/cli](https://factory.ai/product/cli)
-  - Official Documentation: [https://docs.factory.ai/cli/getting-started/quickstart](https://docs.factory.ai/cli/getting-started/quickstart)
+  - Official BYOK Docs: [https://docs.factory.ai/cli/byok/overview](https://docs.factory.ai/cli/byok/overview)
 </Callout>
 
-## Demo
+## Install
 
-![droid.webp](/assets/factory_droid_cli/droid_example.webp)
+macOS / Linux:
 
-### Features
+```bash
+curl -fsSL https://app.factory.ai/cli | sh
+```
 
-| Category                       | Feature                                                                                                                     | Value/Capability                                               | Example/Notes                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Quick Start with CLI           | 30-second installation; launch droid interactive session in project directory; supports macOS/Linux and Windows             | Rapid integration into current projects, no new tools required | Windows Installation: `irm https://app.factory.ai/cli/windows \| iex`; Launch: `droid` |
-| End-to-End Feature Development | Full-process automation from planning to implementation to testing; transparent review process                              | Accelerate delivery, maintain human oversight                  | Native diff viewing and approval process (see "Transparency and Control") |
-| Deep Codebase Understanding    | Integrates organizational shared knowledge from codebases, documentation, issue tracking; context-aware, improves over time | More accurate suggestions and changes                          | Continuously leverages knowledge across repositories and documents        |
-| Engineering System Integration | Native integration with Jira, Notion, Slack, and other tools; development work stays synchronized with team processes       | Reduce tool switching and information silos                    | "etc." indicates more integrations                                        |
-| Production-Grade Automation    | Workflows reusable locally and in CI/CD; enterprise-grade security and compliance built-in                                  | Consistency and auditability                                   | Adapts to pipelines and enterprise environments                           |
-| Enterprise Capabilities        | Private deployment options, SOC-2 compliance, air-gapped environments                                                       | Meets security and compliance requirements                     | Prioritizes security and quality                                          |
-| Enhance Existing Tools         | Works in terminal, IDE, and existing development environments; no need to switch editors or learn new interfaces            | Maintain existing work habits, low migration cost              | Deep integration with familiar tools                                      |
-| Transparency and Control       | Every decision is visible and reviewable; complete oversight of code changes; native diff viewing and approval workflows    | Reduce risk, enhance controllability                           | Audit-friendly, traceable                                                 |
-| Model Flexibility              | Not locked to a single AI provider; choose the best model per task; consistent organizational behavior and memory           | Optimal choice between performance and cost                    | Supports multi-model routing                                              |
-| Next Steps & Resources         | Quickstart, Common Use Cases, IDE Integration, Configuration, AGENTS.md                                                     | Facilitates adoption and practice                              | See "Next steps/Additional resources" on the page                         |
+Windows (PowerShell):
 
-## AI Model Configuration Method
+```powershell
+irm https://app.factory.ai/cli/windows | iex
+```
 
-### Windows Graphical Guide
+After installation, follow the prompts to add the executable directory to your PATH. Droid CLI requires logging in to the official account (free) before use.
 
-#### 1. Open Terminal
+## Connect to NookMux
 
-![windows_open_terminal](/assets/factory_droid_cli/windows_open_terminal.png)
+Droid CLI configures custom models through the `customModels` array in `~/.factory/settings.json`. NookMux provides an OpenAI-compatible interface:
 
-#### 2. Install Factory Droid CLI
+```json
+{
+  "customModels": [
+    {
+      "model": "gpt-5.6",
+      "displayName": "NookMux GPT",
+      "baseUrl": "https://your-domain.com/v1",
+      "apiKey": "${NOOKMUX_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    }
+  ]
+}
+```
 
-Official one-click installation command:
+- `model`: Must match the model name configured in the NookMux channel.
+- `baseUrl`: NookMux site address + `/v1`.
+- `apiKey`: Supports `${VAR_NAME}` syntax to reference an environment variable, for example `export NOOKMUX_API_KEY=sk-your-nookmux-token` first; you can also write the token directly, but mind file permissions.
+- `provider`:
+  - `generic-chat-completion-api`: OpenAI Chat Completions-compatible (works for most cases).
+  - `openai`: OpenAI Responses API (for newer models such as `gpt-5` / `gpt-5-codex`).
+  - `anthropic`: Anthropic Messages API. In this case, set `baseUrl` to the NookMux site root and use a `claude-*` model.
 
-<Callout type="info" title="One-click Installation Command">
-  ```powershell
-  irm https://app.factory.ai/cli/windows | iex
-  ```
-</Callout>
+Anthropic model example:
 
-![windows-install](/assets/factory_droid_cli/windows_install_droid.webp)
+```json
+{
+  "customModels": [
+    {
+      "model": "claude-sonnet-4-5-20250929",
+      "displayName": "NookMux Claude",
+      "baseUrl": "https://your-domain.com",
+      "apiKey": "${NOOKMUX_API_KEY}",
+      "provider": "anthropic",
+      "maxOutputTokens": 16384
+    }
+  ]
+}
+```
 
-#### 3. Modify Configuration File
+## Usage
 
-Droid CLI requires modifying the configuration file to use third-party APIs.
+1. Create a token on the NookMux console's "Keys" page and copy the full `sk-` secret.
+2. Export the environment variable:
 
-![windows-configure.webp](/assets/factory_droid_cli/factory_cli_setup_windows.png)
+   ```bash
+   export NOOKMUX_API_KEY=sk-your-nookmux-token
+   ```
 
-<Callout type="info" title="Modify Environment Variables">
-  ```powershell
-  iex (irm 'https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/factory-cli-setup.ps1')
-  ```
-</Callout>
+3. Start Droid CLI:
 
-#### 4. Start Using Droid CLI
+   ```bash
+   cd /path/to/your/project
+   droid
+   ```
 
-Now you can start using Droid CLI!
+4. Use the `/model` command to pick the configured model from the "Custom models" group.
 
-<Callout type="info" title="Launch Droid CLI">
-  Launch Droid CLI directly:
+## Common Issues
 
-  ```bash
-  droid
-  ```
+### The Model Does Not Appear in the Selector
 
-  Use in a specific project:
+- Check that `~/.factory/settings.json` is valid JSON.
+- Make sure the required fields `model`, `baseUrl`, and `provider` are complete.
 
-  ```bash
-  # Navigate to your project directory
-  cd C:\path\to\your\project
+### Authentication Failed
 
-  # Launch Droid CLI
-  droid
-  ```
+- Confirm the environment variable is exported and matches the `${...}` reference in `apiKey`.
+- Confirm the token is a full `sk-` NookMux secret and has not been disabled.
 
-  Press Enter to launch Droid CLI.
-</Callout>
+### PowerShell Execution Policy Restriction
 
-Droid CLI requires users to log in to an official account (free) before use.
-
-#### 5. Windows Common Issues Solution
-
-<Callout type="info" title='Installation prompts "permission denied" error'>
-  This is usually a permission issue. Try the following solutions:
-
-  - Run PowerShell as an administrator
-  - Or configure `npm` to use the user directory: `npm config set prefix %APPDATA%\npm`
-</Callout>
-
-<Callout type="info" title="PowerShell Execution Policy Error">
-  If you encounter an execution policy restriction, run:
-
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
-</Callout>
-
-### macOS/Linux Graphical Guide
-
-#### 1. Install Droid CLI
-
-<Callout type="info" title="Install Droid CLI">
-  Open your terminal and run the following command:
-
-  ```bash
-  curl -fsSL https://app.factory.ai/cli | sh
-  ```
-</Callout>
-
-![macos-open-terminal](/assets/factory_droid_cli/macos_install_droid.webp)
-
-![macos-img-02.webp](/assets/factory_droid_cli/macos_install_droid_2.webp)
-
-Follow the installation prompts to modify environment variables (copy the installation prompt code directly):
-
-For Linux, choose `~/.bashrc` or `~/.zshrc` as appropriate.
-
-<Callout type="info" title="Droid CLI Environment Variables (Example Only)">
-  ```bash
-  echo 'export PATH=/Users/modify_here/.local/bin:$PATH' >> ~/.zshrc
-  source ~/.zshrc
-  ```
-</Callout>
-
-#### 2. Modify Configuration File
-
-Droid CLI requires modifying the configuration file to use third-party APIs.
-
-<Callout type="info" title="One-click Configuration File Modification">
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/factory-cli-setup.sh | bash
-  ```
-</Callout>
-
-![macos-img-03.webp](/assets/factory_droid_cli/macos_configure.png)
-
-#### 3. Start Using Droid CLI
-
-Now you can start using Droid CLI!
-
-<Callout type="info" title="Launch Droid CLI">
-  Launch Droid CLI directly:
-
-  ```bash
-  droid
-  ```
-
-  Use in a specific project:
-
-  ```bash
-  # Navigate to your project directory
-  cd /path/to/your/project
-
-  # Launch Droid CLI
-  droid
-  ```
-
-  Press Enter to launch Droid CLI.
-</Callout>
-
-> Droid CLI requires users to log in to an official account (free) before use.
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```

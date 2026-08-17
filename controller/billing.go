@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 func GetSubscription(c *gin.Context) {

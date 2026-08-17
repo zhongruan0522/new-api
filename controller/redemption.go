@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
@@ -14,6 +15,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// maskRedemptionKeys 兑换码是可兑换凭证：列表/搜索/详情默认不返回完整 key，
+// 需要完整 key 时走专门的查看接口（GetRedemptionKey）并记录操作日志。
+func maskRedemptionKeys(redemptions []*model.Redemption) {
+	for _, r := range redemptions {
+		r.Key = ""
+	}
+}
+
 func GetAllRedemptions(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	redemptions, total, err := model.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
@@ -22,6 +31,7 @@ func GetAllRedemptions(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
+	maskRedemptionKeys(redemptions)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
 	common.ApiSuccess(c, pageInfo)
@@ -36,6 +46,7 @@ func SearchRedemptions(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
+	maskRedemptionKeys(redemptions)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
 	common.ApiSuccess(c, pageInfo)
@@ -53,10 +64,36 @@ func GetRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
+	redemption.Key = ""
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    redemption,
+	})
+}
+
+// GetRedemptionKey 按需返回单个兑换码完整 key（AdminAuth + 专门查看动作），
+// 并记录操作日志，避免列表批量泄露可兑换凭证。
+func GetRedemptionKey(c *gin.Context) {
+	userId := c.GetInt("id")
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	redemption, err := model.GetRedemptionById(id)
+	if err != nil {
+		common.SysError("failed to get redemption by id: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看兑换码密钥 (兑换码ID: %d)", id))
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": map[string]interface{}{
+			"key": redemption.Key,
+		},
 	})
 }
 
@@ -173,6 +210,9 @@ func UpdateRedemption(c *gin.Context) {
 		return
 	}
 	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
+	// 与列表/详情口径一致：更新响应不回传完整 key，完整 key 只能通过
+	// GetRedemptionKey 按需查看（留痕）获取。
+	cleanRedemption.Key = ""
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

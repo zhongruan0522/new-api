@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
+	"github.com/gin-gonic/gin"
 )
 
 func createManageQuotaTestUser(t *testing.T, id int, quota int) {

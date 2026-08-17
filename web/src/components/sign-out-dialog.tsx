@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { logout } from '@/features/auth/api'
+import { clearSidebarModulesCaches } from '@/lib/nav-modules'
 
 interface SignOutDialogProps {
   open: boolean
@@ -41,6 +42,9 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     try {
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('uid')
+        // 侧栏模块配置是登录用户/管理员受限数据，登出时一并清理，
+        // 避免共享浏览器上后续用户读取或路由守卫继续消费
+        clearSidebarModulesCaches()
       }
     } catch {
       /* empty */

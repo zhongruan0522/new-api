@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 
 	rerankReq, ok := info.Request.(*dto.RerankRequest)

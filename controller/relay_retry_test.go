@@ -3,13 +3,14 @@ package controller
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/operation_setting"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 func TestShouldRetryUsesNumericUpstreamErrorCode(t *testing.T) {
@@ -63,4 +64,23 @@ func TestShouldRetryUsesOriginalStatusCodeAfterMapping(t *testing.T) {
 	require.Equal(t, http.StatusTooManyRequests, err.OriginalStatusCode)
 	require.Equal(t, http.StatusOK, err.StatusCode)
 	require.True(t, shouldRetry(c, err, 1))
+}
+
+func TestShouldRetryConfiguredTransientStatusCodes(t *testing.T) {
+	orig := operation_setting.AutomaticRetryStatusCodeRanges
+	t.Cleanup(func() { operation_setting.AutomaticRetryStatusCodeRanges = orig })
+	require.NoError(t, operation_setting.AutomaticRetryStatusCodesFromString("100-199,300-399,401-407,409-599"))
+
+	for _, statusCode := range []int{http.StatusTooManyRequests, 529} {
+		t.Run(strconv.Itoa(statusCode), func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			err := types.WithOpenAIError(types.OpenAIError{
+				Message: "transient upstream failure",
+				Type:    "upstream_error",
+				Code:    statusCode,
+			}, statusCode)
+
+			require.True(t, shouldRetry(c, err, 20))
+		})
+	}
 }

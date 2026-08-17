@@ -87,7 +87,6 @@ func TestAdaptorConvertClaudeRequestPreservesThinkingToolChoiceAndToolResults(t 
 	}
 }
 
-
 // TestConvertToolChoiceToGeminiConfigRequired确保 channel-test 用 string "required" 作为
 // tool_choice 时,Gemini adaptor 能正确转换为 mode:"ANY",保证唯一工具被强制调用。
 func TestConvertToolChoiceToGeminiConfigRequired(t *testing.T) {

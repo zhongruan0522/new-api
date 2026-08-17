@@ -1,55 +1,40 @@
-﻿---
+---
 title: Cherry Studio - 桌面 AI 客户端
 ---
 
-<Callout type="info" title="聊天设置选项">
-  在 New API
-  控制台的系统设置->聊天设置中，可添加如下快捷选项，便于在令牌管理页一键填充到
-  Cherry Studio：
-</Callout>
-
-    ```json
-    { "Cherry Studio": "cherrystudio://providers/api-keys?v=1&data={cherryConfig}" }
-    ```
-
 <Callout type="info">
-  🍒 Cherry Studio 是一款功能强大的桌面 AI 客户端，专为专业用户设计，集成了 30+
-  行业智能助手，能够满足各种工作场景的需求，显著提升工作效率。
+  Cherry Studio 是一款功能强大的桌面 AI 客户端，支持多提供商配置、多模型对话、知识库和智能助手，适合日常工作和专业场景。
 </Callout>
 
-    - 官网地址：`<https://cherry-ai.com/>`
-    - 下载地址：`<https://cherry-ai.com/download>`
-    - 官方文档：`<https://docs.cherry-ai.com>`
+- 官网地址：[https://cherry-ai.com/](https://cherry-ai.com/)
+- 下载地址：[https://cherry-ai.com/download](https://cherry-ai.com/download)
+- 官方文档：[https://docs.cherry-ai.com](https://docs.cherry-ai.com)
 
-## NewAPI 接入方法
+## 接入方法
+
+Cherry Studio 通过 OpenAI 兼容接口接入 NookMux。
 
 ### 参数填写
 
-提供商类型：NewAPI 支持的类型  
-API 密钥：于 NewAPI 获取  
-API 地址：NewAPI 站点地址
+| 配置项 | 填写内容 |
+| --- | --- |
+| 提供商类型 | OpenAI / OpenAI 兼容 |
+| API 密钥 | NookMux 令牌（`sk-` 开头），在「密钥」页面创建并复制 |
+| API 地址 | NookMux 站点地址 + `/v1`，例如 `https://your-domain.com/v1` |
+| 模型 | 手动添加或从接口拉取模型列表 |
 
-### 图文指引
+### 配置步骤
 
-1. 在 NewAPI 中复制 API key
-   ![复制 API 密钥](/assets/cherry_studio/copy_api_key.png)
+1. 在 NookMux 控制台「密钥」页面创建令牌并复制 API Key。
+2. 打开 Cherry Studio 的「设置」→「模型服务」，添加一个 OpenAI 类型的提供商。
+3. 填入 API 地址 `https://your-domain.com/v1` 和 API 密钥。
+4. 添加需要使用的模型，模型名称需与 NookMux 渠道中配置的模型名一致。
+5. 返回聊天页面，选择刚添加的模型开始对话。
 
-2. 添加提供商
-   ![添加供应商](/assets/cherry_studio/add_provider.png)
+## 画图
 
-3. 添加模型
-   ![添加模型](/assets/cherry_studio/add_models.png)
+如果渠道中配置了图像生成模型（如 DALL·E、Gemini 图像模型等），在 Cherry Studio 的绘图页面选择对应模型即可使用，配置方式与聊天模型一致。
 
-4. 返回聊天页面
-   ![切换聊天页面](/assets/cherry_studio/back_to_chat.png)
+## 更多用法
 
-5. 切换 NewAPI 模型
-   ![切换模型](/assets/cherry_studio/switch_model.png)
-
-## 在 Cherry Studio 中画图
-
-1. 首先添加支持画图的模型
-   ![画图模型](/assets/cherry_studio/add_paint_models.png)
-
-2. 画图
-   ![画图](/assets/cherry_studio/paint.png)
+知识库、智能助手等功能的模型配置方式相同，均可指向同一个 NookMux 提供商。详细用法请参考 [Cherry Studio 官方文档](https://docs.cherry-ai.com)。

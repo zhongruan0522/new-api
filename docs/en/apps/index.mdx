@@ -12,11 +12,12 @@ import {
   MessageCircle,
   Languages,
   Bot,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 ## Overview
 
-New API is compatible with various popular AI applications and tools. Below is a list of verified supported applications and their configuration guides.
+NookMux provides OpenAI-, Claude-, and Gemini-compatible APIs that can plug directly into many mainstream AI apps and tools. Below are integration guides for common applications.
 
 ## Supported Applications
 
@@ -24,43 +25,43 @@ New API is compatible with various popular AI applications and tools. Below is a
   <Card
     icon={<Sparkles />}
     title="AionUi"
-    description="Free, local, open-source 24/7 Cowork and OpenClaw for Gemini CLI, Claude Code, Codex, OpenCode, Qwen Code, Goose CLI, Auggie, and more."
+    description="A free, open-source Cowork client with multi-model support, file management, and live previews."
     href="/en/docs/apps/aionui"
   />
   <Card
     icon={<Cherry />}
     title="Cherry Studio"
-    description="A powerful AI assistant client that supports multi-model conversations."
+    description="A powerful desktop AI client with multi-model conversations."
     href="/en/docs/apps/cherry-studio"
   />
   <Card
     icon={<Terminal />}
     title="Claude Code"
-    description="An Anthropic Claude-powered code editor integration."
+    description="Anthropic's official command-line coding assistant, connected through an Anthropic-compatible interface."
     href="/en/docs/apps/claude-code"
   />
   <Card
     icon={<Terminal />}
     title="Codex CLI"
-    description="A command-line interface AI code assistant tool."
+    description="OpenAI's official command-line coding agent, connected through an OpenAI Responses-compatible interface."
     href="/en/docs/apps/codex-cli"
   />
   <Card
-    icon={<Bot />}
+    icon={<Terminal />}
     title="Factory Droid CLI"
-    description="An AI agent tool for automating workflows."
+    description="Factory AI's command-line AI agent, connected through BYOK custom models."
     href="/en/docs/apps/factory-droid-cli"
   />
   <Card
     icon={<BookOpen />}
     title="Fluent Read"
-    description="An AI-powered smart reading and translation assistant."
+    description="An AI-powered browser translation extension."
     href="/en/docs/apps/fluent-read"
   />
   <Card
     icon={<MessageCircle />}
-    title="LangBot"
-    description="A large language model-based chatbot framework."
+    title="Lang Bot"
+    description="A chatbot framework built on large language models."
     href="/en/docs/apps/langbot"
   />
   <Card
@@ -75,14 +76,20 @@ New API is compatible with various popular AI applications and tools. Below is a
     description="An open-source, all-in-one Agent chatbot platform."
     href="/en/docs/apps/astrbot"
   />
+  <Card
+    icon={<ArrowLeftRight />}
+    title="CC Switch"
+    description="A provider switching tool for Claude Code and Codex CLI, with one-click import from NookMux token pages."
+    href="/en/docs/apps/cc-switch"
+  />
 </Cards>
 
 ## Integration Guide
 
-Most applications only require configuring the following information to connect to New API:
+Most apps only need the following to connect to NookMux:
 
-1.  **API Address**: Your New API service address
-2.  **API Key**: The Token generated in the New API console
-3.  **Model Name**: Select the model to use
+1. **API Address**: Your NookMux service address. OpenAI-compatible endpoints usually use `https://your-domain/v1`; Claude-compatible integrations use the site root, and the gateway handles `/v1/messages`; Gemini-compatible integrations are covered in the individual app docs.
+2. **API Key**: The token created on the NookMux console's "Keys" page, starting with `sk-`.
+3. **Model Name**: Choose a model that has been configured in the channel.
 
-For specific configuration steps, please refer to the detailed documentation of each application.
+For detailed setup steps, see the individual app pages.

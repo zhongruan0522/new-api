@@ -68,7 +68,7 @@ func (a *testNoopAdaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo,
 	panic("unexpected call: DoRequest")
 }
 
-func (a *testNoopAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+func (a *testNoopAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
 	panic("unexpected call: DoResponse")
 }
 

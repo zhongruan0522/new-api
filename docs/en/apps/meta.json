@@ -13,6 +13,7 @@
     "fluent-read",
     "langbot",
     "luna-translator",
-    "astrbot"
+    "astrbot",
+    "cc-switch"
   ]
 }

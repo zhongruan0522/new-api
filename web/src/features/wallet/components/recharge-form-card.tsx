@@ -200,7 +200,7 @@ export function RechargeFormCard({
             className='w-full gap-2 sm:w-auto'
           >
             <Receipt className='h-4 w-4' />
-            {t('wallet.fields.orderHistory')}
+            {t('orderQuery.titles.query')}
           </Button>
         ) : null
       }

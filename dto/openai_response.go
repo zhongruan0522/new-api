@@ -167,6 +167,14 @@ type ChatCompletionsStreamResponse struct {
 	SystemFingerprint *string                               `json:"system_fingerprint"`
 	Choices           []ChatCompletionsStreamResponseChoice `json:"choices"`
 	Usage             *Usage                                `json:"usage"`
+	// Error 保留上游在 HTTP 200 的 SSE 流中直接返回的错误帧（部分网关会把
+	// 429/5xx 转成 200 + error 帧下发），用于流处理器识别真实上游错误。
+	Error any `json:"error,omitempty"`
+}
+
+// GetOpenAIError 从流式错误帧中提取 OpenAIError。
+func (c *ChatCompletionsStreamResponse) GetOpenAIError() *types.OpenAIError {
+	return GetOpenAIError(c.Error)
 }
 
 func (c *ChatCompletionsStreamResponse) IsFinished() bool {
@@ -213,6 +221,7 @@ func (c *ChatCompletionsStreamResponse) Copy() *ChatCompletionsStreamResponse {
 		Model:             c.Model,
 		SystemFingerprint: c.SystemFingerprint,
 		Choices:           choices,
+		Error:             c.Error,
 		Usage:             c.Usage,
 	}
 }
@@ -310,9 +319,21 @@ type OpenAIResponsesResponse struct {
 	Metadata           json.RawMessage    `json:"metadata"`
 }
 
-// GetOpenAIError 从动态错误类型中提取OpenAIError结构
+// GetOpenAIError 从动态错误类型中提取OpenAIError结构。
+// status:"failed" 且 error 缺失/为空时，用 status 构造最小错误，保证
+// 失败响应不会被当成正常完成、落入空 usage 502 兜底。
 func (o *OpenAIResponsesResponse) GetOpenAIError() *types.OpenAIError {
-	return GetOpenAIError(o.Error)
+	if oaiError := GetOpenAIError(o.Error); oaiError != nil && oaiError.Message != "" {
+		return oaiError
+	}
+	if o.Status == "failed" {
+		return &types.OpenAIError{
+			Message: "upstream response status: failed",
+			Type:    "upstream_error",
+			Code:    "response_failed",
+		}
+	}
+	return nil
 }
 
 func (o *OpenAIResponsesResponse) HasImageGenerationCall() bool {
@@ -406,13 +427,20 @@ const (
 
 // ResponsesStreamResponse 用于处理 /v1/responses 流式响应
 type ResponsesStreamResponse struct {
-	Type      string                   `json:"type"`
-	Response  *OpenAIResponsesResponse `json:"response,omitempty"`
-	Delta     string                   `json:"delta,omitempty"`
-	Text      string                   `json:"text,omitempty"`
-	Arguments any                      `json:"arguments,omitempty"`
-	Input     string                   `json:"input,omitempty"`
-	Item      *ResponsesOutput         `json:"item,omitempty"`
+	Type     string                   `json:"type"`
+	Response *OpenAIResponsesResponse `json:"response,omitempty"`
+	// Error 承载官方流式规范定义的顶层 error 事件（type:"error"），
+	// 以及部分网关在流内下发的裸 {"error":{...}} 帧或 response.failed
+	// 事件顶层错误。没有该字段时这些错误载荷会被静默丢弃，导致计费阶段
+	// 误报「502 上游没有返回计费信息」。
+	Error      any                      `json:"error,omitempty"`
+	Code       any                      `json:"code,omitempty"`
+	Message    string                   `json:"message,omitempty"`
+	Delta      string                   `json:"delta,omitempty"`
+	Text       string                   `json:"text,omitempty"`
+	Arguments  any                      `json:"arguments,omitempty"`
+	Input      string                   `json:"input,omitempty"`
+	Item       *ResponsesOutput         `json:"item,omitempty"`
 	// - response.function_call_arguments.delta
 	// - response.function_call_arguments.done
 	OutputIndex  *int                  `json:"output_index,omitempty"`
@@ -421,6 +449,31 @@ type ResponsesStreamResponse struct {
 	ItemID       string                `json:"item_id,omitempty"`
 	CallID       string                `json:"call_id,omitempty"`
 	Part         *ResponsesContentPart `json:"part,omitempty"`
+}
+
+// GetOpenAIError 提取流式事件中的错误：优先顶层 error 字段（官方
+// type:"error" 事件、裸错误帧、failed 事件顶层错误），其次 response.error
+// （response.failed 标准嵌套位置）。返回 nil 表示该事件不携带错误。
+func (r *ResponsesStreamResponse) GetOpenAIError() *types.OpenAIError {
+	if r.Error != nil {
+		if oaiError := GetOpenAIError(r.Error); oaiError != nil && oaiError.Message != "" {
+			return oaiError
+		}
+	}
+	// 官方 type:"error" 事件的 message/code 为顶层平铺字段（非嵌套 error 对象）
+	if r.Type == "error" && r.Message != "" {
+		oaiError := &types.OpenAIError{Message: r.Message}
+		if r.Code != nil {
+			oaiError.Code = r.Code
+		}
+		return oaiError
+	}
+	if r.Response != nil {
+		if oaiError := r.Response.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
+			return oaiError
+		}
+	}
+	return nil
 }
 
 // GetOpenAIError 从动态错误类型中提取OpenAIError结构

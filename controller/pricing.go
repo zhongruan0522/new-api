@@ -41,6 +41,18 @@ func GetPricing(c *gin.Context) {
 		}
 	}
 
+	// enable_groups 是内部组分类信息，只对已识别身份的调用者返回；
+	// pricing 配置为匿名公开时不暴露各组内部组名。
+	// GetPricing 返回共享缓存切片，必须复制后清空，不能就地修改缓存。
+	if !exists {
+		anonPricing := make([]model.Pricing, len(pricing))
+		for i, p := range pricing {
+			anonPricing[i] = p
+			anonPricing[i].EnableGroup = nil
+		}
+		pricing = anonPricing
+	}
+
 	c.JSON(200, gin.H{
 		"success":            true,
 		"data":               pricing,

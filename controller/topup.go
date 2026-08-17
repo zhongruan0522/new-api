@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -259,12 +260,7 @@ func EpayNotify(c *gin.Context) {
 		return
 	}
 	verifyInfo, err := client.Verify(params)
-	if err == nil && verifyInfo.VerifyStatus {
-		_, err := c.Writer.Write([]byte("success"))
-		if err != nil {
-			log.Println("易支付回调写入失败")
-		}
-	} else {
+	if err != nil || !verifyInfo.VerifyStatus {
 		_, err := c.Writer.Write([]byte("fail"))
 		if err != nil {
 			log.Println("易支付回调写入失败")
@@ -279,11 +275,26 @@ func EpayNotify(c *gin.Context) {
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
 		if err := model.CompleteEpayTopUp(verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money); err != nil {
 			log.Printf("易支付回调完成订单失败: trade_no=%s type=%s money=%s err=%v", verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money, err)
+			// 订单已非 pending（通常是重复回调且此前已入账），确认 success
+			// 避免平台无限重试；其余入账失败写 fail 让平台重试。
+			if errors.Is(err, model.ErrTopUpStatusInvalid) {
+				_, _ = c.Writer.Write([]byte("success"))
+			} else {
+				_, _ = c.Writer.Write([]byte("fail"))
+			}
 			return
 		}
 		log.Printf("易支付回调更新用户成功 trade_no=%s", verifyInfo.ServiceTradeNo)
+		// 入账成功后才向平台确认，避免"已扣款未到账"时平台不再重试。
+		if _, err := c.Writer.Write([]byte("success")); err != nil {
+			log.Println("易支付回调写入失败")
+		}
 	} else {
 		log.Printf("易支付异常回调: %v", verifyInfo)
+		// 平台已知状态、无需重试，确认为已收到。
+		if _, err := c.Writer.Write([]byte("success")); err != nil {
+			log.Println("易支付回调写入失败")
+		}
 	}
 }
 

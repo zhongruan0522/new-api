@@ -106,6 +106,11 @@ func GetChannelTypeName(channelType int) string {
 type ChannelSpecialBase struct {
 	ClaudeBaseURL string
 	OpenAIBaseURL string
+	// ResponsesBaseURL 是 OpenAI Responses 协议的独立端点。
+	// 仅当供应商把 Responses 协议部署在与 Chat Completions 不同的 Base URL 时填写
+	// （如智谱 GLM 套餐：国内 https://open.bigmodel.cn/api/v1，国际 https://api.z.ai/api/v1）；
+	// 为空表示 Responses 与 Chat Completions 共用 OpenAIBaseURL。
+	ResponsesBaseURL string
 }
 
 // IsChannelPlan 检测给定的 BaseURL 是否为内置套餐地址
@@ -132,12 +137,14 @@ var SupportedPlanQuotaProviders = map[string]bool{
 
 var ChannelSpecialBases = map[string]ChannelSpecialBase{
 	"glm-coding-plan": {
-		ClaudeBaseURL: "https://open.bigmodel.cn/api/anthropic",
-		OpenAIBaseURL: "https://open.bigmodel.cn/api/coding/paas/v4",
+		ClaudeBaseURL:    "https://open.bigmodel.cn/api/anthropic",
+		OpenAIBaseURL:    "https://open.bigmodel.cn/api/coding/paas/v4",
+		ResponsesBaseURL: "https://open.bigmodel.cn/api/v1",
 	},
 	"glm-coding-plan-international": {
-		ClaudeBaseURL: "https://api.z.ai/api/anthropic",
-		OpenAIBaseURL: "https://api.z.ai/api/coding/paas/v4",
+		ClaudeBaseURL:    "https://api.z.ai/api/anthropic",
+		OpenAIBaseURL:    "https://api.z.ai/api/coding/paas/v4",
+		ResponsesBaseURL: "https://api.z.ai/api/v1",
 	},
 	"kimi-coding-plan": {
 		ClaudeBaseURL: "https://api.kimi.com/coding",

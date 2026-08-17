@@ -17,7 +17,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 辅助函数
+// upstreamErrorStatusCode 见 service.UpstreamErrorStatusCode：还原被网关
+// 转成 HTTP 200 的真实上游状态码，无法还原时回退 502（保持可重试语义）。
+func upstreamErrorStatusCode(httpStatusCode int, oaiError *types.OpenAIError) int {
+	if oaiError == nil {
+		return service.UpstreamErrorStatusCode(httpStatusCode, nil)
+	}
+	return service.UpstreamErrorStatusCode(httpStatusCode, oaiError.Code)
+}
+
+// HandleStreamFormat 按下游协议格式转发流式帧。
 func HandleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool) error {
 	info.SendResponseCount++
 

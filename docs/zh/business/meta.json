@@ -1,7 +1,0 @@
-{
-  "title": "商务合作",
-  "description": "商务合作与联系方式",
-  "root": true,
-  "icon": "Handshake",
-  "pages": ["index"]
-}

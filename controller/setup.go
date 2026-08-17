@@ -1,15 +1,22 @@
 package controller
 
 import (
+	"errors"
+	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/service"
+	"github.com/gin-gonic/gin"
 )
+
+// setupMutex 保护安装流程的进程内 check-then-act 竞态：并发安装请求在检查
+// constant.Setup / RootUserExists 与实际写入之间可能交错。
+// 跨进程/多实例安全由 model.InitializeSetup 的数据库事务 + 固定主键占位保证。
+var setupMutex sync.Mutex
 
 type Setup struct {
 	Status       bool   `json:"status"`
@@ -51,6 +58,12 @@ func GetSetup(c *gin.Context) {
 }
 
 func PostSetup(c *gin.Context) {
+	// 安装流程全局只允许一个在途请求：check-then-act（检查 constant.Setup 与
+	// RootUserExists 后再写入）没有锁保护时，并发安装请求可能交错创建
+	// 重复的 root 用户或 setup 记录。
+	setupMutex.Lock()
+	defer setupMutex.Unlock()
+
 	// Check if setup is already completed
 	if constant.Setup {
 		common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
@@ -68,6 +81,7 @@ func PostSetup(c *gin.Context) {
 	}
 
 	// If root doesn't exist, validate and create admin account
+	var rootUser *model.User
 	if !rootExists {
 		// Validate username length: max 12 characters to align with model.User validation
 		if len(req.Username) > 12 {
@@ -88,13 +102,11 @@ func PostSetup(c *gin.Context) {
 		// Create root user
 		hashedPassword, err := common.Password2Hash(req.Password)
 		if err != nil {
-			c.JSON(200, gin.H{
-				"success": false,
-				"message": i18n.T(c, i18n.MsgSetupSystemError) + ": " + err.Error(),
-			})
+			common.SysError("setup: failed to hash password: " + err.Error())
+			common.ApiErrorI18n(c, i18n.MsgSetupSystemError)
 			return
 		}
-		rootUser := model.User{
+		rootUser = &model.User{
 			Username:    req.Username,
 			Password:    hashedPassword,
 			Role:        common.RoleRootUser,
@@ -103,35 +115,32 @@ func PostSetup(c *gin.Context) {
 			AccessToken: nil,
 			Quota:       100000000,
 		}
-		err = model.DB.Create(&rootUser).Error
-		if err != nil {
-			c.JSON(200, gin.H{
-				"success": false,
-				"message": i18n.T(c, i18n.MsgSetupCreateAdminFailed) + ": " + err.Error(),
-			})
+	}
+
+	// 数据库事务 + 固定主键占位：多实例并发初始化时，只有一个实例能成功
+	// 写入 setup 记录，其余实例按"已初始化"返回，不会创建重复 root 用户。
+	setupRecord := model.NewSetupRecord(common.Version, time.Now().Unix())
+	if err := model.InitializeSetup(rootUser, setupRecord); err != nil {
+		if errors.Is(err, model.ErrSetupAlreadyInitialized) {
+			// 数据库已确认初始化（其他实例率先完成）：同步本进程内存状态，
+			// 否则该实例会持续对外报告未初始化直到重启。
+			constant.Setup = true
+			common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
 			return
 		}
-	}
-
-	// Update setup status
-	constant.Setup = true
-
-	setup := model.Setup{
-		Version:       common.Version,
-		InitializedAt: time.Now().Unix(),
-	}
-	err = model.DB.Create(&setup).Error
-	if err != nil {
-		c.JSON(200, gin.H{
-			"success": false,
-			"message": i18n.T(c, i18n.MsgSetupInitFailed) + ": " + err.Error(),
-		})
+		common.SysError("setup: failed to initialize: " + err.Error())
+		common.ApiErrorI18n(c, i18n.MsgSetupInitFailed)
 		return
 	}
+	constant.Setup = true
 
-	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录
+	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录。
+	// 审计元数据区分「新建 root 用户」与「复用已有 root 用户」两种初始化路径。
 	c.Set("username", req.Username)
-	service.RecordAudit(c, model.AuditModuleSetup, model.AuditActionCreate, "系统初始化", nil, map[string]interface{}{"username": req.Username}, true)
+	service.RecordAudit(c, model.AuditModuleSetup, model.AuditActionCreate, "系统初始化", nil, map[string]interface{}{
+		"username":          req.Username,
+		"root_user_created": !rootExists,
+	}, true)
 
 	common.ApiSuccessI18n(c, i18n.MsgSetupInitSuccess, nil)
 }

@@ -15,32 +15,34 @@ import (
 )
 
 type Pricing struct {
-	ModelName              string                      `json:"model_name"`
-	Description            string                      `json:"description,omitempty" gorm:"type:text"`
-	Icon                   string                      `json:"icon,omitempty"`
-	Tags                   string                      `json:"tags,omitempty"`
-	VendorID               int                         `json:"vendor_id,omitempty"`
-	ContextLength          int                         `json:"context_length,omitempty"`
-	MaxOutputTokens        int                         `json:"max_output_tokens,omitempty"`
-	InputModalities        []string                    `json:"input_modalities,omitempty"`
-	OutputModalities       []string                    `json:"output_modalities,omitempty"`
-	Capabilities           []string                    `json:"capabilities,omitempty"`
-	KnowledgeCutoff        string                      `json:"knowledge_cutoff,omitempty"`
-	ReleaseDate            string                      `json:"release_date,omitempty"`
-	ParameterCount         string                      `json:"parameter_count,omitempty"`
-	QuotaType              int                         `json:"quota_type"`
-	Available              bool                        `json:"available"`
-	ModelRatio             float64                     `json:"model_ratio"`
-	ModelPrice             float64                     `json:"model_price"`
-	OwnerBy                string                      `json:"owner_by"`
-	CompletionRatio        float64                     `json:"completion_ratio"`
-	CacheRatio             *float64                    `json:"cache_ratio,omitempty"`
-	CreateCacheRatio       *float64                    `json:"create_cache_ratio,omitempty"`
-	AudioRatio             *float64                    `json:"audio_ratio,omitempty"`
-	AudioCompletionRatio   *float64                    `json:"audio_completion_ratio,omitempty"`
-	ContextPricing         *types.ContextPricingConfig `json:"context_pricing,omitempty"`
-	EnableGroup            []string                    `json:"enable_groups"`
-	SupportedEndpointTypes []constant.EndpointType     `json:"supported_endpoint_types"`
+	ModelName            string                      `json:"model_name"`
+	Description          string                      `json:"description,omitempty" gorm:"type:text"`
+	Icon                 string                      `json:"icon,omitempty"`
+	Tags                 string                      `json:"tags,omitempty"`
+	VendorID             int                         `json:"vendor_id,omitempty"`
+	ContextLength        int                         `json:"context_length,omitempty"`
+	MaxOutputTokens      int                         `json:"max_output_tokens,omitempty"`
+	InputModalities      []string                    `json:"input_modalities,omitempty"`
+	OutputModalities     []string                    `json:"output_modalities,omitempty"`
+	Capabilities         []string                    `json:"capabilities,omitempty"`
+	KnowledgeCutoff      string                      `json:"knowledge_cutoff,omitempty"`
+	ReleaseDate          string                      `json:"release_date,omitempty"`
+	ParameterCount       string                      `json:"parameter_count,omitempty"`
+	QuotaType            int                         `json:"quota_type"`
+	Available            bool                        `json:"available"`
+	ModelRatio           float64                     `json:"model_ratio"`
+	ModelPrice           float64                     `json:"model_price"`
+	OwnerBy              string                      `json:"owner_by"`
+	CompletionRatio      float64                     `json:"completion_ratio"`
+	CacheRatio           *float64                    `json:"cache_ratio,omitempty"`
+	CreateCacheRatio     *float64                    `json:"create_cache_ratio,omitempty"`
+	AudioRatio           *float64                    `json:"audio_ratio,omitempty"`
+	AudioCompletionRatio *float64                    `json:"audio_completion_ratio,omitempty"`
+	ContextPricing       *types.ContextPricingConfig `json:"context_pricing,omitempty"`
+	// omitempty：匿名 pricing 响应置 nil 时整个字段不出现在 JSON 中，
+	// 避免输出 "enable_groups": null。
+	EnableGroup            []string                `json:"enable_groups,omitempty"`
+	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 }
 
 type PricingVendor struct {

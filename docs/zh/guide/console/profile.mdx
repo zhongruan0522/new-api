@@ -1,45 +1,16 @@
-﻿---
-title: 个人设置
+---
+title: 个人资料
 ---
 
-在这里可以查看账号信息，管理账号绑定，进行安全设置等操作
+个人资料入口为 `/profile`，用于用户管理自己的账号信息、安全设置与通知偏好。
 
-## 可用模型查看
+主要区域：
 
-这里可以查看当前账户可用的模型，点击模型名进行复制
+- **资料信息**：查看账号基础信息、余额、用量等。
+- **账号绑定**：绑定已启用的邮箱、微信、GitHub、Discord、OIDC、Telegram、LinuxDo 或自定义 OAuth 账号。
+- **安全设置**：修改密码、管理访问令牌、两步验证、Passkey 和删除账号等。
+- **通知设置**：配置余额提醒阈值与通知方式。当前支持 `email`、`webhook`、`bark`、`gotify`。
+- **签到日历**：如果管理员启用签到，可查看签到状态和奖励。
+- **语言偏好**：切换当前前端语言。
 
-![可用模型](/assets/guide/available-models.png)
-
-## 账户绑定
-
-这里可以进行账户绑定操作
-
-![账户绑定](/assets/guide/account-bind.png)
-
-## 安全设置
-
-这里可以进行修改密码，重置 API 密钥等操作
-
-![安全设置](/assets/guide/account-security.png)
-
-## 其它设置
-
-### 通知设置
-
-这里可以配置接收通知的方式，目前支持邮件和Webhook两种方式
-
-![邮件通知](/assets/guide/account-notification-mail.png)
-
-![Webhook](/assets/guide/account-notification-webhook.png)
-
-### 价格设置
-
-这里可以设置是否接受未设置价格的模型
-
-![价格设置](/assets/guide/account-price.png)
-
-### IP 记录
-
-这里可以选择开启IP记录，开启后将会在日志中显示IP
-
-![IP设置](/assets/guide/account-ip-log.png)
+可用绑定方式和安全能力取决于管理员在 **系统设置 → 身份验证** 中启用的功能。

@@ -2,15 +2,22 @@
   "title": "控制台",
   "pages": [
     "dashboard",
-    "api-token",
-    "channel-management",
-    "chat",
     "playground",
+    "chat",
+    "api-token",
     "usage-log",
+    "multimodal-files",
+    "wallet",
+    "order-query",
+    "profile",
+    "ticket",
+    "channel-management",
+    "models",
+    "dynamic-ratio",
     "user-management",
     "redeem-code-management",
-    "wallet",
-    "profile",
+    "audit-logs",
+    "minimax-voice-management",
     "settings"
   ]
 }

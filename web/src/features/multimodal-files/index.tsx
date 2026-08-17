@@ -18,13 +18,20 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy, Eye, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  type ColumnDef,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import dayjs from '@/lib/dayjs'
-import { formatTimestampToDate } from '@/lib/format'
 import { ROLE } from '@/lib/roles'
+import { SectionPageLayout } from '@/components/layout'
+import { DataTablePage } from '@/components/data-table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,10 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -49,32 +53,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { SectionPageLayout } from '@/components/layout'
-import {
   batchDeleteStoredMedia,
   deleteStoredMedia,
   getStoredMedia,
   getStoredMediaDetail,
 } from './api'
 import type { StoredMediaBatchItem, StoredMediaItem } from './types'
+import { useMultimodalFilesColumns } from './components/multimodal-files-columns'
+import { MultimodalFilesFilterBar } from './components/multimodal-files-filter-bar'
+import { MultimodalFilesBulkActions } from './components/multimodal-files-bulk-actions'
 
 const DEFAULT_PAGE_SIZE = 20
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 const EMPTY_STORED_MEDIA_ITEMS: StoredMediaItem[] = []
 
 type DeleteTarget =
@@ -102,17 +91,6 @@ function getDefaultDateRange() {
   }
 }
 
-function getMediaKey(item: StoredMediaItem | StoredMediaBatchItem) {
-  return `${item.media_type}:${item.id}`
-}
-
-function formatSize(size: number) {
-  if (!Number.isFinite(size) || size <= 0) return '-'
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
-  return `${(size / 1024 / 1024).toFixed(2)} MB`
-}
-
 function copyToClipboard(text: string) {
   return navigator.clipboard.writeText(text)
 }
@@ -123,11 +101,13 @@ export function MultimodalFiles() {
   const authUser = useAuthStore((state) => state.auth.user)
   const isAdmin = (authUser?.role ?? 0) >= ROLE.ADMIN
   const defaultRange = useMemo(() => getDefaultDateRange(), [])
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  })
   const [startTime, setStartTime] = useState(defaultRange.start)
   const [endTime, setEndTime] = useState(defaultRange.end)
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [rowSelection, setRowSelection] = useState({})
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailItem, setDetailItem] = useState<StoredMediaItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
@@ -138,8 +118,8 @@ export function MultimodalFiles() {
   const queryKey = [
     'stored-media',
     isAdmin,
-    page,
-    pageSize,
+    pagination.pageIndex + 1,
+    pagination.pageSize,
     startTimestamp,
     endTimestamp,
   ] as const
@@ -148,28 +128,17 @@ export function MultimodalFiles() {
     queryKey,
     queryFn: () =>
       getStoredMedia({
-        page,
-        pageSize,
+        page: pagination.pageIndex + 1,
+        pageSize: pagination.pageSize,
         startTimestamp,
         endTimestamp,
         isAdmin,
       }),
+    placeholderData: (previousData) => previousData,
   })
 
   const items = mediaQuery.data?.items ?? EMPTY_STORED_MEDIA_ITEMS
   const total = mediaQuery.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-
-  const selectedItems = useMemo(
-    () =>
-      items
-        .filter((item) => selectedKeys.includes(getMediaKey(item)))
-        .map((item) => ({
-          id: item.id,
-          media_type: item.media_type,
-        })),
-    [items, selectedKeys]
-  )
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['stored-media'] })
@@ -195,38 +164,11 @@ export function MultimodalFiles() {
     onSuccess: async (deleted) => {
       toast.success(t('multimodalFiles.status.deletedCountFileS', { count: deleted }))
       setDeleteTarget(null)
-      setSelectedKeys([])
+      setRowSelection({})
       await refresh()
     },
     onError: (error) => toast.error(error.message),
   })
-
-  const toggleSelection = (item: StoredMediaItem, checked: boolean) => {
-    const key = getMediaKey(item)
-    setSelectedKeys((current) => {
-      if (!checked) return current.filter((itemKey) => itemKey !== key)
-      const next = new Set(current)
-      next.add(key)
-      return Array.from(next)
-    })
-  }
-
-  const allVisibleSelected =
-    items.length > 0 &&
-    items.every((item) => selectedKeys.includes(getMediaKey(item)))
-
-  const toggleVisible = (checked: boolean) => {
-    if (!checked) {
-      const visible = new Set(items.map(getMediaKey))
-      setSelectedKeys((current) => current.filter((key) => !visible.has(key)))
-      return
-    }
-    setSelectedKeys((current) => {
-      const next = new Set(current)
-      items.forEach((item) => next.add(getMediaKey(item)))
-      return Array.from(next)
-    })
-  }
 
   const copyUrl = async (url: string) => {
     if (!url) return
@@ -241,8 +183,48 @@ export function MultimodalFiles() {
   const resetFilters = () => {
     setStartTime(defaultRange.start)
     setEndTime(defaultRange.end)
-    setPage(1)
-    setSelectedKeys([])
+    setPagination({ pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE })
+    setRowSelection({})
+  }
+
+  const columnActions = useMemo(
+    () => ({
+      onView: (item: StoredMediaItem) => detailMutation.mutate(item),
+      onCopy: (url: string) => void copyUrl(url),
+      onDelete: (item: StoredMediaItem) =>
+        setDeleteTarget({ mode: 'single', item }),
+    }),
+    // detailMutation/copyUrl stable enough; refresh via setDeleteTarget
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
+
+  const columns = useMultimodalFilesColumns(columnActions) as ColumnDef<StoredMediaItem>[]
+
+  const table = useReactTable({
+    data: items,
+    columns,
+    state: {
+      rowSelection,
+      pagination,
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(total / pagination.pageSize),
+  })
+
+  const handleDeleteSelected = () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    if (selectedRows.length === 0) return
+    const batchItems: StoredMediaBatchItem[] = selectedRows.map((row) => ({
+      id: row.original.id,
+      media_type: row.original.media_type,
+    }))
+    setDeleteTarget({ mode: 'batch', items: batchItems })
   }
 
   return (
@@ -254,12 +236,8 @@ export function MultimodalFiles() {
         <SectionPageLayout.Actions>
           <Button
             variant='outline'
-            disabled={selectedItems.length === 0}
-            onClick={() => {
-              if (selectedItems.length > 0) {
-                setDeleteTarget({ mode: 'batch', items: selectedItems })
-              }
-            }}
+            disabled={table.getFilteredSelectedRowModel().rows.length === 0}
+            onClick={handleDeleteSelected}
           >
             <Trash2 />
             {t('multimodalFiles.actions.deleteSelected')}
@@ -270,222 +248,47 @@ export function MultimodalFiles() {
           </Button>
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
-          <div className='space-y-4'>
-            {mediaQuery.error instanceof Error && (
-              <div className='border-destructive/40 text-destructive rounded-lg border px-3 py-2 text-sm'>
-                {mediaQuery.error.message}
-              </div>
-            )}
-
-            <Card size='sm'>
-              <CardContent className='grid gap-3 lg:grid-cols-[1fr_1fr_auto]'>
-                <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-start'>{t('dashboard.actions.startTime')}</Label>
-                  <Input
-                    id='stored-media-start'
-                    type='datetime-local'
-                    value={startTime}
-                    onChange={(event) => {
-                      setStartTime(event.target.value)
-                      setPage(1)
-                      setSelectedKeys([])
-                    }}
-                  />
-                </div>
-                <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-end'>{t('dashboard.fields.endTime')}</Label>
-                  <Input
-                    id='stored-media-end'
-                    type='datetime-local'
-                    value={endTime}
-                    onChange={(event) => {
-                      setEndTime(event.target.value)
-                      setPage(1)
-                      setSelectedKeys([])
-                    }}
-                  />
-                </div>
-                <div className='flex items-end gap-2'>
-                  <Button onClick={() => void refresh()} className='flex-1'>
-                    {t('keyQuery.titles.query')}
-                  </Button>
-                  <Button variant='outline' onClick={resetFilters}>
-                    {t('common.actions.reset')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card size='sm'>
-              <CardContent className='p-0'>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className='w-10'>
-                        <Checkbox
-                          aria-label={t('multimodalFiles.placeholders.selectVisibleFiles')}
-                          checked={allVisibleSelected}
-                          onCheckedChange={(checked) =>
-                            toggleVisible(checked === true)
-                          }
-                        />
-                      </TableHead>
-                      <TableHead>{t('channels.fields.type')}</TableHead>
-                      <TableHead>{t('channels.fields.id')}</TableHead>
-                      <TableHead>{t('multimodalFiles.status.createdAt')}</TableHead>
-                      <TableHead>{t('multimodalFiles.fields.mime')}</TableHead>
-                      <TableHead>{t('channels.fields.size')}</TableHead>
-                      <TableHead>{t('multimodalFiles.fields.convertedUrl')}</TableHead>
-                      <TableHead className='w-36 text-right'>
-                        {t('channels.fields.actions')}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mediaQuery.isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('common.tips.loading')}
-                        </TableCell>
-                      </TableRow>
-                    ) : items.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('multimodalFiles.fields.noMultimodalFiles')}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      items.map((item) => {
-                        const key = getMediaKey(item)
-                        return (
-                          <TableRow key={key}>
-                            <TableCell>
-                              <Checkbox
-                                aria-label={t('multimodalFiles.placeholders.selectFile')}
-                                checked={selectedKeys.includes(key)}
-                                onCheckedChange={(checked) =>
-                                  toggleSelection(item, checked === true)
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant='outline'>
-                                {t(item.media_type)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className='max-w-48 truncate font-mono text-xs'>
-                              {item.id}
-                            </TableCell>
-                            <TableCell>
-                              {formatTimestampToDate(item.created_at)}
-                            </TableCell>
-                            <TableCell>{item.mime_type || '-'}</TableCell>
-                            <TableCell>{formatSize(item.size_bytes)}</TableCell>
-                            <TableCell className='max-w-72 truncate'>
-                              {item.url || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <div className='flex justify-end gap-1'>
-                                <Button
-                                  size='icon-sm'
-                                  variant='ghost'
-                                  disabled={detailMutation.isPending}
-                                  onClick={() => detailMutation.mutate(item)}
-                                >
-                                  <Eye />
-                                  <span className='sr-only'>{t('common.actions.view')}</span>
-                                </Button>
-                                <Button
-                                  size='icon-sm'
-                                  variant='ghost'
-                                  disabled={!item.url}
-                                  onClick={() => void copyUrl(item.url)}
-                                >
-                                  <Copy />
-                                  <span className='sr-only'>{t('channels.actions.copy')}</span>
-                                </Button>
-                                <Button
-                                  size='icon-sm'
-                                  variant='destructive'
-                                  onClick={() =>
-                                    setDeleteTarget({ mode: 'single', item })
-                                  }
-                                >
-                                  <Trash2 />
-                                  <span className='sr-only'>{t('common.actions.delete')}</span>
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-              <div className='text-muted-foreground text-sm'>
-                {t('multimodalFiles.placeholders.selectedSelectedOfTotal', {
-                  selected: selectedItems.length,
-                  total,
-                })}
-              </div>
-             <div className='flex items-center gap-2'>
-                <span className='text-muted-foreground hidden whitespace-nowrap text-sm sm:inline'>
-                  {t('common.fields.rowsPerPage')}
-                </span>
-               <Select
-                 value={String(pageSize)}
-                 onValueChange={(value) => {
-                    const next = Number(value)
-                    if (Number.isFinite(next)) {
-                      setPageSize(next)
-                      setPage(1)
-                      setSelectedKeys([])
-                    }
-                  }}
-                >
-                  <SelectTrigger className='w-24'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    <SelectGroup>
-                      {PAGE_SIZE_OPTIONS.map((size) => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant='outline'
-                  disabled={page <= 1}
-                  onClick={() => {
-                    setSelectedKeys([])
-                    setPage((current) => Math.max(1, current - 1))
-                  }}
-                >
-                  {t('common.fields.previous')}
-                </Button>
-                <span className='text-sm tabular-nums'>
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant='outline'
-                  disabled={page >= totalPages}
-                  onClick={() => {
-                    setSelectedKeys([])
-                    setPage((current) => Math.min(totalPages, current + 1))
-                  }}
-                >
-                  {t('common.fields.next')}
-                </Button>
-              </div>
+          {mediaQuery.error instanceof Error && (
+            <div className='border-destructive/40 text-destructive mb-2.5 rounded-lg border px-3 py-2 text-sm'>
+              {mediaQuery.error.message}
             </div>
-          </div>
+          )}
+
+          <DataTablePage
+            table={table}
+            columns={columns}
+            isLoading={mediaQuery.isLoading}
+            isFetching={mediaQuery.isFetching}
+            emptyTitle={t('multimodalFiles.fields.noMultimodalFiles')}
+            skeletonKeyPrefix='multimodal-files-skeleton'
+            tableClassName='overflow-x-auto'
+            tableHeaderClassName='bg-muted/30 sticky top-0 z-10'
+            toolbar={
+              <MultimodalFilesFilterBar
+                startTime={startTime}
+                endTime={endTime}
+                onStartTimeChange={(value) => {
+                  setStartTime(value)
+                  setPagination({ ...pagination, pageIndex: 0 })
+                  setRowSelection({})
+                }}
+                onEndTimeChange={(value) => {
+                  setEndTime(value)
+                  setPagination({ ...pagination, pageIndex: 0 })
+                  setRowSelection({})
+                }}
+                onQuery={() => void refresh()}
+                onReset={resetFilters}
+                onRefresh={() => void refresh()}
+              />
+            }
+            bulkActions={
+              <MultimodalFilesBulkActions
+                table={table}
+                onDeleteSelected={handleDeleteSelected}
+              />
+            }
+          />
         </SectionPageLayout.Content>
       </SectionPageLayout>
 
@@ -505,7 +308,7 @@ export function MultimodalFiles() {
                   <span className='text-muted-foreground'>
                     {t('multimodalFiles.status.createdAt')}:{' '}
                   </span>
-                  {formatTimestampToDate(detailItem.created_at)}
+                  {dayjs.unix(detailItem.created_at).format('YYYY-MM-DD HH:mm:ss')}
                 </div>
                 <div>
                   <span className='text-muted-foreground'>{t('channels.fields.type')}: </span>
@@ -513,7 +316,7 @@ export function MultimodalFiles() {
                 </div>
                 <div>
                   <span className='text-muted-foreground'>{t('channels.fields.size')}: </span>
-                  {formatSize(detailItem.size_bytes)}
+                  {detailItem.size_bytes} B
                 </div>
               </div>
               <div className='grid gap-1.5'>

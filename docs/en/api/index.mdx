@@ -1,6 +1,6 @@
 ---
 title: API Reference
-description: New API Complete API Documentation
+description: NookMux runtime API documentation
 ---
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
@@ -14,7 +14,6 @@ import {
   Headphones,
   Radio,
   Image,
-  Video,
   FileQuestion,
   Server,
   SlidersHorizontal,
@@ -37,11 +36,20 @@ import {
 
 ## Overview
 
-New API provides a complete set of RESTful API interfaces, categorized into two main types: **AI Model APIs** and **Management APIs**. You can use these interfaces to invoke AI capabilities and perform system management functions.
+NookMux provides RESTful APIs, categorized into **AI Model APIs** and **Management APIs**.
 
-<Callout title="Online Debugging">
-  You can visit [Apifox Playground](https://apifox.newapi.ai/) to test and debug API interfaces online, or browse the API documentation below.
+<Callout title="Current Project Contract Takes Priority">
+  These pages were originally generated from upstream Apifox, but NookMux has its own additions, removals, and edits. Read [Current Project API Contract](/en/docs/api/current-contract) first; if a generated page conflicts with that page or the runtime code, the current contract and code take precedence.
 </Callout>
+
+<Cards>
+  <Card
+    icon={<FileText />}
+    title="Current Project API Contract"
+    description="Cross-check results for missing APIs, removed APIs, and parameter changes."
+    href="/en/docs/api/current-contract"
+  />
+</Cards>
 
 ## AI Model APIs
 
@@ -101,12 +109,6 @@ AI Model APIs provide calls for various AI capabilities, compatible with the Ope
     title="Images"
     description="AI image generation API."
     href="/en/docs/api/ai-model/images/openai/post-v1-images-generations"
-  />
-  <Card
-    icon={<Video />}
-    title="Videos"
-    description="AI video generation API."
-    href="/en/docs/api/ai-model/videos/sora/createvideo"
   />
   <Card
     icon={<FileQuestion />}
@@ -190,8 +192,8 @@ Management APIs are used for backend operations such as system configuration, us
   <Card
     icon={<ScrollText />}
     title="Logs"
-    description="Usage log query API."
-    href="/en/docs/api/management/logs/log-get"
+    description="Usage logs, audit logs, and field visibility APIs."
+    href="/en/docs/api/current-contract"
   />
   <Card
     icon={<ChartBar />}

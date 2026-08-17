@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 
 	info.InitChannelMeta(c)
 

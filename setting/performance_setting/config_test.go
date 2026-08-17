@@ -3,8 +3,8 @@ package performance_setting
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/NookMux/NookMux/common"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultPerformanceSettingUsesHigherDiskThreshold(t *testing.T) {

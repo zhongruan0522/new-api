@@ -17,13 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
-import { useStatus } from '@/hooks/use-status'
+import { useSystemInfo } from '@/hooks/use-system-info'
 import { SettingsSection } from '../components/settings-section'
 
 export function SystemMaintenanceSection() {
   const { t } = useTranslation()
-  const { status, loading } = useStatus()
-  const buildHash = status?.version || ''
+  const { version: buildHash, loading } = useSystemInfo()
 
   return (
     <SettingsSection title={t('systemSettings.titles.maintenance')}>

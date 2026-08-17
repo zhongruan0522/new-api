@@ -5,19 +5,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/gin-gonic/gin"
 )
 
 func TestExtractChannelAffinityValueFromRequestHeader(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cases := []struct {
-		name       string
-		headerName string
+		name        string
+		headerName  string
 		headerValue string
-		key        string
-		want       string
+		key         string
+		want        string
 	}{
 		{
 			name:        "extracts canonical header value",
@@ -105,9 +105,9 @@ func TestGetPreferredChannelByAffinityFromRequestHeader(t *testing.T) {
 	setting.Enabled = true
 	setting.Rules = []operation_setting.ChannelAffinityRule{
 		{
-			Name:        "trace-by-header",
-			ModelRegex:  []string{"^gpt-.*$"},
-			PathRegex:   []string{"/v1/chat/completions"},
+			Name:       "trace-by-header",
+			ModelRegex: []string{"^gpt-.*$"},
+			PathRegex:  []string{"/v1/chat/completions"},
 			KeySources: []operation_setting.ChannelAffinityKeySource{
 				{Type: "request_header", Key: "X-Conversation-Id"},
 			},
@@ -162,9 +162,9 @@ func TestGetPreferredChannelByAffinityRequestHeaderValueRegexFilters(t *testing.
 	setting.Enabled = true
 	setting.Rules = []operation_setting.ChannelAffinityRule{
 		{
-			Name:        "trace-by-header",
-			ModelRegex:  []string{"^gpt-.*$"},
-			PathRegex:   []string{"/v1/chat/completions"},
+			Name:       "trace-by-header",
+			ModelRegex: []string{"^gpt-.*$"},
+			PathRegex:  []string{"/v1/chat/completions"},
 			KeySources: []operation_setting.ChannelAffinityKeySource{
 				{Type: "request_header", Key: "X-Conversation-Id"},
 			},
@@ -205,9 +205,9 @@ func TestGetPreferredChannelByAffinityRequestHeaderMissing(t *testing.T) {
 	setting.Enabled = true
 	setting.Rules = []operation_setting.ChannelAffinityRule{
 		{
-			Name:        "trace-by-header",
-			ModelRegex:  []string{"^gpt-.*$"},
-			PathRegex:   []string{"/v1/chat/completions"},
+			Name:       "trace-by-header",
+			ModelRegex: []string{"^gpt-.*$"},
+			PathRegex:  []string{"/v1/chat/completions"},
 			KeySources: []operation_setting.ChannelAffinityKeySource{
 				{Type: "request_header", Key: "X-Conversation-Id"},
 			},

@@ -7,7 +7,7 @@
 - JSON 序列化/反序列化调用必须走 `common/json.go` 的包装函数。
 - 可以引用 `encoding/json` 的类型，例如 `json.RawMessage`，但不要直接调用 `json.Marshal`、
   `json.Unmarshal`、`json.NewDecoder` 等业务序列化函数。
-- `EmbedFolder` 是前端静态资源服务的基础，改动后必须检查 `router/web-router.go` 和 `web/dist`。
+- `EmbedFolder` 是前端静态资源服务的基础，改动后必须检查 `router/web_router.go` 和 `web/dist`。
 - URL、IP、SSRF、TLS、Redis、缓存、限流等工具处在安全边界，外部输入必须显式校验。
 - 共享工具不要引入 controller/service/model 的反向依赖。
 

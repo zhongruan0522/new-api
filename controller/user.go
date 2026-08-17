@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
@@ -82,10 +83,11 @@ func Login(c *gin.Context) {
 
 	// 检查是否启用2FA
 	if model.IsTwoFAEnabled(user.Id) {
-		// 设置pending session，等待2FA验证
+		// 设置pending session，等待2FA验证；记录时间戳用于校验时效
 		session := sessions.Default(c)
 		session.Set("pending_username", user.Username)
 		session.Set("pending_user_id", user.Id)
+		session.Set("pending_2fa_set_at", time.Now().Unix())
 		err := session.Save()
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgUserSessionSaveFailed)

@@ -553,6 +553,16 @@ type GeminiChatResponse struct {
 	Candidates     []GeminiChatCandidate     `json:"candidates"`
 	PromptFeedback *GeminiChatPromptFeedback `json:"promptFeedback,omitempty"`
 	UsageMetadata  GeminiUsageMetadata       `json:"usageMetadata"`
+	// Error 保留上游在 HTTP 200 中携带的错误载荷（Gemini 及部分中间网关会把
+	// 429/5xx 转成 200 + {"error":{...}} 下发），用于 handler 识别真实上游错误。
+	Error *GeminiErrorResponse `json:"error,omitempty"`
+}
+
+// GeminiErrorResponse 是 Gemini API 的标准错误载荷。
+type GeminiErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Status  string `json:"status"`
 }
 
 // UnmarshalJSON allows GeminiChatResponse to accept both snake_case and camelCase fields.

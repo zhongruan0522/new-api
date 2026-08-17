@@ -2,7 +2,9 @@ package service
 
 import (
 	"testing"
+	"time"
 
+	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/dashboard_setting"
 )
@@ -130,5 +132,104 @@ func TestRankingsConfigFallbackOnZero(t *testing.T) {
 	}
 	if vendorLimit != rankingVendorLimit {
 		t.Fatalf("expected vendor limit fallback to %d, got %d", rankingVendorLimit, vendorLimit)
+	}
+}
+
+// TestRankingTimeRangeUsesCalendarPeriods 验证排行榜周期是启动时区下的自然
+// 日历周期，而非滚动 24h/7*24h 窗口（修复"今天=近24小时"问题）。
+func TestRankingTimeRangeUsesCalendarPeriods(t *testing.T) {
+	loc := time.FixedZone("UTC+8", 8*3600)
+	// 2026-08-15 19:30 (UTC+8)，即 UTC 11:30。
+	now := time.Date(2026, 8, 15, 19, 30, 0, 0, loc)
+
+	cases := []struct {
+		period       string
+		wantStart    time.Time // 启动时区下的周期起点
+		wantPrevEnd  int64     // 上一周期结束 = 当前周期起点-1
+		wantPrevTest string    // 上一周期起点描述
+	}{
+		{
+			period:    "today",
+			wantStart: time.Date(2026, 8, 15, 0, 0, 0, 0, loc),
+		},
+		{
+			// 2026-08-15 是周六，本周一为 08-10。
+			period:    "week",
+			wantStart: time.Date(2026, 8, 10, 0, 0, 0, 0, loc),
+		},
+		{
+			period:    "month",
+			wantStart: time.Date(2026, 8, 1, 0, 0, 0, 0, loc),
+		},
+		{
+			period:    "year",
+			wantStart: time.Date(2026, 1, 1, 0, 0, 0, 0, loc),
+		},
+	}
+
+	for _, tc := range cases {
+		config, err := rankingConfig(tc.period)
+		if err != nil {
+			t.Fatalf("rankingConfig(%q) error: %v", tc.period, err)
+		}
+		start, end := rankingTimeRange(config, now)
+		if start != tc.wantStart.Unix() {
+			t.Fatalf("period %q: start = %d, want %d (%s)",
+				tc.period, start, tc.wantStart.Unix(), tc.wantStart.Format(time.RFC3339))
+		}
+		if end != now.Unix() {
+			t.Fatalf("period %q: end = %d, want now %d", tc.period, end, now.Unix())
+		}
+
+		prevStart, prevEnd := previousRankingTimeRange(config, start, loc)
+		if prevEnd != start-1 {
+			t.Fatalf("period %q: prevEnd = %d, want %d", tc.period, prevEnd, start-1)
+		}
+
+		// 上一周期起点必须是同一周期的上一个自然边界。
+		var wantPrevStart time.Time
+		switch tc.period {
+		case "today":
+			wantPrevStart = tc.wantStart.AddDate(0, 0, -1)
+		case "week":
+			wantPrevStart = tc.wantStart.AddDate(0, 0, -7)
+		case "month":
+			wantPrevStart = tc.wantStart.AddDate(0, -1, 0)
+		case "year":
+			wantPrevStart = tc.wantStart.AddDate(-1, 0, 0)
+		}
+		if prevStart != wantPrevStart.Unix() {
+			t.Fatalf("period %q: prevStart = %d, want %d (%s)",
+				tc.period, prevStart, wantPrevStart.Unix(), wantPrevStart.Format(time.RFC3339))
+		}
+	}
+}
+
+// TestRankingTimeRangeAllHasNoLowerBound 验证 all 周期无下界。
+func TestRankingTimeRangeAllHasNoLowerBound(t *testing.T) {
+	config, err := rankingConfig("all")
+	if err != nil {
+		t.Fatalf("rankingConfig(all) error: %v", err)
+	}
+	start, end := rankingTimeRange(config, time.Now())
+	if start != 0 {
+		t.Fatalf("all period start = %d, want 0", start)
+	}
+	if end <= 0 {
+		t.Fatalf("all period end = %d, want > 0", end)
+	}
+}
+
+// TestRankingDayOffsetMatchesStartupTimezone 验证天级分桶偏移等于启动时区
+// 相对 UTC 的偏移，保证"每日"桶边界落在启动时区的自然日 00:00。
+func TestRankingDayOffsetMatchesStartupTimezone(t *testing.T) {
+	if got := rankingDayOffset(); got != 0 {
+		// 测试环境未设置 TZ 时偏移为 0；显式设置后再验证。
+		t.Setenv("TZ", "Asia/Shanghai")
+		common.InitStartupTimezone()
+		want := int64(8 * 3600)
+		if got := rankingDayOffset(); got != want {
+			t.Fatalf("rankingDayOffset() with TZ=Asia/Shanghai = %d, want %d", got, want)
+		}
 	}
 }

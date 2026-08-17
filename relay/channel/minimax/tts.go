@@ -120,7 +120,7 @@ func sanitizeTTSProviderName(message string, info *relaycommon.RelayInfo) string
 	return minimaxNamePattern.ReplaceAllString(message, "upstream")
 }
 
-func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
 	defer resp.Body.Close()
 	body, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {

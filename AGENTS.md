@@ -74,6 +74,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
+- 渠道相关的外网请求（中继、测试、模型拉取、余额/套餐查询、WebSocket 等）必须走该渠道配置的代理（`service.NewProxyHttpClient` / `NewProxyWebSocketDialer`）。
 - 待机内存相关默认值必须保守：连接池 idle 上限、prepared statement 缓存、后台 worker/goroutine 池、
   ticker 唤醒频率等常驻资源不能为追求峰值吞吐随意调大。确需调大时必须保留环境变量覆盖、同步
   `.env.example` 和中英文环境变量文档，并说明低流量/待机场景的内存影响。
@@ -100,7 +101,15 @@ setting、前端常量和 i18n。
 - 前端包管理器使用 Bun。`web/` 目录有独立 `package.json` 和 `bun.lock`。
 - 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`，适度使用knip。
 - 不允许用 mock 数据替代真实后端能力。
+- 列表/表格类页面必须使用 `DataTablePage` + `SectionPageLayout`，不得手拼 `Table`
+  或用 `Card` 包裹表格。详见 [web/AGENTS.md](web/AGENTS.md) 和
+  [docs/开发规范/list-page-table-spec.md](docs/开发规范/list-page-table-spec.md)。
+- 前端组件优先复用 `src/components/ui/`、`src/components/data-table/`、
+  `src/components/layout/` 等通用组件，避免重复造轮子。
 
 ## 文档与参考项目
 
 - `参考项目/` 仅用于比对上游实现。复制代码前必须适配本项目 API 和配置。
+- 跨模块详细开发规范文档放在 `docs/开发规范/`，根 `AGENTS.md` 和子目录
+  `AGENTS.md` 通过链接引用，避免在 AGENTS.md 中堆砌长篇规范正文。
+- `docs/AGENTS.md` 中的规则适用于 `docs/` 目录下的所有文档文件。

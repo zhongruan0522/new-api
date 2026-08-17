@@ -93,6 +93,8 @@ export interface SearchApiKeysParams {
   keyword?: string
   token?: string
   all?: boolean
+  group?: string
+  status?: number
   p?: number
   size?: number
 }

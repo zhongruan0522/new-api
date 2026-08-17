@@ -20,19 +20,13 @@ import { useEffect, useState } from 'react'
 import { useForm, type SubmitErrorHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, KeyRound, Settings2, WalletCards } from 'lucide-react'
+import { KeyRound, Settings2, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getUserModels, getUserGroups } from '@/lib/api'
 import { getCurrencyDisplay, getCurrencyLabel } from '@/lib/currency'
-import { cn } from '@/lib/utils'
 import { useStatus } from '@/hooks/use-status'
 import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import {
   Form,
   FormControl,
@@ -98,7 +92,6 @@ export function ApiKeysMutateDrawer({
   const { setCreatedKeys, setOpen, triggerRefresh } = useApiKeys()
   const { status } = useStatus()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const defaultUseAutoGroup = status?.default_use_auto_group === true
 
   // Fetch models
@@ -382,7 +375,7 @@ export function ApiKeysMutateDrawer({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('keyQuery.fields.expirationTime')}</FormLabel>
-                    <div className='grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center'>
+                    <div className='grid gap-2'>
                       <FormControl>
                         <DateTimePicker
                           value={field.value}
@@ -391,7 +384,7 @@ export function ApiKeysMutateDrawer({
                           className='min-w-0 [&_input[type=time]]:w-24 sm:[&_input[type=time]]:w-32'
                         />
                       </FormControl>
-                      <div className='grid grid-cols-4 gap-2 sm:flex'>
+                      <div className='grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'>
                         <Button
                           type='button'
                           variant='outline'
@@ -682,89 +675,69 @@ export function ApiKeysMutateDrawer({
               )}
             </SideDrawerSection>
 
-            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-              <SideDrawerSection>
-                <CollapsibleTrigger
-                  render={
-                    <button
-                      type='button'
-                      className='hover:bg-muted/40 flex w-full items-center gap-3 rounded-md py-1.5 text-left transition-colors'
-                    />
-                  }
-                >
-                  <SideDrawerSectionHeader
-                    className='flex-1'
-                    title={t('channels.titles.advancedSettings')}
-                    description={t('keys.fields.setApiKeyAccessRestrictions')}
-                    icon={<Settings2 className='size-4' />}
-                  />
-                  <ChevronDown
-                    className={cn(
-                      'text-muted-foreground size-4 shrink-0 transition-transform',
-                      advancedOpen && 'rotate-180'
-                    )}
-                  />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className='flex flex-col gap-4 pt-2'>
-                    <FormField
-                      control={form.control}
-                      name='model_limits'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('keys.fields.modelLimits')}</FormLabel>
-                          <FormControl>
-                            <MultiSelect
-                              options={models.map((m) => ({
-                                label: m,
-                                value: m,
-                              }))}
-                              selected={field.value}
-                              onChange={field.onChange}
-                              placeholder={t(
-                                'keys.placeholders.selectModelsEmptyForAllowAll'
-                              )}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t('keys.status.limitWhichModelsCanBeUsedWithThisKey')}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <SideDrawerSection>
+              <SideDrawerSectionHeader
+                title={t('channels.titles.advancedSettings')}
+                description={t('keys.fields.setApiKeyAccessRestrictions')}
+                icon={<Settings2 className='size-4' />}
+              />
+              <div className='flex flex-col gap-4'>
+                <FormField
+                  control={form.control}
+                  name='model_limits'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('keys.fields.modelLimits')}</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          options={models.map((m) => ({
+                            label: m,
+                            value: m,
+                          }))}
+                          selected={field.value}
+                          onChange={field.onChange}
+                          placeholder={t(
+                            'keys.placeholders.selectModelsEmptyForAllowAll'
+                          )}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('keys.status.limitWhichModelsCanBeUsedWithThisKey')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name='allow_ips'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t('keys.tips.ipWhitelistSupportsCidr')}
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              className='min-h-20 resize-none'
-                              placeholder={t(
-                                'keys.placeholders.oneIpPerLineEmptyForNoRestriction'
-                              )}
-                              rows={3}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t(
-                              'keys.tips.doNotOverTrustThisFeatureIpMayBe'
-                            )}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CollapsibleContent>
-              </SideDrawerSection>
-            </Collapsible>
+                <FormField
+                  control={form.control}
+                  name='allow_ips'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t('keys.tips.ipWhitelistSupportsCidr')}
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          className='min-h-20 resize-none'
+                          placeholder={t(
+                            'keys.placeholders.oneIpPerLineEmptyForNoRestriction'
+                          )}
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t(
+                          'keys.tips.doNotOverTrustThisFeatureIpMayBe'
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </SideDrawerSection>
           </form>
         </Form>
         <SheetFooter className={sideDrawerFooterClassName()}>

@@ -16,8 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ReactNode } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { type ReactNode, useEffect, useRef } from 'react'
+import { Check, Copy, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -38,6 +38,17 @@ interface CopyButtonProps {
   tooltip?: string
   successTooltip?: string
   'aria-label'?: string
+  /**
+   * 复制前回调：返回实际要复制的值（如按需加载后的完整 key）。
+   * 返回空字符串表示加载失败，跳过复制。
+   */
+  onBeforeCopy?: () => Promise<string>
+  /** 复制结果是否弹全局 toast（默认 false，仅切换图标/tooltip 反馈） */
+  notify?: boolean
+  /** 禁用按钮（如按需内容仍在加载中） */
+  disabled?: boolean
+  /** 加载态：显示 spinner，替代复制图标 */
+  loading?: boolean
 }
 
 export function CopyButton({
@@ -50,24 +61,54 @@ export function CopyButton({
   tooltip,
   successTooltip,
   'aria-label': ariaLabel,
+  onBeforeCopy,
+  notify = false,
+  disabled = false,
+  loading = false,
 }: CopyButtonProps) {
   const { t } = useTranslation()
-  const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
-  const isCopied = copiedText === value
+  const { copiedText, copyToClipboard } = useCopyToClipboard({ notify })
+  // onBeforeCopy 场景下 value 可能为空占位（如批量复制），实际复制的是
+  // resolved 值；两种情况都要能切换到"已复制"状态。
+  const resolvedValueRef = useRef<string | null>(null)
+  // value 变化时旧 resolved 值随之失效，避免复制目标切换后 copiedText
+  // 仍匹配旧值而误显示"已复制"。必须在提交后的 effect 中失效：render 期
+  // 直接写 ref 在并发渲染下可能作用于被放弃的渲染。
+  useEffect(() => {
+    resolvedValueRef.current = null
+  }, [value])
+  const isCopied =
+    copiedText !== null &&
+    (copiedText === value || copiedText === resolvedValueRef.current)
   const resolvedTooltip = tooltip ?? t('common.actions.copyToClipboard')
   const resolvedSuccessTooltip = successTooltip ?? t('common.status.copiedb7c3ca')
   const resolvedAriaLabel = ariaLabel ?? resolvedTooltip
   const copiedAriaLabel = t('common.status.copied')
+
+  const handleCopy = async () => {
+    if (onBeforeCopy) {
+      const resolved = await onBeforeCopy()
+      if (!resolved) return
+      resolvedValueRef.current = resolved
+      await copyToClipboard(resolved)
+      return
+    }
+    resolvedValueRef.current = null
+    await copyToClipboard(value)
+  }
 
   const button = (
     <Button
       variant={variant}
       size={size}
       className={cn('shrink-0', className)}
-      onClick={() => copyToClipboard(value)}
+      onClick={() => void handleCopy()}
+      disabled={disabled || loading}
       aria-label={isCopied ? copiedAriaLabel : resolvedAriaLabel}
     >
-      {isCopied ? (
+      {loading ? (
+        <Loader2 className={cn('animate-spin', iconClassName)} />
+      ) : isCopied ? (
         <Check className={cn('text-success', iconClassName)} />
       ) : (
         <Copy className={cn(iconClassName)} />

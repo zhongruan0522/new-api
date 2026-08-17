@@ -209,6 +209,27 @@ export async function getStatus() {
   return res.data?.data as Record<string, unknown>
 }
 
+// Get user-visible sidebar modules config (any logged-in user; the admin
+// section is stripped server-side for non-admin callers)
+export async function getUserModules(): Promise<{
+  success: boolean
+  message?: string
+  data?: { SidebarModulesAdmin?: string }
+}> {
+  const res = await api.get('/api/status/user_modules')
+  return res.data
+}
+
+// Get admin-only system info (build version). Requires admin session.
+export async function getSystemInfo(): Promise<{
+  success: boolean
+  message?: string
+  data?: { version?: string }
+}> {
+  const res = await api.get('/api/status/system_info')
+  return res.data
+}
+
 // Get system notice
 export async function getNotice(): Promise<{
   success: boolean

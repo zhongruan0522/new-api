@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/samber/hot"
-	"github.com/tidwall/gjson"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/pkg/cachex"
 	"github.com/NookMux/NookMux/setting/operation_setting"
+	"github.com/gin-gonic/gin"
+	"github.com/samber/hot"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -26,8 +26,8 @@ const (
 	ginKeyChannelAffinityLogInfo    = "channel_affinity_log_info"
 	ginKeyChannelAffinitySkipRetry  = "channel_affinity_skip_retry_on_failure"
 
-	channelAffinityCacheNamespace           = "new-api:channel_affinity:v1"
-	channelAffinityUsageCacheStatsNamespace = "new-api:channel_affinity_usage_cache_stats:v1"
+	channelAffinityCacheNamespace           = "nookmux:channel_affinity:v1"
+	channelAffinityUsageCacheStatsNamespace = "nookmux:channel_affinity_usage_cache_stats:v1"
 )
 
 var (
@@ -504,6 +504,41 @@ func ShouldSkipRetryAfterChannelAffinityFailure(c *gin.Context) bool {
 		return false
 	}
 	return b
+}
+
+// ClearCurrentChannelAffinityCache 删除当前请求命中的亲和粘性条目。
+// 用于亲和渠道被禁用或不可用时按配置驱逐过期粘性，避免后续请求继续命中失效渠道。
+func ClearCurrentChannelAffinityCache(c *gin.Context) bool {
+	if c == nil {
+		return false
+	}
+	cacheKey, _, ok := getChannelAffinityContext(c)
+	if !ok || cacheKey == "" {
+		return false
+	}
+
+	cache := getChannelAffinityCache()
+	deleted, err := cache.DeleteMany([]string{cacheKey})
+	if err != nil {
+		common.SysError(fmt.Sprintf("channel affinity cache delete current failed: err=%v", err))
+		return false
+	}
+	c.Set(ginKeyChannelAffinitySkipRetry, false)
+	for _, ok := range deleted {
+		if ok {
+			return true
+		}
+	}
+	return false
+}
+
+// ShouldKeepChannelAffinityOnChannelDisabled 返回"渠道被禁用后是否保留粘性条目"配置。
+func ShouldKeepChannelAffinityOnChannelDisabled() bool {
+	setting := operation_setting.GetChannelAffinitySetting()
+	if setting == nil {
+		return false
+	}
+	return setting.KeepOnChannelDisabled
 }
 
 func MarkChannelAffinityUsed(c *gin.Context, selectedGroup string, channelID int) {

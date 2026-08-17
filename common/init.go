@@ -22,10 +22,10 @@ var (
 )
 
 func printHelp() {
-	fmt.Println("NewAPI(Based OneAPI) " + Version + " - The next-generation LLM gateway and AI asset management system supports multiple languages.")
+	fmt.Println("NookMux(Based OneAPI) " + Version + " - The next-generation LLM gateway and AI asset management system supports multiple languages.")
 	fmt.Println("Original Project: OneAPI by JustSong - https://github.com/songquanpeng/one-api")
 	fmt.Println("Maintainer: NookMux - https://github.com/NookMux/NookMux")
-	fmt.Println("Usage: newapi [--port <port>] [--log-dir <log directory>] [--version] [--help]")
+	fmt.Println("Usage: nookmux [--port <port>] [--log-dir <log directory>] [--version] [--help]")
 }
 
 func InitEnv() {
@@ -63,6 +63,8 @@ func InitEnv() {
 		CryptoSecret = os.Getenv("CRYPTO_SECRET")
 	} else {
 		CryptoSecret = SessionSecret
+		log.Println("WARNING: CRYPTO_SECRET not set, falling back to SESSION_SECRET. Multi-instance deployments must set CRYPTO_SECRET explicitly, otherwise signed URLs (/mcp/image|video) will be rejected across instances after restart.")
+		log.Println("警告：未设置 CRYPTO_SECRET，将回落使用 SESSION_SECRET。多实例部署必须显式配置 CRYPTO_SECRET，否则重启后签名 URL（/mcp/image|video）会跨实例互拒。")
 	}
 	if os.Getenv("SQLITE_PATH") != "" {
 		SQLitePath = os.Getenv("SQLITE_PATH")

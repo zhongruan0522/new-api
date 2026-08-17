@@ -1,11 +1,16 @@
 package service
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/model"
 	"github.com/NookMux/NookMux/setting/model_setting"
+	"github.com/NookMux/NookMux/setting/system_setting"
 )
 
 // withMiniMaxSettings 临时覆盖全局 MiniMax 设置，函数返回后恢复原值。
@@ -172,5 +177,94 @@ func TestResolveCustomVoiceGroupRatio(t *testing.T) {
 	// 未配置分组时也返回默认 1.0（GetGroupRatio 找不到时回退 1）。
 	if r := resolveCustomVoiceGroupRatio("nonexistent-group", "tts-3-turbo"); r != 1.0 {
 		t.Errorf("nonexistent group ratio = %v, want 1.0", r)
+	}
+}
+
+// overrideCustomVoiceSSRFSettingForTest 允许测试用 httptest 本地地址出站：
+// 关闭 SSRF 防护（仅测试进程内生效，结束恢复）。
+func overrideCustomVoiceSSRFSettingForTest(t *testing.T) {
+	t.Helper()
+	setting := system_setting.GetFetchSetting()
+	old := *setting
+	t.Cleanup(func() { *setting = old })
+	setting.EnableSSRFProtection = false
+}
+
+// TestCloneVoiceUpstreamEncodesGroupIdQuery 验证上游 voice_clone 请求的
+// GroupId 查询串经过 URL 编码：groupId 含 &、=、# 等保留字符时必须整体作为
+// GroupId 的值传输，而不是被解析成额外的 query 参数或 fragment。
+// 修复前 url += "?GroupId=" + up.groupId 未编码，`a&b=c#d` 会污染上游请求。
+func TestCloneVoiceUpstreamEncodesGroupIdQuery(t *testing.T) {
+	overrideCustomVoiceSSRFSettingForTest(t)
+
+	var gotQuery url.Values
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.Query()
+		_, _ = w.Write([]byte(`{"demo_audio":"https://example.com/a.mp3","base_resp":{"status_code":0}}`))
+	}))
+	defer server.Close()
+
+	up := &minimaxUpstream{
+		baseURL: server.URL,
+		apiKey:  "test-key",
+		groupId: "a&b=c#d",
+		channel: &model.Channel{},
+	}
+
+	demoAudio, err := cloneVoiceUpstream(up, customVoiceFileID{Display: "1"}, CustomVoicePreviewRequest{
+		Model:   "speech-02-hd",
+		VoiceId: "voice-id",
+	})
+	if err != nil {
+		t.Fatalf("cloneVoiceUpstream failed: %v", err)
+	}
+	if demoAudio != "https://example.com/a.mp3" {
+		t.Fatalf("unexpected demo_audio: %s", demoAudio)
+	}
+	if got := gotQuery.Get("GroupId"); got != "a&b=c#d" {
+		t.Fatalf("GroupId should be URL-encoded and round-trip intact, got: %q", got)
+	}
+	// 编码后的 `&`/`=` 属于 GroupId 值，不得产生额外参数
+	if len(gotQuery) != 1 {
+		t.Fatalf("expected exactly one query param, got: %v", gotQuery)
+	}
+}
+
+// TestCloneVoiceUpstreamNoGroupIdNoQuery 验证 groupId 为空时不追加查询串。
+func TestCloneVoiceUpstreamNoGroupIdNoQuery(t *testing.T) {
+	overrideCustomVoiceSSRFSettingForTest(t)
+
+	var gotRawQuery string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRawQuery = r.URL.RawQuery
+		_, _ = w.Write([]byte(`{"demo_audio":"https://example.com/a.mp3","base_resp":{"status_code":0}}`))
+	}))
+	defer server.Close()
+
+	up := &minimaxUpstream{
+		baseURL: server.URL,
+		apiKey:  "test-key",
+		groupId: "",
+		channel: &model.Channel{},
+	}
+
+	if _, err := cloneVoiceUpstream(up, customVoiceFileID{Display: "1"}, CustomVoicePreviewRequest{
+		Model:   "speech-02-hd",
+		VoiceId: "voice-id",
+	}); err != nil {
+		t.Fatalf("cloneVoiceUpstream failed: %v", err)
+	}
+	if gotRawQuery != "" {
+		t.Fatalf("expected no query string when groupId empty, got: %q", gotRawQuery)
+	}
+}
+
+// TestBuildGroupIdQuery 直接断言编码输出格式。
+func TestBuildGroupIdQuery(t *testing.T) {
+	if got := buildGroupIdQuery("a&b=c#d"); got != "GroupId=a%26b%3Dc%23d" {
+		t.Fatalf("unexpected encoded query: %q", got)
+	}
+	if got := buildGroupIdQuery("plain"); got != "GroupId=plain" {
+		t.Fatalf("unexpected encoded query: %q", got)
 	}
 }

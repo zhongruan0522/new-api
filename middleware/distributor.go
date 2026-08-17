@@ -101,6 +101,7 @@ func Distribute() func(c *gin.Context) {
 				}
 
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
+					affinityUsable := false
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
 						if usingGroup == "auto" {
@@ -111,6 +112,7 @@ func Distribute() func(c *gin.Context) {
 									selectGroup = g
 									common.SetContextKey(c, constant.ContextKeyAutoGroup, g)
 									channel = preferred
+									affinityUsable = true
 									service.MarkChannelAffinityUsed(c, g, preferred.Id)
 									break
 								}
@@ -118,8 +120,14 @@ func Distribute() func(c *gin.Context) {
 						} else if model.IsChannelEnabledForGroupModel(usingGroup, modelRequest.Model, preferred.Id) {
 							channel = preferred
 							selectGroup = usingGroup
+							affinityUsable = true
 							service.MarkChannelAffinityUsed(c, usingGroup, preferred.Id)
 						}
+					}
+					// 亲和渠道被禁用或对当前分组/模型不可用时，按配置决定是否清空粘性条目：
+					// 默认清空并改选其他渠道；开启 keep_on_channel_disabled 后保留条目等待渠道恢复。
+					if !affinityUsable && !service.ShouldKeepChannelAffinityOnChannelDisabled() {
+						service.ClearCurrentChannelAffinityCache(c)
 					}
 				}
 
@@ -254,7 +262,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	return &modelRequest, shouldSelectChannel, nil
 }
 
-func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *types.NewAPIError {
+func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *types.NookMuxError {
 	c.Set("original_model", modelName) // for retry
 	if channel == nil {
 		return types.NewError(errors.New("channel is nil"), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())

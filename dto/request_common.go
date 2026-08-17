@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/NookMux/NookMux/types"
+	"github.com/gin-gonic/gin"
 )
 
 type Request interface {

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/NookMux/NookMux/common"
 	"github.com/tiktoken-go/tokenizer"
 	"github.com/tiktoken-go/tokenizer/codec"
-	"github.com/NookMux/NookMux/common"
 )
 
 const maxTokenEncoderCacheSize = 64

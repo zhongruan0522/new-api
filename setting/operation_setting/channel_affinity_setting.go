@@ -26,18 +26,22 @@ type ChannelAffinityRule struct {
 }
 
 type ChannelAffinitySetting struct {
-	Enabled           bool                  `json:"enabled"`
-	SwitchOnSuccess   bool                  `json:"switch_on_success"`
-	MaxEntries        int                   `json:"max_entries"`
-	DefaultTTLSeconds int                   `json:"default_ttl_seconds"`
-	Rules             []ChannelAffinityRule `json:"rules"`
+	Enabled         bool `json:"enabled"`
+	SwitchOnSuccess bool `json:"switch_on_success"`
+	// KeepOnChannelDisabled 控制亲和渠道被禁用（或对当前分组/模型不可用）时是否保留粘性条目：
+	// false（默认）时删除该条目并改选其他渠道；true 时保留条目等待渠道恢复。
+	KeepOnChannelDisabled bool                  `json:"keep_on_channel_disabled"`
+	MaxEntries            int                   `json:"max_entries"`
+	DefaultTTLSeconds     int                   `json:"default_ttl_seconds"`
+	Rules                 []ChannelAffinityRule `json:"rules"`
 }
 
 var channelAffinitySetting = ChannelAffinitySetting{
-	Enabled:           true,
-	SwitchOnSuccess:   true,
-	MaxEntries:        100_000,
-	DefaultTTLSeconds: 3600,
+	Enabled:               true,
+	SwitchOnSuccess:       true,
+	KeepOnChannelDisabled: false,
+	MaxEntries:            100_000,
+	DefaultTTLSeconds:     3600,
 	Rules: []ChannelAffinityRule{
 		{
 			Name:       "codex trace",

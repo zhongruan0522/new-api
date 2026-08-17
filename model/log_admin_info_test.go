@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NookMux/NookMux/common"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
-	"github.com/NookMux/NookMux/common"
 	"gorm.io/gorm"
 )
 

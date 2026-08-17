@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
+func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
 	info.InitChannelMeta(c)
 	if info.RelayMode == relayconstant.RelayModeResponsesCompact {
 		switch info.ApiType {

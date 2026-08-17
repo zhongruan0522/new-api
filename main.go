@@ -10,10 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/controller"
 	"github.com/NookMux/NookMux/i18n"
@@ -25,6 +21,10 @@ import (
 	"github.com/NookMux/NookMux/setting/dashboard_setting"
 	_ "github.com/NookMux/NookMux/setting/performance_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 //go:embed web/dist
@@ -131,7 +131,7 @@ func main() {
 		common.SysLog(fmt.Sprintf("panic detected: %v", err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{
-				"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/Calcium-Ion/new-api", err),
+				"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/NookMux/NookMux", err),
 				"type":    "new_api_panic",
 			},
 		})
@@ -139,7 +139,6 @@ func main() {
 	// This will cause SSE not to work!!!
 	//server.Use(gzip.Gzip(gzip.DefaultCompression))
 	server.Use(middleware.RequestId())
-	server.Use(middleware.PoweredBy())
 	middleware.SetUpLogger(server)
 	// Initialize session store
 	store := cookie.NewStore([]byte(common.SessionSecret))
@@ -147,7 +146,8 @@ func main() {
 		Path:     "/",
 		MaxAge:   2592000, // 30 days
 		HttpOnly: true,
-		Secure:   false,
+		// HTTPS 部署必须启用 COOKIE_SECURE，防止 30 天长期会话 cookie 经明文 HTTP 信道泄露
+		Secure:   common.GetEnvOrDefaultBool("COOKIE_SECURE", false),
 		SameSite: http.SameSiteStrictMode,
 	})
 	server.Use(sessions.Sessions("session", store))
