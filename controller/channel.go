@@ -549,6 +549,10 @@ func SearchChannels(c *gin.Context) {
 	if pageSize <= 0 {
 		pageSize = 20
 	}
+	// offset 必须基于与 SQL LIMIT 相同的有效 page size 计算，
+	// 否则 page_size 超上限时（如 501）LIMIT 截断到 500 而 offset 按原始值
+	// 跳过，导致条目丢失。
+	pageSize = model.NormalizeChannelSearchLimit(pageSize)
 
 	channelData := make([]*model.Channel, 0)
 	// 非 tag_mode 分支的 type_counts 聚合与 status/type 过滤均下推到 SQL，

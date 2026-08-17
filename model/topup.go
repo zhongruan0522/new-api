@@ -143,7 +143,10 @@ func Recharge(referenceId string, customerId string) (err error) {
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where(refCol+" = ?", referenceId).First(topUp).Error
 		if err != nil {
-			return errors.New("充值订单不存在")
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrTopUpNotFound
+			}
+			return err
 		}
 
 		if err := validateTopUpCallback(topUp, PaymentProviderStripe, PaymentMethodStripe, ""); err != nil {
@@ -177,9 +180,10 @@ func Recharge(referenceId string, customerId string) (err error) {
 
 	if err != nil {
 		common.SysError("topup failed: " + err.Error())
-		// 保留 ErrTopUpStatusInvalid 的 sentinel 类型，供 Stripe webhook 侧
-		// errors.Is 判断"订单已处理（重复投递）"与真实入账失败。
-		if errors.Is(err, ErrTopUpStatusInvalid) {
+		// 保留 sentinel 类型，供 Stripe webhook 侧 errors.Is 区分：
+		// ErrTopUpStatusInvalid = 订单已处理（重复投递）；
+		// ErrTopUpNotFound = 订单不存在（重投也无法出现，属终态）。
+		if errors.Is(err, ErrTopUpStatusInvalid) || errors.Is(err, ErrTopUpNotFound) {
 			return err
 		}
 		return errors.New("充值失败，请稍后重试")
