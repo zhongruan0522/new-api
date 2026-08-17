@@ -103,6 +103,17 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		// 检查当前数据是否包含 completed 状态和 usage 信息
 		var streamResponse dto.ResponsesStreamResponse
 		if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil {
+			// 上游在 HTTP 200 流内返回错误载荷：官方 type:"error" 事件、
+			// 部分网关转成 200 下发的裸 {"error":{...}} 帧、response.failed
+			// 事件（错误可能在顶层或 response 内）。识别后保留真实上游错误，
+			// 避免计费阶段因 totalTokens=0 被误记为
+			// 「502 上游没有返回计费信息」。
+			if streamApiErr == nil {
+				if oaiError := streamResponse.GetOpenAIError(); oaiError != nil {
+					streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+					return false
+				}
+			}
 			helper.MaskResponsesStreamResponseModel(&streamResponse, info)
 			maskedData = string(helper.MaskResponseEventModelJSON(common.StringToByteSlice(data), info))
 			switch streamResponse.Type {
@@ -118,16 +129,6 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 						c.Set("image_generation_call", true)
 						c.Set("image_generation_call_quality", streamResponse.Response.GetQuality())
 						c.Set("image_generation_call_size", streamResponse.Response.GetSize())
-					}
-				}
-			case "response.failed":
-				// 上游在 HTTP 200 流内返回 failed 事件（部分网关会把 429/5xx 转成
-				// 200 + response.failed 下发）：保留真实上游错误，避免计费阶段因
-				// totalTokens=0 被误记为「502 上游没有返回计费信息」。
-				if streamResponse.Response != nil {
-					if oaiError := streamResponse.Response.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-						streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
-						return false
 					}
 				}
 			case "response.output_text.delta":
