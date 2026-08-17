@@ -31,7 +31,7 @@
 
 ## 初始化
 
-`i18n.Init()` 在 `main.go` 启动时加载 embed 的 yaml 并把 `common.TranslateMessage`
+`i18n.Init()` 在 `internal/app/bootstrap.go` 启动时加载 embed 的 yaml 并把 `common.TranslateMessage`
 注入为 `i18n.T`。新增翻译文件需在 `Init` 中注册。
 
 ## 验证

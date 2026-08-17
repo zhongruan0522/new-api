@@ -1,7 +1,6 @@
 package router
 
 import (
-	"embed"
 	"errors"
 	"io"
 	"io/fs"
@@ -20,12 +19,12 @@ import (
 )
 
 type WebAssets struct {
-	BuildFS   embed.FS
+	BuildFS   fs.FS
 	IndexPage []byte
 }
 
 func SetWebRouter(router *gin.Engine, assets WebAssets) {
-	webFS := common.EmbedFolder(assets.BuildFS, "web/dist")
+	webFS := common.EmbedFolder(assets.BuildFS, "dist")
 
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
@@ -52,8 +51,8 @@ func staticAssetCache() gin.HandlerFunc {
 	}
 }
 
-func precompressedStaticAssets(buildFS embed.FS) gin.HandlerFunc {
-	return precompressedStaticAssetsFS(buildFS, "web/dist")
+func precompressedStaticAssets(buildFS fs.FS) gin.HandlerFunc {
+	return precompressedStaticAssetsFS(buildFS, "dist")
 }
 
 func precompressedStaticAssetsFS(buildFS fs.FS, root string) gin.HandlerFunc {

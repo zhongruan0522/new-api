@@ -6,7 +6,7 @@
 
 - `SetWebRouter` 使用 `WebAssets` 和 `common.EmbedFolder` 服务 `web/dist`。
 - `NoRoute` 中 `/v1`、`/api`、`/assets` 仍应返回 relay/API 404，不要误返回前端 HTML。
-- 分析脚本注入在 `main.go` 中直接修改 `indexPage` 字节。
+- 分析脚本注入在 `internal/app/analytics.go` 中处理，修改的是 `internal/app/webdist` 提供的 index 字节副本。
 - `FRONTEND_BASE_URL` 只在非 master 节点生效，保持现有重定向行为。
 
 ## 路由边界

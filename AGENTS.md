@@ -20,6 +20,12 @@ service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.m
 
 - [web/AGENTS.md](web/AGENTS.md)
 
+启动与装配:
+
+- [cmd/AGENTS.md](cmd/AGENTS.md)
+- [cmd/server/AGENTS.md](cmd/server/AGENTS.md)
+- [internal/app/AGENTS.md](internal/app/AGENTS.md)
+
 后端 Go 包:
 
 - [common/AGENTS.md](common/AGENTS.md)
@@ -45,7 +51,8 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 
 主要结构:
 
-- `main.go`: 启动、资源初始化、前端 embed 注入。
+- `cmd/server/`: 进程入口，只处理退出码并调用 `internal/app.Run()`。
+- `internal/app/`: 启动资源初始化、Gin 装配、路由挂载和分析脚本注入。
 - `router/`: API、relay、dashboard、web 静态路由。
 - `controller/`: HTTP 边界、请求校验、响应组织。
 - `middleware/`: 认证、限速、日志、分发、安全校验。
@@ -55,7 +62,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `common/`: JSON、缓存、环境变量、静态文件服务、安全工具。
 - `relay/`: AI 请求中继、协议转换、供应商适配。
 - `i18n/`: 后端 API 响应消息多语言翻译。
-- `web/`: 前端 UI，React 19 + TypeScript + Rsbuild。
+- `web/`: 前端 UI，React 19 + TypeScript + Rsbuild；`web/embed.go` 是 `web/dist` 的 Go embed 声明载体，经 `internal/app/webdist` 暴露给启动装配层。
 
 ## 全局工作规则
 
@@ -94,7 +101,7 @@ setting、前端常量和 i18n。
 
 - `go test ./...`
 - `go test ./relay/... ./controller/... ./service/...`
-- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server`
 
 ## 前端规则
 

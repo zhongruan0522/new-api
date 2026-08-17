@@ -26,7 +26,7 @@ new-api 长期跟随上游 one-api 衍生分支合并，结构上形成了「扁
 | 层级 | 来源 | 对本 PRD 的约束 |
 |---|---|---|
 | **官方指南（go.dev）** | [Organizing a Go module](https://go.dev/doc/modules/layout)「Server project」 | server 是自包含二进制、通常无对外导出包 → 实现逻辑进 `internal/`、命令进 `cmd/`。本 PRD 阶段 1/3 与此一致 |
-| **官方指南（go.dev）** | 同文「Basic command」 | 单命令仓库 `main.go` 放根目录是官方认可的写法。本 PRD 拆 `cmd/server` **超出官方建议**，属自加约束，动机是给 embed 载体（`internal/app/webdist/`）找合法落点并统一装配层 |
+| **官方指南（go.dev）** | 同文「Basic command」 | 单命令仓库 `main.go` 放根目录是官方认可的写法。本 PRD 拆 `cmd/server` **超出官方建议**，属自加约束，动机是统一装配层并给前端嵌入资产提供 `internal/app/webdist/` 门面 |
 | **官方风格（Google Style Guide，非 Go 团队规范）** | [Go Style Best Practices](https://google.github.io/styleguide/go/best-practices)「Util Packages」「Package Size」 | 包名不应叫 `util`/`helper`/`common`——拆解 `common/` 的直接依据；包内文件平铺本身合规（`net/http`、`os` 即示范），问题是单包过大、未按资源拆 |
 | **社区惯例（非官方）** | golang-standards/project-layout | `cmd/`+`internal/`+`pkg/` 三件套的流行出处，其 README 自声明非官方标准。仅作参考，不单独作为决策依据 |
 
@@ -63,7 +63,7 @@ new-api/
 │   │   ├── server.go                ← gin 装配 + 路由挂载
 │   │   ├── analytics.go             ← Umami / GA 注入
 │   │   ├── env.go                   ← 原 common/init.go + env.go
-│   │   └── webdist/                 ← //go:embed web/dist 的载体
+│   │   └── webdist/                 ← 前端嵌入资产门面；实际声明邻近 web/dist
 │   ├── httpapi/                     ← 原 router + middleware + controller
 │   │   ├── router/
 │   │   ├── middleware/
@@ -132,7 +132,7 @@ new-api/
 ├── pkg/                             ← 可独立复用的库（无业务依赖，进入前须核查 import）
 │   ├── cachex/                      ← 不动
 │   └── jsonx/                       ← common/json.go
-├── web/                             ← 前端不动
+├── web/                             ← 前端源码不动；embed.go 承载 web/dist 嵌入声明
 ├── docs/
 └── scripts/
 ```
@@ -154,11 +154,13 @@ cmd/server/main.go             ← 只 os.Exit + 调 app.Run
 internal/app/bootstrap.go      ← 原 InitResources() 包一层
 internal/app/server.go         ← gin 装配 + router.SetRouter
 internal/app/analytics.go      ← InjectUmamiAnalytics / InjectGoogleAnalytics
+web/embed.go                   ← //go:embed dist / dist/index.html 的实际声明载体
+internal/app/webdist/           ← 对 app 层暴露内部 webdist API 的门面
 ```
 
-`main.go` 里的 `model.InitDB` / `common.InitRedisClient` / `i18n.Init` 等调用原地不动，只是被 `app.Bootstrap()` 包了一层。`//go:embed web/dist` 移到 `internal/app/webdist/`，因为 embed 不支持 `..` 相对路径。
+`main.go` 里的 `model.InitDB` / `common.InitRedisClient` / `i18n.Init` 等调用原地不动，只是被 `app.Bootstrap()` 包了一层。Go 的 `//go:embed` 不支持 `..` 相对路径，且软链接会被视为 irregular file，因此实际 directive 必须邻近 `web/dist` 放在 `web/embed.go`；`internal/app/webdist/` 作为门面保持启动装配 import 不越过资产细节。
 
-**只动 main.go**，业务包路径不变。
+**只拆入口与装配**，业务包路径不变。为承接 `web/embed.go` 中的 `dist` 前缀，`router.WebAssets.BuildFS` 与 `common.EmbedFolder` 仅从具体 `embed.FS` 放宽为 `fs.FS`，静态资源读取路径同步从 `web/dist` 改为 `dist`。
 
 注意：`web/dist` 本身不移动。Dockerfile 第 16 行 `test -f web/dist/index.html` 依赖该目录原地存在；embed 载体迁移只改 Go 侧声明位置，不影响构建产物检查。
 
@@ -435,7 +437,7 @@ internal/relay/common/billing.go ← 计费在 relay 侧的入口（待消解）
 | 风险 | 影响 | 缓解 |
 |---|---|---|
 | `common/` 拆解触发全项目 import 变更 | 编译大面积失败 | 阶段 4 拆成多个小 PR；type alias 兜底，旧 import 不全断 |
-| `internal/` 平移后 embed 路径失效 | `web/dist` 无法嵌入 | 阶段 1 把 embed 移到 `internal/app/webdist/`，避免 `..` 路径；`web/dist` 目录本身不移动（Dockerfile 依赖其原地存在） |
+| `internal/` 平移后 embed 路径失效 | `web/dist` 无法嵌入 | 阶段 1 把实际 embed 声明放在邻近 `web/dist` 的 `web/embed.go`，并用 `internal/app/webdist/` 门面隔离启动装配；`web/dist` 目录本身不移动（Dockerfile 依赖其原地存在） |
 | 一阶段一 PR 之间互相依赖卡死 | 中途无法编译 | 严格按建议顺序（1→2→3→5.1→5.2→5.3→5.4→4→5.5→6）推，每阶段独立可编译 |
 | AGENTS.md 引用旧路径 | AI 协作 / 人工 review 引用错位置 | 每阶段同步更新对应 AGENTS.md 的路径引用 |
 | module path 改动破坏外部引用 | Docker / CI / heroku buildpack 失效 | 本 PRD **不改** module path，只增加 `internal/` 前缀；module path 改名留到结构稳定后单独 commit |
