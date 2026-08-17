@@ -145,15 +145,6 @@ new-api/
 
 迁移按 6 个阶段推进，建议执行顺序：阶段 1 → 2 → 3 → 5.1 → 5.2 → 5.3 → 5.4 → 4 → 5.5 → 6。把 `common/` 拆解（阶段 4）放到阶段 5 之后，是因为阶段 5 完成后 `common/` 剩余文件很多可以就近归位，减少阶段 4 工作量。
 
-### 阶段 0：准备（不动业务）
-
-- [ ] 建立 `docs/migration-target-layout.md`，固化上面目标树作为唯一真相源。
-- [ ] 跑一遍 `go build ./... && go test ./...`，截 baseline，标记 skip / flaky 的测试。
-- [ ] 统一文件命名：`controller/channel-billing.go` 等连字符文件名改成下划线；`channel_test_handler.go` 与 `channel_test.go` 容易混淆，重命名清理。
-- [ ] 在 `docs/` 下建迁移清单（迁移单元 → 目标路径 → 验证命令）。
-
-**验证**：`go build ./... && go test ./...` 与 baseline 一致。
-
 ### 阶段 1：入口和装配外移（低风险）
 
 把根 `main.go` 拆成：
