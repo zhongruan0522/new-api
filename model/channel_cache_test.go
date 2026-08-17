@@ -349,3 +349,149 @@ func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettin
 		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
 	}
 }
+
+func TestGetRandomSatisfiedChannelRetryFallsBackToOnlyChannel(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	channel := createChannelCacheTestChannel(t, Channel{})
+	InitChannelCache()
+
+	for retry := 0; retry <= 20; retry++ {
+		excludeChannelID := 0
+		if retry%2 == 1 {
+			excludeChannelID = channel.Id
+		}
+		selected, err := GetRandomSatisfiedChannelForRetry(
+			"Coding",
+			"claude-haiku-4-5-20251001",
+			retry/2,
+			-1,
+			excludeChannelID,
+			true,
+		)
+		if err != nil {
+			t.Fatalf("retry %d channel selection failed: %v", retry, err)
+		}
+		if selected == nil || selected.Id != channel.Id {
+			t.Fatalf("retry %d selected channel = %+v, want the only eligible channel %d", retry, selected, channel.Id)
+		}
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryFallsBackToOnlyChannelWithoutCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	common.MemoryCacheEnabled = false
+
+	channel := createChannelCacheTestChannel(t, Channel{})
+
+	for retry := 0; retry <= 20; retry++ {
+		excludeChannelID := 0
+		if retry%2 == 1 {
+			excludeChannelID = channel.Id
+		}
+		selected, err := GetRandomSatisfiedChannelForRetry(
+			"Coding",
+			"claude-haiku-4-5-20251001",
+			retry/2,
+			-1,
+			excludeChannelID,
+			true,
+		)
+		if err != nil {
+			t.Fatalf("retry %d channel selection failed: %v", retry, err)
+		}
+		if selected == nil || selected.Id != channel.Id {
+			t.Fatalf("retry %d selected channel = %+v, want the only eligible channel %d", retry, selected, channel.Id)
+		}
+	}
+}
+
+func TestGetRandomSatisfiedChannelHardExclusionDoesNotFallback(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			channel := createChannelCacheTestChannel(t, Channel{})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannel(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				channel.Id,
+			)
+			if err != nil {
+				t.Fatalf("hard-exclusion selection failed: %v", err)
+			}
+			if selected != nil {
+				t.Fatalf("hard-exclusion selected channel = %+v, want nil", selected)
+			}
+		})
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryPrefersAlternativeChannel(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			failed := createChannelCacheTestChannel(t, Channel{Name: "failed"})
+			alternative := createChannelCacheTestChannel(t, Channel{Name: "alternative"})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannelForRetry(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				failed.Id,
+				true,
+			)
+			if err != nil {
+				t.Fatalf("retry channel selection failed: %v", err)
+			}
+			if selected == nil || selected.Id != alternative.Id {
+				t.Fatalf("retry selected channel = %+v, want alternative channel %d", selected, alternative.Id)
+			}
+		})
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryPrefersLowerPriorityBeforeFailedChannel(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			highPriority := int64(10)
+			lowPriority := int64(0)
+			failed := createChannelCacheTestChannel(t, Channel{Name: "failed-high", Priority: &highPriority})
+			fallback := createChannelCacheTestChannel(t, Channel{Name: "fallback-low", Priority: &lowPriority})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannelForRetry(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				failed.Id,
+				true,
+			)
+			if err != nil {
+				t.Fatalf("retry channel selection failed: %v", err)
+			}
+			if selected == nil || selected.Id != fallback.Id {
+				t.Fatalf("retry selected channel = %+v, want lower-priority channel %d", selected, fallback.Id)
+			}
+		})
+	}
+}
