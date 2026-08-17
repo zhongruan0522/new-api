@@ -88,6 +88,68 @@ func TestOaiResponsesStreamHandlerReturnsTopLevelErrorEvent(t *testing.T) {
 	assert.Equal(t, http.StatusTooManyRequests, apiErr.StatusCode)
 }
 
+// 回归保护（Chat 流）：内容携带 error 关键词不得被错误帧检测误报。
+// Chat 流用 strings.Contains(data, `"error"`) 预筛——正常内容中的
+// "error" 若带引号，经上游 JSON 序列化必然转义为 \"error\"，子串不匹配；
+// 若上游发出未转义裸引号（无效 JSON），unmarshal 失败也不会进错误分支。
+func TestOaiStreamHandlerErrorKeywordInContentIsNotError(t *testing.T) {
+	cases := []struct {
+		name  string
+		frame string
+	}{
+		{"delta contains error word", `{"id":"c1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"Fix the error and retry. Error handling matters."},"finish_reason":null}]}`},
+		{"delta is literal escaped error json", `{"id":"c1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"{\"error\":{\"message\":\"Credit balance exhausted\",\"code\":\"insufficient_quota\"}}"},"finish_reason":null}]}`},
+		{"function arguments reference error codes", `{"id":"c1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"retry\":\"rate_limit_error\"}"}}]},"finish_reason":null}]}`},
+		{"model name contains error", `{"id":"c1","object":"chat.completion.chunk","model":"my-error-fix-model","choices":[{"index":0,"delta":{"content":"hi"},"finish_reason":null}]}`},
+		{"normal usage final frame", `{"id":"c1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newStreamErrorTestContext(t, "/v1/chat/completions")
+			info := testRelayInfo("alias-model", "real-model")
+			info.RelayMode = 1 // relayconstant.RelayModeChatCompletions
+			resp := newSSEStreamResponse(tc.frame)
+
+			usage, apiErr := OaiStreamHandler(c, info, resp)
+			assert.Nil(t, apiErr, "normal content mentioning error must not be misdetected")
+			require.NotNil(t, usage)
+		})
+	}
+}
+
+// 上游发出未转义裸 "error" 引号（无效 JSON）时，Contains 预筛命中但
+// unmarshal 失败，同样不误报。
+func TestOaiStreamHandlerMalformedJSONWithRawErrorWordIsNotError(t *testing.T) {
+	c, _ := newStreamErrorTestContext(t, "/v1/chat/completions")
+	info := testRelayInfo("alias-model", "real-model")
+	info.RelayMode = 1
+
+	resp := newSSEStreamResponse(`{"id":"c1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"say "error" out loud"},"finish_reason":null}]}`)
+
+	usage, apiErr := OaiStreamHandler(c, info, resp)
+	assert.Nil(t, apiErr, "malformed JSON with raw error word must not be misdetected")
+	require.NotNil(t, usage)
+}
+
+// 非流式（Chat）：content 含转义 error JSON 字符串不得误报。
+func TestOpenaiHandlerErrorKeywordInContentIsNotError(t *testing.T) {
+	c, _ := newStreamErrorTestContext(t, "/v1/chat/completions")
+	info := testRelayInfo("alias-model", "real-model")
+	info.RelayMode = 1
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"id":"c1","object":"chat.completion","model":"real-model","choices":[{"index":0,"message":{"role":"assistant","content":"The API returned {\"error\":{\"message\":\"Credit balance exhausted\"}} which means quota is exhausted"},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}`)),
+	}
+
+	usage, apiErr := OpenaiHandler(c, info, resp)
+	assert.Nil(t, apiErr, "content with escaped error json must not be misdetected")
+	require.NotNil(t, usage)
+	assert.Equal(t, 15, usage.TotalTokens)
+}
+
 // 部分网关把 429/5xx 转成 HTTP 200 + 裸 {"error":{...}} 帧下发（无 type 字段）。
 func TestOaiResponsesStreamHandlerReturnsBareErrorFrame(t *testing.T) {
 	c, _ := newStreamErrorTestContext(t, "/v1/responses")
@@ -160,6 +222,38 @@ func TestOaiStreamHandlerNormalUsageStillWorks(t *testing.T) {
 	assert.Nil(t, apiErr, "normal stream should not be misdetected as error")
 	require.NotNil(t, usage)
 	assert.Equal(t, 15, usage.TotalTokens)
+}
+
+// 回归保护：正常输出内容携带 error 关键词不得被统一错误检测误报。
+// 错误识别基于 JSON key（顶层 error 字段 / type:"error" 事件的平铺
+// message+code / response.failed 的 status），文本值只落在 delta/text
+// 等字段，不会触发检测。
+func TestOaiResponsesStreamHandlerErrorKeywordInContentIsNotError(t *testing.T) {	cases := []struct {
+		name  string
+		frame string
+	}{
+		{"delta contains error word", `{"type":"response.output_text.delta","delta":"Error handling is important. Fix the error and retry."}`},
+		{"delta is literal 429 message", `{"type":"response.output_text.delta","delta":"Credit balance exhausted. Organization spend limit reached."}`},
+		{"delta is literal error json string", `{"type":"response.output_text.delta","delta":"{\"error\":{\"message\":\"Credit balance exhausted\",\"code\":\"insufficient_quota\"}}"}`},
+		{"refusal delta mentions error", `{"type":"response.refusal.delta","delta":"I cannot help with that error"}`},
+		{"function arguments reference error codes", `{"type":"response.function_call_arguments.delta","delta":"{\"retry_on\":\"rate_limit_error\",\"code\":\"insufficient_quota\"}"}`},
+		{"completed message item", `{"type":"response.output_item.done","output_index":0,"item":{"type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":"error text here"}]}}`},
+		{"incomplete with usage", `{"type":"response.incomplete","response":{"id":"r1","status":"incomplete","usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15}}}`},
+		{"annotation url contains error", `{"type":"response.output_text.annotation.added","annotation":{"type":"url_citation","url":"https://example.com/error-docs"}}`},
+		{"reasoning summary mentions error", `{"type":"response.reasoning_summary_text.delta","delta":"thinking about the error message"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newStreamErrorTestContext(t, "/v1/responses")
+			info := testRelayInfo("alias-model", "real-model")
+			resp := newSSEStreamResponse(tc.frame)
+
+			usage, apiErr := OaiResponsesStreamHandler(c, info, resp)
+			assert.Nil(t, apiErr, "normal content mentioning error must not be misdetected")
+			require.NotNil(t, usage)
+		})
+	}
 }
 
 // 部分上游错误载荷只有 message 没有 type（OpenAI 规范中 type 可选），
