@@ -104,13 +104,12 @@ function renderLimitedItems(
 }
 
 /**
- * Read-only value cell for tag aggregate rows; null means children differ.
+ * Read-only cell for tag aggregate rows — priority/weight always render '-'
+ * since they are not editable at the aggregate level.
  */
-function TagAggregateValue({ value }: { value: number | null }) {
+function TagAggregateValue() {
   return (
-    <span className='text-muted-foreground font-mono text-sm tabular-nums'>
-      {value === null ? '-' : value}
-    </span>
+    <span className='text-muted-foreground font-mono text-sm tabular-nums'>-</span>
   )
 }
 
@@ -123,7 +122,7 @@ function PriorityCell({ channel }: { channel: Channel }) {
 
   // Tag aggregate row - read-only, edit channels individually
   if (isTagAggregateRow(channel)) {
-    return <TagAggregateValue value={priority ?? null} />
+    return <TagAggregateValue />
   }
 
   // Regular channel row - editable
@@ -147,7 +146,7 @@ function WeightCell({ channel }: { channel: Channel }) {
 
   // Tag aggregate row - read-only, edit channels individually
   if (isTagAggregateRow(channel)) {
-    return <TagAggregateValue value={weight ?? null} />
+    return <TagAggregateValue />
   }
 
   // Regular channel row - editable
