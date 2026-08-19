@@ -28,6 +28,7 @@ service 的逻辑时，同时阅读 `internal/controller/AGENTS.md` 和 `interna
 
 后端 Go 包:
 
+- [internal/domain/AGENTS.md](internal/domain/AGENTS.md)
 - [internal/common/AGENTS.md](internal/common/AGENTS.md)
 - [internal/router/AGENTS.md](internal/router/AGENTS.md)
 - [internal/controller/AGENTS.md](internal/controller/AGENTS.md)
@@ -62,7 +63,8 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
 - `internal/common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
 - `internal/relay/`: AI 请求中继、协议转换、供应商适配。
-- `internal/oauth/`、`internal/dto/`、`internal/types/`、`internal/constant/`: OAuth 供应商、协议 DTO、共享类型、全局常量。
+- `internal/domain/`: 领域契约层（阶段 5.1 落地）：`channel/`（含渠道域常量 `constant/`）、`billing/`（计费契约）、`shared/`（原 `dto/`+`types/` 合并的过渡收容包，只出不进）。
+- `internal/oauth/`、`internal/constant/`: OAuth 供应商、跨领域全局常量（渠道域常量已迁 `domain/channel/constant/`，`FinishReason`/`RelayFormat` 已迁 `relay/constant/`）。
 - `internal/i18n/`: 后端 API 响应消息多语言翻译。
 - `internal/infra/log/`: 日志工具（原 `logger/`）。
 - `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。

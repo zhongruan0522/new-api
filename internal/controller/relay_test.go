@@ -6,7 +6,8 @@ import (
 
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +16,7 @@ func TestShouldRetryNativeEmptyUsageError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/", nil)
-	apiErr := service.NewEmptyUsageRetryError(c, &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI}})
+	apiErr := service.NewEmptyUsageRetryError(c, &relaycommon.RelayInfo{RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAI}})
 
 	if !shouldRetry(c, apiErr, 1) {
 		t.Fatal("expected native empty usage error to enter automatic retry")

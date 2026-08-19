@@ -6,35 +6,35 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
 func TestConvertClaudeRequestToResponsesUpstreamUsesSharedRules(t *testing.T) {
 	info := &relaycommon.RelayInfo{
-		RelayFormat:                types.RelayFormatClaude,
+		RelayFormat:                relayconstant.RelayFormatClaude,
 		RelayMode:                  relayconstant.RelayModeChatCompletions,
-		RequestConversionChain:     []types.RelayFormat{types.RelayFormatClaude},
+		RequestConversionChain:     []relayconstant.RelayFormat{relayconstant.RelayFormatClaude},
 		ClaudeConvertInfo:          &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone},
 		ShouldIncludeUsage:         false,
 		IsStream:                   true,
 		RequestURLPath:             "/v1/messages",
 		OpenAIResponsesToolContext: nil,
 		ChannelMeta: &relaycommon.ChannelMeta{
-			ChannelSetting:       dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIResponses},
+			ChannelSetting:       shared.ChannelSettings{OpenAIWireAPI: shared.OpenAIWireAPIResponses},
 			SupportStreamOptions: true,
 			UpstreamModelName:    "gpt-5",
 		},
 	}
-	request := &dto.ClaudeRequest{
+	request := &shared.ClaudeRequest{
 		Model:     "gpt-5",
 		MaxTokens: 256,
 		Stream:    true,
-		Tools: []any{dto.Tool{
+		Tools: []any{shared.Tool{
 			Name:        "weather",
 			Description: "Get weather",
 			InputSchema: map[string]interface{}{
@@ -44,7 +44,7 @@ func TestConvertClaudeRequestToResponsesUpstreamUsesSharedRules(t *testing.T) {
 				},
 			},
 		}},
-		Messages: []dto.ClaudeMessage{{
+		Messages: []shared.ClaudeMessage{{
 			Role:    "user",
 			Content: "weather in Shanghai?",
 		}},
@@ -54,9 +54,9 @@ func TestConvertClaudeRequestToResponsesUpstreamUsesSharedRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConvertClaudeRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.OpenAIResponsesRequest)
+	converted, ok := convertedAny.(*shared.OpenAIResponsesRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.OpenAIResponsesRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.OpenAIResponsesRequest", convertedAny)
 	}
 	if info.RelayMode != relayconstant.RelayModeResponses || info.RequestURLPath != "/v1/responses" {
 		t.Fatalf("upstream mode/path = %d/%q, want responses /v1/responses", info.RelayMode, info.RequestURLPath)
@@ -67,7 +67,7 @@ func TestConvertClaudeRequestToResponsesUpstreamUsesSharedRules(t *testing.T) {
 	if len(converted.Tools) == 0 {
 		t.Fatal("converted responses tools are empty")
 	}
-	wantChain := []types.RelayFormat{types.RelayFormatClaude, types.RelayFormatOpenAI, types.RelayFormatOpenAIResponses}
+	wantChain := []relayconstant.RelayFormat{relayconstant.RelayFormatClaude, relayconstant.RelayFormatOpenAI, relayconstant.RelayFormatOpenAIResponses}
 	if len(info.RequestConversionChain) != len(wantChain) {
 		t.Fatalf("RequestConversionChain = %#v, want %#v", info.RequestConversionChain, wantChain)
 	}
@@ -79,18 +79,18 @@ func TestConvertClaudeRequestToResponsesUpstreamUsesSharedRules(t *testing.T) {
 }
 
 func TestConvertResponsesBodyToClaudeBodyPreservesTextToolAndUsage(t *testing.T) {
-	body, err := convertResponsesBodyToClaudeBody(&dto.OpenAIResponsesResponse{
+	body, err := convertResponsesBodyToClaudeBody(&shared.OpenAIResponsesResponse{
 		ID:        "resp_1",
 		Model:     "gpt-5",
 		CreatedAt: 1700000000,
 		Status:    "completed",
-		Output: []dto.ResponsesOutput{
+		Output: []shared.ResponsesOutput{
 			{
 				Type:   "message",
 				ID:     "msg_1",
 				Status: "completed",
 				Role:   "assistant",
-				Content: []dto.ResponsesOutputContent{{
+				Content: []shared.ResponsesOutputContent{{
 					Type: "output_text",
 					Text: "hello",
 				}},
@@ -104,17 +104,17 @@ func TestConvertResponsesBodyToClaudeBodyPreservesTextToolAndUsage(t *testing.T)
 				Arguments: `{"city":"Shanghai"}`,
 			},
 		},
-		Usage: &dto.Usage{
+		Usage: &shared.Usage{
 			InputTokens:  10,
 			OutputTokens: 4,
 			TotalTokens:  14,
 		},
-	}, &dto.Usage{PromptTokens: 10, CompletionTokens: 4, TotalTokens: 14}, &relaycommon.RelayInfo{})
+	}, &shared.Usage{PromptTokens: 10, CompletionTokens: 4, TotalTokens: 14}, &relaycommon.RelayInfo{})
 	if err != nil {
 		t.Fatalf("convertResponsesBodyToClaudeBody error = %v", err)
 	}
 
-	var got dto.ClaudeResponse
+	var got shared.ClaudeResponse
 	if err := jsonx.Unmarshal(body, &got); err != nil {
 		t.Fatalf("unmarshal Claude response error = %v", err)
 	}
@@ -149,15 +149,15 @@ func TestWriteResponsesStreamAsClaudeEmitsClaudeEvents(t *testing.T) {
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
 	info := &relaycommon.RelayInfo{
-		RelayFormat: types.RelayFormatClaude,
+		RelayFormat: relayconstant.RelayFormatClaude,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "gpt-5"},
 	}
 	converter := relaycommon.NewResponsesToChatStreamConverter(false)
 
-	textEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	textEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:  "response.output_text.delta",
 		Delta: "hello",
-		Response: &dto.OpenAIResponsesResponse{
+		Response: &shared.OpenAIResponsesResponse{
 			ID:        "resp_1",
 			Model:     "gpt-5",
 			CreatedAt: 1700000000,
@@ -170,14 +170,14 @@ func TestWriteResponsesStreamAsClaudeEmitsClaudeEvents(t *testing.T) {
 		t.Fatalf("write text event error = %v", err)
 	}
 
-	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.completed",
-		Response: &dto.OpenAIResponsesResponse{
+		Response: &shared.OpenAIResponsesResponse{
 			ID:        "resp_1",
 			Model:     "gpt-5",
 			CreatedAt: 1700000000,
 			Status:    "completed",
-			Usage: &dto.Usage{
+			Usage: &shared.Usage{
 				InputTokens:  10,
 				OutputTokens: 4,
 				TotalTokens:  14,

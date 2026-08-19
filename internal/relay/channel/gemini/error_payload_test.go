@@ -11,7 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +31,7 @@ func newGeminiTestInfo() *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
 		OriginModelName:   "alias-model",
 		ResponseModelName: "alias-model",
-		RelayFormat:       types.RelayFormatOpenAI,
+		RelayFormat:       relayconstant.RelayFormatOpenAI,
 		ChannelMeta: &relaycommon.ChannelMeta{
 			UpstreamModelName: "real-model",
 		},

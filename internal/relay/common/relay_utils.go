@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/constant"
-
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 )
 

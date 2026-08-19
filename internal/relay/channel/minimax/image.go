@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -35,7 +35,7 @@ type MiniMaxImageResponse struct {
 	BaseResp MiniMaxBaseResp `json:"base_resp"`
 }
 
-func oaiImage2MiniMaxImageRequest(request dto.ImageRequest) MiniMaxImageRequest {
+func oaiImage2MiniMaxImageRequest(request shared.ImageRequest) MiniMaxImageRequest {
 	responseFormat := normalizeMiniMaxResponseFormat(request.ResponseFormat)
 	minimaxRequest := MiniMaxImageRequest{
 		Model:          request.Model,
@@ -64,7 +64,7 @@ func oaiImage2MiniMaxImageRequest(request dto.ImageRequest) MiniMaxImageRequest 
 	return minimaxRequest
 }
 
-func aspectRatioFromImageRequest(request dto.ImageRequest) string {
+func aspectRatioFromImageRequest(request shared.ImageRequest) string {
 	if raw, ok := request.Extra["aspect_ratio"]; ok {
 		var aspectRatio string
 		if err := jsonx.Unmarshal(raw, &aspectRatio); err == nil && aspectRatio != "" {
@@ -149,17 +149,17 @@ func normalizeMiniMaxResponseFormat(responseFormat string) string {
 	}
 }
 
-func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycommon.RelayInfo) (*dto.ImageResponse, error) {
-	imageResponse := &dto.ImageResponse{}
+func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycommon.RelayInfo) (*shared.ImageResponse, error) {
+	imageResponse := &shared.ImageResponse{}
 	if info != nil && !info.StartTime.IsZero() {
 		imageResponse.Created = info.StartTime.Unix()
 	}
 
 	for _, imageURL := range response.Data.ImageURLs {
-		imageResponse.Data = append(imageResponse.Data, dto.ImageData{Url: imageURL})
+		imageResponse.Data = append(imageResponse.Data, shared.ImageData{Url: imageURL})
 	}
 	for _, imageBase64 := range response.Data.ImageBase64 {
-		imageResponse.Data = append(imageResponse.Data, dto.ImageData{B64Json: imageBase64})
+		imageResponse.Data = append(imageResponse.Data, shared.ImageData{B64Json: imageBase64})
 	}
 	if len(response.Metadata) > 0 {
 		metadata, err := jsonx.Marshal(response.Metadata)
@@ -172,20 +172,20 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 	return imageResponse, nil
 }
 
-func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
+func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 
 	var minimaxResponse MiniMaxImageResponse
 	if err := jsonx.Unmarshal(responseBody, &minimaxResponse); err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if minimaxResponse.BaseResp.StatusCode != 0 {
-		return nil, types.WithOpenAIError(types.OpenAIError{
+		return nil, shared.WithOpenAIError(shared.OpenAIError{
 			Message: minimaxResponse.BaseResp.StatusMsg,
 			Type:    "minimax_image_error",
 			Code:    fmt.Sprintf("%d", minimaxResponse.BaseResp.StatusCode),
@@ -194,15 +194,15 @@ func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 
 	openAIResponse, convertErr := responseMiniMax2OpenAIImage(&minimaxResponse, info)
 	if convertErr != nil {
-		return nil, types.NewError(convertErr, types.ErrorCodeBadResponseBody)
+		return nil, shared.NewError(convertErr, shared.ErrorCodeBadResponseBody)
 	}
 	jsonResponse, err := jsonx.Marshal(openAIResponse)
 	if err != nil {
-		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+		return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 
 	c.Writer.Header().Set("Content-Type", "application/json")
 	service.IOCopyBytesGracefully(c, resp, jsonResponse)
 
-	return &dto.Usage{}, nil
+	return &shared.Usage{}, nil
 }

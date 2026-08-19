@@ -8,19 +8,20 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
 type relayInfoSnapshot struct {
-	request        dto.Request
+	request        shared.Request
 	relayMode      int
-	relayFormat    types.RelayFormat
+	relayFormat    relayconstant.RelayFormat
 	requestURLPath string
 	isStream       bool
 }
@@ -76,7 +77,7 @@ func setTemporaryRequestBody(c *gin.Context, body []byte) {
 	c.Request.ContentLength = int64(len(body))
 }
 
-func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCaptureWriter, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI, opts openAIWireConversionOptions) error {
+func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCaptureWriter, upstream shared.OpenAIWireAPI, downstream shared.OpenAIWireAPI, opts openAIWireConversionOptions) error {
 	if captured == nil {
 		return fmt.Errorf("captured writer is nil")
 	}
@@ -96,10 +97,10 @@ func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCapture
 	return err
 }
 
-func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI, opts openAIWireConversionOptions) ([]byte, error) {
+func convertNonStreamBody(body []byte, upstream shared.OpenAIWireAPI, downstream shared.OpenAIWireAPI, opts openAIWireConversionOptions) ([]byte, error) {
 	switch {
-	case upstream == dto.OpenAIWireAPIResponses && downstream == dto.OpenAIWireAPIChat:
-		var resp dto.OpenAIResponsesResponse
+	case upstream == shared.OpenAIWireAPIResponses && downstream == shared.OpenAIWireAPIChat:
+		var resp shared.OpenAIResponsesResponse
 		if err := jsonx.Unmarshal(body, &resp); err != nil {
 			return nil, fmt.Errorf("unmarshal responses response failed: %w", err)
 		}
@@ -108,8 +109,8 @@ func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dt
 			return nil, err
 		}
 		return jsonx.Marshal(chatResp)
-	case upstream == dto.OpenAIWireAPIChat && downstream == dto.OpenAIWireAPIResponses:
-		var chatResp dto.OpenAITextResponse
+	case upstream == shared.OpenAIWireAPIChat && downstream == shared.OpenAIWireAPIResponses:
+		var chatResp shared.OpenAITextResponse
 		if err := jsonx.Unmarshal(body, &chatResp); err != nil {
 			return nil, fmt.Errorf("unmarshal chat completion response failed: %w", err)
 		}

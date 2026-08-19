@@ -4,20 +4,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 func TestApplyImageAutoConvertToURL_SingleUserMessage(t *testing.T) {
-	user := dto.Message{Role: "user"}
-	user.SetMediaContent([]dto.MediaContent{
-		{Type: dto.ContentTypeText, Text: "Describe these images."},
-		{Type: dto.ContentTypeImageURL, ImageUrl: &dto.MessageImageUrl{Url: "https://example.com/a.png", Detail: "high"}},
-		{Type: dto.ContentTypeImageURL, ImageUrl: &dto.MessageImageUrl{Url: "https://example.com/b.png", Detail: "high"}},
+	user := shared.Message{Role: "user"}
+	user.SetMediaContent([]shared.MediaContent{
+		{Type: shared.ContentTypeText, Text: "Describe these images."},
+		{Type: shared.ContentTypeImageURL, ImageUrl: &shared.MessageImageUrl{Url: "https://example.com/a.png", Detail: "high"}},
+		{Type: shared.ContentTypeImageURL, ImageUrl: &shared.MessageImageUrl{Url: "https://example.com/b.png", Detail: "high"}},
 	})
 
-	req := &dto.GeneralOpenAIRequest{
+	req := &shared.GeneralOpenAIRequest{
 		Model:    "deepseek-chat",
-		Messages: []dto.Message{user},
+		Messages: []shared.Message{user},
 	}
 
 	changed, err := ApplyImageAutoConvertToURL(req, nil)
@@ -44,28 +44,28 @@ func TestApplyImageAutoConvertToURL_SingleUserMessage(t *testing.T) {
 
 	// Ensure the message is now text-only.
 	for _, part := range req.Messages[0].ParseContent() {
-		if part.Type == dto.ContentTypeImageURL {
+		if part.Type == shared.ContentTypeImageURL {
 			t.Fatalf("expected image blocks to be removed, got: %+v", part)
 		}
 	}
 }
 
 func TestApplyImageAutoConvertToURL_AppendsToCorrespondingUserMessage(t *testing.T) {
-	user1 := dto.Message{Role: "user"}
-	user1.SetMediaContent([]dto.MediaContent{
-		{Type: dto.ContentTypeImageURL, ImageUrl: &dto.MessageImageUrl{Url: "https://example.com/dup.png", Detail: "high"}},
-		{Type: dto.ContentTypeImageURL, ImageUrl: &dto.MessageImageUrl{Url: "https://example.com/dup.png", Detail: "high"}},
+	user1 := shared.Message{Role: "user"}
+	user1.SetMediaContent([]shared.MediaContent{
+		{Type: shared.ContentTypeImageURL, ImageUrl: &shared.MessageImageUrl{Url: "https://example.com/dup.png", Detail: "high"}},
+		{Type: shared.ContentTypeImageURL, ImageUrl: &shared.MessageImageUrl{Url: "https://example.com/dup.png", Detail: "high"}},
 	})
 
-	assistant := dto.Message{Role: "assistant"}
+	assistant := shared.Message{Role: "assistant"}
 	assistant.SetStringContent("OK")
 
-	user2 := dto.Message{Role: "user"}
+	user2 := shared.Message{Role: "user"}
 	user2.SetStringContent("Continue.")
 
-	req := &dto.GeneralOpenAIRequest{
+	req := &shared.GeneralOpenAIRequest{
 		Model:    "deepseek-chat",
-		Messages: []dto.Message{user1, assistant, user2},
+		Messages: []shared.Message{user1, assistant, user2},
 	}
 
 	changed, err := ApplyImageAutoConvertToURL(req, nil)
@@ -102,15 +102,15 @@ func TestApplyImageAutoConvertToURL_AppendsToCorrespondingUserMessage(t *testing
 }
 
 func TestApplyImageAutoConvertToURL_VideoBlocks(t *testing.T) {
-	user := dto.Message{Role: "user"}
-	user.SetMediaContent([]dto.MediaContent{
-		{Type: dto.ContentTypeText, Text: "Describe this video."},
-		{Type: dto.ContentTypeVideoUrl, VideoUrl: &dto.MessageVideoUrl{Url: "https://example.com/a.mp4"}},
+	user := shared.Message{Role: "user"}
+	user.SetMediaContent([]shared.MediaContent{
+		{Type: shared.ContentTypeText, Text: "Describe this video."},
+		{Type: shared.ContentTypeVideoUrl, VideoUrl: &shared.MessageVideoUrl{Url: "https://example.com/a.mp4"}},
 	})
 
-	req := &dto.GeneralOpenAIRequest{
+	req := &shared.GeneralOpenAIRequest{
 		Model:    "deepseek-chat",
-		Messages: []dto.Message{user},
+		Messages: []shared.Message{user},
 	}
 
 	changed, err := ApplyImageAutoConvertToURL(req, nil)
@@ -134,7 +134,7 @@ func TestApplyImageAutoConvertToURL_VideoBlocks(t *testing.T) {
 
 	// Ensure the message is now text-only.
 	for _, part := range req.Messages[0].ParseContent() {
-		if part.Type == dto.ContentTypeVideoUrl {
+		if part.Type == shared.ContentTypeVideoUrl {
 			t.Fatalf("expected video blocks to be removed, got: %+v", part)
 		}
 	}

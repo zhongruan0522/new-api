@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -61,7 +61,7 @@ func TestConvertAudioRequest_MetadataCannotOverrideModel(t *testing.T) {
 		RelayMode:   constant.RelayModeAudioSpeech,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 	}
-	request := dto.AudioRequest{
+	request := shared.AudioRequest{
 		Model:          "tts-1-hd",
 		Input:          "hello",
 		Voice:          "alloy",
@@ -98,7 +98,7 @@ func TestConvertAudioRequest_DisabledKeepsMetadataValues(t *testing.T) {
 		RelayMode:   constant.RelayModeAudioSpeech,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 	}
-	request := dto.AudioRequest{
+	request := shared.AudioRequest{
 		Model:          "tts-1-hd",
 		Input:          "hello",
 		Voice:          "alloy",
@@ -141,7 +141,7 @@ func TestConvertAudioRequest_UserVoiceLogged(t *testing.T) {
 				RelayMode:   constant.RelayModeAudioSpeech,
 				ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-turbo"},
 			}
-			request := dto.AudioRequest{
+			request := shared.AudioRequest{
 				Model:          "tts-1-turbo",
 				Input:          "hello",
 				Voice:          "voice_2",
@@ -180,7 +180,7 @@ func TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved(t *testing.T) {
 		RelayMode:   constant.RelayModeAudioSpeech,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 	}
-	request := dto.AudioRequest{
+	request := shared.AudioRequest{
 		Model:          "tts-1-hd",
 		Input:          "hello",
 		Voice:          "alloy",
@@ -222,7 +222,7 @@ func TestConvertAudioRequest_NullAudioSettingMetadataDoesNotBypassPolicy(t *test
 		RelayMode:   constant.RelayModeAudioSpeech,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 	}
-	request := dto.AudioRequest{
+	request := shared.AudioRequest{
 		Model:          "tts-1-hd",
 		Input:          "hello",
 		Voice:          "alloy",
@@ -268,7 +268,7 @@ func TestConvertAudioRequest_NormalizesFormats(t *testing.T) {
 					RelayMode:   constant.RelayModeAudioSpeech,
 					ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 				}
-				request := dto.AudioRequest{
+				request := shared.AudioRequest{
 					Input:          "hello",
 					ResponseFormat: tc.format,
 				}
@@ -306,7 +306,7 @@ func TestConvertAudioRequest_AACReturnsSupportedFormatList(t *testing.T) {
 			RelayMode:   constant.RelayModeAudioSpeech,
 			ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
 		}
-		request := dto.AudioRequest{
+		request := shared.AudioRequest{
 			Input:          "hello",
 			ResponseFormat: "aac",
 		}
@@ -347,7 +347,7 @@ func TestConvertImageRequestBuildsMiniMaxPayload(t *testing.T) {
 		RelayMode:       constant.RelayModeImagesGenerations,
 		OriginModelName: "image-01",
 	}
-	request := dto.ImageRequest{
+	request := shared.ImageRequest{
 		Model:          "image-01",
 		Prompt:         "a red fox in snowfall",
 		Size:           "1536x1024",
@@ -396,9 +396,9 @@ func TestDoResponseForImageGenerationReturnsOpenAIImageResponse(t *testing.T) {
 	if apiErr != nil {
 		t.Fatalf("DoResponse error: %v", apiErr)
 	}
-	imageUsage, ok := usage.(*dto.Usage)
+	imageUsage, ok := usage.(*shared.Usage)
 	if !ok {
-		t.Fatalf("usage type = %T, want *dto.Usage", usage)
+		t.Fatalf("usage type = %T, want *shared.Usage", usage)
 	}
 	if imageUsage.TotalTokens != 0 {
 		t.Fatalf("TotalTokens = %d, want 0 so ImageHelper can apply request N", imageUsage.TotalTokens)

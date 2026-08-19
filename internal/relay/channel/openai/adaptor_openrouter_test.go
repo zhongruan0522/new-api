@@ -3,14 +3,14 @@ package openai
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestConvertOpenAIRequestOpenRouterThinkingEnabled(t *testing.T) {
-	request := &dto.GeneralOpenAIRequest{
+	request := &shared.GeneralOpenAIRequest{
 		Model:    "anthropic/claude-sonnet-4",
 		THINKING: []byte(`{"type":"enabled","budget_tokens":2048}`),
 	}
@@ -25,7 +25,7 @@ func TestConvertOpenAIRequestOpenRouterThinkingEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	convertedRequest := converted.(*dto.GeneralOpenAIRequest)
+	convertedRequest := converted.(*shared.GeneralOpenAIRequest)
 	if convertedRequest.THINKING != nil {
 		t.Fatalf("THINKING = %s, want cleared after conversion", convertedRequest.THINKING)
 	}
@@ -40,7 +40,7 @@ func TestConvertOpenAIRequestOpenRouterThinkingEnabled(t *testing.T) {
 }
 
 func TestConvertOpenAIRequestOpenRouterThinkingAdaptive(t *testing.T) {
-	request := &dto.GeneralOpenAIRequest{
+	request := &shared.GeneralOpenAIRequest{
 		Model:    "anthropic/claude-sonnet-4",
 		THINKING: []byte(`{"type":"adaptive"}`),
 	}
@@ -55,7 +55,7 @@ func TestConvertOpenAIRequestOpenRouterThinkingAdaptive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	convertedRequest := converted.(*dto.GeneralOpenAIRequest)
+	convertedRequest := converted.(*shared.GeneralOpenAIRequest)
 
 	var reasoning map[string]any
 	if err := jsonx.Unmarshal(convertedRequest.Reasoning, &reasoning); err != nil {

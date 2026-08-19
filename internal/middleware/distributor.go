@@ -12,12 +12,12 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -84,7 +84,7 @@ func Distribute() func(c *gin.Context) {
 
 				// Playground: allow user to select a group for the request
 				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
-					playgroundRequest := &dto.PlayGroundRequest{}
+					playgroundRequest := &shared.PlayGroundRequest{}
 					err = common.UnmarshalBodyReusable(c, playgroundRequest)
 					if err != nil {
 						abortWithOpenAiMessage(c, http.StatusBadRequest, "无效的游乐场请求: "+err.Error())
@@ -150,11 +150,11 @@ func Distribute() func(c *gin.Context) {
 						//	common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
 						//	message = "数据库一致性已被破坏，请联系管理员"
 						//}
-						abortWithOpenAiMessage(c, http.StatusServiceUnavailable, message, types.ErrorCodeModelNotFound)
+						abortWithOpenAiMessage(c, http.StatusServiceUnavailable, message, shared.ErrorCodeModelNotFound)
 						return
 					}
 					if channel == nil {
-						abortWithOpenAiMessage(c, http.StatusServiceUnavailable, fmt.Sprintf("分组 %s 下模型 %s 无可用渠道（distributor）", usingGroup, modelRequest.Model), types.ErrorCodeModelNotFound)
+						abortWithOpenAiMessage(c, http.StatusServiceUnavailable, fmt.Sprintf("分组 %s 下模型 %s 无可用渠道（distributor）", usingGroup, modelRequest.Model), shared.ErrorCodeModelNotFound)
 						return
 					}
 				}
@@ -262,16 +262,16 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	return &modelRequest, shouldSelectChannel, nil
 }
 
-func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *types.NookMuxError {
+func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *shared.NookMuxError {
 	c.Set("original_model", modelName) // for retry
 	if channel == nil {
-		return types.NewError(errors.New("channel is nil"), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(errors.New("channel is nil"), shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry())
 	}
-	if channel.Type == constant.ChannelTypeUnknown {
-		return types.NewError(errors.New("invalid channel type"), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+	if channel.Type == channelconstant.ChannelTypeUnknown {
+		return shared.NewError(errors.New("invalid channel type"), shared.ErrorCodeInvalidApiType, shared.ErrOptionWithSkipRetry())
 	}
-	if _, ok := constant.ChannelTypeNames[channel.Type]; !ok {
-		return types.NewError(fmt.Errorf("unsupported channel type: %d", channel.Type), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+	if _, ok := channelconstant.ChannelTypeNames[channel.Type]; !ok {
+		return shared.NewError(fmt.Errorf("unsupported channel type: %d", channel.Type), shared.ErrorCodeInvalidApiType, shared.ErrOptionWithSkipRetry())
 	}
 	common.SetContextKey(c, constant.ContextKeyChannelId, channel.Id)
 	common.SetContextKey(c, constant.ContextKeyChannelName, channel.Name)
@@ -305,11 +305,11 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 
 	// TODO: api_version统一
 	switch channel.Type {
-	case constant.ChannelTypeAzure:
+	case channelconstant.ChannelTypeAzure:
 		c.Set("api_version", channel.Other)
-	case constant.ChannelTypeVertexAi:
+	case channelconstant.ChannelTypeVertexAi:
 		c.Set("region", channel.Other)
-	case constant.ChannelTypeGemini:
+	case channelconstant.ChannelTypeGemini:
 		c.Set("api_version", channel.Other)
 	}
 	return nil
@@ -345,37 +345,37 @@ func extractModelNameFromGeminiPath(path string) string {
 
 // guessRelayFormatFromPath infers the relay format from the request URL path.
 // This is used by the distributor to prefer channels matching the request format.
-func guessRelayFormatFromPath(path string) types.RelayFormat {
+func guessRelayFormatFromPath(path string) relayconstant.RelayFormat {
 	switch {
 	case strings.HasPrefix(path, "/v1/messages"):
-		return types.RelayFormatClaude
+		return relayconstant.RelayFormatClaude
 	case strings.HasPrefix(path, "/v1beta/models/"):
-		return types.RelayFormatGemini
+		return relayconstant.RelayFormatGemini
 	case strings.HasPrefix(path, "/v1/models/") && strings.Contains(path, ":"):
 		// POST /v1/models/{model}:{action} is Gemini format relay
-		return types.RelayFormatGemini
+		return relayconstant.RelayFormatGemini
 	case strings.HasPrefix(path, "/v1/engines/"):
 		// POST /v1/engines/{model}/embeddings is Gemini format relay
-		return types.RelayFormatGemini
+		return relayconstant.RelayFormatGemini
 	case strings.HasPrefix(path, "/v1/realtime"):
-		return types.RelayFormatOpenAIRealtime
+		return relayconstant.RelayFormatOpenAIRealtime
 	case strings.HasPrefix(path, "/v1/responses/compact"):
-		return types.RelayFormatOpenAIResponsesCompaction
+		return relayconstant.RelayFormatOpenAIResponsesCompaction
 	case strings.HasPrefix(path, "/v1/responses"):
-		return types.RelayFormatOpenAIResponses
+		return relayconstant.RelayFormatOpenAIResponses
 	case strings.HasPrefix(path, "/v1/images/"):
-		return types.RelayFormatOpenAIImage
+		return relayconstant.RelayFormatOpenAIImage
 	case strings.HasPrefix(path, "/v1/embeddings"):
-		return types.RelayFormatEmbedding
+		return relayconstant.RelayFormatEmbedding
 	case strings.HasPrefix(path, "/v1/audio/"):
-		return types.RelayFormatOpenAIAudio
+		return relayconstant.RelayFormatOpenAIAudio
 	case strings.HasPrefix(path, "/v1/rerank"):
-		return types.RelayFormatRerank
+		return relayconstant.RelayFormatRerank
 	case strings.HasPrefix(path, "/v1/chat/completions"),
 		strings.HasPrefix(path, "/v1/completions"),
 		strings.HasPrefix(path, "/v1/moderations"),
 		strings.HasPrefix(path, "/pg/chat/completions"):
-		return types.RelayFormatOpenAI
+		return relayconstant.RelayFormatOpenAI
 	default:
 		return ""
 	}

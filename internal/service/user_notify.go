@@ -10,22 +10,22 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
 )
 
 func NotifyRootUser(t string, subject string, content string) {
 	user := model.GetRootUser().ToBaseUser()
-	err := NotifyUser(user.Id, user.Email, user.GetSetting(), dto.NewNotify(t, subject, content, nil))
+	err := NotifyUser(user.Id, user.Email, user.GetSetting(), shared.NewNotify(t, subject, content, nil))
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to notify root user: %s", err.Error()))
 	}
 }
 
-func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data dto.Notify) error {
+func NotifyUser(userId int, userEmail string, userSetting shared.UserSetting, data shared.Notify) error {
 	notifyType := userSetting.NotifyType
 	if notifyType == "" {
-		notifyType = dto.NotifyTypeEmail
+		notifyType = shared.NotifyTypeEmail
 	}
 
 	// Check notification limit
@@ -39,7 +39,7 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 	}
 
 	switch notifyType {
-	case dto.NotifyTypeEmail:
+	case shared.NotifyTypeEmail:
 		// 优先使用设置中的通知邮箱，如果为空则使用用户的默认邮箱
 		emailToUse := userSetting.NotificationEmail
 		if emailToUse == "" {
@@ -50,7 +50,7 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 			return nil
 		}
 		return sendEmailNotify(emailToUse, data)
-	case dto.NotifyTypeWebhook:
+	case shared.NotifyTypeWebhook:
 		webhookURLStr := userSetting.WebhookUrl
 		if webhookURLStr == "" {
 			common.SysLog(fmt.Sprintf("user %d has no webhook url, skip sending webhook", userId))
@@ -60,14 +60,14 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 		// 获取 webhook secret
 		webhookSecret := userSetting.WebhookSecret
 		return SendWebhookNotify(webhookURLStr, webhookSecret, data)
-	case dto.NotifyTypeBark:
+	case shared.NotifyTypeBark:
 		barkURL := userSetting.BarkUrl
 		if barkURL == "" {
 			common.SysLog(fmt.Sprintf("user %d has no bark url, skip sending bark", userId))
 			return nil
 		}
 		return sendBarkNotify(barkURL, data)
-	case dto.NotifyTypeGotify:
+	case shared.NotifyTypeGotify:
 		gotifyUrl := userSetting.GotifyUrl
 		gotifyToken := userSetting.GotifyToken
 		if gotifyUrl == "" || gotifyToken == "" {
@@ -79,21 +79,21 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 	return nil
 }
 
-func sendEmailNotify(userEmail string, data dto.Notify) error {
+func sendEmailNotify(userEmail string, data shared.Notify) error {
 	// make email content
 	content := data.Content
 	// 处理占位符
 	for _, value := range data.Values {
-		content = strings.Replace(content, dto.ContentValueParam, fmt.Sprintf("%v", value), 1)
+		content = strings.Replace(content, shared.ContentValueParam, fmt.Sprintf("%v", value), 1)
 	}
 	return common.SendEmail(data.Title, userEmail, content)
 }
 
-func sendBarkNotify(barkURL string, data dto.Notify) error {
+func sendBarkNotify(barkURL string, data shared.Notify) error {
 	// 处理占位符
 	content := data.Content
 	for _, value := range data.Values {
-		content = strings.Replace(content, dto.ContentValueParam, fmt.Sprintf("%v", value), 1)
+		content = strings.Replace(content, shared.ContentValueParam, fmt.Sprintf("%v", value), 1)
 	}
 
 	// 替换模板变量
@@ -153,11 +153,11 @@ func sendBarkNotify(barkURL string, data dto.Notify) error {
 	return nil
 }
 
-func sendGotifyNotify(gotifyUrl string, gotifyToken string, priority int, data dto.Notify) error {
+func sendGotifyNotify(gotifyUrl string, gotifyToken string, priority int, data shared.Notify) error {
 	// 处理占位符
 	content := data.Content
 	for _, value := range data.Values {
-		content = strings.Replace(content, dto.ContentValueParam, fmt.Sprintf("%v", value), 1)
+		content = strings.Replace(content, shared.ContentValueParam, fmt.Sprintf("%v", value), 1)
 	}
 
 	// 构建完整的 Gotify API URL

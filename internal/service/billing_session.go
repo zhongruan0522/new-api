@@ -6,11 +6,11 @@ import (
 	"sync"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -112,7 +112,7 @@ func (s *BillingSession) GetPreConsumedQuota() int {
 	return s.preConsumedQuota
 }
 
-func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NookMuxError {
+func (s *BillingSession) preConsume(c *gin.Context, quota int) *shared.NookMuxError {
 	effectiveQuota := quota
 	if s.shouldTrust(c) {
 		effectiveQuota = 0
@@ -123,12 +123,12 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NookMuxErr
 
 	if effectiveQuota > 0 {
 		if err := PreConsumeTokenQuota(c, s.relayInfo, effectiveQuota); err != nil {
-			return types.NewErrorWithStatusCode(
+			return shared.NewErrorWithStatusCode(
 				err,
-				types.ErrorCodePreConsumeTokenQuotaFailed,
+				shared.ErrorCodePreConsumeTokenQuotaFailed,
 				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
+				shared.ErrOptionWithSkipRetry(),
+				shared.ErrOptionWithNoRecordErrorLog(),
 			)
 		}
 		s.tokenConsumed = effectiveQuota
@@ -144,7 +144,7 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NookMuxErr
 			}
 			s.tokenConsumed = 0
 		}
-		return types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 	}
 
 	s.preConsumedQuota = effectiveQuota
@@ -262,35 +262,35 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 	}
 }
 
-func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NookMuxError) {
+func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *shared.NookMuxError) {
 	if relayInfo == nil {
-		return nil, types.NewError(
+		return nil, shared.NewError(
 			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingRelayInfoNil)),
-			types.ErrorCodeInvalidRequest,
-			types.ErrOptionWithSkipRetry(),
+			shared.ErrorCodeInvalidRequest,
+			shared.ErrOptionWithSkipRetry(),
 		)
 	}
 
 	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
-		return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		return nil, shared.NewError(err, shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 	}
 	if userQuota <= 0 {
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingUserQuotaNotEnough, map[string]any{"Quota": log.FormatQuota(userQuota)})),
-			types.ErrorCodeInsufficientUserQuota,
+			shared.ErrorCodeInsufficientUserQuota,
 			http.StatusForbidden,
-			types.ErrOptionWithSkipRetry(),
-			types.ErrOptionWithNoRecordErrorLog(),
+			shared.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithNoRecordErrorLog(),
 		)
 	}
 	if userQuota-preConsumedQuota < 0 {
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingPrepaidFailed, map[string]any{"UserQuota": log.FormatQuota(userQuota), "NeedQuota": log.FormatQuota(preConsumedQuota)})),
-			types.ErrorCodeInsufficientUserQuota,
+			shared.ErrorCodeInsufficientUserQuota,
 			http.StatusForbidden,
-			types.ErrOptionWithSkipRetry(),
-			types.ErrOptionWithNoRecordErrorLog(),
+			shared.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithNoRecordErrorLog(),
 		)
 	}
 	relayInfo.UserQuota = userQuota

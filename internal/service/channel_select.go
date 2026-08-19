@@ -9,7 +9,8 @@ import (
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +19,7 @@ type RetryParam struct {
 	TokenGroup                   string
 	ModelName                    string
 	Retry                        *int
-	RelayFormat                  types.RelayFormat
+	RelayFormat                  relayconstant.RelayFormat
 	ExcludeChannelId             int  // 同优先级内重试时排除上次失败的渠道
 	AllowExcludedChannelFallback bool // 无备用渠道时是否允许回到刚失败的渠道
 	resetNextTry                 bool
@@ -84,7 +85,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 	var err error
 	selectGroup := param.TokenGroup
 	userGroup := common.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
-	preferredAPIType := types.RelayFormatToPreferredAPIType(param.RelayFormat)
+	preferredAPIType := relayconstant.RelayFormatToPreferredAPIType(param.RelayFormat)
 
 	if param.TokenGroup == "auto" {
 		if len(config.GetAutoGroups()) == 0 {

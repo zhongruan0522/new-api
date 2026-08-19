@@ -4,13 +4,13 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/samber/lo"
@@ -20,7 +20,7 @@ import (
 
 // upstreamErrorStatusCode 见 service.UpstreamErrorStatusCode：还原被网关
 // 转成 HTTP 200 的真实上游状态码，无法还原时回退 502（保持可重试语义）。
-func upstreamErrorStatusCode(httpStatusCode int, oaiError *types.OpenAIError) int {
+func upstreamErrorStatusCode(httpStatusCode int, oaiError *shared.OpenAIError) int {
 	if oaiError == nil {
 		return service.UpstreamErrorStatusCode(httpStatusCode, nil)
 	}
@@ -32,18 +32,18 @@ func HandleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string
 	info.SendResponseCount++
 
 	switch info.RelayFormat {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		return sendStreamData(c, info, data, forceFormat)
-	case types.RelayFormatClaude:
+	case relayconstant.RelayFormatClaude:
 		return handleClaudeFormat(c, data, info)
-	case types.RelayFormatGemini:
+	case relayconstant.RelayFormatGemini:
 		return handleGeminiFormat(c, data, info)
 	}
 	return nil
 }
 
 func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo) error {
-	var streamResponse dto.ChatCompletionsStreamResponse
+	var streamResponse shared.ChatCompletionsStreamResponse
 	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 }
 
 func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo) error {
-	var streamResponse dto.ChatCompletionsStreamResponse
+	var streamResponse shared.ChatCompletionsStreamResponse
 	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 		log.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		return err
@@ -86,7 +86,7 @@ func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 	return nil
 }
 
-func ProcessStreamResponse(streamResponse dto.ChatCompletionsStreamResponse, responseTextBuilder *strings.Builder, toolCount *int) error {
+func ProcessStreamResponse(streamResponse shared.ChatCompletionsStreamResponse, responseTextBuilder *strings.Builder, toolCount *int) error {
 	for _, choice := range streamResponse.Choices {
 		responseTextBuilder.WriteString(choice.Delta.GetContentString())
 		responseTextBuilder.WriteString(choice.Delta.GetReasoningContent())
@@ -106,13 +106,13 @@ func ProcessStreamResponse(streamResponse dto.ChatCompletionsStreamResponse, res
 func ProcessStreamFrame(relayMode int, data string, responseTextBuilder *strings.Builder, toolCount *int) error {
 	switch relayMode {
 	case relayconstant.RelayModeChatCompletions:
-		var streamResponse dto.ChatCompletionsStreamResponse
+		var streamResponse shared.ChatCompletionsStreamResponse
 		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 			return err
 		}
 		return ProcessStreamResponse(streamResponse, responseTextBuilder, toolCount)
 	case relayconstant.RelayModeCompletions:
-		var streamResponse dto.CompletionsStreamResponse
+		var streamResponse shared.CompletionsStreamResponse
 		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 			return err
 		}
@@ -124,11 +124,11 @@ func ProcessStreamFrame(relayMode int, data string, responseTextBuilder *strings
 }
 
 func handleLastResponse(lastStreamData string, responseId *string, createAt *int64,
-	systemFingerprint *string, model *string, usage **dto.Usage,
+	systemFingerprint *string, model *string, usage **shared.Usage,
 	containStreamUsage *bool, info *relaycommon.RelayInfo,
 	shouldSendLastResp *bool) error {
 
-	var lastStreamResponse dto.ChatCompletionsStreamResponse
+	var lastStreamResponse shared.ChatCompletionsStreamResponse
 	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &lastStreamResponse); err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 		*containStreamUsage = true
 		*usage = lastStreamResponse.Usage
 		if !info.ShouldIncludeUsage {
-			*shouldSendLastResp = lo.SomeBy(lastStreamResponse.Choices, func(choice dto.ChatCompletionsStreamResponseChoice) bool {
+			*shouldSendLastResp = lo.SomeBy(lastStreamResponse.Choices, func(choice shared.ChatCompletionsStreamResponseChoice) bool {
 				return choice.Delta.GetContentString() != "" || choice.Delta.GetReasoningContent() != ""
 			})
 		}
@@ -153,10 +153,10 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 
 func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStreamData string,
 	responseId string, createAt int64, model string, systemFingerprint string,
-	usage *dto.Usage, containStreamUsage bool) {
+	usage *shared.Usage, containStreamUsage bool) {
 
 	switch info.RelayFormat {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		if info.ShouldIncludeUsage && !containStreamUsage {
 			responseModel := model
 			if info.GetResponseModelName() != "" {
@@ -168,8 +168,8 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 		}
 		helper.Done(c)
 
-	case types.RelayFormatClaude:
-		var streamResponse dto.ChatCompletionsStreamResponse
+	case relayconstant.RelayFormatClaude:
+		var streamResponse shared.ChatCompletionsStreamResponse
 		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
@@ -184,8 +184,8 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 		}
 		info.ClaudeConvertInfo.Done = true
 
-	case types.RelayFormatGemini:
-		var streamResponse dto.ChatCompletionsStreamResponse
+	case relayconstant.RelayFormatGemini:
+		var streamResponse shared.ChatCompletionsStreamResponse
 		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
@@ -216,7 +216,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 	}
 }
 
-func sendResponsesStreamData(c *gin.Context, streamResponse dto.ResponsesStreamResponse, data string) {
+func sendResponsesStreamData(c *gin.Context, streamResponse shared.ResponsesStreamResponse, data string) {
 	if data == "" {
 		return
 	}

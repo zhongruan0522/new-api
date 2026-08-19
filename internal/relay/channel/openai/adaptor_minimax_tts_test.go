@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/config/model"
-	channelconstant "github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -48,7 +48,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathAppliesSystemPolicy(t *testing.T) {
 				UpstreamModelName: "tts-1-hd",
 			},
 		}
-		request := dto.AudioRequest{
+		request := shared.AudioRequest{
 			Model:          "tts-1-hd",
 			Input:          "(happy)hello(laughs)",
 			Voice:          "alloy",
@@ -64,7 +64,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathAppliesSystemPolicy(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read body: %v", err)
 		}
-		var got dto.AudioRequest
+		var got shared.AudioRequest
 		if err := jsonx.Unmarshal(body, &got); err != nil {
 			t.Fatalf("unmarshal body: %v", err)
 		}
@@ -105,7 +105,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathTTSEmotion(t *testing.T) {
 				UpstreamModelName: "tts-1-hd",
 			},
 		}
-		request := dto.AudioRequest{
+		request := shared.AudioRequest{
 			Model:          "tts-1-hd",
 			Input:          `<tts emotion="happy">文本(laugh)</tts>`,
 			Voice:          "alloy",
@@ -121,7 +121,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathTTSEmotion(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read body: %v", err)
 		}
-		var got dto.AudioRequest
+		var got shared.AudioRequest
 		if err := jsonx.Unmarshal(body, &got); err != nil {
 			t.Fatalf("unmarshal body: %v", err)
 		}

@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -121,13 +121,13 @@ func sanitizeTTSProviderName(message string, info *relaycommon.RelayInfo) string
 	return minimaxNamePattern.ReplaceAllString(message, "upstream")
 }
 
-func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
+func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *shared.NookMuxError) {
 	defer resp.Body.Close()
 	body, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("failed to read upstream response: %w", readErr),
-			types.ErrorCodeReadResponseBodyFailed,
+			shared.ErrorCodeReadResponseBodyFailed,
 			http.StatusInternalServerError,
 		)
 	}
@@ -135,9 +135,9 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	// Parse response
 	var minimaxResp MiniMaxTTSResponse
 	if unmarshalErr := jsonx.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("failed to parse TTS response: %w", unmarshalErr),
-			types.ErrorCodeBadResponseBody,
+			shared.ErrorCodeBadResponseBody,
 			http.StatusInternalServerError,
 		)
 	}
@@ -145,18 +145,18 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	// Check base_resp status code
 	if minimaxResp.BaseResp.StatusCode != 0 {
 		statusMsg := sanitizeTTSProviderName(minimaxResp.BaseResp.StatusMsg, info)
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("TTS upstream error: %d - %s", minimaxResp.BaseResp.StatusCode, statusMsg),
-			types.ErrorCodeBadResponse,
+			shared.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
 	}
 
 	// Check if we have audio data
 	if minimaxResp.Data.Audio == "" {
-		return nil, types.NewErrorWithStatusCode(
+		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("no audio data in TTS response"),
-			types.ErrorCodeBadResponse,
+			shared.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
 	}
@@ -167,16 +167,16 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 		// Handle hex-encoded audio data
 		audioData, decodeErr := hex.DecodeString(minimaxResp.Data.Audio)
 		if decodeErr != nil {
-			return nil, types.NewErrorWithStatusCode(
+			return nil, shared.NewErrorWithStatusCode(
 				fmt.Errorf("failed to decode hex audio data: %w", decodeErr),
-				types.ErrorCodeBadResponse,
+				shared.ErrorCodeBadResponse,
 				http.StatusInternalServerError,
 			)
 		}
 
 		audioFormat := c.GetString("minimax_audio_format")
 		if audioFormat == "" {
-			if audioReq, ok := info.Request.(*dto.AudioRequest); ok {
+			if audioReq, ok := info.Request.(*shared.AudioRequest); ok {
 				if normalizedFormat, formatErr := normalizeMiniMaxTTSAudioFormat(audioReq.ResponseFormat); formatErr == nil {
 					audioFormat = normalizedFormat
 				}
@@ -192,13 +192,13 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	// 触发 audio_handler.go:70 的音频倍率分支 (PostAudioConsumeQuota)，
 	// 让 calculateAudioQuota 同时算输入文本成本和音频输出成本。
 	usageCharacters := int(minimaxResp.ExtraInfo.UsageCharacters)
-	usage = &dto.Usage{
+	usage = &shared.Usage{
 		PromptTokens:     usageCharacters,
 		CompletionTokens: usageCharacters,
 		TotalTokens:      usageCharacters * 2,
 	}
-	usage.(*dto.Usage).PromptTokensDetails.TextTokens = usageCharacters
-	usage.(*dto.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
+	usage.(*shared.Usage).PromptTokensDetails.TextTokens = usageCharacters
+	usage.(*shared.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
 
 	return usage, nil
 }

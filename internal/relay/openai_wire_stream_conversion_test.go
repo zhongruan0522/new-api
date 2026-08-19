@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
@@ -15,7 +15,7 @@ import (
 func TestResponsesToChatStreamConverter_ReasoningAndIncompleteStatus(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(true)
 
-	reasoningEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	reasoningEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:  "response.reasoning_summary_text.delta",
 		Delta: "thinking...",
 	})
@@ -31,14 +31,14 @@ func TestResponsesToChatStreamConverter_ReasoningAndIncompleteStatus(t *testing.
 		t.Fatalf("reasoning chunk = %q, want reasoning_content delta", out)
 	}
 
-	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.completed",
-		Response: &dto.OpenAIResponsesResponse{
+		Response: &shared.OpenAIResponsesResponse{
 			ID:        "resp_1",
 			Model:     "gpt-4.1",
 			CreatedAt: 1700000000,
 			Status:    "incomplete",
-			Usage: &dto.Usage{
+			Usage: &shared.Usage{
 				InputTokens:  10,
 				OutputTokens: 4,
 				TotalTokens:  14,
@@ -69,14 +69,14 @@ func TestResponsesToChatStreamConverter_ReasoningAndIncompleteStatus(t *testing.
 func TestChatToResponsesStreamConverter_ReasoningDelta(t *testing.T) {
 	converter := newChatToResponsesStreamConverter()
 	reasoning := "thinking..."
-	chunk := dto.ChatCompletionsStreamResponse{
+	chunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ReasoningContent: &reasoning},
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ReasoningContent: &reasoning},
 		}},
 	}
 	raw, err := jsonx.Marshal(chunk)
@@ -106,7 +106,7 @@ func TestResponsesToChatStreamConverter_PreservesTextWhitespaceDeltas(t *testing
 	deltas := []string{"| A | B |", "\n", "| - | - |", "\n", "| 1 | 2 |"}
 	var out strings.Builder
 	for _, delta := range deltas {
-		event, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+		event, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 			Type:  "response.output_text.delta",
 			Delta: delta,
 		})
@@ -134,14 +134,14 @@ func TestChatToResponsesStreamConverter_PreservesTextWhitespaceDeltas(t *testing
 	deltas := []string{"| A | B |", "\n", "| - | - |", "\n", "| 1 | 2 |"}
 	var out strings.Builder
 	for _, delta := range deltas {
-		chunk := dto.ChatCompletionsStreamResponse{
+		chunk := shared.ChatCompletionsStreamResponse{
 			Id:      "chatcmpl_1",
 			Object:  "chat.completion.chunk",
 			Created: 1700000000,
 			Model:   "gpt-4.1",
-			Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Choices: []shared.ChatCompletionsStreamResponseChoice{{
 				Index: 0,
-				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{Content: &delta},
+				Delta: shared.ChatCompletionsStreamResponseChoiceDelta{Content: &delta},
 			}},
 		}
 		raw, err := jsonx.Marshal(chunk)
@@ -178,18 +178,18 @@ func TestChatToResponsesStreamConverter_PreservesTextWhitespaceDeltas(t *testing
 // the name and breaks the next request turn.
 func TestChatToResponsesStreamConverter_BuffersToolCallUntilNameKnown(t *testing.T) {
 	converter := newChatToResponsesStreamConverter()
-	firstChunk := dto.ChatCompletionsStreamResponse{
+	firstChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				ID:    "call_1",
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Arguments: `{"city":"bei`,
 				},
 			}}},
@@ -207,17 +207,17 @@ func TestChatToResponsesStreamConverter_BuffersToolCallUntilNameKnown(t *testing
 		t.Fatalf("first output = %q, want tool call buffered until name is known", out)
 	}
 
-	secondChunk := dto.ChatCompletionsStreamResponse{
+	secondChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name:      "get_weather",
 					Arguments: `jing"}`,
 				},
@@ -244,17 +244,17 @@ func TestChatToResponsesStreamConverter_BuffersToolCallUntilNameKnown(t *testing
 // a temporary index before a later chunk reveals the stable call id.
 func TestChatToResponsesStreamConverter_RekeysBufferedIndexToToolCallID(t *testing.T) {
 	converter := newChatToResponsesStreamConverter()
-	firstChunk := dto.ChatCompletionsStreamResponse{
+	firstChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Arguments: `{"city":"bei`,
 				},
 			}}},
@@ -272,18 +272,18 @@ func TestChatToResponsesStreamConverter_RekeysBufferedIndexToToolCallID(t *testi
 		t.Fatalf("first output = %q, want tool call buffered until name is known", out)
 	}
 
-	secondChunk := dto.ChatCompletionsStreamResponse{
+	secondChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				ID:    "call_real",
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name:      "get_weather",
 					Arguments: `jing"}`,
 				},
@@ -312,17 +312,17 @@ func TestChatToResponsesStreamConverter_RekeysBufferedIndexToToolCallID(t *testi
 // placeholder tool-call id that later changes to the model-generated id.
 func TestChatToResponsesStreamConverter_WaitsForStableToolCallID(t *testing.T) {
 	converter := newChatToResponsesStreamConverter()
-	firstChunk := dto.ChatCompletionsStreamResponse{
+	firstChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name:      "get_weather",
 					Arguments: `{"city":"bei`,
 				},
@@ -341,18 +341,18 @@ func TestChatToResponsesStreamConverter_WaitsForStableToolCallID(t *testing.T) {
 		t.Fatalf("first output = %q, want no placeholder tool call item", out)
 	}
 
-	secondChunk := dto.ChatCompletionsStreamResponse{
+	secondChunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				ID:    "call_real",
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Arguments: `jing"}`,
 				},
 			}}},
@@ -375,7 +375,7 @@ func TestChatToResponsesStreamConverter_WaitsForStableToolCallID(t *testing.T) {
 // streams surface arguments deltas before the item.added metadata with name.
 func TestResponsesToChatStreamConverter_BuffersToolCallUntilNameKnown(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	argsEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	argsEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.function_call_arguments.delta",
 		ItemID: "call_1",
 		Delta:  `{"city":"bei`,
@@ -391,9 +391,9 @@ func TestResponsesToChatStreamConverter_BuffersToolCallUntilNameKnown(t *testing
 		t.Fatalf("args output = %q, want empty while waiting for name", out)
 	}
 
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "function_call",
 			ID:     "call_1",
 			CallId: "call_1",
@@ -421,9 +421,9 @@ func TestResponsesToChatStreamConverter_BuffersToolCallUntilNameKnown(t *testing
 // item_id while Chat tool messages must preserve the model-generated call_id.
 func TestResponsesToChatStreamConverter_MapsFunctionCallItemIDToCallID(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "function_call",
 			ID:     "fc_1",
 			CallId: "call_1",
@@ -443,7 +443,7 @@ func TestResponsesToChatStreamConverter_MapsFunctionCallItemIDToCallID(t *testin
 		t.Fatalf("added output = %q, want chat tool_call id call_1", out)
 	}
 
-	argsEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	argsEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.function_call_arguments.delta",
 		ItemID: "fc_1",
 		Delta:  `{"city":"beijing"}`,
@@ -464,7 +464,7 @@ func TestResponsesToChatStreamConverter_MapsFunctionCallItemIDToCallID(t *testin
 // before output_item.added reveals the stable call_id.
 func TestResponsesToChatStreamConverter_RekeysBufferedItemIDToCallID(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	argsEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	argsEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.function_call_arguments.delta",
 		ItemID: "fc_1",
 		Delta:  `{"city":"bei`,
@@ -480,9 +480,9 @@ func TestResponsesToChatStreamConverter_RekeysBufferedItemIDToCallID(t *testing.
 		t.Fatalf("args output = %q, want empty while waiting for call metadata", out)
 	}
 
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "function_call",
 			ID:     "fc_1",
 			CallId: "call_1",
@@ -507,9 +507,9 @@ func TestResponsesToChatStreamConverter_RekeysBufferedItemIDToCallID(t *testing.
 // tool_call id derived from Responses item_id if call_id arrives later.
 func TestResponsesToChatStreamConverter_WaitsForStableCallID(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "function_call",
 			ID:     "fc_1",
 			Name:   "get_weather",
@@ -528,7 +528,7 @@ func TestResponsesToChatStreamConverter_WaitsForStableCallID(t *testing.T) {
 		t.Fatalf("added output = %q, want no placeholder item_id tool call", out)
 	}
 
-	argsEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	argsEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.function_call_arguments.delta",
 		ItemID: "fc_1",
 		Delta:  `{"city":"bei`,
@@ -544,9 +544,9 @@ func TestResponsesToChatStreamConverter_WaitsForStableCallID(t *testing.T) {
 		t.Fatalf("args output = %q, want buffered args until stable call_id", out)
 	}
 
-	doneEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	doneEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.done",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:      "function_call",
 			ID:        "fc_1",
 			CallId:    "call_1",
@@ -570,9 +570,9 @@ func TestResponsesToChatStreamConverter_WaitsForStableCallID(t *testing.T) {
 
 func TestResponsesToChatStreamConverter_UsesCompletedResponseCallIDForPendingToolCall(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "function_call",
 			ID:     "fc_1",
 			Name:   "get_weather",
@@ -587,7 +587,7 @@ func TestResponsesToChatStreamConverter_UsesCompletedResponseCallIDForPendingToo
 		t.Fatalf("ConvertFrame(added) = (%q, %v), want buffered", out, err)
 	}
 
-	argsEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	argsEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.function_call_arguments.delta",
 		ItemID: "fc_1",
 		Delta:  `{"city":"beijing"}`,
@@ -599,11 +599,11 @@ func TestResponsesToChatStreamConverter_UsesCompletedResponseCallIDForPendingToo
 		t.Fatalf("ConvertFrame(args) = (%q, %v), want buffered", out, err)
 	}
 
-	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.completed",
-		Response: &dto.OpenAIResponsesResponse{
+		Response: &shared.OpenAIResponsesResponse{
 			Status: "completed",
-			Output: []dto.ResponsesOutput{{
+			Output: []shared.ResponsesOutput{{
 				Type:   "function_call",
 				ID:     "fc_1",
 				CallId: "call_1",
@@ -631,17 +631,17 @@ func TestChatToResponsesStreamConverter_CustomToolCallInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal custom tool call error = %v", err)
 	}
-	chunk := dto.ChatCompletionsStreamResponse{
+	chunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_1",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index:  common.GetPointer(0),
 				ID:     "call_custom",
-				Type:   dto.CustomType,
+				Type:   shared.CustomType,
 				Custom: custom,
 			}}},
 		}},
@@ -665,9 +665,9 @@ func TestChatToResponsesStreamConverter_CustomToolCallInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal second custom tool call error = %v", err)
 	}
-	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+	chunk.Choices[0].Delta.ToolCalls = []shared.ToolCallResponse{{
 		Index:  common.GetPointer(0),
-		Type:   dto.CustomType,
+		Type:   shared.CustomType,
 		Custom: custom,
 	}}
 	raw, err = jsonx.Marshal(chunk)
@@ -686,9 +686,9 @@ func TestChatToResponsesStreamConverter_CustomToolCallInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal third custom tool call error = %v", err)
 	}
-	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+	chunk.Choices[0].Delta.ToolCalls = []shared.ToolCallResponse{{
 		Index:  common.GetPointer(0),
-		Type:   dto.CustomType,
+		Type:   shared.CustomType,
 		Custom: custom,
 	}}
 	raw, err = jsonx.Marshal(chunk)
@@ -732,7 +732,7 @@ func TestChatToResponsesStreamConverter_CustomToolProxyInputDone(t *testing.T) {
 	}
 
 	var combined strings.Builder
-	convertChunk := func(label string, chunk dto.ChatCompletionsStreamResponse) {
+	convertChunk := func(label string, chunk shared.ChatCompletionsStreamResponse) {
 		t.Helper()
 		raw, marshalErr := jsonx.Marshal(chunk)
 		if marshalErr != nil {
@@ -745,18 +745,18 @@ func TestChatToResponsesStreamConverter_CustomToolProxyInputDone(t *testing.T) {
 		combined.WriteString(out)
 	}
 
-	chunk := dto.ChatCompletionsStreamResponse{
+	chunk := shared.ChatCompletionsStreamResponse{
 		Id:      "chatcmpl_proxy",
 		Object:  "chat.completion.chunk",
 		Created: 1700000000,
 		Model:   "gpt-5",
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []shared.ToolCallResponse{{
 				Index: common.GetPointer(0),
 				ID:    "call_shell",
 				Type:  "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name: "shell_exec",
 				},
 			}}},
@@ -764,19 +764,19 @@ func TestChatToResponsesStreamConverter_CustomToolProxyInputDone(t *testing.T) {
 	}
 	convertChunk("name", chunk)
 
-	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+	chunk.Choices[0].Delta.ToolCalls = []shared.ToolCallResponse{{
 		Index: common.GetPointer(0),
 		Type:  "function",
-		Function: dto.FunctionResponse{
+		Function: shared.FunctionResponse{
 			Arguments: arguments[:split],
 		},
 	}}
 	convertChunk("first arguments", chunk)
 
-	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+	chunk.Choices[0].Delta.ToolCalls = []shared.ToolCallResponse{{
 		Index: common.GetPointer(0),
 		Type:  "function",
-		Function: dto.FunctionResponse{
+		Function: shared.FunctionResponse{
 			Arguments: arguments[split:],
 		},
 	}}
@@ -807,9 +807,9 @@ func TestChatToResponsesStreamConverter_CustomToolProxyInputDone(t *testing.T) {
 // input deltas outside function_call_arguments events.
 func TestResponsesToChatStreamConverter_CustomToolCallInput(t *testing.T) {
 	converter := newResponsesToChatStreamConverter(false)
-	addedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	addedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "custom_tool_call",
 			ID:     "ct_1",
 			CallId: "call_custom",
@@ -829,7 +829,7 @@ func TestResponsesToChatStreamConverter_CustomToolCallInput(t *testing.T) {
 		t.Fatalf("added output = %q, want chat custom tool_call with call_id", out)
 	}
 
-	deltaEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	deltaEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.custom_tool_call_input.delta",
 		ItemID: "ct_1",
 		Delta:  "print(",
@@ -845,7 +845,7 @@ func TestResponsesToChatStreamConverter_CustomToolCallInput(t *testing.T) {
 		t.Fatalf("delta output = %q, want chat custom input delta", out)
 	}
 
-	deltaEvent, err = jsonx.Marshal(dto.ResponsesStreamResponse{
+	deltaEvent, err = jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.custom_tool_call_input.delta",
 		ItemID: "ct_1",
 		Delta:  "\n    ",
@@ -861,7 +861,7 @@ func TestResponsesToChatStreamConverter_CustomToolCallInput(t *testing.T) {
 		t.Fatalf("whitespace delta output = %q, want chat custom whitespace delta", out)
 	}
 
-	doneEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	doneEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:   "response.custom_tool_call_input.done",
 		ItemID: "ct_1",
 		Input:  "print(\n    1)",
@@ -889,7 +889,7 @@ func collectChatStreamContent(t *testing.T, s string) string {
 		if data == "" || data == "[DONE]" {
 			continue
 		}
-		var chunk dto.ChatCompletionsStreamResponse
+		var chunk shared.ChatCompletionsStreamResponse
 		if err := jsonx.UnmarshalJsonStr(data, &chunk); err != nil {
 			t.Fatalf("unmarshal chat chunk %q error = %v", data, err)
 		}
@@ -913,7 +913,7 @@ func collectResponsesStreamText(t *testing.T, s string) (deltaText string, doneT
 		if data == "" || data == "[DONE]" {
 			continue
 		}
-		var stream dto.ResponsesStreamResponse
+		var stream shared.ResponsesStreamResponse
 		if err := jsonx.UnmarshalJsonStr(data, &stream); err != nil {
 			t.Fatalf("unmarshal responses frame %q error = %v", data, err)
 		}
@@ -926,7 +926,7 @@ func collectResponsesStreamText(t *testing.T, s string) (deltaText string, doneT
 			deltaBuilder.WriteString(stream.Delta)
 		case "response.output_item.done":
 			if stream.Item != nil {
-				appendResponsesMessageText(&doneBuilder, []dto.ResponsesOutput{*stream.Item})
+				appendResponsesMessageText(&doneBuilder, []shared.ResponsesOutput{*stream.Item})
 			}
 		case "response.completed":
 			if stream.Response == nil {
@@ -938,7 +938,7 @@ func collectResponsesStreamText(t *testing.T, s string) (deltaText string, doneT
 	return deltaBuilder.String(), doneBuilder.String(), completedBuilder.String()
 }
 
-func appendResponsesMessageText(builder *strings.Builder, outputs []dto.ResponsesOutput) {
+func appendResponsesMessageText(builder *strings.Builder, outputs []shared.ResponsesOutput) {
 	for _, output := range outputs {
 		if output.Type != "message" {
 			continue

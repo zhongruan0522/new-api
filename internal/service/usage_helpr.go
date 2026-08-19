@@ -3,11 +3,11 @@ package service
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
 
-//func GetPromptTokens(textRequest dto.GeneralOpenAIRequest, relayMode int) (int, error) {
+//func GetPromptTokens(textRequest shared.GeneralOpenAIRequest, relayMode int) (int, error) {
 //	switch relayMode {
 //	case constant.RelayModeChatCompletions:
 //		return CountTokenMessages(textRequest.Messages, textRequest.Model)
@@ -19,15 +19,15 @@ import (
 //	return 0, errors.New("unknown relay mode")
 //}
 
-func ResponseText2Usage(c *gin.Context, responseText string, modeName string, promptTokens int) *dto.Usage {
+func ResponseText2Usage(c *gin.Context, responseText string, modeName string, promptTokens int) *shared.Usage {
 	common.SetContextKey(c, constant.ContextKeyLocalCountTokens, true)
-	usage := &dto.Usage{}
+	usage := &shared.Usage{}
 	usage.PromptTokens = promptTokens
 	usage.CompletionTokens = EstimateTokenByModel(modeName, responseText)
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	return usage
 }
 
-func ValidUsage(usage *dto.Usage) bool {
+func ValidUsage(usage *shared.Usage) bool {
 	return usage != nil && (usage.PromptTokens != 0 || usage.CompletionTokens != 0)
 }

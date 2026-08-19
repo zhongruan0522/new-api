@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
-func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Request) error {
+func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request shared.Request) error {
 	if info.ChannelMeta == nil {
 		info.ChannelMeta = &common.ChannelMeta{}
 	}

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -21,7 +21,7 @@ const (
 	openAIResponsesOutputContentTypeText = "output_text"
 )
 
-func ConvertResponsesResponseToChatCompletionResponse(responsesResp *dto.OpenAIResponsesResponse) (*dto.OpenAITextResponse, error) {
+func ConvertResponsesResponseToChatCompletionResponse(responsesResp *shared.OpenAIResponsesResponse) (*shared.OpenAITextResponse, error) {
 	if responsesResp == nil {
 		return nil, fmt.Errorf("responses response is nil")
 	}
@@ -37,22 +37,22 @@ func ConvertResponsesResponseToChatCompletionResponse(responsesResp *dto.OpenAIR
 		return nil, err
 	}
 
-	out := &dto.OpenAITextResponse{
+	out := &shared.OpenAITextResponse{
 		Id:      responsesResp.ID,
 		Object:  "chat.completion",
 		Model:   responsesResp.Model,
 		Created: coerceCreatedAtFromResponses(responsesResp.CreatedAt),
-		Choices: []dto.OpenAITextResponseChoice{{Index: 0, Message: assistantMsg, FinishReason: finishReason}},
+		Choices: []shared.OpenAITextResponseChoice{{Index: 0, Message: assistantMsg, FinishReason: finishReason}},
 	}
 	applyResponsesUsageToChat(out, responsesResp.Usage)
 	return out, nil
 }
 
-func ConvertChatCompletionResponseToResponsesResponse(chatResp *dto.OpenAITextResponse) (*dto.OpenAIResponsesResponse, error) {
+func ConvertChatCompletionResponseToResponsesResponse(chatResp *shared.OpenAITextResponse) (*shared.OpenAIResponsesResponse, error) {
 	return ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp, nil)
 }
 
-func ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp *dto.OpenAITextResponse, toolContext *OpenAIWireToolContext) (*dto.OpenAIResponsesResponse, error) {
+func ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp *shared.OpenAITextResponse, toolContext *OpenAIWireToolContext) (*shared.OpenAIResponsesResponse, error) {
 	if chatResp == nil {
 		return nil, fmt.Errorf("chat completion response is nil")
 	}
@@ -70,7 +70,7 @@ func ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp *d
 		return nil, err
 	}
 
-	out := &dto.OpenAIResponsesResponse{
+	out := &shared.OpenAIResponsesResponse{
 		ID:        chatResp.Id,
 		Object:    "response",
 		CreatedAt: coerceCreatedAtFromChat(chatResp.Created),
@@ -82,22 +82,22 @@ func ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp *d
 	return out, nil
 }
 
-func getSingleChatChoice(choices []dto.OpenAITextResponseChoice) (dto.OpenAITextResponseChoice, error) {
+func getSingleChatChoice(choices []shared.OpenAITextResponseChoice) (shared.OpenAITextResponseChoice, error) {
 	if len(choices) == 0 {
-		return dto.OpenAITextResponseChoice{}, fmt.Errorf("chat completion response has no choices")
+		return shared.OpenAITextResponseChoice{}, fmt.Errorf("chat completion response has no choices")
 	}
 	if len(choices) > 1 {
-		return dto.OpenAITextResponseChoice{}, fmt.Errorf("responses api conversion does not support multiple choices: %d", len(choices))
+		return shared.OpenAITextResponseChoice{}, fmt.Errorf("responses api conversion does not support multiple choices: %d", len(choices))
 	}
 	return choices[0], nil
 }
 
 // extractChatMessageFromResponsesOutput merges Responses output items into a
 // single Chat assistant message while preserving reasoning and tool calls.
-func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (content string, reasoning string, toolCalls []dto.ToolCallResponse, err error) {
+func extractChatMessageFromResponsesOutput(output []shared.ResponsesOutput) (content string, reasoning string, toolCalls []shared.ToolCallResponse, err error) {
 	var builder strings.Builder
 	var reasoningBuilder strings.Builder
-	var calls []dto.ToolCallResponse
+	var calls []shared.ToolCallResponse
 	for _, item := range output {
 		itemType := strings.TrimSpace(item.Type)
 		switch itemType {
@@ -131,7 +131,7 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				if marshalErr != nil {
 					return "", "", nil, fmt.Errorf("marshal custom tool call failed: %w", marshalErr)
 				}
-				calls = append(calls, dto.ToolCallResponse{ID: callID, Type: dto.CustomType, Custom: custom})
+				calls = append(calls, shared.ToolCallResponse{ID: callID, Type: shared.CustomType, Custom: custom})
 				continue
 			}
 			name := item.Name
@@ -144,10 +144,10 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 			if argErr != nil {
 				return "", "", nil, fmt.Errorf("marshal %s.arguments failed: %w", itemType, argErr)
 			}
-			calls = append(calls, dto.ToolCallResponse{
+			calls = append(calls, shared.ToolCallResponse{
 				ID:   callID,
 				Type: "function",
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name:      name,
 					Arguments: arguments,
 				},
@@ -172,8 +172,8 @@ func mapResponsesStatusToChatFinishReason(status string, sawToolCalls bool) stri
 	return "stop"
 }
 
-func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto.ToolCallResponse) (dto.Message, error) {
-	msg := dto.Message{Role: "assistant", Content: content}
+func buildChatAssistantMessage(content string, reasoning string, toolCalls []shared.ToolCallResponse) (shared.Message, error) {
+	msg := shared.Message{Role: "assistant", Content: content}
 	if strings.TrimSpace(content) == "" {
 		msg.Content = nil
 	}
@@ -185,13 +185,13 @@ func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto
 	}
 	raw, err := jsonx.Marshal(toolCalls)
 	if err != nil {
-		return dto.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
+		return shared.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
 	msg.ToolCalls = raw
 	return msg, nil
 }
 
-func applyResponsesUsageToChat(out *dto.OpenAITextResponse, usage *dto.Usage) {
+func applyResponsesUsageToChat(out *shared.OpenAITextResponse, usage *shared.Usage) {
 	if out == nil {
 		return
 	}
@@ -205,7 +205,7 @@ func coerceCreatedAtFromResponses(createdAt int) any {
 	return time.Now().Unix()
 }
 
-func extractChatMessageTextOnly(msg dto.Message) (string, error) {
+func extractChatMessageTextOnly(msg shared.Message) (string, error) {
 	if msg.Content == nil {
 		return "", nil
 	}
@@ -216,34 +216,34 @@ func extractChatMessageTextOnly(msg dto.Message) (string, error) {
 	parts := msg.ParseContent()
 	var builder strings.Builder
 	for _, part := range parts {
-		if strings.TrimSpace(part.Type) != dto.ContentTypeText {
-			return "", fmt.Errorf("chat response content only supports %q, got %q", dto.ContentTypeText, part.Type)
+		if strings.TrimSpace(part.Type) != shared.ContentTypeText {
+			return "", fmt.Errorf("chat response content only supports %q, got %q", shared.ContentTypeText, part.Type)
 		}
 		builder.WriteString(part.Text)
 	}
 	return strings.TrimSpace(builder.String()), nil
 }
 
-func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ResponsesOutput, error) {
-	output := make([]dto.ResponsesOutput, 0, 2)
+func buildResponsesOutputFromChat(msg shared.Message, text string, rawToolCalls json.RawMessage, toolContext *OpenAIWireToolContext) ([]shared.ResponsesOutput, error) {
+	output := make([]shared.ResponsesOutput, 0, 2)
 	if reasoning := normalizeChatResponseReasoning(msg); reasoning != "" {
-		output = append(output, dto.ResponsesOutput{
+		output = append(output, shared.ResponsesOutput{
 			Type:   openAIResponsesOutputTypeReasoning,
 			ID:     "rs_0",
 			Status: "completed",
-			Summary: []dto.ResponsesContentPart{{
+			Summary: []shared.ResponsesContentPart{{
 				Type: openAIResponsesSummaryTextType,
 				Text: reasoning,
 			}},
 		})
 	}
 	if strings.TrimSpace(text) != "" {
-		output = append(output, dto.ResponsesOutput{
+		output = append(output, shared.ResponsesOutput{
 			Type:   openAIResponsesOutputTypeMessage,
 			ID:     "msg_0",
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{
+			Content: []shared.ResponsesOutputContent{
 				{Type: openAIResponsesOutputContentTypeText, Text: text},
 			},
 		})
@@ -255,12 +255,12 @@ func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls jso
 	}
 	output = append(output, toolOutputs...)
 	if len(output) == 0 {
-		output = append(output, dto.ResponsesOutput{
+		output = append(output, shared.ResponsesOutput{
 			Type:   openAIResponsesOutputTypeMessage,
 			ID:     "msg_0",
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{{
+			Content: []shared.ResponsesOutputContent{{
 				Type: openAIResponsesOutputContentTypeText,
 				Text: "",
 			}},
@@ -279,7 +279,7 @@ func mapChatFinishReasonToResponsesStatus(finishReason string) string {
 	return "completed"
 }
 
-func normalizeChatResponseReasoning(msg dto.Message) string {
+func normalizeChatResponseReasoning(msg shared.Message) string {
 	return strings.TrimSpace(msg.GetReasoningContent())
 }
 
@@ -296,16 +296,16 @@ func coerceCreatedAtFromChat(v any) int {
 	}
 }
 
-func mapChatUsageToResponses(u dto.Usage) *dto.Usage {
+func mapChatUsageToResponses(u shared.Usage) *shared.Usage {
 	return MapChatUsageToResponsesUsage(u)
 }
 
-func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ResponsesOutput, error) {
+func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]shared.ResponsesOutput, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
 
-	var calls []dto.ToolCallResponse
+	var calls []shared.ToolCallResponse
 	if err := jsonx.Unmarshal(raw, &calls); err != nil {
 		return nil, fmt.Errorf("unmarshal tool_calls failed: %w", err)
 	}
@@ -313,18 +313,18 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *Ope
 		return nil, nil
 	}
 
-	out := make([]dto.ResponsesOutput, 0, len(calls))
+	out := make([]shared.ResponsesOutput, 0, len(calls))
 	for i, call := range calls {
 		callID := strings.TrimSpace(call.ID)
 		if callID == "" {
 			callID = fmt.Sprintf("call_%d", i)
 		}
-		if strings.EqualFold(common.Interface2String(call.Type), dto.CustomType) {
+		if strings.EqualFold(common.Interface2String(call.Type), shared.CustomType) {
 			customName, customInput, err := parseChatCustomToolCall(call.Custom)
 			if err != nil {
 				return nil, fmt.Errorf("tool_calls[%d]: %w", i, err)
 			}
-			out = append(out, dto.ResponsesOutput{
+			out = append(out, shared.ResponsesOutput{
 				Type:   openAIResponsesOutputTypeCustomToolCall,
 				ID:     callID,
 				Status: "completed",
@@ -348,16 +348,16 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *Ope
 	return out, nil
 }
 
-func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatArguments string, toolContext *OpenAIWireToolContext) (dto.ResponsesOutput, error) {
+func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatArguments string, toolContext *OpenAIWireToolContext) (shared.ResponsesOutput, error) {
 	spec, ok := toolContext.ResolveToolProxy(chatName)
 	if ok {
 		switch spec.Type {
 		case openAIResponsesToolTypeCustom:
 			input, complete := ExtractResponsesCustomToolInputFromChatArguments(chatArguments)
 			if !complete {
-				return dto.ResponsesOutput{}, fmt.Errorf("custom tool proxy %q arguments must contain a complete %q string", chatName, openAIResponsesCustomInputField)
+				return shared.ResponsesOutput{}, fmt.Errorf("custom tool proxy %q arguments must contain a complete %q string", chatName, openAIResponsesCustomInputField)
 			}
-			return dto.ResponsesOutput{
+			return shared.ResponsesOutput{
 				Type:      openAIResponsesOutputTypeCustomToolCall,
 				ID:        callID,
 				Status:    "completed",
@@ -370,9 +370,9 @@ func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatAr
 		case openAIResponsesToolTypeToolSearch:
 			arguments, err := BuildResponsesToolSearchArgumentsFromChatArguments(chatArguments)
 			if err != nil {
-				return dto.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
+				return shared.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
 			}
-			return dto.ResponsesOutput{
+			return shared.ResponsesOutput{
 				Type:      openAIResponsesOutputTypeToolSearchCall,
 				ID:        callID,
 				Status:    "completed",
@@ -381,7 +381,7 @@ func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatAr
 				Arguments: arguments,
 			}, nil
 		case openAIResponsesToolTypeFunction:
-			return dto.ResponsesOutput{
+			return shared.ResponsesOutput{
 				Type:      openAIResponsesOutputTypeFunctionCall,
 				ID:        callID,
 				Status:    "completed",
@@ -393,7 +393,7 @@ func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatAr
 			}, nil
 		}
 	}
-	return dto.ResponsesOutput{
+	return shared.ResponsesOutput{
 		Type:      openAIResponsesOutputTypeFunctionCall,
 		ID:        callID,
 		Status:    "completed",

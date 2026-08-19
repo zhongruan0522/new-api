@@ -3,13 +3,12 @@ package zhipu_4v
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
 )
 
-func zhipuInfo(baseURL string, relayMode int, relayFormat types.RelayFormat) *relaycommon.RelayInfo {
+func zhipuInfo(baseURL string, relayMode int, relayFormat relayconstant.RelayFormat) *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
 		ChannelMeta: &relaycommon.ChannelMeta{
 			ChannelType:    constant.ChannelTypeZhipu_v4,
@@ -44,7 +43,7 @@ func TestGetRequestURL_PlanResponsesUsesDedicatedResponsesEndpoint(t *testing.T)
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			info := zhipuInfo(tc.plan, relayconstant.RelayModeResponses, types.RelayFormatOpenAIResponses)
+			info := zhipuInfo(tc.plan, relayconstant.RelayModeResponses, relayconstant.RelayFormatOpenAIResponses)
 
 			got, err := (&Adaptor{}).GetRequestURL(info)
 			if err != nil {
@@ -78,7 +77,7 @@ func TestGetRequestURL_PlanChatCompletionsUnchanged(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			info := zhipuInfo(tc.plan, relayconstant.RelayModeChatCompletions, types.RelayFormatOpenAI)
+			info := zhipuInfo(tc.plan, relayconstant.RelayModeChatCompletions, relayconstant.RelayFormatOpenAI)
 
 			got, err := (&Adaptor{}).GetRequestURL(info)
 			if err != nil {
@@ -112,7 +111,7 @@ func TestGetRequestURL_PlanClaudeUnchanged(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			info := zhipuInfo(tc.plan, relayconstant.RelayModeChatCompletions, types.RelayFormatClaude)
+			info := zhipuInfo(tc.plan, relayconstant.RelayModeChatCompletions, relayconstant.RelayFormatClaude)
 
 			got, err := (&Adaptor{}).GetRequestURL(info)
 			if err != nil {
@@ -127,7 +126,7 @@ func TestGetRequestURL_PlanClaudeUnchanged(t *testing.T) {
 
 // 回归保护：非套餐的普通智谱渠道仍走通用 paas/v4 端点。
 func TestGetRequestURL_NonPlanChannelUnchanged(t *testing.T) {
-	info := zhipuInfo("https://open.bigmodel.cn", relayconstant.RelayModeChatCompletions, types.RelayFormatOpenAI)
+	info := zhipuInfo("https://open.bigmodel.cn", relayconstant.RelayModeChatCompletions, relayconstant.RelayFormatOpenAI)
 
 	got, err := (&Adaptor{}).GetRequestURL(info)
 	if err != nil {
@@ -148,7 +147,7 @@ func TestGetRequestURL_NonPlanChannelUnchanged(t *testing.T) {
 func TestGetRequestURL_PlanWireChatConversionStillUsesChatEndpoint(t *testing.T) {
 	// 模拟 relayResponsesDownstreamToChatUpstream 转换后的状态：
 	// 下游是 /v1/responses 请求，但已被改写为 Chat 上游。
-	info := zhipuInfo("glm-coding-plan", relayconstant.RelayModeChatCompletions, types.RelayFormatOpenAI)
+	info := zhipuInfo("glm-coding-plan", relayconstant.RelayModeChatCompletions, relayconstant.RelayFormatOpenAI)
 	info.RequestURLPath = "/v1/chat/completions"
 
 	got, err := (&Adaptor{}).GetRequestURL(info)
@@ -165,7 +164,7 @@ func TestGetRequestURL_PlanWireChatConversionStillUsesChatEndpoint(t *testing.T)
 // 与既有行为兼容。xiaomi-coding-plan 在 ChannelSpecialBases 中只有
 // OpenAIBaseURL，可用于验证该回退路径。
 func TestGetRequestURL_PlanWithoutResponsesBaseFallsBackToOpenAIBaseURL(t *testing.T) {
-	info := zhipuInfo("xiaomi-coding-plan", relayconstant.RelayModeResponses, types.RelayFormatOpenAIResponses)
+	info := zhipuInfo("xiaomi-coding-plan", relayconstant.RelayModeResponses, relayconstant.RelayFormatOpenAIResponses)
 
 	got, err := (&Adaptor{}).GetRequestURL(info)
 	if err != nil {

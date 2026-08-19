@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 
@@ -55,9 +55,9 @@ func TestHandleTTSResponse_BillingFields(t *testing.T) {
 		t.Fatalf("unexpected error: %v", apiErr)
 	}
 
-	usage, ok := usageAny.(*dto.Usage)
+	usage, ok := usageAny.(*shared.Usage)
 	if !ok {
-		t.Fatalf("expected *dto.Usage, got %T", usageAny)
+		t.Fatalf("expected *shared.Usage, got %T", usageAny)
 	}
 
 	// 按产品需求：usage_characters 同时映射到输入和音频输出
@@ -113,9 +113,9 @@ func TestHandleTTSResponse_ZeroUsage(t *testing.T) {
 		t.Fatalf("unexpected error: %v", apiErr)
 	}
 
-	usage, ok := usageAny.(*dto.Usage)
+	usage, ok := usageAny.(*shared.Usage)
 	if !ok {
-		t.Fatalf("expected *dto.Usage, got %T", usageAny)
+		t.Fatalf("expected *shared.Usage, got %T", usageAny)
 	}
 
 	if usage.TotalTokens != 0 {
@@ -231,4 +231,4 @@ func TestHandleTTSResponse_ErrorStatusSanitizesProviderName(t *testing.T) {
 }
 
 // 编译期类型检查：确保 types 包仍被引用（避免 import 残留告警）
-var _ = types.ErrorCodeBadResponse
+var _ = shared.ErrorCodeBadResponse

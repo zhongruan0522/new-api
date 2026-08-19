@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -20,7 +20,7 @@ type responsesToChatStreamConverter struct {
 
 	sentRole     bool
 	sawToolCalls bool
-	usage        *dto.Usage
+	usage        *shared.Usage
 	status       string
 
 	toolCallIndexByID        map[string]int
@@ -71,7 +71,7 @@ func (c *responsesToChatStreamConverter) ConvertFrame(event string, data string,
 		return "", nil
 	}
 
-	var stream dto.ResponsesStreamResponse
+	var stream shared.ResponsesStreamResponse
 	if err := jsonx.UnmarshalJsonStr(data, &stream); err != nil {
 		c.err = fmt.Errorf("unmarshal responses stream frame failed: %w", err)
 		return "", c.err
@@ -119,14 +119,14 @@ func (c *responsesToChatStreamConverter) ConvertFrame(event string, data string,
 	}
 }
 
-func (c *responsesToChatStreamConverter) captureToolCallMeta(stream dto.ResponsesStreamResponse) {
+func (c *responsesToChatStreamConverter) captureToolCallMeta(stream shared.ResponsesStreamResponse) {
 	if stream.Item == nil {
 		return
 	}
 	c.rememberToolCallMeta(*stream.Item, stream.ItemID)
 }
 
-func (c *responsesToChatStreamConverter) rememberToolCallMeta(item dto.ResponsesOutput, eventItemID string) {
+func (c *responsesToChatStreamConverter) rememberToolCallMeta(item shared.ResponsesOutput, eventItemID string) {
 	itemType := strings.TrimSpace(item.Type)
 	if itemType != "function_call" && itemType != "custom_tool_call" {
 		return
@@ -160,7 +160,7 @@ func (c *responsesToChatStreamConverter) rememberToolCallMeta(item dto.Responses
 	c.sawToolCalls = true
 }
 
-func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIResponsesResponse) {
+func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *shared.OpenAIResponsesResponse) {
 	if resp == nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 		c.created = int64(resp.CreatedAt)
 	}
 	if resp.Usage != nil {
-		u := &dto.Usage{}
+		u := &shared.Usage{}
 		ApplyResponsesUsageToChatUsage(u, resp.Usage)
 		c.usage = u
 	}
@@ -197,16 +197,16 @@ func (c *responsesToChatStreamConverter) emitTextDelta(delta string) (string, er
 	}
 
 	chunk := c.newChatChunk()
-	choice := dto.ChatCompletionsStreamResponseChoice{
+	choice := shared.ChatCompletionsStreamResponseChoice{
 		Index: 0,
-		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+		Delta: shared.ChatCompletionsStreamResponseChoiceDelta{},
 	}
 	if !c.sentRole {
 		choice.Delta.Role = "assistant"
 		c.sentRole = true
 	}
 	choice.Delta.Content = &delta
-	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	chunk.Choices = []shared.ChatCompletionsStreamResponseChoice{choice}
 
 	return encodeChatSSEChunk(chunk)
 }
@@ -219,20 +219,20 @@ func (c *responsesToChatStreamConverter) emitReasoningDelta(delta string) (strin
 	}
 
 	chunk := c.newChatChunk()
-	choice := dto.ChatCompletionsStreamResponseChoice{
+	choice := shared.ChatCompletionsStreamResponseChoice{
 		Index: 0,
-		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+		Delta: shared.ChatCompletionsStreamResponseChoiceDelta{},
 	}
 	if !c.sentRole {
 		choice.Delta.Role = "assistant"
 		c.sentRole = true
 	}
 	choice.Delta.SetReasoningContent(delta)
-	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	chunk.Choices = []shared.ChatCompletionsStreamResponseChoice{choice}
 	return encodeChatSSEChunk(chunk)
 }
 
-func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesStreamResponse) (string, error) {
+func (c *responsesToChatStreamConverter) emitToolCallAdded(stream shared.ResponsesStreamResponse) (string, error) {
 	callID, name, ok := c.getToolCallMeta(stream)
 	if !ok {
 		return "", nil
@@ -255,9 +255,9 @@ func (c *responsesToChatStreamConverter) emitToolCallAddedByID(callID string, na
 	idx := c.getToolCallIndex(callID)
 
 	chunk := c.newChatChunk()
-	choice := dto.ChatCompletionsStreamResponseChoice{
+	choice := shared.ChatCompletionsStreamResponseChoice{
 		Index: 0,
-		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+		Delta: shared.ChatCompletionsStreamResponseChoiceDelta{},
 	}
 	if !c.sentRole {
 		choice.Delta.Role = "assistant"
@@ -267,8 +267,8 @@ func (c *responsesToChatStreamConverter) emitToolCallAddedByID(callID string, na
 	if err != nil {
 		return "", err
 	}
-	choice.Delta.ToolCalls = []dto.ToolCallResponse{toolCall}
-	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	choice.Delta.ToolCalls = []shared.ToolCallResponse{toolCall}
+	chunk.Choices = []shared.ChatCompletionsStreamResponseChoice{choice}
 	frame, err := encodeChatSSEChunk(chunk)
 	if err != nil {
 		return "", err
@@ -287,30 +287,30 @@ func (c *responsesToChatStreamConverter) emitToolCallAddedByID(callID string, na
 	return builder.String(), nil
 }
 
-func (c *responsesToChatStreamConverter) newChatToolCallAdded(callID string, idx int, name string) (dto.ToolCallResponse, error) {
+func (c *responsesToChatStreamConverter) newChatToolCallAdded(callID string, idx int, name string) (shared.ToolCallResponse, error) {
 	if c.toolCallTypeByID[callID] == "custom_tool_call" {
 		custom, err := jsonx.Marshal(map[string]any{"name": name})
 		if err != nil {
-			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
+			return shared.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
 		}
-		return dto.ToolCallResponse{
+		return shared.ToolCallResponse{
 			Index:  common.GetPointer(idx),
 			ID:     callID,
-			Type:   dto.CustomType,
+			Type:   shared.CustomType,
 			Custom: custom,
 		}, nil
 	}
-	return dto.ToolCallResponse{
+	return shared.ToolCallResponse{
 		Index: common.GetPointer(idx),
 		ID:    callID,
 		Type:  "function",
-		Function: dto.FunctionResponse{
+		Function: shared.FunctionResponse{
 			Name: name,
 		},
 	}, nil
 }
 
-func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesStreamResponse) (string, error) {
+func (c *responsesToChatStreamConverter) emitToolCallDelta(stream shared.ResponsesStreamResponse) (string, error) {
 	callID, name, ok := c.getToolCallMeta(stream)
 	if !ok {
 		return "", nil
@@ -338,7 +338,7 @@ func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesS
 	return frame, nil
 }
 
-func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesStreamResponse) (string, error) {
+func (c *responsesToChatStreamConverter) emitToolCallDone(stream shared.ResponsesStreamResponse) (string, error) {
 	callID, name, ok := c.getToolCallMeta(stream)
 	if !ok {
 		return "", nil
@@ -389,7 +389,7 @@ func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
 	finishReason := c.finishReason()
 
 	stop := c.newChatChunk()
-	stop.Choices = []dto.ChatCompletionsStreamResponseChoice{
+	stop.Choices = []shared.ChatCompletionsStreamResponseChoice{
 		{
 			Index:        0,
 			FinishReason: &finishReason,
@@ -410,7 +410,7 @@ func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
 
 	if c.includeUsage && c.usage != nil {
 		usageChunk := c.newChatChunk()
-		usageChunk.Choices = make([]dto.ChatCompletionsStreamResponseChoice, 0)
+		usageChunk.Choices = make([]shared.ChatCompletionsStreamResponseChoice, 0)
 		usageChunk.Usage = c.usage
 		frame, err := encodeChatSSEChunk(usageChunk)
 		if err != nil {
@@ -458,14 +458,14 @@ func (c *responsesToChatStreamConverter) finishReason() string {
 	}
 }
 
-func (c *responsesToChatStreamConverter) newChatChunk() *dto.ChatCompletionsStreamResponse {
+func (c *responsesToChatStreamConverter) newChatChunk() *shared.ChatCompletionsStreamResponse {
 	if c.id == "" {
 		c.id = "chatcmpl-" + common.GetRandomString(12)
 	}
 	if c.created == 0 {
 		c.created = time.Now().Unix()
 	}
-	return &dto.ChatCompletionsStreamResponse{
+	return &shared.ChatCompletionsStreamResponse{
 		Id:      c.id,
 		Object:  "chat.completion.chunk",
 		Created: c.created,
@@ -523,17 +523,17 @@ func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID str
 		return "", nil
 	}
 	chunk := c.newChatChunk()
-	choice := dto.ChatCompletionsStreamResponseChoice{
+	choice := shared.ChatCompletionsStreamResponseChoice{
 		Index: 0,
-		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+		Delta: shared.ChatCompletionsStreamResponseChoiceDelta{},
 	}
 	if !c.sentRole {
 		choice.Delta.Role = "assistant"
 		c.sentRole = true
 	}
-	toolCall := dto.ToolCallResponse{
+	toolCall := shared.ToolCallResponse{
 		Index: common.GetPointer(idx),
-		Function: dto.FunctionResponse{
+		Function: shared.FunctionResponse{
 			Name:      name,
 			Arguments: delta,
 		},
@@ -543,18 +543,18 @@ func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID str
 		if err != nil {
 			return "", fmt.Errorf("marshal custom tool call input delta failed: %w", err)
 		}
-		toolCall = dto.ToolCallResponse{
+		toolCall = shared.ToolCallResponse{
 			Index:  common.GetPointer(idx),
-			Type:   dto.CustomType,
+			Type:   shared.CustomType,
 			Custom: custom,
 		}
 	}
-	choice.Delta.ToolCalls = []dto.ToolCallResponse{toolCall}
-	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	choice.Delta.ToolCalls = []shared.ToolCallResponse{toolCall}
+	chunk.Choices = []shared.ChatCompletionsStreamResponseChoice{choice}
 	return encodeChatSSEChunk(chunk)
 }
 
-func (c *responsesToChatStreamConverter) getToolCallMeta(stream dto.ResponsesStreamResponse) (string, string, bool) {
+func (c *responsesToChatStreamConverter) getToolCallMeta(stream shared.ResponsesStreamResponse) (string, string, bool) {
 	if stream.Item != nil {
 		c.rememberToolCallMeta(*stream.Item, stream.ItemID)
 	}
@@ -596,7 +596,7 @@ func (c *responsesToChatStreamConverter) getToolCallMeta(stream dto.ResponsesStr
 	return callID, name, true
 }
 
-func encodeChatSSEChunk(chunk *dto.ChatCompletionsStreamResponse) (string, error) {
+func encodeChatSSEChunk(chunk *shared.ChatCompletionsStreamResponse) (string, error) {
 	if chunk == nil {
 		return "", nil
 	}

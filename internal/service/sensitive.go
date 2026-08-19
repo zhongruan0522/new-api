@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
-func CheckSensitiveMessages(messages []dto.Message) ([]string, error) {
+func CheckSensitiveMessages(messages []shared.Message) ([]string, error) {
 	if len(messages) == 0 {
 		return nil, nil
 	}

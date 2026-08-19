@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -17,14 +18,14 @@ import (
 
 func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
 	claudeInfo := &ClaudeResponseInfo{
-		Usage: &dto.Usage{},
+		Usage: &shared.Usage{},
 	}
-	claudeResponse := &dto.ClaudeResponse{
+	claudeResponse := &shared.ClaudeResponse{
 		Type: "message_start",
-		Message: &dto.ClaudeMediaMessage{
+		Message: &shared.ClaudeMediaMessage{
 			Id:    "msg_123",
 			Model: "claude-3-5-sonnet",
-			Usage: &dto.ClaudeUsage{
+			Usage: &shared.ClaudeUsage{
 				InputTokens:              100,
 				OutputTokens:             1,
 				CacheCreationInputTokens: 50,
@@ -57,9 +58,9 @@ func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
 func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 	// message_start 先积累 usage
 	claudeInfo := &ClaudeResponseInfo{
-		Usage: &dto.Usage{
+		Usage: &shared.Usage{
 			PromptTokens: 180,
-			PromptTokensDetails: dto.InputTokenDetails{
+			PromptTokensDetails: shared.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
 			},
@@ -68,9 +69,9 @@ func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 	}
 
 	// message_delta 带完整 usage（原生 Anthropic 场景）
-	claudeResponse := &dto.ClaudeResponse{
+	claudeResponse := &shared.ClaudeResponse{
 		Type: "message_delta",
-		Usage: &dto.ClaudeUsage{
+		Usage: &shared.ClaudeUsage{
 			InputTokens:              100,
 			OutputTokens:             200,
 			CacheCreationInputTokens: 50,
@@ -99,9 +100,9 @@ func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 	// 模拟 Bedrock: message_start 已积累 usage
 	claudeInfo := &ClaudeResponseInfo{
-		Usage: &dto.Usage{
+		Usage: &shared.Usage{
 			PromptTokens: 180,
-			PromptTokensDetails: dto.InputTokenDetails{
+			PromptTokensDetails: shared.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
 			},
@@ -112,9 +113,9 @@ func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 	}
 
 	// Bedrock 的 message_delta 只有 output_tokens，缺少 input_tokens 和 cache 字段
-	claudeResponse := &dto.ClaudeResponse{
+	claudeResponse := &shared.ClaudeResponse{
 		Type: "message_delta",
-		Usage: &dto.ClaudeUsage{
+		Usage: &shared.ClaudeUsage{
 			OutputTokens: 200,
 			// InputTokens, CacheCreationInputTokens, CacheReadInputTokens 都是 0
 		},
@@ -153,7 +154,7 @@ func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 }
 
 func TestFormatClaudeResponseInfo_NilClaudeInfo(t *testing.T) {
-	claudeResponse := &dto.ClaudeResponse{Type: "message_start"}
+	claudeResponse := &shared.ClaudeResponse{Type: "message_start"}
 	ok := FormatClaudeResponseInfo(claudeResponse, nil, nil)
 	if ok {
 		t.Error("expected false for nil claudeInfo")
@@ -163,12 +164,12 @@ func TestFormatClaudeResponseInfo_NilClaudeInfo(t *testing.T) {
 func TestFormatClaudeResponseInfo_ContentBlockDelta(t *testing.T) {
 	text := "hello"
 	claudeInfo := &ClaudeResponseInfo{
-		Usage:        &dto.Usage{},
+		Usage:        &shared.Usage{},
 		ResponseText: strings.Builder{},
 	}
-	claudeResponse := &dto.ClaudeResponse{
+	claudeResponse := &shared.ClaudeResponse{
 		Type: "content_block_delta",
-		Delta: &dto.ClaudeMediaMessage{
+		Delta: &shared.ClaudeMediaMessage{
 			Text: &text,
 		},
 	}
@@ -189,7 +190,7 @@ func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
 	info := &relaycommon.RelayInfo{
 		OriginModelName:    "alias-model",
 		ResponseModelName:  "alias-model",
-		RelayFormat:        types.RelayFormatOpenAI,
+		RelayFormat:        relayconstant.RelayFormatOpenAI,
 		ShouldIncludeUsage: true,
 		ClaudeConvertInfo:  &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone},
 		ChannelMeta:        &relaycommon.ChannelMeta{UpstreamModelName: "real-model"},
@@ -198,15 +199,15 @@ func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
 		ResponseId: "msg_1",
 		Created:    1710000000,
 		Model:      "real-model",
-		Usage:      &dto.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
+		Usage:      &shared.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
 		Done:       true,
 	}
-	messageStart, err := jsonx.Marshal(dto.ClaudeResponse{
+	messageStart, err := jsonx.Marshal(shared.ClaudeResponse{
 		Type: "message_start",
-		Message: &dto.ClaudeMediaMessage{
+		Message: &shared.ClaudeMediaMessage{
 			Id:    "msg_1",
 			Model: "real-model",
-			Usage: &dto.ClaudeUsage{InputTokens: 1},
+			Usage: &shared.ClaudeUsage{InputTokens: 1},
 		},
 	})
 	if err != nil {
@@ -227,19 +228,19 @@ func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
 }
 
 func TestRequestOpenAI2ClaudeMessageIgnoresUnsupportedFileContent(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role: "user",
 				Content: []any{
-					dto.MediaContent{
-						Type: dto.ContentTypeText,
+					shared.MediaContent{
+						Type: shared.ContentTypeText,
 						Text: "see attachment",
 					},
-					dto.MediaContent{
-						Type: dto.ContentTypeFile,
-						File: &dto.MessageFile{
+					shared.MediaContent{
+						Type: shared.ContentTypeFile,
+						File: &shared.MessageFile{
 							FileName: "blob.bin",
 							FileData: "JVBERi0xLjQK",
 						},
@@ -253,7 +254,7 @@ func TestRequestOpenAI2ClaudeMessageIgnoresUnsupportedFileContent(t *testing.T) 
 	require.NoError(t, err)
 	require.Len(t, claudeRequest.Messages, 1)
 
-	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	content, ok := claudeRequest.Messages[0].Content.([]shared.ClaudeMediaMessage)
 	require.True(t, ok)
 	require.Len(t, content, 1)
 	require.Equal(t, "text", content[0].Type)
@@ -262,21 +263,21 @@ func TestRequestOpenAI2ClaudeMessageIgnoresUnsupportedFileContent(t *testing.T) 
 }
 
 func TestRequestOpenAI2ClaudeMessageSupportsPDFFileContent(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role: "user",
 				Content: []any{
-					dto.MediaContent{
-						Type: dto.ContentTypeFile,
-						File: &dto.MessageFile{
+					shared.MediaContent{
+						Type: shared.ContentTypeFile,
+						File: &shared.MessageFile{
 							FileName: "spec.pdf",
 							FileData: "JVBERi0xLjQK",
 						},
 					},
-					dto.MediaContent{
-						Type: dto.ContentTypeText,
+					shared.MediaContent{
+						Type: shared.ContentTypeText,
 						Text: "summarize it",
 					},
 				},
@@ -288,7 +289,7 @@ func TestRequestOpenAI2ClaudeMessageSupportsPDFFileContent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, claudeRequest.Messages, 1)
 
-	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	content, ok := claudeRequest.Messages[0].Content.([]shared.ClaudeMediaMessage)
 	require.True(t, ok)
 	require.Len(t, content, 2)
 	require.Equal(t, "document", content[0].Type)
@@ -302,15 +303,15 @@ func TestRequestOpenAI2ClaudeMessageSupportsPDFFileContent(t *testing.T) {
 }
 
 func TestRequestOpenAI2ClaudeMessageConvertsTextFileContentToText(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role: "user",
 				Content: []any{
-					dto.MediaContent{
-						Type: dto.ContentTypeFile,
-						File: &dto.MessageFile{
+					shared.MediaContent{
+						Type: shared.ContentTypeFile,
+						File: &shared.MessageFile{
 							FileName: "notes.txt",
 							FileData: base64.StdEncoding.EncodeToString([]byte("alpha\nbeta")),
 						},
@@ -324,7 +325,7 @@ func TestRequestOpenAI2ClaudeMessageConvertsTextFileContentToText(t *testing.T) 
 	require.NoError(t, err)
 	require.Len(t, claudeRequest.Messages, 1)
 
-	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	content, ok := claudeRequest.Messages[0].Content.([]shared.ClaudeMediaMessage)
 	require.True(t, ok)
 	require.Len(t, content, 1)
 	require.Equal(t, "text", content[0].Type)
@@ -334,17 +335,17 @@ func TestRequestOpenAI2ClaudeMessageConvertsTextFileContentToText(t *testing.T) 
 
 // --- Issue #141: Claude 工具调用五件套回归测试（用户视角） ---
 
-func buildAssistantToolCallMessage(t *testing.T, id, name, args string) dto.Message {
+func buildAssistantToolCallMessage(t *testing.T, id, name, args string) shared.Message {
 	t.Helper()
-	msg := dto.Message{
+	msg := shared.Message{
 		Role:    "assistant",
 		Content: "",
 	}
-	msg.SetToolCalls([]dto.ToolCallRequest{
+	msg.SetToolCalls([]shared.ToolCallRequest{
 		{
 			ID:   id,
 			Type: "function",
-			Function: dto.FunctionRequest{
+			Function: shared.FunctionRequest{
 				Name:      name,
 				Arguments: args,
 			},
@@ -353,24 +354,24 @@ func buildAssistantToolCallMessage(t *testing.T, id, name, args string) dto.Mess
 	return msg
 }
 
-func findToolUse(content any, toolUseId string) (dto.ClaudeMediaMessage, bool) {
-	media, ok := content.([]dto.ClaudeMediaMessage)
+func findToolUse(content any, toolUseId string) (shared.ClaudeMediaMessage, bool) {
+	media, ok := content.([]shared.ClaudeMediaMessage)
 	if !ok {
-		return dto.ClaudeMediaMessage{}, false
+		return shared.ClaudeMediaMessage{}, false
 	}
 	for _, m := range media {
 		if m.Type == "tool_use" && m.Id == toolUseId {
 			return m, true
 		}
 	}
-	return dto.ClaudeMediaMessage{}, false
+	return shared.ClaudeMediaMessage{}, false
 }
 
 // 空字符串的 tool arguments 仍需保留 tool_use 块，否则后续 tool_result 会引用不存在的 tool_use_id。
 func TestRequestOpenAI2ClaudeMessagePreservesToolUseWithEmptyArguments(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "user", Content: "hi"},
 			buildAssistantToolCallMessage(t, "call_empty", "lookup", ""),
 			{
@@ -400,9 +401,9 @@ func TestRequestOpenAI2ClaudeMessagePreservesToolUseWithEmptyArguments(t *testin
 
 // 畸形的 tool arguments 不应丢弃整个 tool_use，避免破坏与后续 tool_result 的配对。
 func TestRequestOpenAI2ClaudeMessagePreservesToolUseWithMalformedArguments(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "user", Content: "hi"},
 			buildAssistantToolCallMessage(t, "call_bad", "search", "{not-json"),
 			{
@@ -426,14 +427,14 @@ func TestRequestOpenAI2ClaudeMessagePreservesToolUseWithMalformedArguments(t *te
 
 // 空文本部分不应被发送给 Bedrock（会返回 400），但整条消息为空时用占位符兜底。
 func TestRequestOpenAI2ClaudeMessageOmitsEmptyTextBlocks(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role: "user",
 				Content: []any{
-					dto.MediaContent{Type: dto.ContentTypeText, Text: ""},
-					dto.MediaContent{Type: dto.ContentTypeText, Text: "real question"},
+					shared.MediaContent{Type: shared.ContentTypeText, Text: ""},
+					shared.MediaContent{Type: shared.ContentTypeText, Text: "real question"},
 				},
 			},
 		},
@@ -443,7 +444,7 @@ func TestRequestOpenAI2ClaudeMessageOmitsEmptyTextBlocks(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, claudeRequest.Messages, 1)
 
-	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	content, ok := claudeRequest.Messages[0].Content.([]shared.ClaudeMediaMessage)
 	require.True(t, ok)
 	// 空 text 部分应被跳过，仅保留非空 text
 	require.Len(t, content, 1)
@@ -454,13 +455,13 @@ func TestRequestOpenAI2ClaudeMessageOmitsEmptyTextBlocks(t *testing.T) {
 
 // 当 content 数组所有部分都被过滤为空时，应回退为占位符，避免 Bedrock 400。
 func TestRequestOpenAI2ClaudeMessageFallsBackToPlaceholderWhenContentEmpty(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "claude-3-5-sonnet",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role: "user",
 				Content: []any{
-					dto.MediaContent{Type: dto.ContentTypeText, Text: "   "},
+					shared.MediaContent{Type: shared.ContentTypeText, Text: "   "},
 				},
 			},
 		},
@@ -470,7 +471,7 @@ func TestRequestOpenAI2ClaudeMessageFallsBackToPlaceholderWhenContentEmpty(t *te
 	require.NoError(t, err)
 	require.Len(t, claudeRequest.Messages, 1)
 
-	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	content, ok := claudeRequest.Messages[0].Content.([]shared.ClaudeMediaMessage)
 	require.True(t, ok)
 	require.Len(t, content, 1, "empty content should fall back to a placeholder text block")
 	require.Equal(t, "text", content[0].Type)
@@ -482,10 +483,10 @@ func TestRequestOpenAI2ClaudeMessageFallsBackToPlaceholderWhenContentEmpty(t *te
 func TestStreamResponseClaude2OpenAIUsesClaudeZeroBasedToolIndexes(t *testing.T) {
 	idx0 := 0
 	idx1 := 1
-	first := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	first := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type:  "content_block_start",
 		Index: &idx0,
-		ContentBlock: &dto.ClaudeMediaMessage{
+		ContentBlock: &shared.ClaudeMediaMessage{
 			Type: "tool_use",
 			Id:   "call_0",
 			Name: "weather",
@@ -498,10 +499,10 @@ func TestStreamResponseClaude2OpenAIUsesClaudeZeroBasedToolIndexes(t *testing.T)
 	require.Equal(t, 0, *first.Choices[0].Delta.ToolCalls[0].Index)
 	require.Equal(t, "call_0", first.Choices[0].Delta.ToolCalls[0].ID)
 
-	second := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	second := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type:  "content_block_start",
 		Index: &idx1,
-		ContentBlock: &dto.ClaudeMediaMessage{
+		ContentBlock: &shared.ClaudeMediaMessage{
 			Type: "tool_use",
 			Id:   "call_1",
 			Name: "calendar",
@@ -517,10 +518,10 @@ func TestStreamResponseClaude2OpenAIUsesClaudeZeroBasedToolIndexes(t *testing.T)
 func TestStreamResponseClaude2OpenAINilInputJSONDeltaDoesNotPanic(t *testing.T) {
 	idx := 0
 	require.NotPanics(t, func() {
-		resp := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+		resp := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 			Type:  "content_block_delta",
 			Index: &idx,
-			Delta: &dto.ClaudeMediaMessage{
+			Delta: &shared.ClaudeMediaMessage{
 				Type:        "input_json_delta",
 				PartialJson: nil,
 			},
@@ -540,18 +541,18 @@ func TestStreamResponseClaude2OpenAIParallelToolArgumentDeltasKeepIndexes(t *tes
 	partial0 := `{"a"`
 	partial1 := `{"b"`
 
-	a := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	a := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type:  "content_block_delta",
 		Index: &idx0,
-		Delta: &dto.ClaudeMediaMessage{
+		Delta: &shared.ClaudeMediaMessage{
 			Type:        "input_json_delta",
 			PartialJson: &partial0,
 		},
 	})
-	b := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	b := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type:  "content_block_delta",
 		Index: &idx1,
-		Delta: &dto.ClaudeMediaMessage{
+		Delta: &shared.ClaudeMediaMessage{
 			Type:        "input_json_delta",
 			PartialJson: &partial1,
 		},
@@ -570,17 +571,17 @@ func TestHandleStreamFinalResponseFallbackPreservesCacheUsage(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
 
 	info := &relaycommon.RelayInfo{
-		RelayFormat: types.RelayFormatClaude,
+		RelayFormat: relayconstant.RelayFormatClaude,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "claude-3-5-sonnet"},
 	}
 	claudeInfo := &ClaudeResponseInfo{
-		Usage: &dto.Usage{
+		Usage: &shared.Usage{
 			PromptTokens: 180,
-			PromptTokensDetails: dto.InputTokenDetails{
+			PromptTokensDetails: shared.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
 			},
-			InputTokensDetails: &dto.InputTokenDetails{
+			InputTokensDetails: &shared.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
 			},

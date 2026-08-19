@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
@@ -18,64 +18,64 @@ import (
 // - /v1/chat/completions
 // - /v1/responses
 // - /v1/responses/compact (conversion not supported when chat-only)
-func OpenAIWireHelper(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
+func OpenAIWireHelper(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
 	info.InitChannelMeta(c)
 
 	wire, ok := info.ChannelSetting.OpenAIWireAPI.Normalize()
 	if !ok {
-		return types.NewErrorWithStatusCode(
+		return shared.NewErrorWithStatusCode(
 			fmt.Errorf("invalid channel setting openai_wire_api: %q", info.ChannelSetting.OpenAIWireAPI),
-			types.ErrorCodeInvalidRequest,
+			shared.ErrorCodeInvalidRequest,
 			http.StatusBadRequest,
-			types.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithSkipRetry(),
 		)
 	}
 
 	switch info.RelayMode {
 	case relayconstant.RelayModeChatCompletions:
-		if wire == dto.OpenAIWireAPIResponses {
+		if wire == shared.OpenAIWireAPIResponses {
 			return relayChatDownstreamToResponsesUpstream(c, info)
 		}
 		return TextHelper(c, info)
 	case relayconstant.RelayModeResponses:
-		if wire == dto.OpenAIWireAPIChat {
+		if wire == shared.OpenAIWireAPIChat {
 			return relayResponsesDownstreamToChatUpstream(c, info)
 		}
 		return ResponsesHelper(c, info)
 	case relayconstant.RelayModeResponsesCompact:
-		if wire == dto.OpenAIWireAPIChat {
-			return types.NewErrorWithStatusCode(
+		if wire == shared.OpenAIWireAPIChat {
+			return shared.NewErrorWithStatusCode(
 				fmt.Errorf("endpoint %q is not supported when channel openai_wire_api=%q", "/v1/responses/compact", wire),
-				types.ErrorCodeInvalidRequest,
+				shared.ErrorCodeInvalidRequest,
 				http.StatusBadRequest,
-				types.ErrOptionWithSkipRetry(),
+				shared.ErrOptionWithSkipRetry(),
 			)
 		}
 		return ResponsesHelper(c, info)
 	default:
-		return types.NewErrorWithStatusCode(
+		return shared.NewErrorWithStatusCode(
 			fmt.Errorf("unsupported relay mode for openai wire conversion: %d", info.RelayMode),
-			types.ErrorCodeInvalidRequest,
+			shared.ErrorCodeInvalidRequest,
 			http.StatusBadRequest,
-			types.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithSkipRetry(),
 		)
 	}
 }
 
-func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
-	chatReq, ok := info.Request.(*dto.GeneralOpenAIRequest)
+func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
+	chatReq, ok := info.Request.(*shared.GeneralOpenAIRequest)
 	if !ok {
-		return types.NewErrorWithStatusCode(
-			fmt.Errorf("invalid request type, expected dto.GeneralOpenAIRequest, got %T", info.Request),
-			types.ErrorCodeInvalidRequest,
+		return shared.NewErrorWithStatusCode(
+			fmt.Errorf("invalid request type, expected shared.GeneralOpenAIRequest, got %T", info.Request),
+			shared.ErrorCodeInvalidRequest,
 			http.StatusBadRequest,
-			types.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithSkipRetry(),
 		)
 	}
 
 	responsesReq, err := relaycommon.ConvertChatCompletionsRequestToResponsesRequest(chatReq)
 	if err != nil {
-		return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewErrorWithStatusCode(err, shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
 	relaycommon.AppendRequestConversionFromRequest(info, responsesReq)
 
@@ -89,46 +89,46 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 
 	bodySnap, err := takeRequestBodySnapshot(c)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeReadRequestBodyFailed, shared.ErrOptionWithSkipRetry())
 	}
 	defer bodySnap.restore(c)
 
 	info.Request = responsesReq
 	info.RelayMode = relayconstant.RelayModeResponses
-	info.RelayFormat = types.RelayFormatOpenAIResponses
+	info.RelayFormat = relayconstant.RelayFormatOpenAIResponses
 	info.RequestURLPath = "/v1/responses"
 	info.IsStream = responsesReq.Stream
 
 	bodyBytes, err := jsonx.Marshal(responsesReq)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 	}
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if responsesReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, openAIWireConversionOptions{ChatIncludeUsage: includeUsage}, ResponsesHelper)
+		return streamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat, openAIWireConversionOptions{ChatIncludeUsage: includeUsage}, ResponsesHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, openAIWireConversionOptions{}, ResponsesHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat, openAIWireConversionOptions{}, ResponsesHelper)
 }
 
-func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
-	responsesReq, ok := info.Request.(*dto.OpenAIResponsesRequest)
+func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
+	responsesReq, ok := info.Request.(*shared.OpenAIResponsesRequest)
 	if !ok {
-		return types.NewErrorWithStatusCode(
-			fmt.Errorf("invalid request type, expected dto.OpenAIResponsesRequest, got %T", info.Request),
-			types.ErrorCodeInvalidRequest,
+		return shared.NewErrorWithStatusCode(
+			fmt.Errorf("invalid request type, expected shared.OpenAIResponsesRequest, got %T", info.Request),
+			shared.ErrorCodeInvalidRequest,
 			http.StatusBadRequest,
-			types.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithSkipRetry(),
 		)
 	}
 
 	chatReq, toolContext, err := relaycommon.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq)
 	if err != nil {
-		return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewErrorWithStatusCode(err, shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
 	relaycommon.AppendRequestConversionFromRequest(info, chatReq)
 	if responsesReq.Stream && info.SupportStreamOptions {
-		chatReq.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
+		chatReq.StreamOptions = &shared.StreamOptions{IncludeUsage: true}
 	}
 
 	snapshot := takeRelayInfoSnapshot(info)
@@ -136,42 +136,42 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 
 	bodySnap, err := takeRequestBodySnapshot(c)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeReadRequestBodyFailed, shared.ErrOptionWithSkipRetry())
 	}
 	defer bodySnap.restore(c)
 
 	info.Request = chatReq
 	info.RelayMode = relayconstant.RelayModeChatCompletions
-	info.RelayFormat = types.RelayFormatOpenAI
+	info.RelayFormat = relayconstant.RelayFormatOpenAI
 	info.RequestURLPath = "/v1/chat/completions"
 	info.IsStream = chatReq.Stream
 
 	bodyBytes, err := jsonx.Marshal(chatReq)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 	}
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if chatReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
+		return streamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
 }
 
-type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *types.NookMuxError
+type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *shared.NookMuxError
 
 func streamUpstreamWithWireConversion(
 	c *gin.Context,
 	info *relaycommon.RelayInfo,
-	upstream dto.OpenAIWireAPI,
-	downstream dto.OpenAIWireAPI,
+	upstream shared.OpenAIWireAPI,
+	downstream shared.OpenAIWireAPI,
 	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
-) *types.NookMuxError {
+) *shared.NookMuxError {
 	base := c.Writer
 	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions(opts))
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponse, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeBadResponse, shared.ErrOptionWithSkipRetry())
 	}
 	c.Writer = writer
 	defer func() { c.Writer = base }()
@@ -181,7 +181,7 @@ func streamUpstreamWithWireConversion(
 		return newAPIError
 	}
 	if convErr := writer.ConversionErr(); convErr != nil {
-		return types.NewError(convErr, types.ErrorCodeBadResponseBody)
+		return shared.NewError(convErr, shared.ErrorCodeBadResponseBody)
 	}
 	return nil
 }
@@ -189,11 +189,11 @@ func streamUpstreamWithWireConversion(
 func nonStreamUpstreamWithWireConversion(
 	c *gin.Context,
 	info *relaycommon.RelayInfo,
-	upstream dto.OpenAIWireAPI,
-	downstream dto.OpenAIWireAPI,
+	upstream shared.OpenAIWireAPI,
+	downstream shared.OpenAIWireAPI,
 	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
-) *types.NookMuxError {
+) *shared.NookMuxError {
 	base := c.Writer
 	capture := newOpenAIWireCaptureWriter(base)
 	c.Writer = capture
@@ -205,7 +205,7 @@ func nonStreamUpstreamWithWireConversion(
 	}
 
 	if err := writeConvertedNonStreamResponse(c, capture, upstream, downstream, opts); err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	return nil
 }

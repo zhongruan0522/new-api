@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 func TestStreamResponseClaude2OpenAIPreservesSignatureAndRedactedThinking(t *testing.T) {
-	resp := StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	resp := StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type: "content_block_delta",
-		Delta: &dto.ClaudeMediaMessage{
+		Delta: &shared.ClaudeMediaMessage{
 			Type:      "signature_delta",
 			Signature: "sig_123",
 		},
@@ -22,9 +22,9 @@ func TestStreamResponseClaude2OpenAIPreservesSignatureAndRedactedThinking(t *tes
 		t.Fatalf("ReasoningSignature = %q, want %q", *resp.Choices[0].Delta.ReasoningSignature, "sig_123")
 	}
 
-	resp = StreamResponseClaude2OpenAI(&dto.ClaudeResponse{
+	resp = StreamResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Type: "content_block_start",
-		ContentBlock: &dto.ClaudeMediaMessage{
+		ContentBlock: &shared.ClaudeMediaMessage{
 			Type: "redacted_thinking",
 			Data: "encrypted_payload",
 		},
@@ -38,17 +38,17 @@ func TestStreamResponseClaude2OpenAIPreservesSignatureAndRedactedThinking(t *tes
 }
 
 func TestResponseClaude2OpenAIAggregatesThinkingTextAndTools(t *testing.T) {
-	resp := ResponseClaude2OpenAI(&dto.ClaudeResponse{
+	resp := ResponseClaude2OpenAI(&shared.ClaudeResponse{
 		Id:         "msg_1",
 		Model:      "claude-3-7-sonnet",
 		StopReason: "tool_use",
-		Usage: &dto.ClaudeUsage{
+		Usage: &shared.ClaudeUsage{
 			InputTokens:              100,
 			CacheReadInputTokens:     30,
 			CacheCreationInputTokens: 50,
 			OutputTokens:             20,
 		},
-		Content: []dto.ClaudeMediaMessage{
+		Content: []shared.ClaudeMediaMessage{
 			{Type: "thinking", Thinking: common.GetPointer[string]("plan"), Signature: "sig_123"},
 			{Type: "redacted_thinking", Data: "encrypted_payload"},
 			{Type: "text", Text: common.GetPointer[string]("hello ")},

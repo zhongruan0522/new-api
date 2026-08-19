@@ -6,32 +6,33 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
-func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	// read response body
-	var responsesResponse dto.OpenAIResponsesResponse
+	var responsesResponse shared.OpenAIResponsesResponse
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 	err = jsonx.Unmarshal(responseBody, &responsesResponse)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if oaiError := responsesResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-		return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+		return nil, shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
 
 	if responsesResponse.HasImageGenerationCall() {
@@ -42,13 +43,13 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	helper.MaskResponsesResponseModel(&responsesResponse, info)
 
 	// compute usage
-	usage := dto.Usage{}
+	usage := shared.Usage{}
 	relaycommon.ApplyResponsesUsageToChatUsage(&usage, responsesResponse.Usage)
 
-	if info != nil && info.RelayFormat == types.RelayFormatClaude {
+	if info != nil && info.RelayFormat == relayconstant.RelayFormatClaude {
 		responseBody, err = convertResponsesBodyToClaudeBody(&responsesResponse, &usage, info)
 		if err != nil {
-			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 	} else {
 		responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
@@ -65,10 +66,10 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	for _, output := range responsesResponse.Output {
 		var toolType string
 		switch output.Type {
-		case dto.BuildInCallWebSearchCall:
-			toolType = dto.BuildInToolWebSearchPreview
-		case dto.BuildInCallFileSearchCall:
-			toolType = dto.BuildInToolFileSearch
+		case shared.BuildInCallWebSearchCall:
+			toolType = shared.BuildInToolWebSearchPreview
+		case shared.BuildInCallFileSearchCall:
+			toolType = shared.BuildInToolFileSearch
 		default:
 			continue
 		}
@@ -82,19 +83,19 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	return &usage, nil
 }
 
-func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	if resp == nil || resp.Body == nil {
 		log.LogError(c, "invalid response or response body")
-		return nil, types.NewError(fmt.Errorf("invalid response"), types.ErrorCodeBadResponse)
+		return nil, shared.NewError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse)
 	}
 
 	defer service.CloseResponseBodyGracefully(resp)
 
-	var usage = &dto.Usage{}
+	var usage = &shared.Usage{}
 	var responseTextBuilder strings.Builder
 	var responsesToChat relaycommon.OpenAIWireStreamConverter
-	var streamApiErr *types.NookMuxError
-	if info.RelayFormat == types.RelayFormatClaude {
+	var streamApiErr *shared.NookMuxError
+	if info.RelayFormat == relayconstant.RelayFormatClaude {
 		responsesToChat = relaycommon.NewResponsesToChatStreamConverter(false)
 	}
 
@@ -102,7 +103,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		maskedData := data
 
 		// 检查当前数据是否包含 completed 状态和 usage 信息
-		var streamResponse dto.ResponsesStreamResponse
+		var streamResponse shared.ResponsesStreamResponse
 		if err := jsonx.UnmarshalJsonStr(data, &streamResponse); err == nil {
 			// 上游在 HTTP 200 流内返回错误载荷：官方 type:"error" 事件、
 			// 部分网关转成 200 下发的裸 {"error":{...}} 帧、response.failed
@@ -111,7 +112,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			// 「502 上游没有返回计费信息」。
 			if streamApiErr == nil {
 				if oaiError := streamResponse.GetOpenAIError(); oaiError != nil {
-					streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+					streamApiErr = shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 					return false
 				}
 			}
@@ -122,7 +123,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 				if streamResponse.Response != nil {
 					if streamResponse.Response.Usage != nil {
 						relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
-						if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil {
+						if info.RelayFormat == relayconstant.RelayFormatClaude && info.ClaudeConvertInfo != nil {
 							info.ClaudeConvertInfo.Usage = usage
 						}
 					}
@@ -135,16 +136,16 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			case "response.output_text.delta":
 				// 处理输出文本
 				responseTextBuilder.WriteString(streamResponse.Delta)
-			case dto.ResponsesOutputTypeItemDone:
+			case shared.ResponsesOutputTypeItemDone:
 				// 内置工具调用计数
 				if streamResponse.Item != nil && info != nil && info.ResponsesUsageInfo != nil && info.ResponsesUsageInfo.BuiltInTools != nil {
 					switch streamResponse.Item.Type {
-					case dto.BuildInCallWebSearchCall:
-						if webSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool != nil {
+					case shared.BuildInCallWebSearchCall:
+						if webSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolWebSearchPreview]; exists && webSearchTool != nil {
 							webSearchTool.CallCount++
 						}
-					case dto.BuildInCallFileSearchCall:
-						if fileSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool != nil {
+					case shared.BuildInCallFileSearchCall:
+						if fileSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolFileSearch]; exists && fileSearchTool != nil {
 							fileSearchTool.CallCount++
 						}
 					}
@@ -154,7 +155,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			log.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		}
 
-		if info.RelayFormat == types.RelayFormatClaude {
+		if info.RelayFormat == relayconstant.RelayFormatClaude {
 			if err := writeResponsesStreamAsClaude(c, info, responsesToChat, maskedData); err != nil {
 				log.LogError(c, "failed to convert responses stream to claude: "+err.Error())
 				return false
@@ -195,7 +196,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	return usage, nil
 }
 
-func convertResponsesBodyToClaudeBody(responsesResponse *dto.OpenAIResponsesResponse, usage *dto.Usage, info *relaycommon.RelayInfo) ([]byte, error) {
+func convertResponsesBodyToClaudeBody(responsesResponse *shared.OpenAIResponsesResponse, usage *shared.Usage, info *relaycommon.RelayInfo) ([]byte, error) {
 	chatResponse, err := relaycommon.ConvertResponsesResponseToChatCompletionResponse(responsesResponse)
 	if err != nil {
 		return nil, err
@@ -214,9 +215,9 @@ func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, c
 	if info.ClaudeConvertInfo == nil {
 		info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
 	}
-	var streamResponse dto.ResponsesStreamResponse
+	var streamResponse shared.ResponsesStreamResponse
 	if err := jsonx.UnmarshalJsonStr(data, &streamResponse); err == nil && streamResponse.Response != nil && streamResponse.Response.Usage != nil {
-		usage := &dto.Usage{}
+		usage := &shared.Usage{}
 		relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
 		info.ClaudeConvertInfo.Usage = usage
 	}

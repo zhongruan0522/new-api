@@ -5,10 +5,11 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -143,13 +144,13 @@ func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[st
 	chain := make([]string, 0, len(relayInfo.RequestConversionChain))
 	for _, f := range relayInfo.RequestConversionChain {
 		switch f {
-		case types.RelayFormatOpenAI:
+		case relayconstant.RelayFormatOpenAI:
 			chain = append(chain, "OpenAI Compatible")
-		case types.RelayFormatClaude:
+		case relayconstant.RelayFormatClaude:
 			chain = append(chain, "Claude Messages")
-		case types.RelayFormatGemini:
+		case relayconstant.RelayFormatGemini:
 			chain = append(chain, "Google Gemini")
-		case types.RelayFormatOpenAIResponses:
+		case relayconstant.RelayFormatOpenAIResponses:
 			chain = append(chain, "OpenAI Responses")
 		default:
 			chain = append(chain, string(f))
@@ -161,7 +162,7 @@ func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[st
 	other["request_conversion"] = chain
 }
 
-func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
+func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.RealtimeUsage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
 	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
 	info["ws"] = true
 	info["audio_input"] = usage.InputTokenDetails.AudioTokens
@@ -173,7 +174,7 @@ func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	return info
 }
 
-func GenerateAudioOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
+func GenerateAudioOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
 	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
 	info["audio"] = true
 	info["audio_input"] = usage.PromptTokensDetails.AudioTokens
@@ -206,7 +207,7 @@ func GenerateClaudeOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	return info
 }
 
-func GenerateMjOtherInfo(relayInfo *relaycommon.RelayInfo, priceData types.PerCallPriceData) map[string]interface{} {
+func GenerateMjOtherInfo(relayInfo *relaycommon.RelayInfo, priceData billing.PerCallPriceData) map[string]interface{} {
 	other := make(map[string]interface{})
 	other["model_price"] = priceData.ModelPrice
 	other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio

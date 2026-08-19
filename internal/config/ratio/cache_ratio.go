@@ -1,7 +1,7 @@
 package ratio
 
 import (
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 var defaultCacheRatio = map[string]float64{
@@ -248,8 +248,8 @@ var defaultCreateCacheRatio = map[string]float64{
 
 //var defaultCreateCacheRatio = map[string]float64{}
 
-var cacheRatioMap = types.NewRWMap[string, float64]()
-var createCacheRatioMap = types.NewRWMap[string, float64]()
+var cacheRatioMap = shared.NewRWMap[string, float64]()
+var createCacheRatioMap = shared.NewRWMap[string, float64]()
 
 // GetCacheRatioMap returns a copy of the cache ratio map
 func GetCacheRatioMap() map[string]float64 {
@@ -268,12 +268,12 @@ func CreateCacheRatio2JSONString() string {
 
 // UpdateCacheRatioByJSONString updates the cache ratio map from a JSON string
 func UpdateCacheRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(cacheRatioMap, jsonStr)
+	return shared.LoadFromJsonString(cacheRatioMap, jsonStr)
 }
 
 // UpdateCreateCacheRatioByJSONString updates the create cache ratio map from a JSON string
 func UpdateCreateCacheRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(createCacheRatioMap, jsonStr)
+	return shared.LoadFromJsonString(createCacheRatioMap, jsonStr)
 }
 
 // GetCacheRatio returns the cache ratio for a model

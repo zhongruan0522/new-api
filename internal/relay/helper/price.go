@@ -6,11 +6,11 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +18,8 @@ import (
 const claudeCacheCreation1hMultiplier = 6 / 3.75
 
 // HandleGroupRatio checks for "auto_group" in the context and updates the group ratio and relayInfo.UsingGroup if present
-func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.GroupRatioInfo {
-	groupRatioInfo := types.GroupRatioInfo{
+func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) billing.GroupRatioInfo {
+	groupRatioInfo := billing.GroupRatioInfo{
 		GroupRatio:        1.0, // default ratio
 		GroupSpecialRatio: -1,
 	}
@@ -54,14 +54,14 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	return groupRatioInfo
 }
 
-func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, meta *types.TokenCountMeta) (types.PriceData, error) {
+func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, meta *shared.TokenCountMeta) (billing.PriceData, error) {
 	modelPrice, usePrice := ratio.GetModelPrice(info.OriginModelName, false)
 
 	groupRatioInfo := HandleGroupRatio(c, info)
 
 	if result, enabled, err := ratio.MatchContextPricingTier(info.OriginModelName, promptTokens); enabled {
 		if err != nil {
-			return types.PriceData{}, err
+			return billing.PriceData{}, err
 		}
 		preConsumedPromptTokens := common.Max(promptTokens, common.PreConsumedQuota)
 		preConsumedTokens := float64(preConsumedPromptTokens)
@@ -89,7 +89,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 			}
 		}
 
-		priceData := types.PriceData{
+		priceData := billing.PriceData{
 			FreeModel:         freeModel,
 			ModelPrice:        -1,
 			GroupRatioInfo:    groupRatioInfo,
@@ -123,7 +123,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		var matchName string
 		modelRatio, success, matchName = ratio.GetModelRatio(info.OriginModelName)
 		if !success {
-			return types.PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置；Model %s ratio or price not set, please contact administrator to configure", matchName, matchName)
+			return billing.PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置；Model %s ratio or price not set, please contact administrator to configure", matchName, matchName)
 		}
 		completionRatio = ratio.GetCompletionRatio(info.OriginModelName)
 		cacheRatio, _ = ratio.GetCacheRatio(info.OriginModelName)
@@ -168,7 +168,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		}
 	}
 
-	priceData := types.PriceData{
+	priceData := billing.PriceData{
 		FreeModel:            freeModel,
 		ModelPrice:           modelPrice,
 		ModelRatio:           modelRatio,
@@ -192,7 +192,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 }
 
 // ModelPriceHelperPerCall 按次计费的 PriceHelper (MJ、Task)
-func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) types.PerCallPriceData {
+func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) billing.PerCallPriceData {
 	groupRatioInfo := HandleGroupRatio(c, info)
 
 	modelPrice, success := ratio.GetModelPrice(info.OriginModelName, true)
@@ -206,7 +206,7 @@ func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) types.
 		}
 	}
 	quota := int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
-	priceData := types.PerCallPriceData{
+	priceData := billing.PerCallPriceData{
 		ModelPrice:     modelPrice,
 		Quota:          quota,
 		GroupRatioInfo: groupRatioInfo,

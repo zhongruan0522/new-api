@@ -5,58 +5,60 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 )
 
 func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T) {
 	budget := 2048
-	thoughtPart := dto.GeminiPart{Text: "plan", Thought: true}
+	thoughtPart := shared.GeminiPart{Text: "plan", Thought: true}
 	thoughtPart.SetThoughtSignature("sig_123")
 
-	toolResponse := &dto.GeminiFunctionResponse{
+	toolResponse := &shared.GeminiFunctionResponse{
 		Name:     "weather",
 		Response: map[string]interface{}{"temp": "20"},
 	}
 	toolResponse.SetID("call_1")
 
-	request := &dto.GeminiChatRequest{
-		Contents: []dto.GeminiChatContent{
+	request := &shared.GeminiChatRequest{
+		Contents: []shared.GeminiChatContent{
 			{
 				Role:  "user",
-				Parts: []dto.GeminiPart{{Text: "what is the weather"}},
+				Parts: []shared.GeminiPart{{Text: "what is the weather"}},
 			},
 			{
 				Role: "model",
-				Parts: []dto.GeminiPart{
+				Parts: []shared.GeminiPart{
 					thoughtPart,
-					{FunctionCall: &dto.FunctionCall{FunctionName: "weather", Arguments: map[string]interface{}{"city": "Shanghai"}}},
+					{FunctionCall: &shared.FunctionCall{FunctionName: "weather", Arguments: map[string]interface{}{"city": "Shanghai"}}},
 				},
 			},
 			{
 				Role:  "user",
-				Parts: []dto.GeminiPart{{FunctionResponse: toolResponse}},
+				Parts: []shared.GeminiPart{{FunctionResponse: toolResponse}},
 			},
 		},
-		GenerationConfig: dto.GeminiChatGenerationConfig{
-			ThinkingConfig: &dto.GeminiThinkingConfig{
+		GenerationConfig: shared.GeminiChatGenerationConfig{
+			ThinkingConfig: &shared.GeminiThinkingConfig{
 				IncludeThoughts: true,
 				ThinkingBudget:  common.GetPointer(budget),
 			},
 		},
-		ToolConfig: &dto.ToolConfig{
-			FunctionCallingConfig: &dto.FunctionCallingConfig{
-				Mode:                 dto.FunctionCallingConfigMode("ANY"),
+		ToolConfig: &shared.ToolConfig{
+			FunctionCallingConfig: &shared.FunctionCallingConfig{
+				Mode:                 shared.FunctionCallingConfigMode("ANY"),
 				AllowedFunctionNames: []string{"weather"},
 			},
 		},
-		SystemInstructions: &dto.GeminiChatContent{Parts: []dto.GeminiPart{{Text: "follow the system"}}},
+		SystemInstructions: &shared.GeminiChatContent{Parts: []shared.GeminiPart{{Text: "follow the system"}}},
 	}
-	request.SetTools([]dto.GeminiChatTool{{
-		FunctionDeclarations: []dto.FunctionRequest{{
+	request.SetTools([]shared.GeminiChatTool{{
+		FunctionDeclarations: []shared.FunctionRequest{{
 			Name:       "weather",
 			Parameters: map[string]interface{}{"type": "object"},
 		}},
@@ -68,17 +70,17 @@ func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T
 		t.Fatalf("ConvertGeminiRequest error = %v", err)
 	}
 
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted request type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted request type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 	if converted.Thinking == nil || converted.Thinking.GetBudgetTokens() != budget {
 		t.Fatalf("thinking = %+v, want enabled budget %d", converted.Thinking, budget)
 	}
 
-	toolChoice, ok := converted.ToolChoice.(*dto.ClaudeToolChoice)
+	toolChoice, ok := converted.ToolChoice.(*shared.ClaudeToolChoice)
 	if !ok {
-		t.Fatalf("tool choice type = %T, want *dto.ClaudeToolChoice", converted.ToolChoice)
+		t.Fatalf("tool choice type = %T, want *shared.ClaudeToolChoice", converted.ToolChoice)
 	}
 	if toolChoice.Type != "tool" || toolChoice.Name != "weather" {
 		t.Fatalf("tool choice = %+v, want named weather tool", toolChoice)
@@ -147,14 +149,14 @@ func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.
 	}
 
 	info := &relaycommon.RelayInfo{
-		RelayFormat:            types.RelayFormatOpenAIResponses,
-		RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAIResponses},
+		RelayFormat:            relayconstant.RelayFormatOpenAIResponses,
+		RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAIResponses},
 		ChannelMeta: &relaycommon.ChannelMeta{
 			ChannelType:       1,
 			UpstreamModelName: "claude-3-7-sonnet",
 		},
 	}
-	convertedAny, err := (&Adaptor{}).ConvertOpenAIResponsesRequest(nil, info, dto.OpenAIResponsesRequest{
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIResponsesRequest(nil, info, shared.OpenAIResponsesRequest{
 		Model:           "claude-3-7-sonnet",
 		Input:           inputRaw,
 		Tools:           toolsRaw,
@@ -163,14 +165,14 @@ func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.
 	if err != nil {
 		t.Fatalf("ConvertOpenAIResponsesRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 	if info.OpenAIResponsesToolContext == nil {
 		t.Fatal("OpenAIResponsesToolContext is nil")
 	}
-	if got, want := info.RequestConversionChain, []types.RelayFormat{types.RelayFormatOpenAIResponses, types.RelayFormatOpenAI, types.RelayFormatClaude}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+	if got, want := info.RequestConversionChain, []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAIResponses, relayconstant.RelayFormatOpenAI, relayconstant.RelayFormatClaude}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
 		t.Fatalf("RequestConversionChain = %#v, want %#v", got, want)
 	}
 	if converted.MaxTokens != 1024 {
@@ -203,9 +205,9 @@ func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingEnabled(t *testi
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 
 	if converted.Model != "claude-opus-4-6" {
@@ -214,7 +216,7 @@ func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingEnabled(t *testi
 	if converted.Thinking == nil || converted.Thinking.Type != "adaptive" || converted.Thinking.BudgetTokens != nil {
 		t.Fatalf("thinking = %+v, want adaptive without budget_tokens", converted.Thinking)
 	}
-	var outputConfig dto.ClaudeOutputConfig
+	var outputConfig shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
@@ -245,9 +247,9 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47UsesSummarizedAdaptiveThinking(t
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 
 	if converted.Model != "claude-opus-4-7" {
@@ -259,7 +261,7 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47UsesSummarizedAdaptiveThinking(t
 	if converted.Thinking == nil || converted.Thinking.Type != "adaptive" || converted.Thinking.Display != "summarized" || converted.Thinking.BudgetTokens != nil {
 		t.Fatalf("thinking = %+v, want adaptive summarized without budget_tokens", converted.Thinking)
 	}
-	var outputConfig dto.ClaudeOutputConfig
+	var outputConfig shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
@@ -283,9 +285,9 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47ThinkingSuffixUsesHighEffort(t *
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 
 	if converted.Model != "claude-opus-4-7" {
@@ -294,7 +296,7 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47ThinkingSuffixUsesHighEffort(t *
 	if converted.Thinking == nil || converted.Thinking.Type != "adaptive" || converted.Thinking.Display != "summarized" {
 		t.Fatalf("thinking = %+v, want adaptive summarized", converted.Thinking)
 	}
-	var outputConfig dto.ClaudeOutputConfig
+	var outputConfig shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
@@ -315,9 +317,9 @@ func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingDisabled(t *test
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 
 	if converted.Thinking == nil || converted.Thinking.Type != "disabled" {
@@ -346,15 +348,15 @@ func TestAdaptorConvertOpenAIRequestDeepSeekClaudeEffortUsesOutputConfigOnly(t *
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
 
 	if converted.Thinking != nil {
 		t.Fatalf("thinking = %+v, want nil for DeepSeek Anthropic-compatible effort", converted.Thinking)
 	}
-	var outputConfig dto.ClaudeOutputConfig
+	var outputConfig shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
@@ -370,20 +372,20 @@ func TestAdaptorConvertOpenAIRequestRejectsUnsupportedClaudeReasoningEffort(t *t
 	}
 }
 
-func buildOpenAIWeatherToolRequest(model string, reasoningEffort string) *dto.GeneralOpenAIRequest {
-	return &dto.GeneralOpenAIRequest{
+func buildOpenAIWeatherToolRequest(model string, reasoningEffort string) *shared.GeneralOpenAIRequest {
+	return &shared.GeneralOpenAIRequest{
 		Model:           model,
 		ReasoningEffort: reasoningEffort,
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{
 				Role:    "user",
 				Content: "What is the weather in Tokyo? Call the tool if needed.",
 			},
 		},
-		Tools: []dto.ToolCallRequest{
+		Tools: []shared.ToolCallRequest{
 			{
 				Type: "function",
-				Function: dto.FunctionRequest{
+				Function: shared.FunctionRequest{
 					Name:        "get_current_weather",
 					Description: "Get the current weather for a city",
 					Parameters: map[string]any{
@@ -419,13 +421,13 @@ func TestAdaptorConvertOpenAIRequestRequiredToolChoiceMapsToAny(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
 	if !ok {
-		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
 	}
-	choice, ok := converted.ToolChoice.(*dto.ClaudeToolChoice)
+	choice, ok := converted.ToolChoice.(*shared.ClaudeToolChoice)
 	if !ok {
-		t.Fatalf("tool_choice type = %T, want *dto.ClaudeToolChoice", converted.ToolChoice)
+		t.Fatalf("tool_choice type = %T, want *shared.ClaudeToolChoice", converted.ToolChoice)
 	}
 	if choice.Type != "any" {
 		t.Fatalf("tool_choice.type = %q, want \"any\" for required tool_choice", choice.Type)

@@ -3,10 +3,9 @@ package minimax
 import (
 	"fmt"
 
-	channelconstant "github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
 )
 
 func GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
@@ -17,7 +16,7 @@ func GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 	// CodingPlan 模式下，Claude 格式走专用地址
 	if specialPlan, ok := channelconstant.ChannelSpecialBases[baseUrl]; ok {
-		if info.RelayFormat == types.RelayFormatClaude && specialPlan.ClaudeBaseURL != "" {
+		if info.RelayFormat == constant.RelayFormatClaude && specialPlan.ClaudeBaseURL != "" {
 			return fmt.Sprintf("%s/v1/messages", specialPlan.ClaudeBaseURL), nil
 		}
 	}

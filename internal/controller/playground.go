@@ -4,17 +4,17 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/middleware"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
-
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
 func Playground(c *gin.Context) {
-	var newAPIError *types.NookMuxError
+	var newAPIError *shared.NookMuxError
 
 	defer func() {
 		if newAPIError != nil {
@@ -26,13 +26,13 @@ func Playground(c *gin.Context) {
 
 	useAccessToken := c.GetBool("use_access_token")
 	if useAccessToken {
-		newAPIError = types.NewError(errors.New(i18n.T(c, i18n.MsgPlaygroundAccessTokenUnsupported)), types.ErrorCodeAccessDenied, types.ErrOptionWithSkipRetry())
+		newAPIError = shared.NewError(errors.New(i18n.T(c, i18n.MsgPlaygroundAccessTokenUnsupported)), shared.ErrorCodeAccessDenied, shared.ErrOptionWithSkipRetry())
 		return
 	}
 
-	relayInfo, err := relaycommon.GenRelayInfo(c, types.RelayFormatOpenAI, nil, nil)
+	relayInfo, err := relaycommon.GenRelayInfo(c, relayconstant.RelayFormatOpenAI, nil, nil)
 	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		newAPIError = shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 		return
 	}
 
@@ -41,7 +41,7 @@ func Playground(c *gin.Context) {
 	// Write user context to ensure acceptUnsetRatio is available
 	userCache, err := model.GetUserCache(userId)
 	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		newAPIError = shared.NewError(err, shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 		return
 	}
 	userCache.WriteContext(c)
@@ -55,5 +55,5 @@ func Playground(c *gin.Context) {
 	}
 	_ = middleware.SetupContextForToken(c, tempToken)
 
-	Relay(c, types.RelayFormatOpenAI)
+	Relay(c, relayconstant.RelayFormatOpenAI)
 }

@@ -11,7 +11,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/pkg/cachex"
 	"github.com/gin-gonic/gin"
@@ -640,7 +640,7 @@ type ChannelAffinityUsageCacheCounters struct {
 
 var channelAffinityUsageCacheStatsLocks [64]sync.Mutex
 
-func ObserveChannelAffinityUsageCacheFromContext(c *gin.Context, usage *dto.Usage) {
+func ObserveChannelAffinityUsageCacheFromContext(c *gin.Context, usage *shared.Usage) {
 	statsCtx, ok := GetChannelAffinityStatsContext(c)
 	if !ok {
 		return
@@ -691,7 +691,7 @@ func GetChannelAffinityUsageCacheStats(ruleName, usingGroup, modelName, keyFp st
 	}
 }
 
-func observeChannelAffinityUsageCache(statsCtx ChannelAffinityStatsContext, usage *dto.Usage) {
+func observeChannelAffinityUsageCache(statsCtx ChannelAffinityStatsContext, usage *shared.Usage) {
 	entryKey := channelAffinityUsageCacheEntryKey(statsCtx.RuleName, statsCtx.UsingGroup, statsCtx.ModelName, statsCtx.KeyFingerprint)
 	if entryKey == "" {
 		return
@@ -743,7 +743,7 @@ func channelAffinityUsageCacheEntryKey(ruleName, usingGroup, modelName, keyFp st
 	return ruleName + "\n" + usingGroup + "\n" + modelName + "\n" + keyFp
 }
 
-func usageCacheSignals(usage *dto.Usage) (hit bool, cachedTokens int64, promptCacheHitTokens int64) {
+func usageCacheSignals(usage *shared.Usage) (hit bool, cachedTokens int64, promptCacheHitTokens int64) {
 	if usage == nil {
 		return false, 0, 0
 	}
@@ -761,7 +761,7 @@ func usageCacheSignals(usage *dto.Usage) (hit bool, cachedTokens int64, promptCa
 	return cached > 0 || pcht > 0, cached, pcht
 }
 
-func usagePromptTokens(usage *dto.Usage) int {
+func usagePromptTokens(usage *shared.Usage) int {
 	if usage == nil {
 		return 0
 	}
@@ -771,7 +771,7 @@ func usagePromptTokens(usage *dto.Usage) int {
 	return usage.InputTokens
 }
 
-func usageCompletionTokens(usage *dto.Usage) int {
+func usageCompletionTokens(usage *shared.Usage) int {
 	if usage == nil {
 		return 0
 	}
@@ -781,7 +781,7 @@ func usageCompletionTokens(usage *dto.Usage) int {
 	return usage.OutputTokens
 }
 
-func usageTotalTokens(usage *dto.Usage) int {
+func usageTotalTokens(usage *shared.Usage) int {
 	if usage == nil {
 		return 0
 	}

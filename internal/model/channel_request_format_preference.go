@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 )
 
-func preferChannelsByRequestFormat(channels []*Channel, preferredAPIType int, relayFormat types.RelayFormat) []*Channel {
+func preferChannelsByRequestFormat(channels []*Channel, preferredAPIType int, relayFormat relayconstant.RelayFormat) []*Channel {
 	if preferredAPIType < 0 && !isOpenAIWireRelayFormat(relayFormat) {
 		return channels
 	}
@@ -22,7 +23,7 @@ func preferChannelsByRequestFormat(channels []*Channel, preferredAPIType int, re
 	return channels
 }
 
-func preferAbilitiesByRequestFormat(abilities []Ability, preferredAPIType int, relayFormat types.RelayFormat) []Ability {
+func preferAbilitiesByRequestFormat(abilities []Ability, preferredAPIType int, relayFormat relayconstant.RelayFormat) []Ability {
 	if preferredAPIType < 0 && !isOpenAIWireRelayFormat(relayFormat) {
 		return abilities
 	}
@@ -81,7 +82,7 @@ func preferAbilitiesByRequestFormat(abilities []Ability, preferredAPIType int, r
 	return abilities
 }
 
-func preferChannelsByExplicitOpenAIWireAPI(channels []*Channel, relayFormat types.RelayFormat) []*Channel {
+func preferChannelsByExplicitOpenAIWireAPI(channels []*Channel, relayFormat relayconstant.RelayFormat) []*Channel {
 	if !isOpenAIWireRelayFormat(relayFormat) {
 		return nil
 	}
@@ -97,27 +98,27 @@ func preferChannelsByExplicitOpenAIWireAPI(channels []*Channel, relayFormat type
 	return matched
 }
 
-func isOpenAIWireRelayFormat(relayFormat types.RelayFormat) bool {
+func isOpenAIWireRelayFormat(relayFormat relayconstant.RelayFormat) bool {
 	switch relayFormat {
-	case types.RelayFormatOpenAI, types.RelayFormatOpenAIResponses, types.RelayFormatOpenAIResponsesCompaction:
+	case relayconstant.RelayFormatOpenAI, relayconstant.RelayFormatOpenAIResponses, relayconstant.RelayFormatOpenAIResponsesCompaction:
 		return true
 	default:
 		return false
 	}
 }
 
-func openAIWireAPISelectableForRelayFormat(wire dto.OpenAIWireAPI, relayFormat types.RelayFormat) bool {
+func openAIWireAPISelectableForRelayFormat(wire shared.OpenAIWireAPI, relayFormat relayconstant.RelayFormat) bool {
 	switch relayFormat {
-	case types.RelayFormatOpenAI, types.RelayFormatOpenAIResponses:
-		return wire == dto.OpenAIWireAPIChat || wire == dto.OpenAIWireAPIResponses
-	case types.RelayFormatOpenAIResponsesCompaction:
-		return wire == dto.OpenAIWireAPIResponses
+	case relayconstant.RelayFormatOpenAI, relayconstant.RelayFormatOpenAIResponses:
+		return wire == shared.OpenAIWireAPIChat || wire == shared.OpenAIWireAPIResponses
+	case relayconstant.RelayFormatOpenAIResponsesCompaction:
+		return wire == shared.OpenAIWireAPIResponses
 	default:
 		return false
 	}
 }
 
-func explicitlyConfiguredOpenAIWireAPI(channel *Channel) (dto.OpenAIWireAPI, bool) {
+func explicitlyConfiguredOpenAIWireAPI(channel *Channel) (shared.OpenAIWireAPI, bool) {
 	if channel == nil || channel.Setting == nil || *channel.Setting == "" {
 		return "", false
 	}
@@ -132,13 +133,13 @@ func explicitlyConfiguredOpenAIWireAPI(channel *Channel) (dto.OpenAIWireAPI, boo
 		return "", false
 	}
 
-	var configured dto.OpenAIWireAPI
+	var configured shared.OpenAIWireAPI
 	if err := jsonx.Unmarshal(rawWire, &configured); err != nil {
 		return "", false
 	}
 
 	wire, ok := configured.Normalize()
-	if !ok || wire == dto.OpenAIWireAPIBoth {
+	if !ok || wire == shared.OpenAIWireAPIBoth {
 		return "", false
 	}
 	return wire, true

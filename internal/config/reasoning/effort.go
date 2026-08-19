@@ -3,7 +3,7 @@ package reasoning
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
@@ -44,7 +44,7 @@ func IsThinkingEnabled(thinkingType string) bool {
 //  2. request.Reasoning.effort（OpenRouter / Responses 风格）
 //  3. request.THINKING（zhipu_v4 等透传的 Claude 风格 thinking，含 type=enabled/adaptive）
 //  4. request.EnableThinking（Ali Qwen 等透传，布尔语义：启用时无显式 effort）
-func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
+func ExtractEffortFromOpenAIRequest(request *shared.GeneralOpenAIRequest) string {
 	if request == nil {
 		return ""
 	}
@@ -70,7 +70,7 @@ func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
 
 	// 3. THINKING (zhipu_v4 / Claude-style passthrough)
 	if len(request.THINKING) > 0 {
-		var thinking dto.Thinking
+		var thinking shared.Thinking
 		if err := jsonx.Unmarshal(request.THINKING, &thinking); err == nil {
 			if IsThinkingEnabled(thinking.Type) {
 				return "auto"
@@ -93,7 +93,7 @@ func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
 // 覆盖以下来源：
 //  1. request.Reasoning.Effort（reasoning.effort）
 //  2. request.EnableThinking（Ali Qwen 等透传）
-func ExtractEffortFromOpenAIResponsesRequest(request *dto.OpenAIResponsesRequest) string {
+func ExtractEffortFromOpenAIResponsesRequest(request *shared.OpenAIResponsesRequest) string {
 	if request == nil {
 		return ""
 	}
@@ -120,14 +120,14 @@ func ExtractEffortFromOpenAIResponsesRequest(request *dto.OpenAIResponsesRequest
 // 覆盖以下来源（优先级从高到低）：
 //  1. output_config.effort（Claude 官方 effort 参数）
 //  2. thinking.type = enabled/adaptive（启用了思考但无显式 effort）
-func ExtractEffortFromClaudeRequest(request *dto.ClaudeRequest) string {
+func ExtractEffortFromClaudeRequest(request *shared.ClaudeRequest) string {
 	if request == nil {
 		return ""
 	}
 
 	// 1. output_config.effort
 	if len(request.OutputConfig) > 0 {
-		var config dto.ClaudeOutputConfig
+		var config shared.ClaudeOutputConfig
 		if err := jsonx.Unmarshal(request.OutputConfig, &config); err == nil {
 			// Claude effort "max" 在本项目统一映射为 "xhigh"
 			if strings.EqualFold(config.Effort, "max") {
@@ -151,7 +151,7 @@ func ExtractEffortFromClaudeRequest(request *dto.ClaudeRequest) string {
 // 覆盖以下来源（优先级从高到低）：
 //  1. thinkingConfig.thinkingLevel（Gemini 3+ 的 level 参数）
 //  2. thinkingConfig.thinkingBudget > 0 或 IncludeThoughts=true（启用了思考但无显式 level）
-func ExtractEffortFromGeminiRequest(request *dto.GeminiChatRequest) string {
+func ExtractEffortFromGeminiRequest(request *shared.GeminiChatRequest) string {
 	if request == nil {
 		return ""
 	}

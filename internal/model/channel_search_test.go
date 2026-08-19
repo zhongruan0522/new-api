@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 )
 
 // seedSearchChannelsTestChannels 插入 25 条渠道：

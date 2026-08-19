@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -30,11 +30,11 @@ type responsesFunctionCallOutputInput struct {
 }
 
 type responsesReasoningInput struct {
-	Type    string                     `json:"type"`
-	Summary []dto.ResponsesContentPart `json:"summary,omitempty"`
+	Type    string                        `json:"type"`
+	Summary []shared.ResponsesContentPart `json:"summary,omitempty"`
 }
 
-func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]dto.Message, error) {
+func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]shared.Message, error) {
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("input is required")
 	}
@@ -45,7 +45,7 @@ func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]dto.Message, er
 		if err := jsonx.Unmarshal(raw, &s); err != nil {
 			return nil, fmt.Errorf("unmarshal input string failed: %w", err)
 		}
-		return []dto.Message{{Role: "user", Content: s}}, nil
+		return []shared.Message{{Role: "user", Content: s}}, nil
 	case "array":
 		return buildChatMessagesFromResponsesInputArray(raw)
 	default:
@@ -53,7 +53,7 @@ func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]dto.Message, er
 	}
 }
 
-func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Message, error) {
+func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]shared.Message, error) {
 	var items []json.RawMessage
 	if err := jsonx.Unmarshal(raw, &items); err != nil {
 		return nil, fmt.Errorf("unmarshal input array failed: %w", err)
@@ -62,9 +62,9 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 		return nil, fmt.Errorf("input items are empty")
 	}
 
-	out := make([]dto.Message, 0, len(items))
+	out := make([]shared.Message, 0, len(items))
 	pendingReasoning := ""
-	pendingToolCalls := make([]dto.ToolCallResponse, 0)
+	pendingToolCalls := make([]shared.ToolCallResponse, 0)
 	flushToolCalls := func() error {
 		if len(pendingToolCalls) == 0 {
 			return nil
@@ -132,14 +132,14 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 		return nil, err
 	}
 	if strings.TrimSpace(pendingReasoning) != "" {
-		msg := dto.Message{Role: "assistant"}
+		msg := shared.Message{Role: "assistant"}
 		msg.SetReasoningContent(pendingReasoning)
 		out = append(out, msg)
 	}
 	return out, nil
 }
 
-func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.RawMessage) ([]dto.Message, error) {
+func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.RawMessage) ([]shared.Message, error) {
 	switch itemType {
 	case openAIResponsesInputItemTypeMessage:
 		return buildChatMessagesFromResponsesMessageItem(raw)
@@ -151,21 +151,21 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 		if strings.TrimSpace(reasoning) == "" {
 			return nil, nil
 		}
-		msg := dto.Message{Role: "assistant"}
+		msg := shared.Message{Role: "assistant"}
 		msg.SetReasoningContent(reasoning)
-		return []dto.Message{msg}, nil
+		return []shared.Message{msg}, nil
 	case openAIResponsesInputItemTypeFunctionCall, openAIResponsesInputItemTypeCustomToolCall, openAIResponsesInputItemTypeToolSearchCall:
 		msg, err := buildChatToolCallMessageFromResponsesFunctionCall(raw)
 		if err != nil {
 			return nil, err
 		}
-		return []dto.Message{msg}, nil
+		return []shared.Message{msg}, nil
 	case openAIResponsesInputItemTypeFunctionCallOutput, openAIResponsesInputItemTypeCustomToolOutput, openAIResponsesInputItemTypeToolSearchOutput:
 		msg, err := buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw)
 		if err != nil {
 			return nil, err
 		}
-		return []dto.Message{msg}, nil
+		return []shared.Message{msg}, nil
 	default:
 		return nil, fmt.Errorf("unsupported input item type: %q", itemType)
 	}
@@ -179,8 +179,8 @@ func probeResponsesInputItemType(raw json.RawMessage) (string, error) {
 	return strings.TrimSpace(probe.Type), nil
 }
 
-func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]dto.Message, error) {
-	var item dto.Input
+func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]shared.Message, error) {
+	var item shared.Input
 	if err := jsonx.Unmarshal(raw, &item); err != nil {
 		return nil, fmt.Errorf("unmarshal message item failed: %w", err)
 	}
@@ -194,61 +194,61 @@ func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]dto.Messa
 	if err != nil {
 		return nil, err
 	}
-	return []dto.Message{msg}, nil
+	return []shared.Message{msg}, nil
 }
 
-func buildChatMessageFromResponsesMessageContent(role string, raw json.RawMessage) (dto.Message, error) {
+func buildChatMessageFromResponsesMessageContent(role string, raw json.RawMessage) (shared.Message, error) {
 	switch jsonx.GetJsonType(raw) {
 	case "string":
 		var s string
 		if err := jsonx.Unmarshal(raw, &s); err != nil {
-			return dto.Message{}, fmt.Errorf("unmarshal content string failed: %w", err)
+			return shared.Message{}, fmt.Errorf("unmarshal content string failed: %w", err)
 		}
-		return dto.Message{Role: role, Content: s}, nil
+		return shared.Message{Role: role, Content: s}, nil
 	case "array":
 		var parts []map[string]any
 		if err := jsonx.Unmarshal(raw, &parts); err != nil {
-			return dto.Message{}, fmt.Errorf("unmarshal content parts failed: %w", err)
+			return shared.Message{}, fmt.Errorf("unmarshal content parts failed: %w", err)
 		}
 		media, err := convertResponsesContentPartsToChat(parts)
 		if err != nil {
-			return dto.Message{}, err
+			return shared.Message{}, err
 		}
 		if text, ok := collapseChatMediaToString(media); ok {
-			return dto.Message{Role: role, Content: text}, nil
+			return shared.Message{Role: role, Content: text}, nil
 		}
-		return dto.Message{Role: role, Content: media}, nil
+		return shared.Message{Role: role, Content: media}, nil
 	default:
-		return dto.Message{}, fmt.Errorf("unsupported content type: %s", jsonx.GetJsonType(raw))
+		return shared.Message{}, fmt.Errorf("unsupported content type: %s", jsonx.GetJsonType(raw))
 	}
 }
 
-func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (dto.Message, error) {
+func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (shared.Message, error) {
 	call, err := buildChatToolCallFromResponsesFunctionCall(raw)
 	if err != nil {
-		return dto.Message{}, err
+		return shared.Message{}, err
 	}
 
-	rawToolCalls, err := jsonx.Marshal([]dto.ToolCallResponse{call})
+	rawToolCalls, err := jsonx.Marshal([]shared.ToolCallResponse{call})
 	if err != nil {
-		return dto.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
+		return shared.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
 
-	return dto.Message{
+	return shared.Message{
 		Role:      "assistant",
 		Content:   nil,
 		ToolCalls: rawToolCalls,
 	}, nil
 }
 
-func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCallResponse, error) {
+func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (shared.ToolCallResponse, error) {
 	var item responsesFunctionCallInput
 	if err := jsonx.Unmarshal(raw, &item); err != nil {
-		return dto.ToolCallResponse{}, fmt.Errorf("unmarshal function_call item failed: %w", err)
+		return shared.ToolCallResponse{}, fmt.Errorf("unmarshal function_call item failed: %w", err)
 	}
 	callID := strings.TrimSpace(item.CallID)
 	if callID == "" {
-		return dto.ToolCallResponse{}, fmt.Errorf("function_call.call_id is required")
+		return shared.ToolCallResponse{}, fmt.Errorf("function_call.call_id is required")
 	}
 	name := strings.TrimSpace(item.Name)
 	itemType := strings.TrimSpace(item.Type)
@@ -256,7 +256,7 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 		name = openAIResponsesToolSearchChatName
 	}
 	if name == "" {
-		return dto.ToolCallResponse{}, fmt.Errorf("%s.name is required", item.Type)
+		return shared.ToolCallResponse{}, fmt.Errorf("%s.name is required", item.Type)
 	}
 	if itemType == openAIResponsesInputItemTypeCustomToolCall {
 		if strings.TrimSpace(item.Namespace) != "" {
@@ -264,12 +264,12 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 		}
 		arguments, err := BuildChatArgumentsForResponsesCustomToolInput(item.Input)
 		if err != nil {
-			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call arguments failed: %w", err)
+			return shared.ToolCallResponse{}, fmt.Errorf("marshal custom tool call arguments failed: %w", err)
 		}
-		return dto.ToolCallResponse{
+		return shared.ToolCallResponse{
 			ID:   callID,
 			Type: "function",
-			Function: dto.FunctionResponse{
+			Function: shared.FunctionResponse{
 				Name:      name,
 				Arguments: arguments,
 			},
@@ -277,30 +277,30 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 	}
 	arguments, err := responsesArgumentsToChatString(item.Arguments)
 	if err != nil {
-		return dto.ToolCallResponse{}, err
+		return shared.ToolCallResponse{}, err
 	}
 	if strings.TrimSpace(item.Namespace) != "" {
 		name = flattenOpenAIResponsesNamespaceToolName(item.Namespace, name)
 	}
 
-	return dto.ToolCallResponse{
+	return shared.ToolCallResponse{
 		ID:   callID,
 		Type: "function",
-		Function: dto.FunctionResponse{
+		Function: shared.FunctionResponse{
 			Name:      name,
 			Arguments: arguments,
 		},
 	}, nil
 }
 
-func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessage) (dto.Message, error) {
+func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessage) (shared.Message, error) {
 	var item responsesFunctionCallOutputInput
 	if err := jsonx.Unmarshal(raw, &item); err != nil {
-		return dto.Message{}, fmt.Errorf("unmarshal function_call_output item failed: %w", err)
+		return shared.Message{}, fmt.Errorf("unmarshal function_call_output item failed: %w", err)
 	}
 	callID := strings.TrimSpace(item.CallID)
 	if callID == "" {
-		return dto.Message{}, fmt.Errorf("function_call_output.call_id is required")
+		return shared.Message{}, fmt.Errorf("function_call_output.call_id is required")
 	}
 	var output any
 	var err error
@@ -309,11 +309,11 @@ func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessa
 	} else {
 		output, err = responsesFunctionCallOutputToChatContent(item.Output)
 		if err != nil {
-			return dto.Message{}, err
+			return shared.Message{}, err
 		}
 	}
 
-	return dto.Message{
+	return shared.Message{
 		Role:            "tool",
 		Content:         output,
 		ToolCallId:      callID,
@@ -321,14 +321,14 @@ func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessa
 	}, nil
 }
 
-func appendToolCallsToChatAssistantMessage(msg *dto.Message, reasoning string, toolCalls []dto.ToolCallResponse) error {
+func appendToolCallsToChatAssistantMessage(msg *shared.Message, reasoning string, toolCalls []shared.ToolCallResponse) error {
 	if msg == nil || len(toolCalls) == 0 {
 		return nil
 	}
 	if strings.TrimSpace(reasoning) != "" {
 		msg.SetReasoningContent(appendReasoningSummary(msg.GetReasoningContent(), reasoning))
 	}
-	existing := make([]dto.ToolCallResponse, 0)
+	existing := make([]shared.ToolCallResponse, 0)
 	if len(msg.ToolCalls) > 0 && jsonx.GetJsonType(msg.ToolCalls) != "null" {
 		if err := jsonx.Unmarshal(msg.ToolCalls, &existing); err != nil {
 			return fmt.Errorf("unmarshal existing tool_calls failed: %w", err)
@@ -395,27 +395,27 @@ func responsesArgumentsToChatString(raw json.RawMessage) (string, error) {
 	return string(encoded), nil
 }
 
-func convertResponsesContentPartsToChat(parts []map[string]any) ([]dto.MediaContent, error) {
-	out := make([]dto.MediaContent, 0, len(parts))
+func convertResponsesContentPartsToChat(parts []map[string]any) ([]shared.MediaContent, error) {
+	out := make([]shared.MediaContent, 0, len(parts))
 	for _, part := range parts {
 		typ, _ := part["type"].(string)
 		typ = strings.TrimSpace(typ)
 		switch typ {
 		case openAIResponsesInputTypeText, openAIResponsesOutputTypeText:
 			text, _ := part["text"].(string)
-			out = append(out, dto.MediaContent{Type: dto.ContentTypeText, Text: text})
+			out = append(out, shared.MediaContent{Type: shared.ContentTypeText, Text: text})
 		case openAIResponsesInputTypeImage:
 			image := extractResponsesImageURL(part["image_url"])
 			if image == nil || strings.TrimSpace(image.Url) == "" {
 				return nil, fmt.Errorf("invalid input_image content")
 			}
-			out = append(out, dto.MediaContent{Type: dto.ContentTypeImageURL, ImageUrl: image})
+			out = append(out, shared.MediaContent{Type: shared.ContentTypeImageURL, ImageUrl: image})
 		case openAIResponsesInputTypeFile:
 			file := extractResponsesFile(part)
 			if file == nil {
 				return nil, fmt.Errorf("invalid input_file content")
 			}
-			out = append(out, dto.MediaContent{Type: dto.ContentTypeFile, File: file})
+			out = append(out, shared.MediaContent{Type: shared.ContentTypeFile, File: file})
 		default:
 			return nil, fmt.Errorf("unsupported responses content type: %q", typ)
 		}
@@ -423,17 +423,17 @@ func convertResponsesContentPartsToChat(parts []map[string]any) ([]dto.MediaCont
 	return out, nil
 }
 
-func extractResponsesImageURL(v any) *dto.MessageImageUrl {
+func extractResponsesImageURL(v any) *shared.MessageImageUrl {
 	switch val := v.(type) {
 	case string:
-		return &dto.MessageImageUrl{Url: val, Detail: "high"}
+		return &shared.MessageImageUrl{Url: val, Detail: "high"}
 	case map[string]any:
 		u, _ := val["url"].(string)
 		detail, _ := val["detail"].(string)
 		if strings.TrimSpace(detail) == "" {
 			detail = "high"
 		}
-		return &dto.MessageImageUrl{Url: u, Detail: detail}
+		return &shared.MessageImageUrl{Url: u, Detail: detail}
 	default:
 		return nil
 	}
@@ -467,7 +467,7 @@ func extractResponsesReasoningSummary(raw json.RawMessage) (string, error) {
 	return strings.Join(parts, "\n"), nil
 }
 
-func attachReasoningToMessages(msgs *[]dto.Message, reasoning string) {
+func attachReasoningToMessages(msgs *[]shared.Message, reasoning string) {
 	if msgs == nil || len(*msgs) == 0 {
 		return
 	}
@@ -477,16 +477,16 @@ func attachReasoningToMessages(msgs *[]dto.Message, reasoning string) {
 			return
 		}
 	}
-	*msgs = append([]dto.Message{{Role: "assistant"}}, (*msgs)...)
+	*msgs = append([]shared.Message{{Role: "assistant"}}, (*msgs)...)
 	msg := &(*msgs)[0]
 	msg.SetReasoningContent(reasoning)
 }
 
-func extractResponsesFile(part map[string]any) *dto.MessageFile {
+func extractResponsesFile(part map[string]any) *shared.MessageFile {
 	if part == nil {
 		return nil
 	}
-	file := &dto.MessageFile{}
+	file := &shared.MessageFile{}
 	if fileID, _ := part["file_id"].(string); strings.TrimSpace(fileID) != "" {
 		file.FileId = fileID
 		return file
@@ -508,13 +508,13 @@ func extractResponsesFile(part map[string]any) *dto.MessageFile {
 	return nil
 }
 
-func collapseChatMediaToString(media []dto.MediaContent) (string, bool) {
+func collapseChatMediaToString(media []shared.MediaContent) (string, bool) {
 	if len(media) == 0 {
 		return "", true
 	}
 	var builder strings.Builder
 	for _, part := range media {
-		if part.Type != dto.ContentTypeText {
+		if part.Type != shared.ContentTypeText {
 			return "", false
 		}
 		builder.WriteString(part.Text)

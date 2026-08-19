@@ -3,26 +3,26 @@ package vertex
 import (
 	"encoding/json"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 type VertexAIClaudeRequest struct {
-	AnthropicVersion string              `json:"anthropic_version"`
-	Messages         []dto.ClaudeMessage `json:"messages"`
-	System           any                 `json:"system,omitempty"`
-	MaxTokens        uint                `json:"max_tokens,omitempty"`
-	StopSequences    []string            `json:"stop_sequences,omitempty"`
-	Stream           bool                `json:"stream,omitempty"`
-	Temperature      *float64            `json:"temperature,omitempty"`
-	TopP             float64             `json:"top_p,omitempty"`
-	TopK             int                 `json:"top_k,omitempty"`
-	Tools            any                 `json:"tools,omitempty"`
-	ToolChoice       any                 `json:"tool_choice,omitempty"`
-	Thinking         *dto.Thinking       `json:"thinking,omitempty"`
-	OutputConfig     json.RawMessage     `json:"output_config,omitempty"`
+	AnthropicVersion string                 `json:"anthropic_version"`
+	Messages         []shared.ClaudeMessage `json:"messages"`
+	System           any                    `json:"system,omitempty"`
+	MaxTokens        uint                   `json:"max_tokens,omitempty"`
+	StopSequences    []string               `json:"stop_sequences,omitempty"`
+	Stream           bool                   `json:"stream,omitempty"`
+	Temperature      *float64               `json:"temperature,omitempty"`
+	TopP             float64                `json:"top_p,omitempty"`
+	TopK             int                    `json:"top_k,omitempty"`
+	Tools            any                    `json:"tools,omitempty"`
+	ToolChoice       any                    `json:"tool_choice,omitempty"`
+	Thinking         *shared.Thinking       `json:"thinking,omitempty"`
+	OutputConfig     json.RawMessage        `json:"output_config,omitempty"`
 }
 
-func copyRequest(req *dto.ClaudeRequest, version string) *VertexAIClaudeRequest {
+func copyRequest(req *shared.ClaudeRequest, version string) *VertexAIClaudeRequest {
 	return &VertexAIClaudeRequest{
 		AnthropicVersion: version,
 		System:           req.System,

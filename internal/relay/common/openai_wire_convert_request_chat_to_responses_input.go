@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -18,7 +18,7 @@ type chatToolCall struct {
 	Input     string
 }
 
-func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessage, error) {
+func buildResponsesInputFromChatMessages(messages []shared.Message) (json.RawMessage, error) {
 	if len(messages) == 0 {
 		return nil, fmt.Errorf("responses input is empty after stripping instructions")
 	}
@@ -43,7 +43,7 @@ func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessag
 	return raw, nil
 }
 
-func buildResponsesInputItemsFromChatMessage(msg dto.Message, toolOutputItemTypeByCallID map[string]string) ([]map[string]any, error) {
+func buildResponsesInputItemsFromChatMessage(msg shared.Message, toolOutputItemTypeByCallID map[string]string) ([]map[string]any, error) {
 	role := strings.TrimSpace(msg.Role)
 	if role == "" {
 		return nil, fmt.Errorf("chat message role is required")
@@ -72,7 +72,7 @@ func buildResponsesInputItemsFromChatMessage(msg dto.Message, toolOutputItemType
 		if strings.TrimSpace(call.ID) == "" {
 			continue
 		}
-		if call.Type == dto.CustomType {
+		if call.Type == shared.CustomType {
 			toolOutputItemTypeByCallID[call.ID] = openAIResponsesInputItemTypeCustomToolOutput
 			continue
 		}
@@ -105,7 +105,7 @@ func buildResponsesInputItemsFromChatMessage(msg dto.Message, toolOutputItemType
 	return items, nil
 }
 
-func buildResponsesFunctionCallOutputItemFromToolMessage(msg dto.Message, itemType string) ([]map[string]any, error) {
+func buildResponsesFunctionCallOutputItemFromToolMessage(msg shared.Message, itemType string) ([]map[string]any, error) {
 	callID := strings.TrimSpace(msg.ToolCallId)
 	if callID == "" {
 		return nil, fmt.Errorf("tool message requires tool_call_id")
@@ -128,7 +128,7 @@ func buildResponsesFunctionCallOutputItemFromToolMessage(msg dto.Message, itemTy
 	return []map[string]any{item}, nil
 }
 
-func buildResponsesMessageItemFromChatMessage(role string, msg dto.Message, allowSkipEmpty bool) (map[string]any, bool, error) {
+func buildResponsesMessageItemFromChatMessage(role string, msg shared.Message, allowSkipEmpty bool) (map[string]any, bool, error) {
 	content, err := buildResponsesContentFromChatMessage(role, msg)
 	if err != nil {
 		return nil, false, err
@@ -158,7 +158,7 @@ func responsesMessageContentIsEmpty(content any) bool {
 	}
 }
 
-func buildResponsesContentFromChatMessage(role string, msg dto.Message) (any, error) {
+func buildResponsesContentFromChatMessage(role string, msg shared.Message) (any, error) {
 	if msg.Content == nil {
 		return "", nil
 	}
@@ -174,12 +174,12 @@ func buildResponsesContentFromChatMessage(role string, msg dto.Message) (any, er
 	out := make([]map[string]any, 0, len(parts))
 	for _, part := range parts {
 		switch part.Type {
-		case dto.ContentTypeText:
+		case shared.ContentTypeText:
 			out = append(out, map[string]any{
 				"type": responsesTextPartTypeForRole(roleLower),
 				"text": part.Text,
 			})
-		case dto.ContentTypeImageURL:
+		case shared.ContentTypeImageURL:
 			if roleLower == "assistant" {
 				return nil, fmt.Errorf("assistant image_url content is not supported for responses conversion")
 			}
@@ -195,7 +195,7 @@ func buildResponsesContentFromChatMessage(role string, msg dto.Message) (any, er
 				"type":      openAIResponsesInputTypeImage,
 				"image_url": imageObj,
 			})
-		case dto.ContentTypeFile:
+		case shared.ContentTypeFile:
 			if roleLower == "assistant" {
 				return nil, fmt.Errorf("assistant file content is not supported for responses conversion")
 			}
@@ -225,7 +225,7 @@ func buildResponsesContentFromChatMessage(role string, msg dto.Message) (any, er
 
 // normalizeChatMessageReasoning keeps reasoning on assistant history messages so
 // prior chain-of-thought summaries survive Chat -> Responses rewrites.
-func normalizeChatMessageReasoning(msg dto.Message) string {
+func normalizeChatMessageReasoning(msg shared.Message) string {
 	return strings.TrimSpace(msg.GetReasoningContent())
 }
 
@@ -266,13 +266,13 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 		if callID == "" {
 			callID = fmt.Sprintf("call_%d", i)
 		}
-		if toolType == dto.CustomType {
+		if toolType == shared.CustomType {
 			custom, _ := item["custom"].(map[string]any)
 			name := strings.TrimSpace(common.Interface2String(custom["name"]))
 			if name == "" {
 				return nil, fmt.Errorf("tool_calls[%d].custom.name is required", i)
 			}
-			calls = append(calls, chatToolCall{Type: dto.CustomType, ID: callID, Name: name, Input: common.Interface2String(custom["input"])})
+			calls = append(calls, chatToolCall{Type: shared.CustomType, ID: callID, Name: name, Input: common.Interface2String(custom["input"])})
 			continue
 		}
 		if toolType != "function" {
@@ -293,7 +293,7 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 func buildResponsesFunctionCallInputItems(calls []chatToolCall) []map[string]any {
 	out := make([]map[string]any, 0, len(calls))
 	for _, call := range calls {
-		if call.Type == dto.CustomType {
+		if call.Type == shared.CustomType {
 			out = append(out, map[string]any{
 				"type":    openAIResponsesInputItemTypeCustomToolCall,
 				"call_id": call.ID,

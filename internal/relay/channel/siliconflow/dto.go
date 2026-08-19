@@ -1,6 +1,6 @@
 package siliconflow
 
-import "github.com/NookMux/NookMux/internal/dto"
+import "github.com/NookMux/NookMux/internal/domain/shared"
 
 type SFTokens struct {
 	InputTokens  int `json:"input_tokens"`
@@ -12,8 +12,8 @@ type SFMeta struct {
 }
 
 type SFRerankResponse struct {
-	Results []dto.RerankResponseResult `json:"results"`
-	Meta    SFMeta                     `json:"meta"`
+	Results []shared.RerankResponseResult `json:"results"`
+	Meta    SFMeta                        `json:"meta"`
 }
 
 type SFImageRequest struct {

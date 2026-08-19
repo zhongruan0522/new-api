@@ -6,24 +6,24 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	// 读取响应体
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	if common.DebugEnabled {
@@ -31,17 +31,17 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 	}
 
 	// 解析为 Gemini 原生响应格式
-	var geminiResponse dto.GeminiChatResponse
+	var geminiResponse shared.GeminiChatResponse
 	err = jsonx.Unmarshal(responseBody, &geminiResponse)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	// 上游在 HTTP 200 中携带错误载荷（Gemini/中间网关会把 429/5xx 转成
 	// 200 + {"error":{...}} 下发）：保留真实上游错误，避免计费阶段因
 	// totalTokens=0 被误记为「502 上游没有返回计费信息」。
 	if geminiResponse.Error != nil && geminiResponse.Error.Message != "" {
-		return nil, types.WithOpenAIError(types.OpenAIError{
+		return nil, shared.WithOpenAIError(shared.OpenAIError{
 			Message: geminiResponse.Error.Message,
 			Type:    "upstream_error",
 			Code:    geminiResponse.Error.Status,
@@ -60,12 +60,12 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 	return &usage, nil
 }
 
-func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
+func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadEmbeddingResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	if common.DebugEnabled {
@@ -75,16 +75,16 @@ func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *rel
 	usage := service.ResponseText2Usage(c, "", info.UpstreamModelName, info.GetEstimatePromptTokens())
 
 	if info.IsGeminiBatchEmbedding {
-		var geminiResponse dto.GeminiBatchEmbeddingResponse
+		var geminiResponse shared.GeminiBatchEmbeddingResponse
 		err = jsonx.Unmarshal(responseBody, &geminiResponse)
 		if err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
 	} else {
-		var geminiResponse dto.GeminiEmbeddingResponse
+		var geminiResponse shared.GeminiEmbeddingResponse
 		err = jsonx.Unmarshal(responseBody, &geminiResponse)
 		if err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
 	}
 
@@ -93,10 +93,10 @@ func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *rel
 	return usage, nil
 }
 
-func GeminiTextGenerationStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func GeminiTextGenerationStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	helper.SetEventStreamHeaders(c)
 
-	return geminiStreamHandler(c, info, resp, func(data string, geminiResponse *dto.GeminiChatResponse) bool {
+	return geminiStreamHandler(c, info, resp, func(data string, geminiResponse *shared.GeminiChatResponse) bool {
 		err := helper.StringData(c, data)
 		if err != nil {
 			log.LogError(c, "failed to write stream data: "+err.Error())

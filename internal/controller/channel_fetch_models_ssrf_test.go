@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 

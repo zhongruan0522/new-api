@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/gin-gonic/gin"
 )
@@ -30,15 +30,15 @@ type openAIWireStreamConverter interface {
 
 func newOpenAIWireStreamWriter(
 	base gin.ResponseWriter,
-	upstream dto.OpenAIWireAPI,
-	downstream dto.OpenAIWireAPI,
+	upstream shared.OpenAIWireAPI,
+	downstream shared.OpenAIWireAPI,
 	opts openAIWireStreamOptions,
 ) (*openAIWireStreamWriter, error) {
 	var converter openAIWireStreamConverter
 	switch {
-	case upstream == dto.OpenAIWireAPIResponses && downstream == dto.OpenAIWireAPIChat:
+	case upstream == shared.OpenAIWireAPIResponses && downstream == shared.OpenAIWireAPIChat:
 		converter = newResponsesToChatStreamConverter(opts.ChatIncludeUsage)
-	case upstream == dto.OpenAIWireAPIChat && downstream == dto.OpenAIWireAPIResponses:
+	case upstream == shared.OpenAIWireAPIChat && downstream == shared.OpenAIWireAPIResponses:
 		converter = relaycommon.NewChatToResponsesStreamConverter(opts.ToolContext)
 	default:
 		return nil, fmt.Errorf("unsupported stream conversion: %s -> %s", upstream, downstream)

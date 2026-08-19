@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
@@ -20,8 +20,8 @@ func vertexInfo(t *testing.T, baseURL string, apiKey string, apiVersion string, 
 			ApiKey:            apiKey,
 			ApiVersion:        apiVersion,
 			UpstreamModelName: "gemini-2.5-pro",
-			ChannelOtherSettings: dto.ChannelOtherSettings{
-				VertexKeyType: dto.VertexKeyTypeJSON,
+			ChannelOtherSettings: shared.ChannelOtherSettings{
+				VertexKeyType: shared.VertexKeyTypeJSON,
 			},
 		},
 	}

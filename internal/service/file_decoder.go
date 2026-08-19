@@ -12,9 +12,8 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -133,10 +132,10 @@ func GetFileTypeFromUrl(c *gin.Context, url string, reason ...string) (string, e
 }
 
 // GetFileBase64FromUrl 从 URL 获取文件的 base64 编码数据
-// Deprecated: 请使用 GetBase64Data 配合 types.NewURLFileSource 替代
+// Deprecated: 请使用 GetBase64Data 配合 shared.NewURLFileSource 替代
 // 此函数保留用于向后兼容，内部已重构为调用统一的文件服务
-func GetFileBase64FromUrl(c *gin.Context, url string, reason ...string) (*types.LocalFileData, error) {
-	source := types.NewURLFileSource(url)
+func GetFileBase64FromUrl(c *gin.Context, url string, reason ...string) (*shared.LocalFileData, error) {
+	source := shared.NewURLFileSource(url)
 	cachedData, err := LoadFileSource(c, source, reason...)
 	if err != nil {
 		return nil, err
@@ -147,7 +146,7 @@ func GetFileBase64FromUrl(c *gin.Context, url string, reason ...string) (*types.
 	if err != nil {
 		return nil, err
 	}
-	return &types.LocalFileData{
+	return &shared.LocalFileData{
 		Base64Data: base64Data,
 		MimeType:   cachedData.MimeType,
 		Size:       cachedData.Size,

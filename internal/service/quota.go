@@ -10,14 +10,14 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 
+	"github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
@@ -28,11 +28,11 @@ type TokenDetails struct {
 }
 
 // NewEmptyUsageRetryError returns a retryable upstream error when native-format responses contain no billing usage.
-func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *types.NookMuxError {
+func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *shared.NookMuxError {
 	if relayInfo == nil || len(relayInfo.RequestConversionChain) > 1 {
 		return nil
 	}
-	return types.NewOpenAIError(errors.New(i18n.T(ctx, i18n.MsgQuotaEmptyUsage)), types.ErrorCodeBadResponse, http.StatusBadGateway)
+	return shared.NewOpenAIError(errors.New(i18n.T(ctx, i18n.MsgQuotaEmptyUsage)), shared.ErrorCodeBadResponse, http.StatusBadGateway)
 }
 
 type QuotaInfo struct {
@@ -95,7 +95,7 @@ func calculateAudioQuota(info QuotaInfo) int {
 	return int(quota.Round(0).IntPart())
 }
 
-func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage) error {
+func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.RealtimeUsage) error {
 	if relayInfo.PriceData.UsePrice {
 		return nil
 	}
@@ -159,7 +159,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 }
 
 func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
-	usage *dto.RealtimeUsage, extraContent string) *types.NookMuxError {
+	usage *shared.RealtimeUsage, extraContent string) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.InputTokenDetails.TextTokens
@@ -264,7 +264,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	return nil
 }
 
-func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) *types.NookMuxError {
+func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
@@ -394,7 +394,7 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 	return nil
 }
 
-func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData) int {
+func CalcOpenRouterCacheCreateTokens(usage shared.Usage, priceData billing.PriceData) int {
 	if priceData.CacheCreationRatio == 1 {
 		return 0
 	}
@@ -415,7 +415,7 @@ func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData)
 		(promptCacheCreatePrice - quotaPrice)))
 }
 
-func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) *types.NookMuxError {
+func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage, extraContent string) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.PromptTokensDetails.TextTokens
@@ -668,14 +668,14 @@ func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preCon
 
 			notifyType := userSetting.NotifyType
 			if notifyType == "" {
-				notifyType = dto.NotifyTypeEmail
+				notifyType = shared.NotifyTypeEmail
 			}
 
-			if notifyType == dto.NotifyTypeBark {
+			if notifyType == shared.NotifyTypeBark {
 				// Bark推送使用简短文本，不支持HTML
 				content = "{{value}}，剩余额度：{{value}}，请及时充值"
 				values = []interface{}{prompt, log.FormatQuota(relayInfo.UserQuota)}
-			} else if notifyType == dto.NotifyTypeGotify {
+			} else if notifyType == shared.NotifyTypeGotify {
 				content = "{{value}}，当前剩余额度为 {{value}}，请及时充值。"
 				values = []interface{}{prompt, log.FormatQuota(relayInfo.UserQuota)}
 			} else {
@@ -684,7 +684,7 @@ func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preCon
 				values = []interface{}{prompt, log.FormatQuota(relayInfo.UserQuota), topUpLink, topUpLink}
 			}
 
-			err := NotifyUser(relayInfo.UserId, relayInfo.UserEmail, relayInfo.UserSetting, dto.NewNotify(dto.NotifyTypeQuotaExceed, prompt, content, values))
+			err := NotifyUser(relayInfo.UserId, relayInfo.UserEmail, relayInfo.UserSetting, shared.NewNotify(shared.NotifyTypeQuotaExceed, prompt, content, values))
 			if err != nil {
 				common.SysError(fmt.Sprintf("failed to send quota notify to user %d: %s", relayInfo.UserId, err.Error()))
 			}

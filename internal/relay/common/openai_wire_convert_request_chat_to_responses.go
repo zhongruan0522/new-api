@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
-func ConvertChatCompletionsRequestToResponsesRequest(chatReq *dto.GeneralOpenAIRequest) (*dto.OpenAIResponsesRequest, error) {
+func ConvertChatCompletionsRequestToResponsesRequest(chatReq *shared.GeneralOpenAIRequest) (*shared.OpenAIResponsesRequest, error) {
 	if chatReq == nil {
 		return nil, fmt.Errorf("chat request is nil")
 	}
@@ -40,8 +40,8 @@ func ConvertChatCompletionsRequestToResponsesRequest(chatReq *dto.GeneralOpenAIR
 	return out, nil
 }
 
-func newResponsesRequestFromChat(chatReq *dto.GeneralOpenAIRequest, input json.RawMessage) *dto.OpenAIResponsesRequest {
-	out := &dto.OpenAIResponsesRequest{
+func newResponsesRequestFromChat(chatReq *shared.GeneralOpenAIRequest, input json.RawMessage) *shared.OpenAIResponsesRequest {
+	out := &shared.OpenAIResponsesRequest{
 		Model:            chatReq.Model,
 		Input:            input,
 		MaxOutputTokens:  chatReq.GetMaxTokens(),
@@ -65,7 +65,7 @@ func newResponsesRequestFromChat(chatReq *dto.GeneralOpenAIRequest, input json.R
 	return out
 }
 
-func applyChatToResponsesInstructions(out *dto.OpenAIResponsesRequest, instructions string) error {
+func applyChatToResponsesInstructions(out *shared.OpenAIResponsesRequest, instructions string) error {
 	if strings.TrimSpace(instructions) == "" {
 		return nil
 	}
@@ -77,7 +77,7 @@ func applyChatToResponsesInstructions(out *dto.OpenAIResponsesRequest, instructi
 	return nil
 }
 
-func applyChatToResponsesTools(out *dto.OpenAIResponsesRequest, chatReq *dto.GeneralOpenAIRequest) error {
+func applyChatToResponsesTools(out *shared.OpenAIResponsesRequest, chatReq *shared.GeneralOpenAIRequest) error {
 	if chatReq.ToolChoice != nil {
 		raw, err := convertChatToolChoiceToResponsesRaw(chatReq.ToolChoice)
 		if err != nil {
@@ -105,17 +105,17 @@ func applyChatToResponsesTools(out *dto.OpenAIResponsesRequest, chatReq *dto.Gen
 	return nil
 }
 
-func applyChatToResponsesSampling(out *dto.OpenAIResponsesRequest, chatReq *dto.GeneralOpenAIRequest) {
+func applyChatToResponsesSampling(out *shared.OpenAIResponsesRequest, chatReq *shared.GeneralOpenAIRequest) {
 	if chatReq.TopP > 0 {
 		topP := chatReq.TopP
 		out.TopP = &topP
 	}
 	if strings.TrimSpace(chatReq.ReasoningEffort) != "" {
-		out.Reasoning = &dto.Reasoning{Effort: chatReq.ReasoningEffort}
+		out.Reasoning = &shared.Reasoning{Effort: chatReq.ReasoningEffort}
 	}
 }
 
-func applyChatToResponsesTextFormat(out *dto.OpenAIResponsesRequest, chatReq *dto.GeneralOpenAIRequest) error {
+func applyChatToResponsesTextFormat(out *shared.OpenAIResponsesRequest, chatReq *shared.GeneralOpenAIRequest) error {
 	payload := make(map[string]any)
 	if chatReq.ResponseFormat != nil && strings.TrimSpace(chatReq.ResponseFormat.Type) != "" {
 		format, err := buildResponsesTextFormatFromChat(chatReq.ResponseFormat)
@@ -143,7 +143,7 @@ func applyChatToResponsesTextFormat(out *dto.OpenAIResponsesRequest, chatReq *dt
 }
 
 // buildResponsesTextFormatFromChat flattens Chat json_schema into Responses text.format.
-func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]any, error) {
+func buildResponsesTextFormatFromChat(format *shared.ResponseFormat) (map[string]any, error) {
 	if format == nil || strings.TrimSpace(format.Type) == "" {
 		return nil, nil
 	}
@@ -152,7 +152,7 @@ func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]an
 		return out, nil
 	}
 
-	var schema dto.FormatJsonSchema
+	var schema shared.FormatJsonSchema
 	if len(format.JsonSchema) == 0 {
 		return nil, fmt.Errorf("response_format.json_schema is required when type=json_schema")
 	}
@@ -179,13 +179,13 @@ func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]an
 	return out, nil
 }
 
-func splitChatInstructions(messages []dto.Message) (instructions string, remaining []dto.Message, err error) {
+func splitChatInstructions(messages []shared.Message) (instructions string, remaining []shared.Message, err error) {
 	if len(messages) == 0 {
 		return "", nil, nil
 	}
 
 	var parts []string
-	out := make([]dto.Message, 0, len(messages))
+	out := make([]shared.Message, 0, len(messages))
 	for _, msg := range messages {
 		role := strings.TrimSpace(strings.ToLower(msg.Role))
 		if role != "system" && role != "developer" {
@@ -204,7 +204,7 @@ func splitChatInstructions(messages []dto.Message) (instructions string, remaini
 	return strings.Join(parts, "\n"), out, nil
 }
 
-func chatMessageTextOnly(message dto.Message) (string, error) {
+func chatMessageTextOnly(message shared.Message) (string, error) {
 	if message.Content == nil {
 		return "", nil
 	}
@@ -219,7 +219,7 @@ func chatMessageTextOnly(message dto.Message) (string, error) {
 
 	var builder strings.Builder
 	for _, part := range content {
-		if part.Type == dto.ContentTypeText {
+		if part.Type == shared.ContentTypeText {
 			builder.WriteString(part.Text)
 			continue
 		}

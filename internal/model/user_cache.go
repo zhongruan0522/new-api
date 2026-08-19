@@ -6,7 +6,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
@@ -33,8 +33,8 @@ func (user *UserBase) WriteContext(c *gin.Context) {
 	common.SetContextKey(c, constant.ContextKeyUserSetting, user.GetSetting())
 }
 
-func (user *UserBase) GetSetting() dto.UserSetting {
-	setting := dto.UserSetting{}
+func (user *UserBase) GetSetting() shared.UserSetting {
+	setting := shared.UserSetting{}
 	if user.Setting != "" {
 		err := jsonx.Unmarshal([]byte(user.Setting), &setting)
 		if err != nil {
@@ -168,10 +168,10 @@ func getUserNameCache(userId int) (string, error) {
 	return cache.Username, nil
 }
 
-func getUserSettingCache(userId int) (dto.UserSetting, error) {
+func getUserSettingCache(userId int) (shared.UserSetting, error) {
 	cache, err := GetUserCache(userId)
 	if err != nil {
-		return dto.UserSetting{}, err
+		return shared.UserSetting{}, err
 	}
 	return cache.GetSetting(), nil
 }

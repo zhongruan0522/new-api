@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -445,9 +445,9 @@ var defaultAudioCompletionRatio = map[string]float64{
 	"gpt-audio-mini-2025-12-15": 4,
 }
 
-var modelPriceMap = types.NewRWMap[string, float64]()
-var modelRatioMap = types.NewRWMap[string, float64]()
-var completionRatioMap = types.NewRWMap[string, float64]()
+var modelPriceMap = shared.NewRWMap[string, float64]()
+var modelRatioMap = shared.NewRWMap[string, float64]()
+var completionRatioMap = shared.NewRWMap[string, float64]()
 
 var defaultCompletionRatio = map[string]float64{
 	"MiniMax-M2":                                4,
@@ -738,7 +738,7 @@ func ModelPrice2JSONString() string {
 }
 
 func UpdateModelPriceByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(modelPriceMap, jsonStr)
+	return shared.LoadFromJsonString(modelPriceMap, jsonStr)
 }
 
 // GetModelPrice 返回模型的价格，如果模型不存在则返回-1，false
@@ -767,7 +767,7 @@ func GetModelPrice(name string, printErr bool) (float64, bool) {
 }
 
 func UpdateModelRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(modelRatioMap, jsonStr)
+	return shared.LoadFromJsonString(modelRatioMap, jsonStr)
 }
 
 // 处理带有思考预算的模型名称，方便统一定价
@@ -815,7 +815,7 @@ func CompletionRatio2JSONString() string {
 }
 
 func UpdateCompletionRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(completionRatioMap, jsonStr)
+	return shared.LoadFromJsonString(completionRatioMap, jsonStr)
 }
 
 func GetCompletionRatio(name string) float64 {
@@ -972,15 +972,15 @@ func ModelRatio2JSONString() string {
 	return modelRatioMap.MarshalJSONString()
 }
 
-var audioRatioMap = types.NewRWMap[string, float64]()
-var audioCompletionRatioMap = types.NewRWMap[string, float64]()
+var audioRatioMap = shared.NewRWMap[string, float64]()
+var audioCompletionRatioMap = shared.NewRWMap[string, float64]()
 
 func AudioRatio2JSONString() string {
 	return audioRatioMap.MarshalJSONString()
 }
 
 func UpdateAudioRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(audioRatioMap, jsonStr)
+	return shared.LoadFromJsonString(audioRatioMap, jsonStr)
 }
 
 func AudioCompletionRatio2JSONString() string {
@@ -988,7 +988,7 @@ func AudioCompletionRatio2JSONString() string {
 }
 
 func UpdateAudioCompletionRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(audioCompletionRatioMap, jsonStr)
+	return shared.LoadFromJsonString(audioCompletionRatioMap, jsonStr)
 }
 
 func GetModelRatioCopy() map[string]float64 {

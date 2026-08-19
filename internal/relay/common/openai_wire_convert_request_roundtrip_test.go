@@ -3,21 +3,21 @@ package common
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // Test assistant history and json_schema mapping because both are required for
 // multi-turn Responses requests to remain valid after Chat -> Responses rewrite.
 func TestConvertChatCompletionsRequestToResponsesRequest_AssistantHistoryAndJSONSchema(t *testing.T) {
-	chatReq := &dto.GeneralOpenAIRequest{
+	chatReq := &shared.GeneralOpenAIRequest{
 		Model: "gpt-4.1",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "system", Content: "You are helpful."},
 			{Role: "user", Content: "Hello"},
 			{Role: "assistant", Content: "Hi there"},
 		},
-		ResponseFormat: &dto.ResponseFormat{
+		ResponseFormat: &shared.ResponseFormat{
 			Type:       "json_schema",
 			JsonSchema: []byte(`{"name":"answer_format","schema":{"type":"object","properties":{"answer":{"type":"string"}}},"strict":true}`),
 		},
@@ -116,7 +116,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 		t.Fatalf("marshal text error = %v", err)
 	}
 
-	responsesReq := &dto.OpenAIResponsesRequest{
+	responsesReq := &shared.OpenAIResponsesRequest{
 		Model: "gpt-4.1",
 		Input: inputRaw,
 		Text:  textRaw,
@@ -144,7 +144,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 		t.Fatalf("response_format.type = %q, want %q", got.ResponseFormat.Type, "json_schema")
 	}
 
-	var schema dto.FormatJsonSchema
+	var schema shared.FormatJsonSchema
 	if err := jsonx.Unmarshal(got.ResponseFormat.JsonSchema, &schema); err != nil {
 		t.Fatalf("unmarshal response_format.json_schema error = %v", err)
 	}
@@ -191,7 +191,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCalls
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{Model: "gpt-4.1", Input: inputRaw})
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{Model: "gpt-4.1", Input: inputRaw})
 	if err != nil {
 		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequest() error = %v", err)
 	}
@@ -244,14 +244,14 @@ func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *te
 		t.Fatalf("marshal custom call error = %v", err)
 	}
 
-	got, err := ConvertChatCompletionsRequestToResponsesRequest(&dto.GeneralOpenAIRequest{
+	got, err := ConvertChatCompletionsRequestToResponsesRequest(&shared.GeneralOpenAIRequest{
 		Model: "gpt-5",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "user", Content: "run code"},
 			{Role: "assistant", ToolCalls: customCallRaw},
 			{Role: "tool", ToolCallId: "call_custom", Content: "ok"},
 		},
-		Tools: []dto.ToolCallRequest{{Type: dto.CustomType, Custom: customToolRaw}},
+		Tools: []shared.ToolCallRequest{{Type: shared.CustomType, Custom: customToolRaw}},
 	})
 	if err != nil {
 		t.Fatalf("ConvertChatCompletionsRequestToResponsesRequest() error = %v", err)

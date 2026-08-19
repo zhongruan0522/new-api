@@ -8,17 +8,17 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
-func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) *dto.Usage {
+func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) *shared.Usage {
 	// the status code has been judged before, if there is a body reading failure,
 	// it should be regarded as a non-recoverable error, so it should not return err for external retry.
 	// Analogous to nginx's load balancing, it will only retry if it can't be requested or
@@ -26,7 +26,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	// the subsequent failure of the response body should be regarded as a non-recoverable error,
 	// and can be terminated directly.
 	defer service.CloseResponseBodyGracefully(resp)
-	usage := &dto.Usage{}
+	usage := &shared.Usage{}
 	usage.PromptTokens = info.GetEstimatePromptTokens()
 	usage.TotalTokens = info.GetEstimatePromptTokens()
 	for k, v := range resp.Header {
@@ -40,7 +40,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	if info.IsStream {
 		helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 			if service.SundaySearch(data, "usage") {
-				var simpleResponse dto.SimpleResponse
+				var simpleResponse shared.SimpleResponse
 				err := jsonx.Unmarshal([]byte(data), &simpleResponse)
 				if err != nil {
 					log.LogError(c, err.Error())
@@ -73,7 +73,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 
 		// 计算音频时长并更新 usage
 		audioFormat := "mp3" // 默认格式
-		if audioReq, ok := info.Request.(*dto.AudioRequest); ok && audioReq.ResponseFormat != "" {
+		if audioReq, ok := info.Request.(*shared.AudioRequest); ok && audioReq.ResponseFormat != "" {
 			audioFormat = audioReq.ResponseFormat
 		}
 
@@ -114,18 +114,18 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	return usage
 }
 
-func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*types.NookMuxError, *dto.Usage) {
+func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*shared.NookMuxError, *shared.Usage) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
-		return types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
+		return shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
 	}
 	// 写入新的 response body
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 
 	var responseData struct {
-		Usage *dto.Usage `json:"usage"`
+		Usage *shared.Usage `json:"usage"`
 	}
 	if err := jsonx.Unmarshal(responseBody, &responseData); err == nil && responseData.Usage != nil {
 		if responseData.Usage.TotalTokens > 0 {
@@ -140,7 +140,7 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 		}
 	}
 
-	usage := &dto.Usage{}
+	usage := &shared.Usage{}
 	usage.PromptTokens = info.GetEstimatePromptTokens()
 	usage.CompletionTokens = 0
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens

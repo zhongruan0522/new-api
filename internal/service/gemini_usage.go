@@ -3,11 +3,11 @@ package service
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 // HasGeminiUsageMetadata reports whether Gemini returned any usage payload worth mapping.
-func HasGeminiUsageMetadata(metadata dto.GeminiUsageMetadata) bool {
+func HasGeminiUsageMetadata(metadata shared.GeminiUsageMetadata) bool {
 	return metadata.PromptTokenCount > 0 ||
 		metadata.ToolUsePromptTokenCount > 0 ||
 		metadata.CandidatesTokenCount > 0 ||
@@ -20,10 +20,10 @@ func HasGeminiUsageMetadata(metadata dto.GeminiUsageMetadata) bool {
 }
 
 // GeminiUsageMetadataToOpenAIUsage normalizes Gemini usage metadata into the local OpenAI-compatible shape.
-func GeminiUsageMetadataToOpenAIUsage(metadata dto.GeminiUsageMetadata) dto.Usage {
+func GeminiUsageMetadataToOpenAIUsage(metadata shared.GeminiUsageMetadata) shared.Usage {
 	promptTokens := metadata.PromptTokenCount + metadata.ToolUsePromptTokenCount
 	completionTokens := metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount
-	usage := dto.Usage{
+	usage := shared.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
 		TotalTokens:      metadata.TotalTokenCount,
@@ -71,9 +71,9 @@ func GeminiUsageMetadataToOpenAIUsage(metadata dto.GeminiUsageMetadata) dto.Usag
 }
 
 // OpenAIUsageToGeminiUsage rewrites OpenAI-compatible usage into Gemini's usage schema.
-func OpenAIUsageToGeminiUsage(usage dto.Usage) dto.GeminiUsageMetadata {
+func OpenAIUsageToGeminiUsage(usage shared.Usage) shared.GeminiUsageMetadata {
 	promptDetails := usage.PromptTokensDetails
-	if usage.InputTokensDetails != nil && promptDetails == (dto.InputTokenDetails{}) {
+	if usage.InputTokensDetails != nil && promptDetails == (shared.InputTokenDetails{}) {
 		promptDetails = *usage.InputTokensDetails
 	}
 
@@ -86,7 +86,7 @@ func OpenAIUsageToGeminiUsage(usage dto.Usage) dto.GeminiUsageMetadata {
 		completionTokens = usage.OutputTokens
 	}
 
-	metadata := dto.GeminiUsageMetadata{
+	metadata := shared.GeminiUsageMetadata{
 		PromptTokenCount:        promptTokens,
 		CandidatesTokenCount:    completionTokens,
 		TotalTokenCount:         usage.TotalTokens,
@@ -109,27 +109,27 @@ func OpenAIUsageToGeminiUsage(usage dto.Usage) dto.GeminiUsageMetadata {
 	return metadata
 }
 
-func buildGeminiPromptTokenDetails(details dto.InputTokenDetails) []dto.GeminiPromptTokensDetails {
-	out := make([]dto.GeminiPromptTokensDetails, 0, 3)
+func buildGeminiPromptTokenDetails(details shared.InputTokenDetails) []shared.GeminiPromptTokensDetails {
+	out := make([]shared.GeminiPromptTokensDetails, 0, 3)
 	if details.TextTokens > 0 {
-		out = append(out, dto.GeminiPromptTokensDetails{Modality: "TEXT", TokenCount: details.TextTokens})
+		out = append(out, shared.GeminiPromptTokensDetails{Modality: "TEXT", TokenCount: details.TextTokens})
 	}
 	if details.AudioTokens > 0 {
-		out = append(out, dto.GeminiPromptTokensDetails{Modality: "AUDIO", TokenCount: details.AudioTokens})
+		out = append(out, shared.GeminiPromptTokensDetails{Modality: "AUDIO", TokenCount: details.AudioTokens})
 	}
 	if details.ImageTokens > 0 {
-		out = append(out, dto.GeminiPromptTokensDetails{Modality: "IMAGE", TokenCount: details.ImageTokens})
+		out = append(out, shared.GeminiPromptTokensDetails{Modality: "IMAGE", TokenCount: details.ImageTokens})
 	}
 	return out
 }
 
-func buildGeminiCandidateTokenDetails(details dto.OutputTokenDetails) []dto.GeminiPromptTokensDetails {
-	out := make([]dto.GeminiPromptTokensDetails, 0, 2)
+func buildGeminiCandidateTokenDetails(details shared.OutputTokenDetails) []shared.GeminiPromptTokensDetails {
+	out := make([]shared.GeminiPromptTokensDetails, 0, 2)
 	if details.TextTokens > 0 {
-		out = append(out, dto.GeminiPromptTokensDetails{Modality: "TEXT", TokenCount: details.TextTokens})
+		out = append(out, shared.GeminiPromptTokensDetails{Modality: "TEXT", TokenCount: details.TextTokens})
 	}
 	if details.AudioTokens > 0 {
-		out = append(out, dto.GeminiPromptTokensDetails{Modality: "AUDIO", TokenCount: details.AudioTokens})
+		out = append(out, shared.GeminiPromptTokensDetails{Modality: "AUDIO", TokenCount: details.AudioTokens})
 	}
 	return out
 }

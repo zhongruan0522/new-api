@@ -3,25 +3,25 @@ package common
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // Test reasoning preservation because Responses reasoning items are otherwise
 // dropped when clients are rewritten back to ChatCompletions.
 func TestConvertResponsesResponseToChatCompletionResponse_PreservesReasoningAndToolCalls(t *testing.T) {
-	responsesResp := &dto.OpenAIResponsesResponse{
+	responsesResp := &shared.OpenAIResponsesResponse{
 		ID:        "resp_123",
 		Object:    "response",
 		CreatedAt: 1700000000,
 		Status:    "completed",
 		Model:     "gpt-4.1",
-		Output: []dto.ResponsesOutput{
+		Output: []shared.ResponsesOutput{
 			{
 				Type:    "reasoning",
 				ID:      "rs_1",
 				Status:  "completed",
-				Summary: []dto.ResponsesContentPart{{Type: "summary_text", Text: "Think first"}},
+				Summary: []shared.ResponsesContentPart{{Type: "summary_text", Text: "Think first"}},
 			},
 			{
 				Type:      "function_call",
@@ -36,7 +36,7 @@ func TestConvertResponsesResponseToChatCompletionResponse_PreservesReasoningAndT
 				ID:     "msg_1",
 				Status: "completed",
 				Role:   "assistant",
-				Content: []dto.ResponsesOutputContent{{
+				Content: []shared.ResponsesOutputContent{{
 					Type: "output_text",
 					Text: "Here you go",
 				}},
@@ -75,14 +75,14 @@ func TestConvertResponsesResponseToChatCompletionResponse_PreservesReasoningAndT
 // lose key gpt-5/o-series state if reasoning is discarded during rewrite.
 func TestConvertChatCompletionResponseToResponsesResponse_PreservesReasoning(t *testing.T) {
 	reasoning := "Think first"
-	chatResp := &dto.OpenAITextResponse{
+	chatResp := &shared.OpenAITextResponse{
 		Id:      "chatcmpl_123",
 		Object:  "chat.completion",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.OpenAITextResponseChoice{{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index: 0,
-			Message: dto.Message{
+			Message: shared.Message{
 				Role:             "assistant",
 				Content:          "Here you go",
 				ReasoningContent: &reasoning,
@@ -113,25 +113,25 @@ func TestConvertChatCompletionResponseToResponsesResponse_PreservesReasoning(t *
 // Test usage detail mapping because cached and reasoning token fields affect
 // billing when Chat upstream responses are rewritten to Responses clients.
 func TestConvertChatCompletionResponseToResponsesResponse_MapsUsageDetails(t *testing.T) {
-	chatResp := &dto.OpenAITextResponse{
+	chatResp := &shared.OpenAITextResponse{
 		Id:      "chatcmpl_usage",
 		Object:  "chat.completion",
 		Created: 1700000000,
 		Model:   "gpt-4.1",
-		Choices: []dto.OpenAITextResponseChoice{{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index:        0,
-			Message:      dto.Message{Role: "assistant", Content: "ok"},
+			Message:      shared.Message{Role: "assistant", Content: "ok"},
 			FinishReason: "stop",
 		}},
-		Usage: dto.Usage{
+		Usage: shared.Usage{
 			PromptTokens:     10,
 			CompletionTokens: 7,
 			TotalTokens:      17,
-			PromptTokensDetails: dto.InputTokenDetails{
+			PromptTokensDetails: shared.InputTokenDetails{
 				CachedTokens: 3,
 				TextTokens:   10,
 			},
-			CompletionTokenDetails: dto.OutputTokenDetails{
+			CompletionTokenDetails: shared.OutputTokenDetails{
 				ReasoningTokens: 4,
 				TextTokens:      3,
 			},
@@ -159,31 +159,31 @@ func TestConvertChatCompletionResponseToResponsesResponse_MapsUsageDetails(t *te
 // Test the inverse usage mapping because Responses upstream usage is converted
 // back into Chat usage before quota and downstream response handling.
 func TestConvertResponsesResponseToChatCompletionResponse_MapsUsageDetails(t *testing.T) {
-	responsesResp := &dto.OpenAIResponsesResponse{
+	responsesResp := &shared.OpenAIResponsesResponse{
 		ID:        "resp_usage",
 		Object:    "response",
 		CreatedAt: 1700000000,
 		Status:    "completed",
 		Model:     "gpt-4.1",
-		Output: []dto.ResponsesOutput{{
+		Output: []shared.ResponsesOutput{{
 			Type:   "message",
 			ID:     "msg_1",
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{{
+			Content: []shared.ResponsesOutputContent{{
 				Type: "output_text",
 				Text: "ok",
 			}},
 		}},
-		Usage: &dto.Usage{
+		Usage: &shared.Usage{
 			InputTokens:  11,
 			OutputTokens: 8,
 			TotalTokens:  19,
-			InputTokensDetails: &dto.InputTokenDetails{
+			InputTokensDetails: &shared.InputTokenDetails{
 				CachedTokens: 5,
 				ImageTokens:  2,
 			},
-			OutputTokensDetails: &dto.OutputTokenDetails{
+			OutputTokensDetails: &shared.OutputTokenDetails{
 				ReasoningTokens: 6,
 				AudioTokens:     1,
 			},
@@ -208,14 +208,14 @@ func TestConvertResponsesResponseToChatCompletionResponse_MapsUsageDetails(t *te
 // Test custom tool response mapping because Chat custom calls and Responses
 // custom_tool_call items use different field names for the same model action.
 func TestConvertChatCompletionResponseToResponsesResponse_CustomToolCall(t *testing.T) {
-	chatResp := &dto.OpenAITextResponse{
+	chatResp := &shared.OpenAITextResponse{
 		Id:      "chatcmpl_custom",
 		Object:  "chat.completion",
 		Created: 1700000000,
 		Model:   "gpt-5",
-		Choices: []dto.OpenAITextResponseChoice{{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index: 0,
-			Message: dto.Message{
+			Message: shared.Message{
 				Role:      "assistant",
 				Content:   nil,
 				ToolCalls: []byte(`[{"id":"call_custom","type":"custom","custom":{"name":"code_exec","input":"print(1)"}}]`),
@@ -250,7 +250,7 @@ func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
 		t.Fatalf("marshal tools error = %v", err)
 	}
 
-	chatReq, toolContext, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&dto.OpenAIResponsesRequest{
+	chatReq, toolContext, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&shared.OpenAIResponsesRequest{
 		Model: "gpt-5",
 		Input: []byte(`"run a command"`),
 		Tools: toolsRaw,
@@ -293,14 +293,14 @@ func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
 		t.Fatalf("marshal chat tool calls error = %v", err)
 	}
 
-	got, err := ConvertChatCompletionResponseToResponsesResponseWithToolContext(&dto.OpenAITextResponse{
+	got, err := ConvertChatCompletionResponseToResponsesResponseWithToolContext(&shared.OpenAITextResponse{
 		Id:      "chatcmpl_shell",
 		Object:  "chat.completion",
 		Created: 1700000000,
 		Model:   "gpt-5",
-		Choices: []dto.OpenAITextResponseChoice{{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index: 0,
-			Message: dto.Message{
+			Message: shared.Message{
 				Role:      "assistant",
 				ToolCalls: toolCallsRaw,
 			},

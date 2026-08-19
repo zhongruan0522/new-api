@@ -15,9 +15,8 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/gin-gonic/gin"
 	"golang.org/x/image/webp"
 )
@@ -32,7 +31,7 @@ func getContextCacheKey(url string) string {
 
 // LoadFileSource 加载文件源数据
 // 这是统一的入口，会自动处理缓存和不同的来源类型
-func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) (*types.CachedFileData, error) {
+func LoadFileSource(c *gin.Context, source *shared.FileSource, reason ...string) (*shared.CachedFileData, error) {
 	if source == nil {
 		return nil, fmt.Errorf("file source is nil")
 	}
@@ -67,7 +66,7 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 	if source.IsURL() && c != nil {
 		contextKey = getContextCacheKey(source.URL)
 		if cachedData, exists := c.Get(contextKey); exists {
-			data := cachedData.(*types.CachedFileData)
+			data := cachedData.(*shared.CachedFileData)
 			source.SetCache(data)
 			registerSourceForCleanup(c, source)
 			return data, nil
@@ -75,7 +74,7 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 	}
 
 	// 5. 执行加载逻辑
-	var cachedData *types.CachedFileData
+	var cachedData *shared.CachedFileData
 	var err error
 
 	if source.IsURL() {
@@ -103,15 +102,15 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 }
 
 // registerSourceForCleanup 注册 FileSource 到 context 以便请求结束时清理
-func registerSourceForCleanup(c *gin.Context, source *types.FileSource) {
+func registerSourceForCleanup(c *gin.Context, source *shared.FileSource) {
 	if source.IsRegistered() {
 		return
 	}
 
 	key := string(constant.ContextKeyFileSourcesToCleanup)
-	var sources []*types.FileSource
+	var sources []*shared.FileSource
 	if existing, exists := c.Get(key); exists {
-		sources = existing.([]*types.FileSource)
+		sources = existing.([]*shared.FileSource)
 	}
 	sources = append(sources, source)
 	c.Set(key, sources)
@@ -123,7 +122,7 @@ func registerSourceForCleanup(c *gin.Context, source *types.FileSource) {
 func CleanupFileSources(c *gin.Context) {
 	key := string(constant.ContextKeyFileSourcesToCleanup)
 	if sources, exists := c.Get(key); exists {
-		for _, source := range sources.([]*types.FileSource) {
+		for _, source := range sources.([]*shared.FileSource) {
 			if cache := source.GetCache(); cache != nil {
 				cache.Close()
 			}
@@ -133,7 +132,7 @@ func CleanupFileSources(c *gin.Context) {
 }
 
 // loadFromURL 从 URL 加载文件
-func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFileData, error) {
+func loadFromURL(c *gin.Context, url string, reason ...string) (*shared.CachedFileData, error) {
 	// 下载文件
 	var maxFileSize = constant.MaxFileDownloadMB * 1024 * 1024
 
@@ -170,7 +169,7 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 
 	// 判断是否使用磁盘缓存
 	base64Size := int64(len(base64Data))
-	var cachedData *types.CachedFileData
+	var cachedData *shared.CachedFileData
 
 	if shouldUseDiskCache(base64Size) {
 		// 使用磁盘缓存
@@ -178,9 +177,9 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 		if err != nil {
 			// 磁盘缓存失败，回退到内存
 			log.LogWarn(c, fmt.Sprintf("Failed to write to disk cache, falling back to memory: %v", err))
-			cachedData = types.NewMemoryCachedData(base64Data, mimeType, int64(len(fileBytes)))
+			cachedData = shared.NewMemoryCachedData(base64Data, mimeType, int64(len(fileBytes)))
 		} else {
-			cachedData = types.NewDiskCachedData(diskPath, mimeType, int64(len(fileBytes)))
+			cachedData = shared.NewDiskCachedData(diskPath, mimeType, int64(len(fileBytes)))
 			cachedData.DiskSize = base64Size
 			cachedData.OnClose = func(size int64) {
 				common.DecrementDiskFiles(size)
@@ -192,7 +191,7 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 		}
 	} else {
 		// 使用内存缓存
-		cachedData = types.NewMemoryCachedData(base64Data, mimeType, int64(len(fileBytes)))
+		cachedData = shared.NewMemoryCachedData(base64Data, mimeType, int64(len(fileBytes)))
 	}
 
 	// 如果是图片，尝试获取图片配置
@@ -294,7 +293,7 @@ func smartDetectMimeType(resp *http.Response, url string, fileBytes []byte) stri
 }
 
 // loadFromBase64 从 base64 字符串加载文件
-func loadFromBase64(base64String string, providedMimeType string) (*types.CachedFileData, error) {
+func loadFromBase64(base64String string, providedMimeType string) (*shared.CachedFileData, error) {
 	var mimeType string
 	var cleanBase64 string
 
@@ -329,14 +328,14 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 	}
 
 	base64Size := int64(len(cleanBase64))
-	var cachedData *types.CachedFileData
+	var cachedData *shared.CachedFileData
 
 	if shouldUseDiskCache(base64Size) {
 		diskPath, err := writeToDiskCache(cleanBase64)
 		if err != nil {
-			cachedData = types.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
+			cachedData = shared.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
 		} else {
-			cachedData = types.NewDiskCachedData(diskPath, mimeType, int64(len(decodedData)))
+			cachedData = shared.NewDiskCachedData(diskPath, mimeType, int64(len(decodedData)))
 			cachedData.DiskSize = base64Size
 			cachedData.OnClose = func(size int64) {
 				common.DecrementDiskFiles(size)
@@ -344,7 +343,7 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 			common.IncrementDiskFiles(base64Size)
 		}
 	} else {
-		cachedData = types.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
+		cachedData = shared.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
 	}
 
 	if mimeType == "" || strings.HasPrefix(mimeType, "image/") {
@@ -362,7 +361,7 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 }
 
 // GetImageConfig 获取图片配置
-func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, string, error) {
+func GetImageConfig(c *gin.Context, source *shared.FileSource) (image.Config, string, error) {
 	cachedData, err := LoadFileSource(c, source, "get_image_config")
 	if err != nil {
 		return image.Config{}, "", err
@@ -393,7 +392,7 @@ func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, str
 }
 
 // GetBase64Data 获取 base64 编码的数据
-func GetBase64Data(c *gin.Context, source *types.FileSource, reason ...string) (string, string, error) {
+func GetBase64Data(c *gin.Context, source *shared.FileSource, reason ...string) (string, string, error) {
 	cachedData, err := LoadFileSource(c, source, reason...)
 	if err != nil {
 		return "", "", err
@@ -406,7 +405,7 @@ func GetBase64Data(c *gin.Context, source *types.FileSource, reason ...string) (
 }
 
 // GetMimeType 获取文件的 MIME 类型
-func GetMimeType(c *gin.Context, source *types.FileSource) (string, error) {
+func GetMimeType(c *gin.Context, source *shared.FileSource) (string, error) {
 	if source.HasCache() {
 		return source.GetCache().MimeType, nil
 	}
@@ -426,17 +425,17 @@ func GetMimeType(c *gin.Context, source *types.FileSource) (string, error) {
 }
 
 // DetectFileType 检测文件类型
-func DetectFileType(mimeType string) types.FileType {
+func DetectFileType(mimeType string) shared.FileType {
 	if strings.HasPrefix(mimeType, "image/") {
-		return types.FileTypeImage
+		return shared.FileTypeImage
 	}
 	if strings.HasPrefix(mimeType, "audio/") {
-		return types.FileTypeAudio
+		return shared.FileTypeAudio
 	}
 	if strings.HasPrefix(mimeType, "video/") {
-		return types.FileTypeVideo
+		return shared.FileTypeVideo
 	}
-	return types.FileTypeFile
+	return shared.FileTypeFile
 }
 
 // decodeImageConfig 从字节数据解码图片配置

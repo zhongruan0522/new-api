@@ -6,47 +6,46 @@ import (
 	"net/http"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
+func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shared.NookMuxError) {
 	info.InitChannelMeta(c)
 
-	audioReq, ok := info.Request.(*dto.AudioRequest)
+	audioReq, ok := info.Request.(*shared.AudioRequest)
 	if !ok {
-		return types.NewError(errors.New("invalid request type"), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewError(errors.New("invalid request type"), shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	request, err := common.DeepCopy(audioReq)
 	if err != nil {
-		return types.NewError(fmt.Errorf("failed to copy request to AudioRequest: %w", err), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewError(fmt.Errorf("failed to copy request to AudioRequest: %w", err), shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeChannelModelMappedError, shared.ErrOptionWithSkipRetry())
 	}
 
 	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
-		return types.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+		return shared.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), shared.ErrorCodeInvalidApiType, shared.ErrOptionWithSkipRetry())
 	}
 	adaptor.Init(info)
 
 	ioReader, err := adaptor.ConvertAudioRequest(c, info, *request)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 	}
 
 	resp, err := adaptor.DoRequest(c, info, ioReader)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeDoRequestFailed)
+		return shared.NewError(err, shared.ErrorCodeDoRequestFailed)
 	}
 	statusCodeMappingStr := c.GetString("status_code_mapping")
 
@@ -73,12 +72,12 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		extraContent = "voice_id: " + voiceID
 	}
 
-	if usage.(*dto.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*dto.Usage).PromptTokensDetails.AudioTokens > 0 {
-		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), extraContent); apiErr != nil {
+	if usage.(*shared.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*shared.Usage).PromptTokensDetails.AudioTokens > 0 {
+		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), extraContent); apiErr != nil {
 			return apiErr
 		}
 	} else {
-		if apiErr := postConsumeQuota(c, info, usage.(*dto.Usage)); apiErr != nil {
+		if apiErr := postConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {
 			return apiErr
 		}
 	}

@@ -9,11 +9,13 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -28,7 +30,7 @@ const (
 type ClaudeConvertInfo struct {
 	LastMessagesType string
 	Index            int
-	Usage            *dto.Usage
+	Usage            *shared.Usage
 	FinishReason     string
 	Done             bool
 	// PendingReasoningSignature buffers a Claude/OpenAI reasoning signature until
@@ -73,8 +75,8 @@ type ChannelMeta struct {
 	ChannelCreateTime    int64
 	ParamOverride        map[string]interface{}
 	HeadersOverride      map[string]interface{}
-	ChannelSetting       dto.ChannelSettings
-	ChannelOtherSettings dto.ChannelOtherSettings
+	ChannelSetting       shared.ChannelSettings
+	ChannelOtherSettings shared.ChannelOtherSettings
 	UpstreamModelName    string
 	IsModelMapped        bool
 	SupportStreamOptions bool // 是否支持流式选项
@@ -113,14 +115,14 @@ type RelayInfo struct {
 	TargetWs              *websocket.Conn
 	InputAudioFormat      string
 	OutputAudioFormat     string
-	RealtimeTools         []dto.RealTimeTool
+	RealtimeTools         []shared.RealTimeTool
 	IsFirstRequest        bool
 	AudioUsage            bool
 	ReasoningEffort       string
-	UserSetting           dto.UserSetting
+	UserSetting           shared.UserSetting
 	UserEmail             string
 	UserQuota             int
-	RelayFormat           types.RelayFormat
+	RelayFormat           relayconstant.RelayFormat
 	SendResponseCount     int
 	ReceivedResponseCount int
 	FinalPreConsumedQuota int // 最终预消耗的配额
@@ -142,19 +144,19 @@ type RelayInfo struct {
 	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
 	UpstreamRequestBodySize int64
 
-	PriceData types.PriceData
+	PriceData billing.PriceData
 
-	Request dto.Request
+	Request shared.Request
 
 	// RequestConversionChain records request format conversions in order, e.g.
 	// ["openai", "openai_responses"] or ["openai", "claude"].
-	RequestConversionChain []types.RelayFormat
+	RequestConversionChain []relayconstant.RelayFormat
 	// OpenAIResponsesToolContext carries per-request Responses tool proxy
 	// metadata across multi-hop conversions such as Responses -> Chat -> Claude
 	// and Claude -> Chat -> Responses.
 	OpenAIResponsesToolContext *OpenAIWireToolContext
 	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
-	FinalRequestRelayFormat types.RelayFormat
+	FinalRequestRelayFormat relayconstant.RelayFormat
 
 	TokenCountMeta
 	*ClaudeConvertInfo
@@ -187,19 +189,19 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		SupportStreamOptions: false,
 	}
 
-	if channelType == constant.ChannelTypeAzure {
+	if channelType == channelconstant.ChannelTypeAzure {
 		channelMeta.ApiVersion = GetAPIVersion(c)
 	}
-	if channelType == constant.ChannelTypeVertexAi {
+	if channelType == channelconstant.ChannelTypeVertexAi {
 		channelMeta.ApiVersion = c.GetString("region")
 	}
 
-	channelSetting, ok := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting)
+	channelSetting, ok := common.GetContextKeyType[shared.ChannelSettings](c, constant.ContextKeyChannelSetting)
 	if ok {
 		channelMeta.ChannelSetting = channelSetting
 	}
 
-	channelOtherSettings, ok := common.GetContextKeyType[dto.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	channelOtherSettings, ok := common.GetContextKeyType[shared.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
 	if ok {
 		channelMeta.ChannelOtherSettings = channelOtherSettings
 	}
@@ -306,23 +308,23 @@ func (info *RelayInfo) ToString() string {
 
 // 定义支持流式选项的通道类型
 var streamSupportedChannels = map[int]bool{
-	constant.ChannelTypeOpenAI:      true,
-	constant.ChannelTypeAnthropic:   true,
-	constant.ChannelTypeAws:         true,
-	constant.ChannelTypeGemini:      true,
-	constant.ChannelTypeAzure:       true,
-	constant.ChannelTypeOllama:      true,
-	constant.ChannelTypeDeepSeek:    true,
-	constant.ChannelTypeZhipu_v4:    true,
-	constant.ChannelTypeByteDance:   true,
-	constant.ChannelTypeMoonshot:    true,
-	constant.ChannelTypeMiniMax:     true,
-	constant.ChannelTypeSiliconFlow: true,
+	channelconstant.ChannelTypeOpenAI:      true,
+	channelconstant.ChannelTypeAnthropic:   true,
+	channelconstant.ChannelTypeAws:         true,
+	channelconstant.ChannelTypeGemini:      true,
+	channelconstant.ChannelTypeAzure:       true,
+	channelconstant.ChannelTypeOllama:      true,
+	channelconstant.ChannelTypeDeepSeek:    true,
+	channelconstant.ChannelTypeZhipu_v4:    true,
+	channelconstant.ChannelTypeByteDance:   true,
+	channelconstant.ChannelTypeMoonshot:    true,
+	channelconstant.ChannelTypeMiniMax:     true,
+	channelconstant.ChannelTypeSiliconFlow: true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
 	info := genBaseRelayInfo(c, nil)
-	info.RelayFormat = types.RelayFormatOpenAIRealtime
+	info.RelayFormat = relayconstant.RelayFormatOpenAIRealtime
 	info.ClientWs = ws
 	info.InputAudioFormat = "pcm16"
 	info.OutputAudioFormat = "pcm16"
@@ -330,9 +332,9 @@ func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
 	return info
 }
 
-func GenRelayInfoClaude(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoClaude(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatClaude
+	info.RelayFormat = relayconstant.RelayFormatClaude
 	info.ShouldIncludeUsage = false
 	info.ClaudeConvertInfo = &ClaudeConvertInfo{
 		LastMessagesType: LastMessageTypeNone,
@@ -342,14 +344,14 @@ func GenRelayInfoClaude(c *gin.Context, request dto.Request) *RelayInfo {
 }
 
 func isClaudeBetaForced(c *gin.Context) bool {
-	channelOtherSettings, ok := common.GetContextKeyType[dto.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	channelOtherSettings, ok := common.GetContextKeyType[shared.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
 	return ok && channelOtherSettings.ClaudeBetaQuery
 }
 
-func GenRelayInfoRerank(c *gin.Context, request *dto.RerankRequest) *RelayInfo {
+func GenRelayInfoRerank(c *gin.Context, request *shared.RerankRequest) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
 	info.RelayMode = relayconstant.RelayModeRerank
-	info.RelayFormat = types.RelayFormatRerank
+	info.RelayFormat = relayconstant.RelayFormatRerank
 	info.RerankerInfo = &RerankerInfo{
 		Documents:       request.Documents,
 		ReturnDocuments: request.GetReturnDocuments(),
@@ -357,22 +359,22 @@ func GenRelayInfoRerank(c *gin.Context, request *dto.RerankRequest) *RelayInfo {
 	return info
 }
 
-func GenRelayInfoOpenAIAudio(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoOpenAIAudio(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatOpenAIAudio
+	info.RelayFormat = relayconstant.RelayFormatOpenAIAudio
 	return info
 }
 
-func GenRelayInfoEmbedding(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoEmbedding(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatEmbedding
+	info.RelayFormat = relayconstant.RelayFormatEmbedding
 	return info
 }
 
-func GenRelayInfoResponses(c *gin.Context, request *dto.OpenAIResponsesRequest) *RelayInfo {
+func GenRelayInfoResponses(c *gin.Context, request *shared.OpenAIResponsesRequest) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
 	info.RelayMode = relayconstant.RelayModeResponses
-	info.RelayFormat = types.RelayFormatOpenAIResponses
+	info.RelayFormat = relayconstant.RelayFormatOpenAIResponses
 
 	info.ResponsesUsageInfo = &ResponsesUsageInfo{
 		BuiltInTools: make(map[string]*BuildInToolInfo),
@@ -385,7 +387,7 @@ func GenRelayInfoResponses(c *gin.Context, request *dto.OpenAIResponsesRequest) 
 				CallCount: 0,
 			}
 			switch toolType {
-			case dto.BuildInToolWebSearchPreview:
+			case shared.BuildInToolWebSearchPreview:
 				searchContextSize := common.Interface2String(tool["search_context_size"])
 				if searchContextSize == "" {
 					searchContextSize = "medium"
@@ -397,27 +399,27 @@ func GenRelayInfoResponses(c *gin.Context, request *dto.OpenAIResponsesRequest) 
 	return info
 }
 
-func GenRelayInfoGemini(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoGemini(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatGemini
+	info.RelayFormat = relayconstant.RelayFormatGemini
 	info.ShouldIncludeUsage = false
 
 	return info
 }
 
-func GenRelayInfoImage(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoImage(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatOpenAIImage
+	info.RelayFormat = relayconstant.RelayFormatOpenAIImage
 	return info
 }
 
-func GenRelayInfoOpenAI(c *gin.Context, request dto.Request) *RelayInfo {
+func GenRelayInfoOpenAI(c *gin.Context, request shared.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
-	info.RelayFormat = types.RelayFormatOpenAI
+	info.RelayFormat = relayconstant.RelayFormatOpenAI
 	return info
 }
 
-func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
+func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 
 	//channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
 	//channelId := common.GetContextKeyInt(c, constant.ContextKeyChannelId)
@@ -488,7 +490,7 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		info.RelayMode = c.GetInt("relay_mode")
 	}
 
-	userSetting, ok := common.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting)
+	userSetting, ok := common.GetContextKeyType[shared.UserSetting](c, constant.ContextKeyUserSetting)
 	if ok {
 		info.UserSetting = userSetting
 	}
@@ -496,38 +498,38 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 	return info
 }
 
-func GenRelayInfo(c *gin.Context, relayFormat types.RelayFormat, request dto.Request, ws *websocket.Conn) (*RelayInfo, error) {
+func GenRelayInfo(c *gin.Context, relayFormat relayconstant.RelayFormat, request shared.Request, ws *websocket.Conn) (*RelayInfo, error) {
 	var info *RelayInfo
 	var err error
 	switch relayFormat {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		info = GenRelayInfoOpenAI(c, request)
-	case types.RelayFormatOpenAIAudio:
+	case relayconstant.RelayFormatOpenAIAudio:
 		info = GenRelayInfoOpenAIAudio(c, request)
-	case types.RelayFormatOpenAIImage:
+	case relayconstant.RelayFormatOpenAIImage:
 		info = GenRelayInfoImage(c, request)
-	case types.RelayFormatOpenAIRealtime:
+	case relayconstant.RelayFormatOpenAIRealtime:
 		info = GenRelayInfoWs(c, ws)
-	case types.RelayFormatClaude:
+	case relayconstant.RelayFormatClaude:
 		info = GenRelayInfoClaude(c, request)
-	case types.RelayFormatRerank:
-		if request, ok := request.(*dto.RerankRequest); ok {
+	case relayconstant.RelayFormatRerank:
+		if request, ok := request.(*shared.RerankRequest); ok {
 			info = GenRelayInfoRerank(c, request)
 			break
 		}
 		err = errors.New("request is not a RerankRequest")
-	case types.RelayFormatGemini:
+	case relayconstant.RelayFormatGemini:
 		info = GenRelayInfoGemini(c, request)
-	case types.RelayFormatEmbedding:
+	case relayconstant.RelayFormatEmbedding:
 		info = GenRelayInfoEmbedding(c, request)
-	case types.RelayFormatOpenAIResponses:
-		if request, ok := request.(*dto.OpenAIResponsesRequest); ok {
+	case relayconstant.RelayFormatOpenAIResponses:
+		if request, ok := request.(*shared.OpenAIResponsesRequest); ok {
 			info = GenRelayInfoResponses(c, request)
 			break
 		}
 		err = errors.New("request is not a OpenAIResponsesRequest")
-	case types.RelayFormatOpenAIResponsesCompaction:
-		if request, ok := request.(*dto.OpenAIResponsesCompactionRequest); ok {
+	case relayconstant.RelayFormatOpenAIResponsesCompaction:
+		if request, ok := request.(*shared.OpenAIResponsesCompactionRequest); ok {
 			return GenRelayInfoResponsesCompaction(c, request), nil
 		}
 		return nil, errors.New("request is not a OpenAIResponsesCompactionRequest")
@@ -556,10 +558,10 @@ func (info *RelayInfo) InitRequestConversionChain() {
 	if info.RelayFormat == "" {
 		return
 	}
-	info.RequestConversionChain = []types.RelayFormat{info.RelayFormat}
+	info.RequestConversionChain = []relayconstant.RelayFormat{info.RelayFormat}
 }
 
-func (info *RelayInfo) AppendRequestConversion(format types.RelayFormat) {
+func (info *RelayInfo) AppendRequestConversion(format relayconstant.RelayFormat) {
 	if info == nil {
 		return
 	}
@@ -567,7 +569,7 @@ func (info *RelayInfo) AppendRequestConversion(format types.RelayFormat) {
 		return
 	}
 	if len(info.RequestConversionChain) == 0 {
-		info.RequestConversionChain = []types.RelayFormat{format}
+		info.RequestConversionChain = []relayconstant.RelayFormat{format}
 		return
 	}
 	last := info.RequestConversionChain[len(info.RequestConversionChain)-1]
@@ -577,12 +579,12 @@ func (info *RelayInfo) AppendRequestConversion(format types.RelayFormat) {
 	info.RequestConversionChain = append(info.RequestConversionChain, format)
 }
 
-func GenRelayInfoResponsesCompaction(c *gin.Context, request *dto.OpenAIResponsesCompactionRequest) *RelayInfo {
+func GenRelayInfoResponsesCompaction(c *gin.Context, request *shared.OpenAIResponsesCompactionRequest) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
 	if info.RelayMode == relayconstant.RelayModeUnknown {
 		info.RelayMode = relayconstant.RelayModeResponsesCompact
 	}
-	info.RelayFormat = types.RelayFormatOpenAIResponsesCompaction
+	info.RelayFormat = relayconstant.RelayFormatOpenAIResponsesCompaction
 	return info
 }
 
@@ -613,7 +615,7 @@ func (info *RelayInfo) HasSendResponse() bool {
 // service_tier: 服务层级字段，可能导致额外计费（OpenAI、Claude、Responses API 支持）
 // store: 数据存储授权字段，涉及用户隐私（仅 OpenAI、Responses API 支持，默认允许透传，禁用后可能导致 Codex 无法使用）
 // safety_identifier: 安全标识符，用于向 OpenAI 报告违规用户（仅 OpenAI 支持，涉及用户隐私）
-func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
+func RemoveDisabledFields(jsonData []byte, channelOtherSettings shared.ChannelOtherSettings) ([]byte, error) {
 	var data map[string]interface{}
 	if err := jsonx.Unmarshal(jsonData, &data); err != nil {
 		common.SysError("RemoveDisabledFields Unmarshal error :" + err.Error())
@@ -645,7 +647,7 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 
 // RemoveClaudeDisabledFields applies the common field passthrough policy plus
 // Claude-specific controls for cache_control and speed.
-func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
+func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings shared.ChannelOtherSettings) ([]byte, error) {
 	jsonData, err := RemoveDisabledFields(jsonData, channelOtherSettings)
 	if err != nil {
 		return jsonData, err

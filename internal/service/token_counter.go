@@ -11,15 +11,14 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	constant2 "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
 
-func getImageToken(c *gin.Context, fileMeta *types.FileMeta, model string, stream bool) (int, error) {
+func getImageToken(c *gin.Context, fileMeta *shared.FileMeta, model string, stream bool) (int, error) {
 	if fileMeta == nil || fileMeta.Source == nil {
 		return 0, fmt.Errorf("image_url_is_nil")
 	}
@@ -180,7 +179,7 @@ func getImageToken(c *gin.Context, fileMeta *types.FileMeta, model string, strea
 	return tiles*tileTokens + baseTokens, nil
 }
 
-func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relaycommon.RelayInfo) (int, error) {
+func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *relaycommon.RelayInfo) (int, error) {
 	// 是否统计token
 	if !constant.CountToken {
 		return 0, nil
@@ -190,7 +189,7 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 		return 0, errors.New("token count meta is nil")
 	}
 
-	if info.RelayFormat == types.RelayFormatOpenAIRealtime {
+	if info.RelayFormat == constant2.RelayFormatOpenAIRealtime {
 		return 0, nil
 	}
 	if info.RelayMode == constant2.RelayModeAudioTranscription || info.RelayMode == constant2.RelayModeAudioTranslation {
@@ -221,13 +220,13 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 	model := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 	tkm := 0
 
-	if meta.TokenType == types.TokenTypeTextNumber {
+	if meta.TokenType == shared.TokenTypeTextNumber {
 		tkm += utf8.RuneCountInString(meta.CombineText)
 	} else {
 		tkm += CountTextToken(meta.CombineText, model)
 	}
 
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.RelayFormat == constant2.RelayFormatOpenAI {
 		tkm += meta.ToolsCount * 8
 		tkm += meta.MessagesCount * 3 // 每条消息的格式化token数量
 		tkm += meta.NameCount * 3
@@ -236,7 +235,7 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 
 	shouldFetchFiles := true
 
-	if info.RelayFormat == types.RelayFormatGemini {
+	if info.RelayFormat == constant2.RelayFormatGemini {
 		shouldFetchFiles = false
 	}
 
@@ -275,7 +274,7 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 
 	for i, file := range meta.Files {
 		switch file.FileType {
-		case types.FileTypeImage:
+		case shared.FileTypeImage:
 			if common.IsOpenAITextModel(model) {
 				token, err := getImageToken(c, file, model, info.IsStream)
 				if err != nil {
@@ -285,11 +284,11 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 			} else {
 				tkm += 520
 			}
-		case types.FileTypeAudio:
+		case shared.FileTypeAudio:
 			tkm += 256
-		case types.FileTypeVideo:
+		case shared.FileTypeVideo:
 			tkm += 4096 * 2
-		case types.FileTypeFile:
+		case shared.FileTypeFile:
 			tkm += 4096
 		default:
 			tkm += 4096 // Default case for unknown file types
@@ -300,34 +299,34 @@ func EstimateRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *rela
 	return tkm, nil
 }
 
-func CountTokenRealtime(info *relaycommon.RelayInfo, request dto.RealtimeEvent, model string) (int, int, error) {
+func CountTokenRealtime(info *relaycommon.RelayInfo, request shared.RealtimeEvent, model string) (int, int, error) {
 	audioToken := 0
 	textToken := 0
 	switch request.Type {
-	case dto.RealtimeEventTypeSessionUpdate:
+	case shared.RealtimeEventTypeSessionUpdate:
 		if request.Session != nil {
 			msgTokens := CountTextToken(request.Session.Instructions, model)
 			textToken += msgTokens
 		}
-	case dto.RealtimeEventResponseAudioDelta:
+	case shared.RealtimeEventResponseAudioDelta:
 		// count audio token
 		atk, err := CountAudioTokenOutput(request.Delta, info.OutputAudioFormat)
 		if err != nil {
 			return 0, 0, fmt.Errorf("error counting audio token: %v", err)
 		}
 		audioToken += atk
-	case dto.RealtimeEventResponseAudioTranscriptionDelta, dto.RealtimeEventResponseFunctionCallArgumentsDelta:
+	case shared.RealtimeEventResponseAudioTranscriptionDelta, shared.RealtimeEventResponseFunctionCallArgumentsDelta:
 		// count text token
 		tkm := CountTextToken(request.Delta, model)
 		textToken += tkm
-	case dto.RealtimeEventInputAudioBufferAppend:
+	case shared.RealtimeEventInputAudioBufferAppend:
 		// count audio token
 		atk, err := CountAudioTokenInput(request.Audio, info.InputAudioFormat)
 		if err != nil {
 			return 0, 0, fmt.Errorf("error counting audio token: %v", err)
 		}
 		audioToken += atk
-	case dto.RealtimeEventConversationItemCreated:
+	case shared.RealtimeEventConversationItemCreated:
 		if request.Item != nil {
 			switch request.Item.Type {
 			case "message":
@@ -339,7 +338,7 @@ func CountTokenRealtime(info *relaycommon.RelayInfo, request dto.RealtimeEvent, 
 				}
 			}
 		}
-	case dto.RealtimeEventTypeResponseDone:
+	case shared.RealtimeEventTypeResponseDone:
 		// count tools token
 		if !info.IsFirstRequest {
 			if len(info.RealtimeTools) > 0 {

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func TestShouldRetryUsesNumericUpstreamErrorCode(t *testing.T) {
 	for _, code := range []string{"502", "504"} {
 		t.Run(code, func(t *testing.T) {
 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
-			err := types.WithOpenAIError(types.OpenAIError{
+			err := shared.WithOpenAIError(shared.OpenAIError{
 				Message: "upstream gateway error",
 				Type:    "upstream_error",
 				Code:    code,
@@ -38,7 +38,7 @@ func TestShouldRetryIgnoresNonNumericUpstreamErrorCode(t *testing.T) {
 	operation.AutomaticRetryStatusCodeRanges = []operation.StatusCodeRange{{Start: 500, End: 599}}
 
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	err := types.WithOpenAIError(types.OpenAIError{
+	err := shared.WithOpenAIError(shared.OpenAIError{
 		Message: "bad request",
 		Type:    "invalid_request_error",
 		Code:    "invalid_request",
@@ -53,7 +53,7 @@ func TestShouldRetryUsesOriginalStatusCodeAfterMapping(t *testing.T) {
 	operation.AutomaticRetryStatusCodeRanges = []operation.StatusCodeRange{{Start: 429, End: 429}}
 
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	err := types.WithOpenAIError(types.OpenAIError{
+	err := shared.WithOpenAIError(shared.OpenAIError{
 		Message: "rate limited",
 		Type:    "upstream_error",
 		Code:    "rate_limit_exceeded",
@@ -74,7 +74,7 @@ func TestShouldRetryConfiguredTransientStatusCodes(t *testing.T) {
 	for _, statusCode := range []int{http.StatusTooManyRequests, 529} {
 		t.Run(strconv.Itoa(statusCode), func(t *testing.T) {
 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
-			err := types.WithOpenAIError(types.OpenAIError{
+			err := shared.WithOpenAIError(shared.OpenAIError{
 				Message: "transient upstream failure",
 				Type:    "upstream_error",
 				Code:    statusCode,

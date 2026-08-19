@@ -11,16 +11,18 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/relay/reasonmap"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -47,12 +49,12 @@ func maybeMarkClaudeRefusal(c *gin.Context, stopReason string) {
 	}
 }
 
-func createClaudeFileSource(file *dto.MessageFile) *types.FileSource {
+func createClaudeFileSource(file *shared.MessageFile) *shared.FileSource {
 	if file == nil || file.FileData == "" {
 		return nil
 	}
 	if strings.HasPrefix(file.FileData, "http://") || strings.HasPrefix(file.FileData, "https://") {
-		return types.NewURLFileSource(file.FileData)
+		return shared.NewURLFileSource(file.FileData)
 	}
 	mimeType := ""
 	if ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(file.FileName)), "."); ext != "" {
@@ -60,10 +62,10 @@ func createClaudeFileSource(file *dto.MessageFile) *types.FileSource {
 			mimeType = detected
 		}
 	}
-	return types.NewBase64FileSource(file.FileData, mimeType)
+	return shared.NewBase64FileSource(file.FileData, mimeType)
 }
 
-func buildClaudeFileMessage(c *gin.Context, file *dto.MessageFile) (*dto.ClaudeMediaMessage, error) {
+func buildClaudeFileMessage(c *gin.Context, file *shared.MessageFile) (*shared.ClaudeMediaMessage, error) {
 	source := createClaudeFileSource(file)
 	if source == nil {
 		return nil, nil
@@ -74,9 +76,9 @@ func buildClaudeFileMessage(c *gin.Context, file *dto.MessageFile) (*dto.ClaudeM
 	}
 	switch strings.ToLower(mimeType) {
 	case "application/pdf":
-		return &dto.ClaudeMediaMessage{
+		return &shared.ClaudeMediaMessage{
 			Type: "document",
-			Source: &dto.ClaudeMessageSource{
+			Source: &shared.ClaudeMessageSource{
 				Type:      "base64",
 				MediaType: mimeType,
 				Data:      base64Data,
@@ -87,7 +89,7 @@ func buildClaudeFileMessage(c *gin.Context, file *dto.MessageFile) (*dto.ClaudeM
 		if err != nil {
 			return nil, fmt.Errorf("decode text file data failed: %w", err)
 		}
-		return &dto.ClaudeMediaMessage{
+		return &shared.ClaudeMediaMessage{
 			Type: "text",
 			Text: common.GetPointer(string(decodedData)),
 		}, nil
@@ -102,7 +104,7 @@ func buildClaudeFileMessage(c *gin.Context, file *dto.MessageFile) (*dto.ClaudeM
 	}
 }
 
-func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textRequest *dto.GeneralOpenAIRequest, claudeRequest *dto.ClaudeRequest) error {
+func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textRequest *shared.GeneralOpenAIRequest, claudeRequest *shared.ClaudeRequest) error {
 	if textRequest == nil || claudeRequest == nil {
 		return nil
 	}
@@ -137,7 +139,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 		if info != nil {
 			info.ReasoningEffort = effort
 		}
-		claudeRequest.Thinking = &dto.Thinking{Type: "disabled"}
+		claudeRequest.Thinking = &shared.Thinking{Type: "disabled"}
 		claudeRequest.OutputConfig = nil
 		return nil
 	}
@@ -152,7 +154,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 	claudeEffort := normalizeClaudeOutputEffort(effort)
 	if claudeEffort != "" && shouldUseClaudeOutputConfigEffort(info, claudeRequest.Model) {
 		if shouldUseClaudeAdaptiveThinking(info, claudeRequest.Model) {
-			claudeRequest.Thinking = &dto.Thinking{Type: "adaptive"}
+			claudeRequest.Thinking = &shared.Thinking{Type: "adaptive"}
 			if isClaudeOpus47Model(claudeRequest.Model) {
 				claudeRequest.Thinking.Display = "summarized"
 				claudeRequest.Temperature = nil
@@ -162,7 +164,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 		} else {
 			claudeRequest.Thinking = nil
 		}
-		outputConfig, err := jsonx.Marshal(dto.ClaudeOutputConfig{Effort: claudeEffort})
+		outputConfig, err := jsonx.Marshal(shared.ClaudeOutputConfig{Effort: claudeEffort})
 		if err != nil {
 			return fmt.Errorf("failed to marshal claude output_config: %w", err)
 		}
@@ -174,7 +176,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 		reasoningBudget = claudeThinkingBudgetForEffort(effort)
 	}
 	if reasoningBudget > 0 {
-		claudeRequest.Thinking = &dto.Thinking{
+		claudeRequest.Thinking = &shared.Thinking{
 			Type:         "enabled",
 			BudgetTokens: &reasoningBudget,
 		}
@@ -215,7 +217,7 @@ func isSupportedClaudeReasoningEffort(effort string) bool {
 }
 
 func shouldUseClaudeOutputConfigEffort(info *relaycommon.RelayInfo, model string) bool {
-	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == channelconstant.ChannelTypeDeepSeek {
 		return true
 	}
 
@@ -224,7 +226,7 @@ func shouldUseClaudeOutputConfigEffort(info *relaycommon.RelayInfo, model string
 }
 
 func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) bool {
-	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == channelconstant.ChannelTypeDeepSeek {
 		return false
 	}
 
@@ -255,12 +257,12 @@ func claudeThinkingBudgetForEffort(effort string) int {
 	}
 }
 
-func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, textRequest dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
+func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, textRequest shared.GeneralOpenAIRequest) (*shared.ClaudeRequest, error) {
 	claudeTools := make([]any, 0, len(textRequest.Tools))
 
 	for _, tool := range textRequest.Tools {
 		if params, ok := tool.Function.Parameters.(map[string]any); ok {
-			claudeTool := dto.Tool{
+			claudeTool := shared.Tool{
 				Name:        tool.Function.Name,
 				Description: tool.Function.Description,
 			}
@@ -283,14 +285,14 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 	// Web search tool
 	// https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/web-search-tool
 	if textRequest.WebSearchOptions != nil {
-		webSearchTool := dto.ClaudeWebSearchTool{
+		webSearchTool := shared.ClaudeWebSearchTool{
 			Type: "web_search_20250305",
 			Name: "web_search",
 		}
 
 		// 处理 user_location
 		if textRequest.WebSearchOptions.UserLocation != nil {
-			anthropicUserLocation := &dto.ClaudeWebSearchUserLocation{
+			anthropicUserLocation := &shared.ClaudeWebSearchUserLocation{
 				Type: "approximate", // 固定为 "approximate"
 			}
 
@@ -332,7 +334,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 		claudeTools = append(claudeTools, &webSearchTool)
 	}
 
-	claudeRequest := dto.ClaudeRequest{
+	claudeRequest := shared.ClaudeRequest{
 		Model:         textRequest.Model,
 		MaxTokens:     textRequest.GetMaxTokens(),
 		StopSequences: nil,
@@ -372,15 +374,15 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 			claudeRequest.StopSequences = stopSequences
 		}
 	}
-	formatMessages := make([]dto.Message, 0)
-	lastMessage := dto.Message{
+	formatMessages := make([]shared.Message, 0)
+	lastMessage := shared.Message{
 		Role: "tool",
 	}
 	for i, message := range textRequest.Messages {
 		if message.Role == "" {
 			textRequest.Messages[i].Role = "user"
 		}
-		fmtMessage := dto.Message{
+		fmtMessage := shared.Message{
 			Role:                     message.Role,
 			Content:                  message.Content,
 			ReasoningContent:         message.ReasoningContent,
@@ -405,16 +407,16 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 		lastMessage = fmtMessage
 	}
 
-	claudeMessages := make([]dto.ClaudeMessage, 0)
+	claudeMessages := make([]shared.ClaudeMessage, 0)
 	isFirstMessage := true
 	// 初始化system消息数组，用于累积多个system消息
-	var systemMessages []dto.ClaudeMediaMessage
+	var systemMessages []shared.ClaudeMediaMessage
 
 	for _, message := range formatMessages {
 		if message.Role == "system" {
 			// 根据Claude API规范，system字段使用数组格式更有通用性
 			if message.IsStringContent() {
-				systemMessages = append(systemMessages, dto.ClaudeMediaMessage{
+				systemMessages = append(systemMessages, shared.ClaudeMediaMessage{
 					Type: "text",
 					Text: common.GetPointer[string](message.StringContent()),
 				})
@@ -422,7 +424,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				// 支持复合内容的system消息（虽然不常见，但需要考虑完整性）
 				for _, ctx := range message.ParseContent() {
 					if ctx.Type == "text" {
-						systemMessages = append(systemMessages, dto.ClaudeMediaMessage{
+						systemMessages = append(systemMessages, shared.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](ctx.Text),
 						})
@@ -435,9 +437,9 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				isFirstMessage = false
 				if message.Role != "user" {
 					// fix: first message is assistant, add user message
-					claudeMessage := dto.ClaudeMessage{
+					claudeMessage := shared.ClaudeMessage{
 						Role: "user",
-						Content: []dto.ClaudeMediaMessage{
+						Content: []shared.ClaudeMediaMessage{
 							{
 								Type: "text",
 								Text: common.GetPointer[string]("..."),
@@ -447,21 +449,21 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 					claudeMessages = append(claudeMessages, claudeMessage)
 				}
 			}
-			claudeMessage := dto.ClaudeMessage{
+			claudeMessage := shared.ClaudeMessage{
 				Role: message.Role,
 			}
 			if message.Role == "tool" {
 				if len(claudeMessages) > 0 && claudeMessages[len(claudeMessages)-1].Role == "user" {
 					lastMessage := claudeMessages[len(claudeMessages)-1]
 					if content, ok := lastMessage.Content.(string); ok {
-						lastMessage.Content = []dto.ClaudeMediaMessage{
+						lastMessage.Content = []shared.ClaudeMediaMessage{
 							{
 								Type: "text",
 								Text: common.GetPointer[string](content),
 							},
 						}
 					}
-					lastMessage.Content = append(lastMessage.Content.([]dto.ClaudeMediaMessage), dto.ClaudeMediaMessage{
+					lastMessage.Content = append(lastMessage.Content.([]shared.ClaudeMediaMessage), shared.ClaudeMediaMessage{
 						Type:      "tool_result",
 						ToolUseId: message.ToolCallId,
 						Content:   message.Content,
@@ -471,7 +473,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 					continue
 				} else {
 					claudeMessage.Role = "user"
-					claudeMessage.Content = []dto.ClaudeMediaMessage{
+					claudeMessage.Content = []shared.ClaudeMediaMessage{
 						{
 							Type:      "tool_result",
 							ToolUseId: message.ToolCallId,
@@ -488,16 +490,16 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				}
 				claudeMessage.Content = stringContent
 			} else {
-				claudeMediaMessages := make([]dto.ClaudeMediaMessage, 0)
+				claudeMediaMessages := make([]shared.ClaudeMediaMessage, 0)
 				if message.Role == "assistant" {
 					if message.ReasoningContent != nil || message.ReasoningSignature != "" {
-						claudeThinking := dto.ClaudeMediaMessage{Type: "thinking", Signature: message.ReasoningSignature}
+						claudeThinking := shared.ClaudeMediaMessage{Type: "thinking", Signature: message.ReasoningSignature}
 						reasoningText := message.GetReasoningContent()
 						claudeThinking.Thinking = common.GetPointer[string](reasoningText)
 						claudeMediaMessages = append(claudeMediaMessages, claudeThinking)
 					}
 					if message.RedactedReasoningContent != "" {
-						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+						claudeMediaMessages = append(claudeMediaMessages, shared.ClaudeMediaMessage{
 							Type: "redacted_thinking",
 							Data: message.RedactedReasoningContent,
 						})
@@ -510,14 +512,14 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						if strings.TrimSpace(mediaMessage.Text) == "" {
 							continue
 						}
-						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+						claudeMediaMessages = append(claudeMediaMessages, shared.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](mediaMessage.Text),
 						})
-					case dto.ContentTypeImageURL:
-						claudeMediaMessage := dto.ClaudeMediaMessage{
+					case shared.ContentTypeImageURL:
+						claudeMediaMessage := shared.ClaudeMediaMessage{
 							Type: "image",
-							Source: &dto.ClaudeMessageSource{
+							Source: &shared.ClaudeMessageSource{
 								Type: "base64",
 							},
 						}
@@ -526,11 +528,11 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 							continue
 						}
 						// 使用统一的文件服务获取图片数据
-						var source *types.FileSource
+						var source *shared.FileSource
 						if strings.HasPrefix(imageUrl.Url, "http") {
-							source = types.NewURLFileSource(imageUrl.Url)
+							source = shared.NewURLFileSource(imageUrl.Url)
 						} else {
-							source = types.NewBase64FileSource(imageUrl.Url, "")
+							source = shared.NewBase64FileSource(imageUrl.Url, "")
 						}
 						base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting image for Claude")
 						if err != nil {
@@ -539,7 +541,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						claudeMediaMessage.Source.MediaType = mimeType
 						claudeMediaMessage.Source.Data = base64Data
 						claudeMediaMessages = append(claudeMediaMessages, claudeMediaMessage)
-					case dto.ContentTypeFile:
+					case shared.ContentTypeFile:
 						claudeFileMessage, err := buildClaudeFileMessage(c, mediaMessage.GetFile())
 						if err != nil {
 							return nil, err
@@ -559,7 +561,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 								common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
 							}
 						}
-						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+						claudeMediaMessages = append(claudeMediaMessages, shared.ClaudeMediaMessage{
 							Type:  "tool_use",
 							Id:    toolCall.ID,
 							Name:  toolCall.Function.Name,
@@ -569,7 +571,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				}
 				// AWS Bedrock 等上游拒绝空 content 数组（返回 400），用占位符兜底
 				if len(claudeMediaMessages) == 0 {
-					claudeMessage.Content = []dto.ClaudeMediaMessage{{Type: "text", Text: common.GetPointer[string]("...")}}
+					claudeMessage.Content = []shared.ClaudeMediaMessage{{Type: "text", Text: common.GetPointer[string]("...")}}
 				} else {
 					claudeMessage.Content = claudeMediaMessages
 				}
@@ -588,17 +590,17 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 	return &claudeRequest, nil
 }
 
-func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCompletionsStreamResponse {
-	var response dto.ChatCompletionsStreamResponse
+func StreamResponseClaude2OpenAI(claudeResponse *shared.ClaudeResponse) *shared.ChatCompletionsStreamResponse {
+	var response shared.ChatCompletionsStreamResponse
 	response.Object = "chat.completion.chunk"
 	response.Model = claudeResponse.Model
-	response.Choices = make([]dto.ChatCompletionsStreamResponseChoice, 0)
-	tools := make([]dto.ToolCallResponse, 0)
+	response.Choices = make([]shared.ChatCompletionsStreamResponseChoice, 0)
+	tools := make([]shared.ToolCallResponse, 0)
 	fcIdx := 0
 	if claudeResponse.Index != nil {
 		fcIdx = *claudeResponse.Index
 	}
-	var choice dto.ChatCompletionsStreamResponseChoice
+	var choice shared.ChatCompletionsStreamResponseChoice
 	if claudeResponse.Type == "message_start" {
 		if claudeResponse.Message != nil {
 			response.Id = claudeResponse.Message.Id
@@ -617,11 +619,11 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 				choice.Delta.RedactedReasoningContent = common.GetPointer[string](claudeResponse.ContentBlock.Data)
 			}
 			if claudeResponse.ContentBlock.Type == "tool_use" {
-				tools = append(tools, dto.ToolCallResponse{
+				tools = append(tools, shared.ToolCallResponse{
 					Index: common.GetPointer(fcIdx),
 					ID:    claudeResponse.ContentBlock.Id,
 					Type:  "function",
-					Function: dto.FunctionResponse{
+					Function: shared.FunctionResponse{
 						Name:      claudeResponse.ContentBlock.Name,
 						Arguments: "",
 					},
@@ -640,10 +642,10 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 				if claudeResponse.Delta.PartialJson != nil {
 					arguments = *claudeResponse.Delta.PartialJson
 				}
-				tools = append(tools, dto.ToolCallResponse{
+				tools = append(tools, shared.ToolCallResponse{
 					Type:  "function",
 					Index: common.GetPointer(fcIdx),
-					Function: dto.FunctionResponse{
+					Function: shared.FunctionResponse{
 						Arguments: arguments,
 					},
 				})
@@ -677,14 +679,14 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 	return &response
 }
 
-func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextResponse {
-	choices := make([]dto.OpenAITextResponseChoice, 0)
-	fullTextResponse := dto.OpenAITextResponse{
+func ResponseClaude2OpenAI(claudeResponse *shared.ClaudeResponse) *shared.OpenAITextResponse {
+	choices := make([]shared.OpenAITextResponseChoice, 0)
+	fullTextResponse := shared.OpenAITextResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Object:  "chat.completion",
 		Created: common.GetTimestamp(),
 	}
-	tools := make([]dto.ToolCallResponse, 0)
+	tools := make([]shared.ToolCallResponse, 0)
 	var responseText strings.Builder
 	var thinkingContent strings.Builder
 	var thinkingSignature string
@@ -695,10 +697,10 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 		switch message.Type {
 		case "tool_use":
 			args, _ := json.Marshal(message.Input)
-			tools = append(tools, dto.ToolCallResponse{
+			tools = append(tools, shared.ToolCallResponse{
 				ID:   message.Id,
 				Type: "function", // compatible with other OpenAI derivative applications
-				Function: dto.FunctionResponse{
+				Function: shared.FunctionResponse{
 					Name:      message.Name,
 					Arguments: string(args),
 				},
@@ -716,9 +718,9 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 			responseText.WriteString(message.GetText())
 		}
 	}
-	choice := dto.OpenAITextResponseChoice{
+	choice := shared.OpenAITextResponseChoice{
 		Index: 0,
-		Message: dto.Message{
+		Message: shared.Message{
 			Role: "assistant",
 		},
 		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),
@@ -733,7 +735,7 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 	fullTextResponse.Model = claudeResponse.Model
 	choices = append(choices, choice)
 	fullTextResponse.Choices = choices
-	if usage := dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage); usage != nil {
+	if usage := shared.ClaudeUsageToOpenAIUsage(claudeResponse.Usage); usage != nil {
 		fullTextResponse.Usage = *usage
 	}
 	return &fullTextResponse
@@ -744,15 +746,15 @@ type ClaudeResponseInfo struct {
 	Created                   int64
 	Model                     string
 	ResponseText              strings.Builder
-	Usage                     *dto.Usage
+	Usage                     *shared.Usage
 	Done                      bool
 	ResponsesStreamConverter  relaycommon.OpenAIWireStreamConverter
 	ResponsesCompletedEmitted bool
 }
 
-func mergeClaudeUsageIntoOpenAIUsage(current *dto.Usage, claudeUsage *dto.ClaudeUsage) *dto.Usage {
+func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.ClaudeUsage) *shared.Usage {
 	if current == nil {
-		current = &dto.Usage{}
+		current = &shared.Usage{}
 	}
 	if claudeUsage == nil {
 		current.TotalTokens = current.PromptTokens + current.CompletionTokens
@@ -789,7 +791,7 @@ func mergeClaudeUsageIntoOpenAIUsage(current *dto.Usage, claudeUsage *dto.Claude
 	current.PromptTokensDetails.CachedTokens = cacheReadTokens
 	current.PromptTokensDetails.CachedCreationTokens = cacheCreationTokens
 	if current.InputTokensDetails == nil {
-		current.InputTokensDetails = &dto.InputTokenDetails{}
+		current.InputTokensDetails = &shared.InputTokenDetails{}
 	}
 	current.InputTokensDetails.CachedTokens = cacheReadTokens
 	current.InputTokensDetails.CachedCreationTokens = cacheCreationTokens
@@ -804,8 +806,8 @@ func mergeClaudeUsageIntoOpenAIUsage(current *dto.Usage, claudeUsage *dto.Claude
 	return current
 }
 
-func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo *ClaudeResponseInfo) *dto.ClaudeUsage {
-	usage := &dto.ClaudeUsage{}
+func buildMessageDeltaPatchUsage(claudeResponse *shared.ClaudeResponse, claudeInfo *ClaudeResponseInfo) *shared.ClaudeUsage {
+	usage := &shared.ClaudeUsage{}
 	if claudeResponse != nil && claudeResponse.Usage != nil {
 		*usage = *claudeResponse.Usage
 	}
@@ -813,7 +815,7 @@ func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo 
 	if claudeInfo == nil || claudeInfo.Usage == nil {
 		return usage
 	}
-	localUsage := dto.OpenAIUsageToClaudeUsage(claudeInfo.Usage)
+	localUsage := shared.OpenAIUsageToClaudeUsage(claudeInfo.Usage)
 	if localUsage == nil {
 		return usage
 	}
@@ -838,7 +840,7 @@ func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo 
 	}
 	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
 	if cacheCreation5m > 0 || cacheCreation1h > 0 {
-		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
+		usage.CacheCreation = &shared.ClaudeCacheCreationUsage{
 			Ephemeral5mInputTokens: cacheCreation5m,
 			Ephemeral1hInputTokens: cacheCreation1h,
 		}
@@ -853,7 +855,7 @@ func shouldSkipClaudeMessageDeltaUsagePatch(info *relaycommon.RelayInfo) bool {
 	return info.ChannelSetting.PassThroughBodyEnabled
 }
 
-func patchClaudeMessageDeltaUsageData(data string, usage *dto.ClaudeUsage) string {
+func patchClaudeMessageDeltaUsageData(data string, usage *shared.ClaudeUsage) string {
 	if data == "" || usage == nil {
 		return data
 	}
@@ -887,12 +889,12 @@ func setMessageDeltaUsageInt(data string, path string, localValue int) string {
 	return patchedData
 }
 
-func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *dto.ChatCompletionsStreamResponse, claudeInfo *ClaudeResponseInfo) bool {
+func FormatClaudeResponseInfo(claudeResponse *shared.ClaudeResponse, oaiResponse *shared.ChatCompletionsStreamResponse, claudeInfo *ClaudeResponseInfo) bool {
 	if claudeInfo == nil {
 		return false
 	}
 	if claudeInfo.Usage == nil {
-		claudeInfo.Usage = &dto.Usage{}
+		claudeInfo.Usage = &shared.Usage{}
 	}
 	if claudeResponse.Type == "message_start" {
 		if claudeResponse.Message != nil {
@@ -933,15 +935,15 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 	return true
 }
 
-func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *types.NookMuxError {
-	var claudeResponse dto.ClaudeResponse
+func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *shared.NookMuxError {
+	var claudeResponse shared.ClaudeResponse
 	err := jsonx.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
 		common.SysLog("error unmarshalling stream response: " + err.Error())
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
-		return types.WithClaudeError(*claudeError, http.StatusInternalServerError)
+		return shared.WithClaudeError(*claudeError, http.StatusInternalServerError)
 	}
 	if claudeResponse.StopReason != "" {
 		maybeMarkClaudeRefusal(c, claudeResponse.StopReason)
@@ -954,7 +956,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	if claudeResponse.Usage != nil && claudeResponse.Usage.ServerToolUse != nil && claudeResponse.Usage.ServerToolUse.WebSearchRequests > 0 {
 		c.Set("claude_web_search_requests", claudeResponse.Usage.ServerToolUse.WebSearchRequests)
 	}
-	if info.RelayFormat == types.RelayFormatClaude {
+	if info.RelayFormat == relayconstant.RelayFormatClaude {
 		FormatClaudeResponseInfo(&claudeResponse, nil, claudeInfo)
 
 		if claudeResponse.Type == "message_start" {
@@ -971,7 +973,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 		data = string(helper.MaskClaudeEventModelJSON(jsonx.StringToByteSlice(data), info))
 		helper.ClaudeChunkData(c, claudeResponse, data)
-	} else if info.RelayFormat == types.RelayFormatOpenAI {
+	} else if info.RelayFormat == relayconstant.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
 
 		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
@@ -983,7 +985,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if err != nil {
 			log.LogError(c, "send_stream_response_failed: "+err.Error())
 		}
-	} else if info.RelayFormat == types.RelayFormatOpenAIResponses {
+	} else if info.RelayFormat == relayconstant.RelayFormatOpenAIResponses {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
 
 		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
@@ -997,7 +999,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if err := writeClaudeChatChunkAsResponsesEvent(c, info, claudeInfo, response); err != nil {
 			return err
 		}
-	} else if info.RelayFormat == types.RelayFormatGemini {
+	} else if info.RelayFormat == relayconstant.RelayFormatGemini {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
 
 		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
@@ -1015,7 +1017,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 
 		geminiResponseStr, marshalErr := jsonx.Marshal(geminiResponse)
 		if marshalErr != nil {
-			return types.NewError(marshalErr, types.ErrorCodeBadResponseBody)
+			return shared.NewError(marshalErr, shared.ErrorCodeBadResponseBody)
 		}
 		c.Render(-1, &common.CustomEvent{Data: "data: " + string(geminiResponseStr)})
 		_ = helper.FlushWriter(c)
@@ -1028,7 +1030,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		//上游出错
 	}
 	if claudeInfo.Usage == nil {
-		claudeInfo.Usage = &dto.Usage{}
+		claudeInfo.Usage = &shared.Usage{}
 	}
 	if claudeInfo.Usage.CompletionTokens == 0 || !claudeInfo.Done {
 		if common.DebugEnabled {
@@ -1047,9 +1049,9 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 	}
 
-	if info.RelayFormat == types.RelayFormatClaude {
+	if info.RelayFormat == relayconstant.RelayFormatClaude {
 		//
-	} else if info.RelayFormat == types.RelayFormatOpenAI {
+	} else if info.RelayFormat == relayconstant.RelayFormatOpenAI {
 		if info.ShouldIncludeUsage {
 			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 			err := helper.ObjectData(c, response)
@@ -1058,11 +1060,11 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			}
 		}
 		helper.Done(c)
-	} else if info.RelayFormat == types.RelayFormatOpenAIResponses {
+	} else if info.RelayFormat == relayconstant.RelayFormatOpenAIResponses {
 		if err := writeClaudeResponsesFinalEvent(c, info, claudeInfo); err != nil {
 			common.SysLog("send final responses response failed: " + err.Error())
 		}
-	} else if info.RelayFormat == types.RelayFormatGemini {
+	} else if info.RelayFormat == relayconstant.RelayFormatGemini {
 		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
@@ -1085,29 +1087,29 @@ func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInf
 	return claudeInfo.ResponsesStreamConverter
 }
 
-func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *dto.ChatCompletionsStreamResponse) *types.NookMuxError {
+func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *shared.ChatCompletionsStreamResponse) *shared.NookMuxError {
 	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
 	data, err := jsonx.Marshal(response)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	out, err := converter.ConvertFrame("", string(data), "data: "+string(data)+"\n\n")
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if out == "" {
 		return nil
 	}
 	if _, err := c.Writer.Write([]byte(out)); err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if err := helper.FlushWriter(c); err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	return nil
 }
 
-func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) *types.NookMuxError {
+func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) *shared.NookMuxError {
 	if claudeInfo.ResponsesCompletedEmitted {
 		return nil
 	}
@@ -1117,38 +1119,38 @@ func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo,
 		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		data, err := jsonx.Marshal(usageChunk)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 		if _, err := converter.ConvertFrame("", string(data), "data: "+string(data)+"\n\n"); err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 	}
 
 	out, err := converter.ConvertFrame("", "[DONE]", "data: [DONE]\n\n")
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if out != "" {
 		if _, err := c.Writer.Write([]byte(out)); err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 		if err := helper.FlushWriter(c); err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 	}
 	claudeInfo.ResponsesCompletedEmitted = true
 	return nil
 }
 
-func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
+func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),
 		Created:      common.GetTimestamp(),
 		Model:        info.UpstreamModelName,
 		ResponseText: strings.Builder{},
-		Usage:        &dto.Usage{},
+		Usage:        &shared.Usage{},
 	}
-	var err *types.NookMuxError
+	var err *shared.NookMuxError
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		err = HandleStreamResponseData(c, info, claudeInfo, data)
 		return err == nil
@@ -1161,54 +1163,54 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	return claudeInfo.Usage, nil
 }
 
-func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *types.NookMuxError {
-	var claudeResponse dto.ClaudeResponse
+func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *shared.NookMuxError {
+	var claudeResponse shared.ClaudeResponse
 	err := jsonx.Unmarshal(data, &claudeResponse)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeBadResponseBody)
+		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
-		return types.WithClaudeError(*claudeError, http.StatusInternalServerError)
+		return shared.WithClaudeError(*claudeError, http.StatusInternalServerError)
 	}
 	maybeMarkClaudeRefusal(c, claudeResponse.StopReason)
 	if claudeInfo.Usage == nil {
-		claudeInfo.Usage = &dto.Usage{}
+		claudeInfo.Usage = &shared.Usage{}
 	}
 	if claudeResponse.Usage != nil {
-		claudeInfo.Usage = dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
+		claudeInfo.Usage = shared.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
 	}
 	var responseData []byte
 	switch info.RelayFormat {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responseData, err = json.Marshal(openaiResponse)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
-	case types.RelayFormatOpenAIResponses:
+	case relayconstant.RelayFormatOpenAIResponses:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responsesResp, convErr := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
 		if convErr != nil {
-			return types.NewError(convErr, types.ErrorCodeBadResponseBody)
+			return shared.NewError(convErr, shared.ErrorCodeBadResponseBody)
 		}
 		responseData, err = jsonx.Marshal(responsesResp)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
-	case types.RelayFormatClaude:
+	case relayconstant.RelayFormatClaude:
 		responseData = helper.MaskTopLevelModelJSON(data, info)
-	case types.RelayFormatGemini:
+	case relayconstant.RelayFormatGemini:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
 		responseData, err = jsonx.Marshal(geminiResponse)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeBadResponseBody)
+			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 	}
 
@@ -1220,7 +1222,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	return nil
 }
 
-func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NookMuxError) {
+func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	claudeInfo := &ClaudeResponseInfo{
@@ -1228,11 +1230,11 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 		Created:      common.GetTimestamp(),
 		Model:        info.UpstreamModelName,
 		ResponseText: strings.Builder{},
-		Usage:        &dto.Usage{},
+		Usage:        &shared.Usage{},
 	}
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+		return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	if common.DebugEnabled {
 		println("responseBody: ", string(responseBody))
@@ -1244,22 +1246,22 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	return claudeInfo.Usage, nil
 }
 
-func mapToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToolChoice {
-	var claudeToolChoice *dto.ClaudeToolChoice
+func mapToolChoice(toolChoice any, parallelToolCalls *bool) *shared.ClaudeToolChoice {
+	var claudeToolChoice *shared.ClaudeToolChoice
 
 	// 处理 tool_choice 字符串值
 	if toolChoiceStr, ok := toolChoice.(string); ok {
 		switch toolChoiceStr {
 		case "auto":
-			claudeToolChoice = &dto.ClaudeToolChoice{
+			claudeToolChoice = &shared.ClaudeToolChoice{
 				Type: "auto",
 			}
 		case "required":
-			claudeToolChoice = &dto.ClaudeToolChoice{
+			claudeToolChoice = &shared.ClaudeToolChoice{
 				Type: "any",
 			}
 		case "none":
-			claudeToolChoice = &dto.ClaudeToolChoice{
+			claudeToolChoice = &shared.ClaudeToolChoice{
 				Type: "none",
 			}
 		}
@@ -1267,7 +1269,7 @@ func mapToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToolChoic
 		// 处理 tool_choice 对象值
 		if function, ok := toolChoiceMap["function"].(map[string]interface{}); ok {
 			if toolName, ok := function["name"].(string); ok {
-				claudeToolChoice = &dto.ClaudeToolChoice{
+				claudeToolChoice = &shared.ClaudeToolChoice{
 					Type: "tool",
 					Name: toolName,
 				}
@@ -1279,7 +1281,7 @@ func mapToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToolChoic
 	if parallelToolCalls != nil {
 		if claudeToolChoice == nil {
 			// 如果没有 tool_choice，但有 parallel_tool_calls，创建默认的 auto 类型
-			claudeToolChoice = &dto.ClaudeToolChoice{
+			claudeToolChoice = &shared.ClaudeToolChoice{
 				Type: "auto",
 			}
 		}

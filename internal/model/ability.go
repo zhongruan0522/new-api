@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/types"
 
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -119,7 +119,7 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 	return GetChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId)
 }
 
-func chooseChannelIDFromAbilities(abilities []Ability, preferredAPIType int, relayFormat types.RelayFormat) int {
+func chooseChannelIDFromAbilities(abilities []Ability, preferredAPIType int, relayFormat relayconstant.RelayFormat) int {
 	if len(abilities) == 0 {
 		return 0
 	}
@@ -138,11 +138,11 @@ func chooseChannelIDFromAbilities(abilities []Ability, preferredAPIType int, rel
 	return 0
 }
 
-func GetChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
+func GetChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat relayconstant.RelayFormat, excludeChannelId int) (*Channel, error) {
 	return getChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, false)
 }
 
-func getChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
+func getChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat relayconstant.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil

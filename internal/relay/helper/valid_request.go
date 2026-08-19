@@ -8,10 +8,9 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,13 +25,13 @@ const maxTokensUpperBound = math.MaxInt32 / 2
 // overflow the int quota, turning a charge into a balance increase.
 const maxImageN = 100
 
-func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dto.Request, err error) {
+func GetAndValidateRequest(c *gin.Context, format relayconstant.RelayFormat) (request shared.Request, err error) {
 	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 
 	switch format {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		request, err = GetAndValidateTextRequest(c, relayMode)
-	case types.RelayFormatGemini:
+	case relayconstant.RelayFormatGemini:
 		if strings.Contains(c.Request.URL.Path, ":embedContent") {
 			request, err = GetAndValidateGeminiEmbeddingRequest(c)
 		} else if strings.Contains(c.Request.URL.Path, ":batchEmbedContents") {
@@ -40,31 +39,31 @@ func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dt
 		} else {
 			request, err = GetAndValidateGeminiRequest(c)
 		}
-	case types.RelayFormatClaude:
+	case relayconstant.RelayFormatClaude:
 		request, err = GetAndValidateClaudeRequest(c)
-	case types.RelayFormatOpenAIResponses:
+	case relayconstant.RelayFormatOpenAIResponses:
 		request, err = GetAndValidateResponsesRequest(c)
-	case types.RelayFormatOpenAIResponsesCompaction:
+	case relayconstant.RelayFormatOpenAIResponsesCompaction:
 		request, err = GetAndValidateResponsesCompactionRequest(c)
 
-	case types.RelayFormatOpenAIImage:
+	case relayconstant.RelayFormatOpenAIImage:
 		request, err = GetAndValidOpenAIImageRequest(c, relayMode)
-	case types.RelayFormatEmbedding:
+	case relayconstant.RelayFormatEmbedding:
 		request, err = GetAndValidateEmbeddingRequest(c, relayMode)
-	case types.RelayFormatRerank:
+	case relayconstant.RelayFormatRerank:
 		request, err = GetAndValidateRerankRequest(c)
-	case types.RelayFormatOpenAIAudio:
+	case relayconstant.RelayFormatOpenAIAudio:
 		request, err = GetAndValidAudioRequest(c, relayMode)
-	case types.RelayFormatOpenAIRealtime:
-		request = &dto.BaseRequest{}
+	case relayconstant.RelayFormatOpenAIRealtime:
+		request = &shared.BaseRequest{}
 	default:
 		return nil, fmt.Errorf("unsupported relay format: %s", format)
 	}
 	return request, err
 }
 
-func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*dto.AudioRequest, error) {
-	audioRequest := &dto.AudioRequest{}
+func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*shared.AudioRequest, error) {
+	audioRequest := &shared.AudioRequest{}
 	err := common.UnmarshalBodyReusable(c, audioRequest)
 	if err != nil {
 		return nil, err
@@ -85,29 +84,29 @@ func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*dto.AudioRequest, 
 	return audioRequest, nil
 }
 
-func GetAndValidateRerankRequest(c *gin.Context) (*dto.RerankRequest, error) {
-	var rerankRequest *dto.RerankRequest
+func GetAndValidateRerankRequest(c *gin.Context) (*shared.RerankRequest, error) {
+	var rerankRequest *shared.RerankRequest
 	err := common.UnmarshalBodyReusable(c, &rerankRequest)
 	if err != nil {
 		log.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
-		return nil, types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return nil, shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	if rerankRequest.Query == "" {
-		return nil, types.NewError(fmt.Errorf("query is empty"), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return nil, shared.NewError(fmt.Errorf("query is empty"), shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 	if len(rerankRequest.Documents) == 0 {
-		return nil, types.NewError(fmt.Errorf("documents is empty"), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return nil, shared.NewError(fmt.Errorf("documents is empty"), shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 	return rerankRequest, nil
 }
 
-func GetAndValidateEmbeddingRequest(c *gin.Context, relayMode int) (*dto.EmbeddingRequest, error) {
-	var embeddingRequest *dto.EmbeddingRequest
+func GetAndValidateEmbeddingRequest(c *gin.Context, relayMode int) (*shared.EmbeddingRequest, error) {
+	var embeddingRequest *shared.EmbeddingRequest
 	err := common.UnmarshalBodyReusable(c, &embeddingRequest)
 	if err != nil {
 		log.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
-		return nil, types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return nil, shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	if embeddingRequest.Input == nil {
@@ -122,8 +121,8 @@ func GetAndValidateEmbeddingRequest(c *gin.Context, relayMode int) (*dto.Embeddi
 	return embeddingRequest, nil
 }
 
-func GetAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest, error) {
-	request := &dto.OpenAIResponsesRequest{}
+func GetAndValidateResponsesRequest(c *gin.Context) (*shared.OpenAIResponsesRequest, error) {
+	request := &shared.OpenAIResponsesRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
@@ -140,8 +139,8 @@ func GetAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest
 	return request, nil
 }
 
-func GetAndValidateResponsesCompactionRequest(c *gin.Context) (*dto.OpenAIResponsesCompactionRequest, error) {
-	request := &dto.OpenAIResponsesCompactionRequest{}
+func GetAndValidateResponsesCompactionRequest(c *gin.Context) (*shared.OpenAIResponsesCompactionRequest, error) {
+	request := &shared.OpenAIResponsesCompactionRequest{}
 	if err := common.UnmarshalBodyReusable(c, request); err != nil {
 		return nil, err
 	}
@@ -151,8 +150,8 @@ func GetAndValidateResponsesCompactionRequest(c *gin.Context) (*dto.OpenAIRespon
 	return request, nil
 }
 
-func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*dto.ImageRequest, error) {
-	imageRequest := &dto.ImageRequest{}
+func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*shared.ImageRequest, error) {
+	imageRequest := &shared.ImageRequest{}
 
 	switch relayMode {
 	case relayconstant.RelayModeImagesEdits:
@@ -243,8 +242,8 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*dto.ImageReq
 	return imageRequest, nil
 }
 
-func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest, err error) {
-	textRequest = &dto.ClaudeRequest{}
+func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *shared.ClaudeRequest, err error) {
+	textRequest = &shared.ClaudeRequest{}
 	err = c.ShouldBindJSON(textRequest)
 	if err != nil {
 		return nil, err
@@ -269,8 +268,8 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	return textRequest, nil
 }
 
-func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenAIRequest, error) {
-	textRequest := &dto.GeneralOpenAIRequest{}
+func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*shared.GeneralOpenAIRequest, error) {
+	textRequest := &shared.GeneralOpenAIRequest{}
 	err := common.UnmarshalBodyReusable(c, textRequest)
 	if err != nil {
 		return nil, err
@@ -330,8 +329,8 @@ func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenA
 	return textRequest, nil
 }
 
-func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error) {
-	request := &dto.GeminiChatRequest{}
+func GetAndValidateGeminiRequest(c *gin.Context) (*shared.GeminiChatRequest, error) {
+	request := &shared.GeminiChatRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
@@ -350,8 +349,8 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error)
 	return request, nil
 }
 
-func GetAndValidateGeminiEmbeddingRequest(c *gin.Context) (*dto.GeminiEmbeddingRequest, error) {
-	request := &dto.GeminiEmbeddingRequest{}
+func GetAndValidateGeminiEmbeddingRequest(c *gin.Context) (*shared.GeminiEmbeddingRequest, error) {
+	request := &shared.GeminiEmbeddingRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
@@ -359,8 +358,8 @@ func GetAndValidateGeminiEmbeddingRequest(c *gin.Context) (*dto.GeminiEmbeddingR
 	return request, nil
 }
 
-func GetAndValidateGeminiBatchEmbeddingRequest(c *gin.Context) (*dto.GeminiBatchEmbeddingRequest, error) {
-	request := &dto.GeminiBatchEmbeddingRequest{}
+func GetAndValidateGeminiBatchEmbeddingRequest(c *gin.Context) (*shared.GeminiBatchEmbeddingRequest, error) {
+	request := &shared.GeminiBatchEmbeddingRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -23,7 +23,7 @@ func TestChatCompletionRequestPreservesExplicitEmptyReasoningContent(t *testing.
 		]
 	}`)
 
-	var req dto.GeneralOpenAIRequest
+	var req shared.GeneralOpenAIRequest
 	if err := jsonx.Unmarshal(raw, &req); err != nil {
 		t.Fatalf("unmarshal request error = %v", err)
 	}

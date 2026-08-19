@@ -1,8 +1,7 @@
 package zhipu_4v
 
 import (
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 //	type ZhipuMessage struct {
@@ -31,12 +30,12 @@ import (
 //		FinishReason string `json:"finish_reason"`
 //	}
 type ZhipuV4Response struct {
-	Id                  string                         `json:"id"`
-	Created             int64                          `json:"created"`
-	Model               string                         `json:"model"`
-	TextResponseChoices []dto.OpenAITextResponseChoice `json:"choices"`
-	Usage               dto.Usage                      `json:"usage"`
-	Error               types.OpenAIError              `json:"error"`
+	Id                  string                            `json:"id"`
+	Created             int64                             `json:"created"`
+	Model               string                            `json:"model"`
+	TextResponseChoices []shared.OpenAITextResponseChoice `json:"choices"`
+	Usage               shared.Usage                      `json:"usage"`
+	Error               shared.OpenAIError                `json:"error"`
 }
 
 //
@@ -47,8 +46,8 @@ type ZhipuV4Response struct {
 //}
 
 type ZhipuV4StreamResponse struct {
-	Id      string                                    `json:"id"`
-	Created int64                                     `json:"created"`
-	Choices []dto.ChatCompletionsStreamResponseChoice `json:"choices"`
-	Usage   dto.Usage                                 `json:"usage"`
+	Id      string                                       `json:"id"`
+	Created int64                                        `json:"created"`
+	Choices []shared.ChatCompletionsStreamResponseChoice `json:"choices"`
+	Usage   shared.Usage                                 `json:"usage"`
 }

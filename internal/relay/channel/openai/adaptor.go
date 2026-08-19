@@ -14,7 +14,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
@@ -28,8 +28,8 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/common_handler"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,7 +38,7 @@ type Adaptor struct {
 	ResponseFormat string
 }
 
-func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
+func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.GeminiChatRequest) (any, error) {
 	// 使用 service.GeminiToOpenAIRequest 转换请求格式
 	openaiRequest, err := service.GeminiToOpenAIRequest(request, info)
 	if err != nil {
@@ -47,7 +47,7 @@ func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayIn
 	return a.ConvertOpenAIRequest(c, info, openaiRequest)
 }
 
-func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {
+func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.ClaudeRequest) (any, error) {
 	//if !strings.Contains(request.Model, "claude") {
 	//	return nil, fmt.Errorf("you are using openai channel type with path /v1/messages, only claude model supported convert, but got %s", request.Model)
 	//}
@@ -72,7 +72,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	//	}
 	//}
 	if info.SupportStreamOptions && info.IsStream {
-		aiRequest.StreamOptions = &dto.StreamOptions{
+		aiRequest.StreamOptions = &shared.StreamOptions{
 			IncludeUsage: true,
 		}
 	}
@@ -80,13 +80,13 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	if !ok {
 		return nil, fmt.Errorf("invalid channel setting openai_wire_api: %q", info.ChannelSetting.OpenAIWireAPI)
 	}
-	if wire == dto.OpenAIWireAPIResponses {
+	if wire == shared.OpenAIWireAPIResponses {
 		chatRequest, err := a.ConvertOpenAIRequest(c, info, aiRequest)
 		if err != nil {
 			return nil, err
 		}
 		relaycommon.AppendRequestConversionFromRequest(info, chatRequest)
-		normalizedChatRequest, ok := chatRequest.(*dto.GeneralOpenAIRequest)
+		normalizedChatRequest, ok := chatRequest.(*shared.GeneralOpenAIRequest)
 		if !ok {
 			return nil, fmt.Errorf("invalid normalized chat request type, got %T", chatRequest)
 		}
@@ -120,7 +120,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		}
 	}
 	switch info.ChannelType {
-	case constant.ChannelTypeAzure:
+	case channelconstant.ChannelTypeAzure:
 		apiVersion := info.ApiVersion
 		if apiVersion == "" {
 			apiVersion = constant.AzureDefaultAPIVersion
@@ -130,7 +130,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 
-		if info.RelayFormat == types.RelayFormatClaude {
+		if info.RelayFormat == relayconstant.RelayFormatClaude {
 			task = strings.TrimPrefix(task, "messages")
 			task = "chat/completions" + task
 		}
@@ -160,7 +160,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 		model_ := info.UpstreamModelName
 		// 2025年5月10日后创建的渠道不移除.
-		if info.ChannelCreateTime < constant.AzureNoRemoveDotTime {
+		if info.ChannelCreateTime < channelconstant.AzureNoRemoveDotTime {
 			model_ = strings.Replace(model_, ".", "", -1)
 		}
 		// https://github.com/songquanpeng/one-api/issues/67
@@ -169,14 +169,14 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 			requestURL = fmt.Sprintf("/openai/realtime?deployment=%s&api-version=%s", model_, apiVersion)
 		}
 		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, requestURL, info.ChannelType), nil
-	//case constant.ChannelTypeMiniMax:
+	//case channelconstant.ChannelTypeMiniMax:
 	//	return minimax.GetRequestURL(info)
-	case constant.ChannelTypeCustom:
+	case channelconstant.ChannelTypeCustom:
 		url := info.ChannelBaseUrl
 		url = strings.Replace(url, "{model}", info.UpstreamModelName, -1)
 		return url, nil
 	default:
-		if (info.RelayFormat == types.RelayFormatClaude || info.RelayFormat == types.RelayFormatGemini) &&
+		if (info.RelayFormat == relayconstant.RelayFormatClaude || info.RelayFormat == relayconstant.RelayFormatGemini) &&
 			info.RelayMode != relayconstant.RelayModeResponses &&
 			info.RelayMode != relayconstant.RelayModeResponsesCompact {
 			return fmt.Sprintf("%s/v1/chat/completions", info.ChannelBaseUrl), nil
@@ -187,11 +187,11 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, header)
-	if info.ChannelType == constant.ChannelTypeAzure {
+	if info.ChannelType == channelconstant.ChannelTypeAzure {
 		header.Set("api-key", info.ApiKey)
 		return nil
 	}
-	if info.ChannelType == constant.ChannelTypeOpenAI && "" != info.Organization {
+	if info.ChannelType == channelconstant.ChannelTypeOpenAI && "" != info.Organization {
 		header.Set("OpenAI-Organization", info.Organization)
 	}
 	// 检查 Header Override 是否已设置 Authorization，如果已设置则跳过默认设置
@@ -232,14 +232,14 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 	return nil
 }
 
-func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	if info.ChannelType != constant.ChannelTypeOpenAI && info.ChannelType != constant.ChannelTypeAzure {
+	if info.ChannelType != channelconstant.ChannelTypeOpenAI && info.ChannelType != channelconstant.ChannelTypeAzure {
 		request.StreamOptions = nil
 	}
-	if info.ChannelType == constant.ChannelTypeOpenRouter {
+	if info.ChannelType == channelconstant.ChannelTypeOpenRouter {
 		if len(request.Usage) == 0 {
 			request.Usage = json.RawMessage(`{"include":true}`)
 		}
@@ -263,7 +263,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		// https://docs.anthropic.com/en/api/openai-sdk#extended-thinking-support
 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
 		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
-			var thinking dto.Thinking // Claude标准Thinking格式
+			var thinking shared.Thinking // Claude标准Thinking格式
 			if err := jsonx.Unmarshal(request.THINKING, &thinking); err != nil {
 				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
 			}
@@ -339,11 +339,11 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	return request, nil
 }
 
-func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {
+func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request shared.RerankRequest) (any, error) {
 	return request, nil
 }
 
-func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.EmbeddingRequest) (any, error) {
+func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.EmbeddingRequest) (any, error) {
 	return request, nil
 }
 
@@ -373,10 +373,10 @@ func resolveMiniMaxVoiceOpenAI(c *gin.Context, voiceId string) (string, error) {
 	return voiceId, nil
 }
 
-func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
+func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.AudioRequest) (io.Reader, error) {
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
-		if info.ChannelType == constant.ChannelTypeMiniMax {
+		if info.ChannelType == channelconstant.ChannelTypeMiniMax {
 			// 音色白名单/重定向已迁移到数据库音色表。
 			resolvedVoice, vErr := resolveMiniMaxVoiceOpenAI(c, request.Voice)
 			if vErr != nil {
@@ -454,7 +454,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	}
 }
 
-func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
+func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.ImageRequest) (any, error) {
 	switch info.RelayMode {
 	case relayconstant.RelayModeImagesEdits:
 
@@ -602,12 +602,12 @@ func detectImageMimeType(filename string) string {
 	}
 }
 
-func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.OpenAIResponsesRequest) (any, error) {
 	//  转换模型推理力度后缀
 	effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(request.Model)
 	if effort != "" {
 		if request.Reasoning == nil {
-			request.Reasoning = &dto.Reasoning{
+			request.Reasoning = &shared.Reasoning{
 				Effort: effort,
 			}
 		} else {
@@ -633,7 +633,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	}
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *shared.NookMuxError) {
 	switch info.RelayMode {
 	case relayconstant.RelayModeRealtime:
 		err, usage = OpenaiRealtimeHandler(c, info)
@@ -667,7 +667,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 
 func (a *Adaptor) GetModelList() []string {
 	switch a.ChannelType {
-	case constant.ChannelTypeOpenRouter:
+	case channelconstant.ChannelTypeOpenRouter:
 		return openrouter.ModelList
 	default:
 		return ModelList
@@ -676,7 +676,7 @@ func (a *Adaptor) GetModelList() []string {
 
 func (a *Adaptor) GetChannelName() string {
 	switch a.ChannelType {
-	case constant.ChannelTypeOpenRouter:
+	case channelconstant.ChannelTypeOpenRouter:
 		return openrouter.ChannelName
 	default:
 		return ChannelName

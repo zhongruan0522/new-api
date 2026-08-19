@@ -8,7 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -17,7 +17,7 @@ import (
 	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
-	"github.com/NookMux/NookMux/internal/types"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -32,7 +32,7 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 		return helper.StringData(c, data)
 	}
 
-	var lastStreamResponse dto.ChatCompletionsStreamResponse
+	var lastStreamResponse shared.ChatCompletionsStreamResponse
 	if err := jsonx.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
@@ -41,10 +41,10 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	return helper.ObjectData(c, lastStreamResponse)
 }
 
-func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	if resp == nil || resp.Body == nil {
 		log.LogError(c, "invalid response or response body")
-		return nil, types.NewOpenAIError(fmt.Errorf("invalid response"), types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse, http.StatusInternalServerError)
 	}
 
 	defer service.CloseResponseBodyGracefully(resp)
@@ -56,10 +56,10 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var containStreamUsage bool
 	var responseTextBuilder strings.Builder
 	var toolCount int
-	var usage = &dto.Usage{}
+	var usage = &shared.Usage{}
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
-	var streamApiErr *types.NookMuxError
+	var streamApiErr *shared.NookMuxError
 
 	// 检查是否为音频模型
 	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
@@ -73,8 +73,8 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 				Error any `json:"error"`
 			}
 			if err := jsonx.UnmarshalJsonStr(data, &errFrame); err == nil && errFrame.Error != nil {
-				if oaiError := dto.GetOpenAIError(errFrame.Error); oaiError != nil && oaiError.Message != "" {
-					streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+				if oaiError := shared.GetOpenAIError(errFrame.Error); oaiError != nil && oaiError.Message != "" {
+					streamApiErr = shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 					return false
 				}
 			}
@@ -102,7 +102,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	// 对音频模型，从倒数第二个stream data中提取usage信息
 	if isAudioModel && secondLastStreamData != "" {
 		var streamResp struct {
-			Usage *dto.Usage `json:"usage"`
+			Usage *shared.Usage `json:"usage"`
 		}
 		err := jsonx.Unmarshal([]byte(secondLastStreamData), &streamResp)
 		if err == nil && streamResp.Usage != nil && service.ValidUsage(streamResp.Usage) {
@@ -130,7 +130,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		log.LogError(c, fmt.Sprintf("error handling last response: %s, lastStreamData: [%s]", err.Error(), lastStreamData))
 	}
 
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.RelayFormat == relayconstant.RelayFormatOpenAI {
 		if shouldSendLastResp {
 			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat)
 		}
@@ -154,44 +154,44 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	return usage, nil
 }
 
-func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
-	var simpleResponse dto.OpenAITextResponse
+	var simpleResponse shared.OpenAITextResponse
 	responseBody, err := readOpenAIResponseBody(info, resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 	if common.DebugEnabled {
 		println("upstream response body:", string(responseBody))
 	}
 	// Unmarshal to simpleResponse
-	if info.ChannelType == constant.ChannelTypeOpenRouter && info.ChannelOtherSettings.IsOpenRouterEnterprise() {
+	if info.ChannelType == channelconstant.ChannelTypeOpenRouter && info.ChannelOtherSettings.IsOpenRouterEnterprise() {
 		// 尝试解析为 openrouter enterprise
 		var enterpriseResponse openrouter.OpenRouterEnterpriseResponse
 		err = jsonx.Unmarshal(responseBody, &enterpriseResponse)
 		if err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
 		if enterpriseResponse.Success {
 			responseBody = enterpriseResponse.Data
 		} else {
 			log.LogError(c, fmt.Sprintf("openrouter enterprise response success=false, data: %s", enterpriseResponse.Data))
-			return nil, types.NewOpenAIError(fmt.Errorf("openrouter response success=false"), types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			return nil, shared.NewOpenAIError(fmt.Errorf("openrouter response success=false"), shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
 	}
 
 	err = jsonx.Unmarshal(responseBody, &simpleResponse)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-		return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+		return nil, shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
 
 	for _, choice := range simpleResponse.Choices {
-		if choice.FinishReason == constant.FinishReasonContentFilter {
+		if choice.FinishReason == relayconstant.FinishReasonContentFilter {
 			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "openai_finish_reason=content_filter")
 			break
 		}
@@ -212,7 +212,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 				completionTokens += ctkm
 			}
 		}
-		simpleResponse.Usage = dto.Usage{
+		simpleResponse.Usage = shared.Usage{
 			PromptTokens:     info.GetEstimatePromptTokens(),
 			CompletionTokens: completionTokens,
 			TotalTokens:      info.GetEstimatePromptTokens() + completionTokens,
@@ -223,12 +223,12 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
 
 	switch info.RelayFormat {
-	case types.RelayFormatOpenAI:
+	case relayconstant.RelayFormatOpenAI:
 		if usageModified {
 			var bodyMap map[string]interface{}
 			err = jsonx.Unmarshal(responseBody, &bodyMap)
 			if err != nil {
-				return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+				return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 			}
 			bodyMap["usage"] = simpleResponse.Usage
 			responseBody, _ = jsonx.Marshal(bodyMap)
@@ -236,24 +236,24 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		if forceFormat {
 			responseBody, err = jsonx.Marshal(simpleResponse)
 			if err != nil {
-				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+				return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 			}
 		} else {
 			responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 			break
 		}
-	case types.RelayFormatClaude:
+	case relayconstant.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
 		claudeRespStr, err := jsonx.Marshal(claudeResp)
 		if err != nil {
-			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
-	case types.RelayFormatGemini:
+	case relayconstant.RelayFormatGemini:
 		geminiResp := service.ResponseOpenAI2Gemini(&simpleResponse, info)
 		geminiRespStr, err := jsonx.Marshal(geminiResp)
 		if err != nil {
-			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 		responseBody = geminiRespStr
 	}
@@ -263,9 +263,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	return &simpleResponse.Usage, nil
 }
 
-func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.NookMuxError, *dto.RealtimeUsage) {
+func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared.NookMuxError, *shared.RealtimeUsage) {
 	if info == nil || info.ClientWs == nil || info.TargetWs == nil {
-		return types.NewError(fmt.Errorf("invalid websocket connection"), types.ErrorCodeBadResponse), nil
+		return shared.NewError(fmt.Errorf("invalid websocket connection"), shared.ErrorCodeBadResponse), nil
 	}
 
 	info.IsStream = true
@@ -276,9 +276,9 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 	targetClosed := make(chan struct{})
 	errChan := make(chan error, 2)
 
-	usage := &dto.RealtimeUsage{}
-	localUsage := &dto.RealtimeUsage{}
-	sumUsage := &dto.RealtimeUsage{}
+	usage := &shared.RealtimeUsage{}
+	localUsage := &shared.RealtimeUsage{}
+	sumUsage := &shared.RealtimeUsage{}
 
 	go func() {
 		defer func() {
@@ -300,14 +300,14 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					return
 				}
 
-				realtimeEvent := &dto.RealtimeEvent{}
+				realtimeEvent := &shared.RealtimeEvent{}
 				err = jsonx.Unmarshal(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
 				}
 
-				if realtimeEvent.Type == dto.RealtimeEventTypeSessionUpdate {
+				if realtimeEvent.Type == shared.RealtimeEventTypeSessionUpdate {
 					if realtimeEvent.Session != nil {
 						if realtimeEvent.Session.Tools != nil {
 							info.RealtimeTools = realtimeEvent.Session.Tools
@@ -355,14 +355,14 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					return
 				}
 				info.SetFirstResponseTime()
-				realtimeEvent := &dto.RealtimeEvent{}
+				realtimeEvent := &shared.RealtimeEvent{}
 				err = jsonx.Unmarshal(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
 				}
 
-				if realtimeEvent.Type == dto.RealtimeEventTypeResponseDone {
+				if realtimeEvent.Type == shared.RealtimeEventTypeResponseDone {
 					realtimeUsage := realtimeEvent.Response.Usage
 					if realtimeUsage != nil {
 						usage.TotalTokens += realtimeUsage.TotalTokens
@@ -379,9 +379,9 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 							return
 						}
 						// 本次计费完成，清除
-						usage = &dto.RealtimeUsage{}
+						usage = &shared.RealtimeUsage{}
 
-						localUsage = &dto.RealtimeUsage{}
+						localUsage = &shared.RealtimeUsage{}
 					} else {
 						textToken, audioToken, err := service.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
 						if err != nil {
@@ -400,12 +400,12 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 							return
 						}
 						// 本次计费完成，清除
-						localUsage = &dto.RealtimeUsage{}
+						localUsage = &shared.RealtimeUsage{}
 						// print now usage
 					}
 					log.LogDebug(c, "realtime streaming sumUsage=%v localUsage=%v", sumUsage, localUsage)
 
-				} else if realtimeEvent.Type == dto.RealtimeEventTypeSessionUpdated || realtimeEvent.Type == dto.RealtimeEventTypeSessionCreated {
+				} else if realtimeEvent.Type == shared.RealtimeEventTypeSessionUpdated || realtimeEvent.Type == shared.RealtimeEventTypeSessionCreated {
 					realtimeSession := realtimeEvent.Session
 					if realtimeSession != nil {
 						// update audio format
@@ -457,7 +457,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 	return nil, sumUsage
 }
 
-func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.RealtimeUsage, totalUsage *dto.RealtimeUsage) error {
+func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *shared.RealtimeUsage, totalUsage *shared.RealtimeUsage) error {
 	if usage == nil || totalUsage == nil {
 		return fmt.Errorf("invalid usage pointer")
 	}
@@ -475,28 +475,28 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.R
 	return err
 }
 
-func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 
 	// 部分上游/中间网关会把 429/5xx 错误转成 HTTP 200 + error body 下发。
 	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
 	// 「502 上游没有返回计费信息」。
-	var errProbe dto.SimpleResponse
+	var errProbe shared.SimpleResponse
 	if probeErr := jsonx.Unmarshal(responseBody, &errProbe); probeErr == nil {
 		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-			return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
+			return nil, shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 		}
 	}
 
-	var usageResp dto.SimpleResponse
+	var usageResp shared.SimpleResponse
 	err = jsonx.Unmarshal(responseBody, &usageResp)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
@@ -529,17 +529,17 @@ func readOpenAIResponseBody(info *relaycommon.RelayInfo, body io.Reader) ([]byte
 	return common.ReadResponseBody(body)
 }
 
-func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, responseBody []byte) {
+func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *shared.Usage, responseBody []byte) {
 	if info == nil || usage == nil {
 		return
 	}
 
 	switch info.ChannelType {
-	case constant.ChannelTypeDeepSeek:
+	case channelconstant.ChannelTypeDeepSeek:
 		if usage.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens != 0 {
 			usage.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
 		}
-	case constant.ChannelTypeZhipu_v4:
+	case channelconstant.ChannelTypeZhipu_v4:
 		// 智普的cached_tokens在标准位置: usage.prompt_tokens_details.cached_tokens
 		if usage.PromptTokensDetails.CachedTokens == 0 {
 			if usage.InputTokensDetails != nil && usage.InputTokensDetails.CachedTokens > 0 {
@@ -550,7 +550,7 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, res
 				usage.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
 			}
 		}
-	case constant.ChannelTypeMoonshot:
+	case channelconstant.ChannelTypeMoonshot:
 		// Moonshot的cached_tokens在非标准位置: choices[].usage.cached_tokens
 		if usage.PromptTokensDetails.CachedTokens == 0 {
 			if usage.InputTokensDetails != nil && usage.InputTokensDetails.CachedTokens > 0 {
@@ -563,7 +563,7 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, res
 				usage.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
 			}
 		}
-	case constant.ChannelTypeOpenAI:
+	case channelconstant.ChannelTypeOpenAI:
 		if usage.PromptTokensDetails.CachedTokens == 0 {
 			if cachedTokens, ok := extractLlamaCachedTokensFromBody(responseBody); ok {
 				usage.PromptTokensDetails.CachedTokens = cachedTokens

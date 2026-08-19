@@ -7,18 +7,19 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/types"
+
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 )
 
 func formatNotifyType(channelId int, status int) string {
-	return fmt.Sprintf("%s_%d_%d", dto.NotifyTypeChannelUpdate, channelId, status)
+	return fmt.Sprintf("%s_%d_%d", shared.NotifyTypeChannelUpdate, channelId, status)
 }
 
 // disable & notify
-func DisableChannel(channelError types.ChannelError, reason string) {
+func DisableChannel(channelError domainchannel.ChannelError, reason string) {
 	reasonPreview := common.LocalLogPreview(reason)
 	common.SysLog(fmt.Sprintf("通道「%s」（#%d）发生错误，准备禁用，原因：%s", channelError.ChannelName, channelError.ChannelId, reasonPreview))
 
@@ -45,17 +46,17 @@ func EnableChannel(channelId int, usingKey string, channelName string) {
 	}
 }
 
-func ShouldDisableChannel(channelType int, err *types.NookMuxError) bool {
+func ShouldDisableChannel(channelType int, err *shared.NookMuxError) bool {
 	if !common.AutomaticDisableChannelEnabled {
 		return false
 	}
 	if err == nil {
 		return false
 	}
-	if types.IsChannelError(err) {
+	if shared.IsChannelError(err) {
 		return true
 	}
-	if types.IsSkipRetryError(err) {
+	if shared.IsSkipRetryError(err) {
 		return false
 	}
 	if operation.ShouldDisableByStatusCode(err.StatusCode) {
@@ -102,7 +103,7 @@ func ShouldDisableChannel(channelType int, err *types.NookMuxError) bool {
 	return search
 }
 
-func ShouldEnableChannel(newAPIError *types.NookMuxError, status int) bool {
+func ShouldEnableChannel(newAPIError *shared.NookMuxError, status int) bool {
 	if !common.AutomaticEnableChannelEnabled {
 		return false
 	}

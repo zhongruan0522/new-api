@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel/openai"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -106,13 +107,13 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 				<-start
 				recorder := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(recorder)
-				request := &dto.GeneralOpenAIRequest{
+				request := &shared.GeneralOpenAIRequest{
 					Model: "gpt-bench",
-					Messages: []dto.Message{
+					Messages: []shared.Message{
 						{Role: "user", Content: "hello"},
 					},
 					Stream: true,
-					StreamOptions: &dto.StreamOptions{
+					StreamOptions: &shared.StreamOptions{
 						IncludeUsage: true,
 					},
 				}
@@ -123,15 +124,15 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 				}
 				c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
 				c.Request.Header.Set("Content-Type", "application/json")
-				c.Set(string(constant.ContextKeyChannelType), constant.ChannelTypeOpenAI)
+				c.Set(string(constant.ContextKeyChannelType), channelconstant.ChannelTypeOpenAI)
 				c.Set(string(constant.ContextKeyChannelId), 1)
 				c.Set(string(constant.ContextKeyChannelBaseUrl), upstream.URL)
 				c.Set(string(constant.ContextKeyChannelKey), "test-key")
 				c.Set(string(constant.ContextKeyOriginalModel), "gpt-bench")
-				c.Set(string(constant.ContextKeyChannelSetting), dto.ChannelSettings{})
-				c.Set(string(constant.ContextKeyChannelOtherSetting), dto.ChannelOtherSettings{})
+				c.Set(string(constant.ContextKeyChannelSetting), shared.ChannelSettings{})
+				c.Set(string(constant.ContextKeyChannelOtherSetting), shared.ChannelOtherSettings{})
 
-				info, err := relaycommon.GenRelayInfo(c, types.RelayFormatOpenAI, request, nil)
+				info, err := relaycommon.GenRelayInfo(c, relayconstant.RelayFormatOpenAI, request, nil)
 				if err != nil {
 					b.Errorf("gen relay info: %v", err)
 					return
@@ -170,7 +171,7 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 					b.Errorf("do response: %v", apiErr)
 					return
 				}
-				u := usage.(*dto.Usage)
+				u := usage.(*shared.Usage)
 				if u.TotalTokens == 0 {
 					b.Errorf("usage total tokens = 0")
 					return

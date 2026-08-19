@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -14,7 +14,7 @@ func responseModelName(info *relaycommon.RelayInfo) string {
 	return info.GetResponseModelName()
 }
 
-func MaskTextResponseModel(response *dto.OpenAITextResponse, info *relaycommon.RelayInfo) {
+func MaskTextResponseModel(response *shared.OpenAITextResponse, info *relaycommon.RelayInfo) {
 	model := responseModelName(info)
 	if response == nil || model == "" {
 		return
@@ -22,7 +22,7 @@ func MaskTextResponseModel(response *dto.OpenAITextResponse, info *relaycommon.R
 	response.Model = model
 }
 
-func MaskChatStreamResponseModel(response *dto.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) {
+func MaskChatStreamResponseModel(response *shared.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) {
 	model := responseModelName(info)
 	if response == nil || model == "" {
 		return
@@ -30,7 +30,7 @@ func MaskChatStreamResponseModel(response *dto.ChatCompletionsStreamResponse, in
 	response.Model = model
 }
 
-func MaskResponsesResponseModel(response *dto.OpenAIResponsesResponse, info *relaycommon.RelayInfo) {
+func MaskResponsesResponseModel(response *shared.OpenAIResponsesResponse, info *relaycommon.RelayInfo) {
 	model := responseModelName(info)
 	if response == nil || model == "" {
 		return
@@ -38,7 +38,7 @@ func MaskResponsesResponseModel(response *dto.OpenAIResponsesResponse, info *rel
 	response.Model = model
 }
 
-func MaskResponsesStreamResponseModel(response *dto.ResponsesStreamResponse, info *relaycommon.RelayInfo) {
+func MaskResponsesStreamResponseModel(response *shared.ResponsesStreamResponse, info *relaycommon.RelayInfo) {
 	if response == nil || response.Response == nil {
 		return
 	}

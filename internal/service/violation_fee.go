@@ -7,11 +7,10 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	configmodel "github.com/NookMux/NookMux/internal/config/model"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
@@ -22,11 +21,11 @@ const (
 	CSAMViolationMarker    = "Failed check: SAFETY_CHECK_TYPE_CSAM"
 )
 
-func IsViolationFeeCode(code types.ErrorCode) bool {
+func IsViolationFeeCode(code shared.ErrorCode) bool {
 	return strings.HasPrefix(string(code), ViolationFeeCodePrefix)
 }
 
-func HasCSAMViolationMarker(err *types.NookMuxError) bool {
+func HasCSAMViolationMarker(err *shared.NookMuxError) bool {
 	if err == nil {
 		return false
 	}
@@ -37,14 +36,14 @@ func HasCSAMViolationMarker(err *types.NookMuxError) bool {
 	return strings.Contains(msg, CSAMViolationMarker)
 }
 
-func WrapAsViolationFeeGrokCSAM(err *types.NookMuxError) *types.NookMuxError {
+func WrapAsViolationFeeGrokCSAM(err *shared.NookMuxError) *shared.NookMuxError {
 	if err == nil {
 		return nil
 	}
 	oai := err.ToOpenAIError()
-	oai.Type = string(types.ErrorCodeViolationFeeGrokCSAM)
-	oai.Code = string(types.ErrorCodeViolationFeeGrokCSAM)
-	return types.WithOpenAIError(oai, err.StatusCode, types.ErrOptionWithSkipRetry())
+	oai.Type = string(shared.ErrorCodeViolationFeeGrokCSAM)
+	oai.Code = string(shared.ErrorCodeViolationFeeGrokCSAM)
+	return shared.WithOpenAIError(oai, err.StatusCode, shared.ErrOptionWithSkipRetry())
 }
 
 // NormalizeViolationFeeError ensures:
@@ -52,7 +51,7 @@ func WrapAsViolationFeeGrokCSAM(err *types.NookMuxError) *types.NookMuxError {
 // - if error.code already has the violation-fee prefix, skip-retry is enabled.
 //
 // It must be called before retry decision logic.
-func NormalizeViolationFeeError(err *types.NookMuxError) *types.NookMuxError {
+func NormalizeViolationFeeError(err *shared.NookMuxError) *shared.NookMuxError {
 	if err == nil {
 		return nil
 	}
@@ -63,17 +62,17 @@ func NormalizeViolationFeeError(err *types.NookMuxError) *types.NookMuxError {
 
 	if IsViolationFeeCode(err.GetErrorCode()) {
 		oai := err.ToOpenAIError()
-		return types.WithOpenAIError(oai, err.StatusCode, types.ErrOptionWithSkipRetry())
+		return shared.WithOpenAIError(oai, err.StatusCode, shared.ErrOptionWithSkipRetry())
 	}
 
 	return err
 }
 
-func shouldChargeViolationFee(err *types.NookMuxError) bool {
+func shouldChargeViolationFee(err *shared.NookMuxError) bool {
 	if err == nil {
 		return false
 	}
-	if err.GetErrorCode() == types.ErrorCodeViolationFeeGrokCSAM {
+	if err.GetErrorCode() == shared.ErrorCodeViolationFeeGrokCSAM {
 		return true
 	}
 	// In case some callers didn't normalize, keep a safety net.
@@ -100,7 +99,7 @@ func calcViolationFeeQuota(amount, groupRatio float64) int {
 
 // ChargeViolationFeeIfNeeded charges an additional fee after the normal flow finishes (including refund).
 // It uses Grok fee settings as the fee policy.
-func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, apiErr *types.NookMuxError) bool {
+func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, apiErr *shared.NookMuxError) bool {
 	if ctx == nil || relayInfo == nil || apiErr == nil {
 		return false
 	}
@@ -133,7 +132,7 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 
 	other := map[string]any{
 		"violation_fee":        true,
-		"violation_fee_code":   string(types.ErrorCodeViolationFeeGrokCSAM),
+		"violation_fee_code":   string(shared.ErrorCodeViolationFeeGrokCSAM),
 		"fee_quota":            feeQuota,
 		"base_amount":          settings.ViolationDeductionAmount,
 		"group_ratio":          groupRatio,

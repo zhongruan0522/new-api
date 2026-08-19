@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -89,7 +89,7 @@ func newAwsClient(c *gin.Context, info *relaycommon.RelayInfo) (*bedrockruntime.
 func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor, requestBody io.Reader) (any, error) {
 	awsCli, err := newAwsClient(c, info)
 	if err != nil {
-		return nil, types.NewError(err, types.ErrorCodeChannelAwsClientError)
+		return nil, shared.NewError(err, shared.ErrorCodeChannelAwsClientError)
 	}
 	a.AwsClient = awsCli
 
@@ -110,7 +110,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 		var novaReq *NovaRequest
 		err = jsonx.DecodeJson(requestBody, &novaReq)
 		if err != nil {
-			return nil, types.NewError(errors.Wrap(err, "decode nova request fail"), types.ErrorCodeBadRequestBody)
+			return nil, shared.NewError(errors.Wrap(err, "decode nova request fail"), shared.ErrorCodeBadRequestBody)
 		}
 
 		// 使用InvokeModel API，但使用Nova格式的请求体
@@ -122,7 +122,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 
 		reqBody, err := jsonx.Marshal(novaReq)
 		if err != nil {
-			return nil, types.NewError(errors.Wrap(err, "marshal nova request"), types.ErrorCodeBadResponseBody)
+			return nil, shared.NewError(errors.Wrap(err, "marshal nova request"), shared.ErrorCodeBadResponseBody)
 		}
 		awsReq.Body = reqBody
 		a.AwsReq = awsReq
@@ -130,7 +130,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 	} else {
 		awsClaudeReq, err := formatRequest(requestBody, requestHeader)
 		if err != nil {
-			return nil, types.NewError(errors.Wrap(err, "format aws request fail"), types.ErrorCodeBadRequestBody)
+			return nil, shared.NewError(errors.Wrap(err, "format aws request fail"), shared.ErrorCodeBadRequestBody)
 		}
 
 		if info.IsStream {
@@ -141,7 +141,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 			}
 			awsReq.Body, err = buildAwsRequestBody(c, info, awsClaudeReq)
 			if err != nil {
-				return nil, types.NewError(errors.Wrap(err, "marshal aws request fail"), types.ErrorCodeBadRequestBody)
+				return nil, shared.NewError(errors.Wrap(err, "marshal aws request fail"), shared.ErrorCodeBadRequestBody)
 			}
 			a.AwsReq = awsReq
 			return nil, nil
@@ -153,7 +153,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 			}
 			awsReq.Body, err = buildAwsRequestBody(c, info, awsClaudeReq)
 			if err != nil {
-				return nil, types.NewError(errors.Wrap(err, "marshal aws request fail"), types.ErrorCodeBadRequestBody)
+				return nil, shared.NewError(errors.Wrap(err, "marshal aws request fail"), shared.ErrorCodeBadRequestBody)
 			}
 			a.AwsReq = awsReq
 			return nil, nil
@@ -208,7 +208,7 @@ func getAwsModelID(requestModel string) string {
 	return requestModel
 }
 
-func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
+func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*shared.NookMuxError, *shared.Usage) {
 
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
@@ -216,7 +216,7 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types
 	awsResp, err := a.AwsClient.InvokeModel(ctx, a.AwsReq.(*bedrockruntime.InvokeModelInput))
 	if err != nil {
 		statusCode := getAwsErrorStatusCode(err)
-		return types.NewOpenAIError(errors.Wrap(err, "InvokeModel"), types.ErrorCodeAwsInvokeError, statusCode), nil
+		return shared.NewOpenAIError(errors.Wrap(err, "InvokeModel"), shared.ErrorCodeAwsInvokeError, statusCode), nil
 	}
 
 	claudeInfo := &claude.ClaudeResponseInfo{
@@ -224,7 +224,7 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types
 		Created:      common.GetTimestamp(),
 		Model:        info.UpstreamModelName,
 		ResponseText: strings.Builder{},
-		Usage:        &dto.Usage{},
+		Usage:        &shared.Usage{},
 	}
 
 	// 复制上游 Content-Type 到客户端响应头
@@ -239,14 +239,14 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types
 	return nil, claudeInfo.Usage
 }
 
-func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
+func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*shared.NookMuxError, *shared.Usage) {
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
 
 	awsResp, err := a.AwsClient.InvokeModelWithResponseStream(ctx, a.AwsReq.(*bedrockruntime.InvokeModelWithResponseStreamInput))
 	if err != nil {
 		statusCode := getAwsErrorStatusCode(err)
-		return types.NewOpenAIError(errors.Wrap(err, "InvokeModelWithResponseStream"), types.ErrorCodeAwsInvokeError, statusCode), nil
+		return shared.NewOpenAIError(errors.Wrap(err, "InvokeModelWithResponseStream"), shared.ErrorCodeAwsInvokeError, statusCode), nil
 	}
 	stream := awsResp.GetStream()
 	defer stream.Close()
@@ -256,7 +256,7 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 		Created:      common.GetTimestamp(),
 		Model:        info.UpstreamModelName,
 		ResponseText: strings.Builder{},
-		Usage:        &dto.Usage{},
+		Usage:        &shared.Usage{},
 	}
 
 	for event := range stream.Events() {
@@ -269,10 +269,10 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 			}
 		case *bedrockruntimeTypes.UnknownUnionMember:
 			fmt.Println("unknown tag:", v.Tag)
-			return types.NewError(errors.New("unknown response type"), types.ErrorCodeInvalidRequest), nil
+			return shared.NewError(errors.New("unknown response type"), shared.ErrorCodeInvalidRequest), nil
 		default:
 			fmt.Println("union is nil or unknown type")
-			return types.NewError(errors.New("nil or unknown response type"), types.ErrorCodeInvalidRequest), nil
+			return shared.NewError(errors.New("nil or unknown response type"), shared.ErrorCodeInvalidRequest), nil
 		}
 	}
 
@@ -281,7 +281,7 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 }
 
 // Nova模型处理函数
-func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types.NookMuxError, *dto.Usage) {
+func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*shared.NookMuxError, *shared.Usage) {
 
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()
@@ -289,7 +289,7 @@ func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) 
 	awsResp, err := a.AwsClient.InvokeModel(ctx, a.AwsReq.(*bedrockruntime.InvokeModelInput))
 	if err != nil {
 		statusCode := getAwsErrorStatusCode(err)
-		return types.NewOpenAIError(errors.Wrap(err, "InvokeModel"), types.ErrorCodeAwsInvokeError, statusCode), nil
+		return shared.NewOpenAIError(errors.Wrap(err, "InvokeModel"), shared.ErrorCodeAwsInvokeError, statusCode), nil
 	}
 
 	// 解析Nova响应
@@ -309,24 +309,24 @@ func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) 
 	}
 
 	if err := json.Unmarshal(awsResp.Body, &novaResp); err != nil {
-		return types.NewError(errors.Wrap(err, "unmarshal nova response"), types.ErrorCodeBadResponseBody), nil
+		return shared.NewError(errors.Wrap(err, "unmarshal nova response"), shared.ErrorCodeBadResponseBody), nil
 	}
 
 	// 构造OpenAI格式响应
-	response := dto.OpenAITextResponse{
+	response := shared.OpenAITextResponse{
 		Id:      helper.GetResponseID(c),
 		Object:  "chat.completion",
 		Created: common.GetTimestamp(),
 		Model:   info.GetResponseModelName(),
-		Choices: []dto.OpenAITextResponseChoice{{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index: 0,
-			Message: dto.Message{
+			Message: shared.Message{
 				Role:    "assistant",
 				Content: novaResp.Output.Message.Content[0].Text,
 			},
 			FinishReason: "stop",
 		}},
-		Usage: dto.Usage{
+		Usage: shared.Usage{
 			PromptTokens:     novaResp.Usage.InputTokens,
 			CompletionTokens: novaResp.Usage.OutputTokens,
 			TotalTokens:      novaResp.Usage.TotalTokens,

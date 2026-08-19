@@ -14,7 +14,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/middleware"
@@ -24,14 +24,14 @@ import (
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
-	var err *types.NookMuxError
+func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
+	var err *shared.NookMuxError
 	switch info.RelayMode {
 	case relayconstant.RelayModeImagesGenerations, relayconstant.RelayModeImagesEdits:
 		err = relay.ImageHelper(c, info)
@@ -53,8 +53,8 @@ func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxErr
 	return err
 }
 
-func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NookMuxError {
-	var err *types.NookMuxError
+func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
+	var err *shared.NookMuxError
 	if strings.Contains(c.Request.URL.Path, "embed") {
 		err = relay.GeminiEmbeddingHandler(c, info)
 	} else {
@@ -63,22 +63,22 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.Nook
 	return err
 }
 
-func Relay(c *gin.Context, relayFormat types.RelayFormat) {
+func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 
 	requestId := c.GetString(common.RequestIdKey)
 	//group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 	//originalModel := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 
 	var (
-		newAPIError *types.NookMuxError
+		newAPIError *shared.NookMuxError
 		ws          *websocket.Conn
 	)
 
-	if relayFormat == types.RelayFormatOpenAIRealtime {
+	if relayFormat == relayconstant.RelayFormatOpenAIRealtime {
 		var err error
 		ws, err = upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
-			helper.WssError(c, ws, types.NewError(err, types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry()).ToOpenAIError())
+			helper.WssError(c, ws, shared.NewError(err, shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry()).ToOpenAIError())
 			return
 		}
 		defer ws.Close()
@@ -93,9 +93,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			)
 			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 			switch relayFormat {
-			case types.RelayFormatOpenAIRealtime:
+			case relayconstant.RelayFormatOpenAIRealtime:
 				helper.WssError(c, ws, newAPIError.ToOpenAIError())
-			case types.RelayFormatClaude:
+			case relayconstant.RelayFormatClaude:
 				c.JSON(newAPIError.StatusCode, gin.H{
 					"type":  "error",
 					"error": newAPIError.ToClaudeError(),
@@ -112,23 +112,23 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	if err != nil {
 		// Map "request body too large" to 413 so clients can handle it correctly
 		if common.IsRequestBodyTooLargeError(err) || errors.Is(err, common.ErrRequestBodyTooLarge) {
-			newAPIError = types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, types.ErrOptionWithSkipRetry())
+			newAPIError = shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, shared.ErrOptionWithSkipRetry())
 		} else {
-			newAPIError = types.NewError(err, types.ErrorCodeInvalidRequest)
+			newAPIError = shared.NewError(err, shared.ErrorCodeInvalidRequest)
 		}
 		return
 	}
 
 	relayInfo, err := relaycommon.GenRelayInfo(c, relayFormat, request, ws)
 	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeGenRelayInfoFailed)
+		newAPIError = shared.NewError(err, shared.ErrorCodeGenRelayInfoFailed)
 		return
 	}
 
 	needSensitiveCheck := config.ShouldCheckPromptSensitive()
 	needCountToken := constant.CountToken
 	// Avoid building huge CombineText (strings.Join) when token counting and sensitive check are both disabled.
-	var meta *types.TokenCountMeta
+	var meta *shared.TokenCountMeta
 	if needSensitiveCheck || needCountToken {
 		meta = request.GetTokenCountMeta()
 	} else {
@@ -139,14 +139,14 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		contains, words := service.CheckSensitiveText(meta.CombineText)
 		if contains {
 			log.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))
-			newAPIError = types.NewError(err, types.ErrorCodeSensitiveWordsDetected)
+			newAPIError = shared.NewError(err, shared.ErrorCodeSensitiveWordsDetected)
 			return
 		}
 	}
 
 	tokens, err := service.EstimateRequestToken(c, meta, relayInfo)
 	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeCountTokenFailed)
+		newAPIError = shared.NewError(err, shared.ErrorCodeCountTokenFailed)
 		return
 	}
 
@@ -154,7 +154,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	priceData, err := helper.ModelPriceHelper(c, relayInfo, tokens, meta)
 	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeModelPriceError)
+		newAPIError = shared.NewError(err, shared.ErrorCodeModelPriceError)
 		return
 	}
 
@@ -222,20 +222,20 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		if bodyErr != nil {
 			// Ensure consistent 413 for oversized bodies even when error occurs later (e.g., retry path)
 			if common.IsRequestBodyTooLargeError(bodyErr) || errors.Is(bodyErr, common.ErrRequestBodyTooLarge) {
-				newAPIError = types.NewErrorWithStatusCode(bodyErr, types.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, types.ErrOptionWithSkipRetry())
+				newAPIError = shared.NewErrorWithStatusCode(bodyErr, shared.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, shared.ErrOptionWithSkipRetry())
 			} else {
-				newAPIError = types.NewErrorWithStatusCode(bodyErr, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				newAPIError = shared.NewErrorWithStatusCode(bodyErr, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			break
 		}
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 
 		switch relayFormat {
-		case types.RelayFormatOpenAIRealtime:
+		case relayconstant.RelayFormatOpenAIRealtime:
 			newAPIError = relay.WssHelper(c, relayInfo)
-		case types.RelayFormatClaude:
+		case relayconstant.RelayFormatClaude:
 			newAPIError = relay.ClaudeHelper(c, relayInfo)
-		case types.RelayFormatGemini:
+		case relayconstant.RelayFormatGemini:
 			newAPIError = geminiRelayHandler(c, relayInfo)
 		default:
 			newAPIError = relayHandler(c, relayInfo)
@@ -247,7 +247,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
 
-		channelWillBeDisabled := processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		channelWillBeDisabled := processChannelError(c, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 		allowFailedChannelFallback = !channelWillBeDisabled
 
 		if !shouldRetry(c, newAPIError, maxRetry-retryParam.GetRetry()) {
@@ -275,25 +275,25 @@ func addUsedChannel(c *gin.Context, channelId int) {
 	c.Set("use_channel", useChannel)
 }
 
-func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
+func fastTokenCountMetaForPricing(request shared.Request) *shared.TokenCountMeta {
 	if request == nil {
-		return &types.TokenCountMeta{}
+		return &shared.TokenCountMeta{}
 	}
-	meta := &types.TokenCountMeta{
-		TokenType: types.TokenTypeTokenizer,
+	meta := &shared.TokenCountMeta{
+		TokenType: shared.TokenTypeTokenizer,
 	}
 	switch r := request.(type) {
-	case *dto.GeneralOpenAIRequest:
+	case *shared.GeneralOpenAIRequest:
 		if r.MaxCompletionTokens > r.MaxTokens {
 			meta.MaxTokens = int(r.MaxCompletionTokens)
 		} else {
 			meta.MaxTokens = int(r.MaxTokens)
 		}
-	case *dto.OpenAIResponsesRequest:
+	case *shared.OpenAIResponsesRequest:
 		meta.MaxTokens = int(r.MaxOutputTokens)
-	case *dto.ClaudeRequest:
+	case *shared.ClaudeRequest:
 		meta.MaxTokens = int(r.MaxTokens)
-	case *dto.ImageRequest:
+	case *shared.ImageRequest:
 		// Pricing for image requests depends on ImagePriceRatio; safe to compute even when CountToken is disabled.
 		return r.GetTokenCountMeta()
 	default:
@@ -302,7 +302,7 @@ func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
 	return meta
 }
 
-func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *types.NookMuxError) {
+func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *shared.NookMuxError) {
 	if info.ChannelMeta == nil {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
@@ -321,17 +321,17 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	info.PriceData.GroupRatioInfo = helper.HandleGroupRatio(c, info)
 
 	if err != nil {
-		return nil, types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryGetChannelFailed, map[string]any{
+		return nil, shared.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryGetChannelFailed, map[string]any{
 			"Group": selectGroup,
 			"Model": info.OriginModelName,
 			"Error": err.Error(),
-		})), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+		})), shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry())
 	}
 	if channel == nil {
-		return nil, types.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryChannelNotFound, map[string]any{
+		return nil, shared.NewError(fmt.Errorf("%s", i18n.T(c, i18n.MsgRelayRetryChannelNotFound, map[string]any{
 			"Group": selectGroup,
 			"Model": info.OriginModelName,
-		})), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+		})), shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry())
 	}
 
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, info.OriginModelName)
@@ -341,17 +341,17 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	return channel, nil
 }
 
-func shouldRetry(c *gin.Context, openaiErr *types.NookMuxError, retryTimes int) bool {
+func shouldRetry(c *gin.Context, openaiErr *shared.NookMuxError, retryTimes int) bool {
 	if openaiErr == nil {
 		return false
 	}
 	if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
 		return false
 	}
-	if types.IsChannelError(openaiErr) {
+	if shared.IsChannelError(openaiErr) {
 		return true
 	}
-	if types.IsSkipRetryError(openaiErr) {
+	if shared.IsSkipRetryError(openaiErr) {
 		return false
 	}
 	if retryTimes <= 0 {
@@ -383,7 +383,7 @@ func shouldRetryByHTTPStatusCode(statusCode int) bool {
 	return operation.ShouldRetryByStatusCode(statusCode)
 }
 
-func shouldRetryByNumericErrorCode(openaiErr *types.NookMuxError) bool {
+func shouldRetryByNumericErrorCode(openaiErr *shared.NookMuxError) bool {
 	if openaiErr == nil {
 		return false
 	}
@@ -398,7 +398,7 @@ func shouldRetryByNumericErrorCode(openaiErr *types.NookMuxError) bool {
 	return operation.ShouldRetryByStatusCode(code)
 }
 
-func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NookMuxError) bool {
+func processChannelError(c *gin.Context, channelError domainchannel.ChannelError, err *shared.NookMuxError) bool {
 	log.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, common.LocalLogPreview(err.Error())))
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
@@ -409,7 +409,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		})
 	}
 
-	if constant.ErrorLogEnabled && types.IsRecordErrorLog(err) {
+	if constant.ErrorLogEnabled && shared.IsRecordErrorLog(err) {
 		// 保存错误日志到mysql中
 		userId := c.GetInt("id")
 		tokenName := c.GetString("token_name")
@@ -449,7 +449,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 }
 
 func RelayNotImplemented(c *gin.Context) {
-	err := types.OpenAIError{
+	err := shared.OpenAIError{
 		Message: "API not implemented",
 		Type:    "new_api_error",
 		Param:   "",
@@ -461,7 +461,7 @@ func RelayNotImplemented(c *gin.Context) {
 }
 
 func RelayNotFound(c *gin.Context) {
-	err := types.OpenAIError{
+	err := shared.OpenAIError{
 		Message: fmt.Sprintf("Invalid URL (%s %s)", c.Request.Method, c.Request.URL.Path),
 		Type:    "invalid_request_error",
 		Param:   "",

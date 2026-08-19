@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
-func ConvertResponsesRequestToChatCompletionsRequest(responsesReq *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, error) {
+func ConvertResponsesRequestToChatCompletionsRequest(responsesReq *shared.OpenAIResponsesRequest) (*shared.GeneralOpenAIRequest, error) {
 	out, _, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq)
 	return out, err
 }
 
-func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, *OpenAIWireToolContext, error) {
+func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq *shared.OpenAIResponsesRequest) (*shared.GeneralOpenAIRequest, *OpenAIWireToolContext, error) {
 	if responsesReq == nil {
 		return nil, nil, fmt.Errorf("responses request is nil")
 	}
@@ -22,7 +22,7 @@ func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq
 		return nil, nil, fmt.Errorf("previous_response_id is not supported by chat.completions conversion")
 	}
 
-	systemRole := (&dto.GeneralOpenAIRequest{Model: responsesReq.Model}).GetSystemRoleName()
+	systemRole := (&shared.GeneralOpenAIRequest{Model: responsesReq.Model}).GetSystemRoleName()
 	systemMsg, err := buildChatSystemMessageFromInstructions(systemRole, responsesReq.Instructions)
 	if err != nil {
 		return nil, nil, err
@@ -32,7 +32,7 @@ func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq
 		return nil, nil, err
 	}
 
-	messages := make([]dto.Message, 0, len(userMsgs)+1)
+	messages := make([]shared.Message, 0, len(userMsgs)+1)
 	if systemMsg != nil {
 		messages = append(messages, *systemMsg)
 	}
@@ -49,8 +49,8 @@ func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq
 	return out, toolContext, nil
 }
 
-func newChatRequestFromResponses(responsesReq *dto.OpenAIResponsesRequest, messages []dto.Message) *dto.GeneralOpenAIRequest {
-	out := &dto.GeneralOpenAIRequest{
+func newChatRequestFromResponses(responsesReq *shared.OpenAIResponsesRequest, messages []shared.Message) *shared.GeneralOpenAIRequest {
+	out := &shared.GeneralOpenAIRequest{
 		Model:            responsesReq.Model,
 		Messages:         messages,
 		Stream:           responsesReq.Stream,
@@ -80,7 +80,7 @@ func newChatRequestFromResponses(responsesReq *dto.OpenAIResponsesRequest, messa
 	return out
 }
 
-func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessage) (*dto.Message, error) {
+func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessage) (*shared.Message, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
@@ -95,10 +95,10 @@ func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessa
 	if strings.TrimSpace(s) == "" {
 		return nil, nil
 	}
-	return &dto.Message{Role: systemRole, Content: s}, nil
+	return &shared.Message{Role: systemRole, Content: s}, nil
 }
 
-func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.OpenAIResponsesRequest, toolContext *OpenAIWireToolContext) error {
+func applyResponsesToChatTools(out *shared.GeneralOpenAIRequest, responsesReq *shared.OpenAIResponsesRequest, toolContext *OpenAIWireToolContext) error {
 	if len(responsesReq.ToolChoice) > 0 {
 		toolChoice, err := convertResponsesToolChoiceToChatAny(responsesReq.ToolChoice)
 		if err != nil {
@@ -133,7 +133,7 @@ func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.
 	return nil
 }
 
-func applyResponsesToChatTextFormat(out *dto.GeneralOpenAIRequest, raw json.RawMessage) error {
+func applyResponsesToChatTextFormat(out *shared.GeneralOpenAIRequest, raw json.RawMessage) error {
 	if len(raw) == 0 {
 		return nil
 	}
@@ -167,7 +167,7 @@ func applyResponsesToChatTextFormat(out *dto.GeneralOpenAIRequest, raw json.RawM
 
 // buildChatResponseFormatFromResponses nests flattened Responses text.format back
 // into Chat response_format for OpenAI-compatible upstreams.
-func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFormat, error) {
+func buildChatResponseFormatFromResponses(raw json.RawMessage) (*shared.ResponseFormat, error) {
 	var formatMap map[string]json.RawMessage
 	if err := jsonx.Unmarshal(raw, &formatMap); err != nil {
 		return nil, fmt.Errorf("unmarshal text.format failed: %w", err)
@@ -182,10 +182,10 @@ func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFor
 		return nil, nil
 	}
 	if !strings.EqualFold(formatType, "json_schema") {
-		return &dto.ResponseFormat{Type: formatType}, nil
+		return &shared.ResponseFormat{Type: formatType}, nil
 	}
 
-	jsonSchema := dto.FormatJsonSchema{}
+	jsonSchema := shared.FormatJsonSchema{}
 	if nameRaw, ok := formatMap["name"]; ok && len(nameRaw) > 0 {
 		if err := jsonx.Unmarshal(nameRaw, &jsonSchema.Name); err != nil {
 			return nil, fmt.Errorf("unmarshal text.format.name failed: %w", err)
@@ -210,5 +210,5 @@ func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFor
 	if err != nil {
 		return nil, fmt.Errorf("marshal response_format.json_schema failed: %w", err)
 	}
-	return &dto.ResponseFormat{Type: "json_schema", JsonSchema: jsonSchemaRaw}, nil
+	return &shared.ResponseFormat{Type: "json_schema", JsonSchema: jsonSchemaRaw}, nil
 }

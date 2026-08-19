@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,27 +39,27 @@ func (a *testNoopAdaptor) SetupRequestHeader(c *gin.Context, req *http.Header, i
 	return nil
 }
 
-func (a *testNoopAdaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.GeneralOpenAIRequest) (any, error) {
 	panic("unexpected call: ConvertOpenAIRequest")
 }
 
-func (a *testNoopAdaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request shared.RerankRequest) (any, error) {
 	panic("unexpected call: ConvertRerankRequest")
 }
 
-func (a *testNoopAdaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.EmbeddingRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.EmbeddingRequest) (any, error) {
 	panic("unexpected call: ConvertEmbeddingRequest")
 }
 
-func (a *testNoopAdaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
+func (a *testNoopAdaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.AudioRequest) (io.Reader, error) {
 	panic("unexpected call: ConvertAudioRequest")
 }
 
-func (a *testNoopAdaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.ImageRequest) (any, error) {
 	panic("unexpected call: ConvertImageRequest")
 }
 
-func (a *testNoopAdaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.OpenAIResponsesRequest) (any, error) {
 	panic("unexpected call: ConvertOpenAIResponsesRequest")
 }
 
@@ -68,7 +67,7 @@ func (a *testNoopAdaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo,
 	panic("unexpected call: DoRequest")
 }
 
-func (a *testNoopAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NookMuxError) {
+func (a *testNoopAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *shared.NookMuxError) {
 	panic("unexpected call: DoResponse")
 }
 
@@ -80,11 +79,11 @@ func (a *testNoopAdaptor) GetChannelName() string {
 	return "test_noop"
 }
 
-func (a *testNoopAdaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.ClaudeRequest) (any, error) {
 	panic("unexpected call: ConvertClaudeRequest")
 }
 
-func (a *testNoopAdaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
+func (a *testNoopAdaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.GeminiChatRequest) (any, error) {
 	panic("unexpected call: ConvertGeminiRequest")
 }
 
@@ -105,7 +104,7 @@ func newTestGinContext(t *testing.T, headers map[string]string) *gin.Context {
 func newTestRelayInfo(passThrough bool, headersOverride map[string]interface{}) *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
 		ChannelMeta: &relaycommon.ChannelMeta{
-			ChannelSetting: dto.ChannelSettings{
+			ChannelSetting: shared.ChannelSettings{
 				PassThroughHeadersEnabled: passThrough,
 			},
 			HeadersOverride: headersOverride,

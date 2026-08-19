@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -44,7 +44,7 @@ func convertChatToolChoiceObjectToResponsesRaw(obj map[string]any) (json.RawMess
 		return nil, fmt.Errorf("tool_choice.type is required")
 	}
 	toolType = strings.ToLower(strings.TrimSpace(toolType))
-	if toolType != "function" && toolType != dto.CustomType {
+	if toolType != "function" && toolType != shared.CustomType {
 		return nil, fmt.Errorf("tool_choice.type %q is not supported for responses conversion", toolType)
 	}
 
@@ -72,7 +72,7 @@ func getToolChoiceName(obj map[string]any, toolType string) string {
 	return strings.TrimSpace(name)
 }
 
-func convertChatToolsToResponsesRaw(tools []dto.ToolCallRequest) (json.RawMessage, error) {
+func convertChatToolsToResponsesRaw(tools []shared.ToolCallRequest) (json.RawMessage, error) {
 	out := make([]openAIResponsesFunctionTool, 0, len(tools))
 	for i, tool := range tools {
 		item, err := convertOneChatToolToResponsesTool(i, tool)
@@ -88,15 +88,15 @@ func convertChatToolsToResponsesRaw(tools []dto.ToolCallRequest) (json.RawMessag
 	return raw, nil
 }
 
-func convertOneChatToolToResponsesTool(index int, tool dto.ToolCallRequest) (openAIResponsesFunctionTool, error) {
+func convertOneChatToolToResponsesTool(index int, tool shared.ToolCallRequest) (openAIResponsesFunctionTool, error) {
 	toolType := strings.ToLower(strings.TrimSpace(tool.Type))
 	if toolType == "" {
 		return openAIResponsesFunctionTool{}, fmt.Errorf("tools[%d].type is required", index)
 	}
-	if toolType != "function" && toolType != dto.CustomType {
+	if toolType != "function" && toolType != shared.CustomType {
 		return openAIResponsesFunctionTool{}, fmt.Errorf("tools[%d].type %q is not supported for responses conversion", index, tool.Type)
 	}
-	if toolType == dto.CustomType {
+	if toolType == shared.CustomType {
 		return convertOneChatCustomToolToResponsesTool(index, tool)
 	}
 	name := strings.TrimSpace(tool.Function.Name)
@@ -121,7 +121,7 @@ func convertOneChatToolToResponsesTool(index int, tool dto.ToolCallRequest) (ope
 	}, nil
 }
 
-func convertOneChatCustomToolToResponsesTool(index int, tool dto.ToolCallRequest) (openAIResponsesFunctionTool, error) {
+func convertOneChatCustomToolToResponsesTool(index int, tool shared.ToolCallRequest) (openAIResponsesFunctionTool, error) {
 	var custom map[string]json.RawMessage
 	if len(tool.Custom) == 0 {
 		return openAIResponsesFunctionTool{}, fmt.Errorf("tools[%d].custom is required", index)
@@ -148,7 +148,7 @@ func convertOneChatCustomToolToResponsesTool(index int, tool dto.ToolCallRequest
 	}
 
 	return openAIResponsesFunctionTool{
-		Type:        dto.CustomType,
+		Type:        shared.CustomType,
 		Name:        name,
 		Description: description,
 		Format:      custom["format"],
@@ -210,13 +210,13 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 	}, nil
 }
 
-func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
+func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]shared.ToolCallRequest, error) {
 	var tools []openAIResponsesFunctionTool
 	if err := jsonx.Unmarshal(raw, &tools); err != nil {
 		return nil, fmt.Errorf("unmarshal tools failed: %w", err)
 	}
 
-	out := make([]dto.ToolCallRequest, 0, len(tools))
+	out := make([]shared.ToolCallRequest, 0, len(tools))
 	for i, tool := range tools {
 		items, err := convertOneResponsesToolToChatTools(i, tool, "", toolContext)
 		if err != nil {
@@ -227,19 +227,19 @@ func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, too
 	return out, nil
 }
 
-func collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
+func collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]shared.ToolCallRequest, error) {
 	var value any
 	if err := jsonx.Unmarshal(raw, &value); err != nil {
 		return nil, fmt.Errorf("unmarshal input for tool_search tools failed: %w", err)
 	}
-	out := make([]dto.ToolCallRequest, 0)
+	out := make([]shared.ToolCallRequest, 0)
 	if err := collectChatToolsFromResponsesValue(value, &out, toolContext); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest, toolContext *OpenAIWireToolContext) error {
+func collectChatToolsFromResponsesValue(value any, out *[]shared.ToolCallRequest, toolContext *OpenAIWireToolContext) error {
 	switch v := value.(type) {
 	case []any:
 		for _, item := range v {
@@ -270,12 +270,12 @@ func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest, t
 	return nil
 }
 
-func appendUniqueChatTools(base []dto.ToolCallRequest, extra []dto.ToolCallRequest) []dto.ToolCallRequest {
+func appendUniqueChatTools(base []shared.ToolCallRequest, extra []shared.ToolCallRequest) []shared.ToolCallRequest {
 	if len(extra) == 0 {
 		return base
 	}
 	seen := make(map[string]struct{}, len(base)+len(extra))
-	out := make([]dto.ToolCallRequest, 0, len(base)+len(extra))
+	out := make([]shared.ToolCallRequest, 0, len(base)+len(extra))
 	for _, tool := range base {
 		name := chatToolRequestName(tool)
 		if name != "" {
@@ -296,7 +296,7 @@ func appendUniqueChatTools(base []dto.ToolCallRequest, extra []dto.ToolCallReque
 	return out
 }
 
-func chatToolRequestName(tool dto.ToolCallRequest) string {
+func chatToolRequestName(tool shared.ToolCallRequest) string {
 	if strings.TrimSpace(tool.Function.Name) != "" {
 		return strings.TrimSpace(tool.Function.Name)
 	}
@@ -310,7 +310,7 @@ func chatToolRequestName(tool dto.ToolCallRequest) string {
 	return strings.TrimSpace(common.Interface2String(custom["name"]))
 }
 
-func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
+func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) ([]shared.ToolCallRequest, error) {
 	toolType := strings.ToLower(strings.TrimSpace(tool.Type))
 	if toolType == "" {
 		return nil, fmt.Errorf("tools[%d].type is required", index)
@@ -321,18 +321,18 @@ func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionT
 		if err != nil {
 			return nil, err
 		}
-		return []dto.ToolCallRequest{item}, nil
+		return []shared.ToolCallRequest{item}, nil
 	case openAIResponsesToolTypeCustom:
 		item, err := convertOneResponsesCustomToolToChatTool(index, tool, namespace, toolContext)
 		if err != nil {
 			return nil, err
 		}
-		return []dto.ToolCallRequest{item}, nil
+		return []shared.ToolCallRequest{item}, nil
 	case openAIResponsesToolTypeToolSearch:
 		if toolContext != nil {
 			toolContext.AddToolSearchProxy(openAIResponsesToolSearchChatName)
 		}
-		return []dto.ToolCallRequest{newResponsesToolSearchChatTool()}, nil
+		return []shared.ToolCallRequest{newResponsesToolSearchChatTool()}, nil
 	case openAIResponsesToolTypeNamespace:
 		return convertOneResponsesNamespaceToolToChatTools(index, tool, toolContext)
 	case openAIResponsesToolTypeWebSearch,
@@ -348,11 +348,11 @@ func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionT
 	}
 }
 
-func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (dto.ToolCallRequest, error) {
+func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (shared.ToolCallRequest, error) {
 	originalName := strings.TrimSpace(tool.Name)
 	name := strings.TrimSpace(tool.Name)
 	if name == "" {
-		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
+		return shared.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
 	}
 	if strings.TrimSpace(namespace) != "" {
 		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
@@ -364,13 +364,13 @@ func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFu
 	var params any
 	if len(tool.Parameters) > 0 {
 		if err := jsonx.Unmarshal(tool.Parameters, &params); err != nil {
-			return dto.ToolCallRequest{}, fmt.Errorf("unmarshal tools[%d].parameters failed: %w", index, err)
+			return shared.ToolCallRequest{}, fmt.Errorf("unmarshal tools[%d].parameters failed: %w", index, err)
 		}
 	}
 
-	return dto.ToolCallRequest{
+	return shared.ToolCallRequest{
 		Type: "function",
-		Function: dto.FunctionRequest{
+		Function: shared.FunctionRequest{
 			Name:        name,
 			Description: tool.Description,
 			Parameters:  params,
@@ -378,11 +378,11 @@ func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFu
 	}, nil
 }
 
-func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (dto.ToolCallRequest, error) {
+func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (shared.ToolCallRequest, error) {
 	originalName := strings.TrimSpace(tool.Name)
 	name := originalName
 	if originalName == "" {
-		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
+		return shared.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
 	}
 	if strings.TrimSpace(namespace) != "" {
 		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
@@ -390,9 +390,9 @@ func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunc
 	if toolContext != nil {
 		toolContext.AddCustomToolProxy(name, originalName, namespace)
 	}
-	return dto.ToolCallRequest{
+	return shared.ToolCallRequest{
 		Type: "function",
-		Function: dto.FunctionRequest{
+		Function: shared.FunctionRequest{
 			Name:        name,
 			Description: buildResponsesCustomToolChatDescription(tool),
 			Parameters: map[string]any{
@@ -409,7 +409,7 @@ func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunc
 	}, nil
 }
 
-func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponsesFunctionTool, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
+func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponsesFunctionTool, toolContext *OpenAIWireToolContext) ([]shared.ToolCallRequest, error) {
 	namespace := strings.TrimSpace(tool.Name)
 	if namespace == "" {
 		return nil, fmt.Errorf("tools[%d].name is required for namespace tool", index)
@@ -425,7 +425,7 @@ func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponses
 	if err := jsonx.Unmarshal(childrenRaw, &children); err != nil {
 		return nil, fmt.Errorf("unmarshal tools[%d].tools failed: %w", index, err)
 	}
-	out := make([]dto.ToolCallRequest, 0, len(children))
+	out := make([]shared.ToolCallRequest, 0, len(children))
 	for childIndex, child := range children {
 		if strings.EqualFold(strings.TrimSpace(child.Type), openAIResponsesToolTypeNamespace) {
 			return nil, fmt.Errorf("tools[%d].tools[%d].type %q is not supported for chat.completions conversion", index, childIndex, child.Type)
@@ -439,10 +439,10 @@ func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponses
 	return out, nil
 }
 
-func newResponsesToolSearchChatTool() dto.ToolCallRequest {
-	return dto.ToolCallRequest{
+func newResponsesToolSearchChatTool() shared.ToolCallRequest {
+	return shared.ToolCallRequest{
 		Type: "function",
-		Function: dto.FunctionRequest{
+		Function: shared.FunctionRequest{
 			Name:        openAIResponsesToolSearchChatName,
 			Description: "Search and load Codex tools, plugins, connectors, and MCP namespaces for the current task.",
 			Parameters: map[string]any{

@@ -4,38 +4,38 @@ import (
 	"net/http"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NookMuxError) {
+func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
 	if common.DebugEnabled {
 		println("reranker response body: ", string(responseBody))
 	}
-	var rerankResp dto.RerankResponse
+	var rerankResp shared.RerankResponse
 	err = jsonx.Unmarshal(responseBody, &rerankResp)
 	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	// 部分上游/中间网关会把 429/5xx 错误转成 HTTP 200 + error body 下发。
 	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
 	// 「502 上游没有返回计费信息」。
-	var errProbe dto.SimpleResponse
+	var errProbe shared.SimpleResponse
 	if probeErr := jsonx.Unmarshal(responseBody, &errProbe); probeErr == nil {
 		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-			return nil, types.WithOpenAIError(*oaiError, service.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
+			return nil, shared.WithOpenAIError(*oaiError, service.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
 		}
 	}
 

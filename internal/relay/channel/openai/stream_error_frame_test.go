@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
 
@@ -52,7 +52,7 @@ func TestOaiStreamHandlerReturnsUpstreamErrorFrame(t *testing.T) {
 	assert.Contains(t, apiErr.Error(), "Rate limit exceeded")
 	// 错误帧 code 中的真实状态码被还原，日志不再统一误报 502。
 	assert.Equal(t, http.StatusTooManyRequests, apiErr.StatusCode)
-	assert.Equal(t, types.ErrorCode("429"), apiErr.GetErrorCode())
+	assert.Equal(t, shared.ErrorCode("429"), apiErr.GetErrorCode())
 }
 
 func TestOaiResponsesStreamHandlerReturnsUpstreamFailedEvent(t *testing.T) {
@@ -67,7 +67,7 @@ func TestOaiResponsesStreamHandlerReturnsUpstreamFailedEvent(t *testing.T) {
 	assert.Contains(t, apiErr.Error(), "Rate limit exceeded")
 	// 错误载荷 code 中的真实状态码被还原，日志不再统一误报 502。
 	assert.Equal(t, http.StatusTooManyRequests, apiErr.StatusCode)
-	assert.Equal(t, types.ErrorCode("429"), apiErr.GetErrorCode())
+	assert.Equal(t, shared.ErrorCode("429"), apiErr.GetErrorCode())
 }
 
 // 官方 Responses 流式规范定义了顶层 type:"error" 事件（message/code 平铺，
@@ -283,18 +283,18 @@ func TestUpstreamErrorStatusCode(t *testing.T) {
 	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusTooManyRequests, nil))
 	assert.Equal(t, http.StatusInternalServerError, upstreamErrorStatusCode(http.StatusInternalServerError, nil))
 	// HTTP 200 + 数字 code（Gemini 风格 {"error":{"code":429}}）
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: float64(429)}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: float64(429)}))
 	// HTTP 200 + 字符串 code（OpenAI 风格 {"error":{"code":"429"}}）
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "429"}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "429"}))
 	// HTTP 200 + 无法还原的 code → 502 兜底
 	assert.Equal(t, http.StatusBadGateway, upstreamErrorStatusCode(http.StatusOK, nil))
-	assert.Equal(t, http.StatusBadGateway, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "some_unknown_code"}))
+	assert.Equal(t, http.StatusBadGateway, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "some_unknown_code"}))
 	// HTTP 200 + OpenAI 官方非数字计费 code（billing/quota 429、服务端 5xx）
 	// 参考 https://developers.openai.com/api/docs/guides/error-codes
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "insufficient_quota"}))
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "credit_balance_exhausted"}))
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "organization_spend_limit_exceeded"}))
-	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "rate_limit_exceeded"}))
-	assert.Equal(t, http.StatusInternalServerError, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "server_error"}))
-	assert.Equal(t, http.StatusServiceUnavailable, upstreamErrorStatusCode(http.StatusOK, &types.OpenAIError{Code: "model_overloaded"}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "insufficient_quota"}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "credit_balance_exhausted"}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "organization_spend_limit_exceeded"}))
+	assert.Equal(t, http.StatusTooManyRequests, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "rate_limit_exceeded"}))
+	assert.Equal(t, http.StatusInternalServerError, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "server_error"}))
+	assert.Equal(t, http.StatusServiceUnavailable, upstreamErrorStatusCode(http.StatusOK, &shared.OpenAIError{Code: "model_overloaded"}))
 }

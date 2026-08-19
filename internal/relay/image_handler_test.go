@@ -3,7 +3,7 @@ package relay
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 func TestResolveImageQuality(t *testing.T) {
@@ -23,7 +23,7 @@ func TestResolveImageQuality(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			req := &dto.ImageRequest{Quality: tc.quality}
+			req := &shared.ImageRequest{Quality: tc.quality}
 			got := resolveImageQuality(req)
 			if got != tc.want {
 				t.Fatalf("resolveImageQuality(%q) = %q, want %q", tc.quality, got, tc.want)
@@ -35,7 +35,7 @@ func TestResolveImageQuality(t *testing.T) {
 func TestResolveImageQualityDoesNotForceStandard(t *testing.T) {
 	// Regression test: a non-hd upstream quality used to be silently rewritten
 	// to "standard", which broke upstreams that support values like low/medium/high.
-	req := &dto.ImageRequest{Quality: "medium"}
+	req := &shared.ImageRequest{Quality: "medium"}
 	if got := resolveImageQuality(req); got != "medium" {
 		t.Fatalf("expected user-provided quality to be preserved, got %q", got)
 	}

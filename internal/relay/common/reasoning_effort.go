@@ -2,7 +2,7 @@ package common
 
 import (
 	"github.com/NookMux/NookMux/internal/config/reasoning"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 // EnsureReasoningEffort 确保 RelayInfo.ReasoningEffort 被正确解析和回填。
@@ -14,7 +14,7 @@ import (
 // 启用了思考但未传递强度时，回填 "auto"。
 //
 // 该函数不修改请求体，只读取请求中的 reasoning/thinking 相关字段。
-func EnsureReasoningEffort(info *RelayInfo, request dto.Request) {
+func EnsureReasoningEffort(info *RelayInfo, request shared.Request) {
 	if info == nil || request == nil {
 		return
 	}
@@ -26,13 +26,13 @@ func EnsureReasoningEffort(info *RelayInfo, request dto.Request) {
 
 	var effort string
 	switch req := request.(type) {
-	case *dto.GeneralOpenAIRequest:
+	case *shared.GeneralOpenAIRequest:
 		effort = reasoning.ExtractEffortFromOpenAIRequest(req)
-	case *dto.OpenAIResponsesRequest:
+	case *shared.OpenAIResponsesRequest:
 		effort = reasoning.ExtractEffortFromOpenAIResponsesRequest(req)
-	case *dto.ClaudeRequest:
+	case *shared.ClaudeRequest:
 		effort = reasoning.ExtractEffortFromClaudeRequest(req)
-	case *dto.GeminiChatRequest:
+	case *shared.GeminiChatRequest:
 		effort = reasoning.ExtractEffortFromGeminiRequest(req)
 	}
 

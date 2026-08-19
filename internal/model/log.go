@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	logger "github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -489,7 +488,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		return nil, 0, err
 	}
 
-	channelIds := types.NewSet[int]()
+	channelIds := shared.NewSet[int]()
 	for _, log := range logs {
 		if log.ChannelId != 0 {
 			channelIds.Add(log.ChannelId)

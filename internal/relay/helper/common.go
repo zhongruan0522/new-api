@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
@@ -55,7 +55,7 @@ func SetEventStreamHeaders(c *gin.Context) {
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 }
 
-func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
+func ClaudeData(c *gin.Context, resp shared.ClaudeResponse) error {
 	jsonData, err := jsonx.Marshal(resp)
 	if err != nil {
 		common.SysError("error marshalling stream response: " + err.Error())
@@ -67,13 +67,13 @@ func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
 	return nil
 }
 
-func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) {
+func ClaudeChunkData(c *gin.Context, resp shared.ClaudeResponse, data string) {
 	c.Render(-1, &common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, &common.CustomEvent{Data: fmt.Sprintf("data: %s\n", data)})
 	_ = FlushWriter(c)
 }
 
-func ResponseChunkData(c *gin.Context, resp dto.ResponsesStreamResponse, data string) {
+func ResponseChunkData(c *gin.Context, resp shared.ResponsesStreamResponse, data string) {
 	c.Render(-1, &common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, &common.CustomEvent{Data: fmt.Sprintf("data: %s", data)})
 	_ = FlushWriter(c)
@@ -144,11 +144,11 @@ func WssObject(c *gin.Context, ws *websocket.Conn, object interface{}) error {
 	return ws.WriteMessage(1, jsonData)
 }
 
-func WssError(c *gin.Context, ws *websocket.Conn, openaiError types.OpenAIError) {
+func WssError(c *gin.Context, ws *websocket.Conn, openaiError shared.OpenAIError) {
 	if ws == nil {
 		return
 	}
-	errorObj := &dto.RealtimeEvent{
+	errorObj := &shared.RealtimeEvent{
 		Type:    "error",
 		EventId: GetLocalRealtimeID(c),
 		Error:   &openaiError,
@@ -166,16 +166,16 @@ func GetLocalRealtimeID(c *gin.Context) string {
 	return fmt.Sprintf("evt_%s", logID)
 }
 
-func GenerateStartEmptyResponse(id string, createAt int64, model string, systemFingerprint *string) *dto.ChatCompletionsStreamResponse {
-	return &dto.ChatCompletionsStreamResponse{
+func GenerateStartEmptyResponse(id string, createAt int64, model string, systemFingerprint *string) *shared.ChatCompletionsStreamResponse {
+	return &shared.ChatCompletionsStreamResponse{
 		Id:                id,
 		Object:            "chat.completion.chunk",
 		Created:           createAt,
 		Model:             model,
 		SystemFingerprint: systemFingerprint,
-		Choices: []dto.ChatCompletionsStreamResponseChoice{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{
 			{
-				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+				Delta: shared.ChatCompletionsStreamResponseChoiceDelta{
 					Role:    "assistant",
 					Content: common.GetPointer(""),
 				},
@@ -184,14 +184,14 @@ func GenerateStartEmptyResponse(id string, createAt int64, model string, systemF
 	}
 }
 
-func GenerateStopResponse(id string, createAt int64, model string, finishReason string) *dto.ChatCompletionsStreamResponse {
-	return &dto.ChatCompletionsStreamResponse{
+func GenerateStopResponse(id string, createAt int64, model string, finishReason string) *shared.ChatCompletionsStreamResponse {
+	return &shared.ChatCompletionsStreamResponse{
 		Id:                id,
 		Object:            "chat.completion.chunk",
 		Created:           createAt,
 		Model:             model,
 		SystemFingerprint: nil,
-		Choices: []dto.ChatCompletionsStreamResponseChoice{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{
 			{
 				FinishReason: &finishReason,
 			},
@@ -199,14 +199,14 @@ func GenerateStopResponse(id string, createAt int64, model string, finishReason 
 	}
 }
 
-func GenerateFinalUsageResponse(id string, createAt int64, model string, usage dto.Usage) *dto.ChatCompletionsStreamResponse {
-	return &dto.ChatCompletionsStreamResponse{
+func GenerateFinalUsageResponse(id string, createAt int64, model string, usage shared.Usage) *shared.ChatCompletionsStreamResponse {
+	return &shared.ChatCompletionsStreamResponse{
 		Id:                id,
 		Object:            "chat.completion.chunk",
 		Created:           createAt,
 		Model:             model,
 		SystemFingerprint: nil,
-		Choices:           make([]dto.ChatCompletionsStreamResponseChoice, 0),
+		Choices:           make([]shared.ChatCompletionsStreamResponseChoice, 0),
 		Usage:             &usage,
 	}
 }

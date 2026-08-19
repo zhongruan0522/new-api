@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -102,7 +102,7 @@ func createChannelCacheTestChannel(t *testing.T, channel Channel) Channel {
 	return channel
 }
 
-func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string {
+func channelCacheTestSetting(t *testing.T, setting shared.ChannelSettings) *string {
 	t.Helper()
 
 	data, err := jsonx.Marshal(setting)
@@ -291,7 +291,7 @@ func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettin
 		Name:    "zhipu-chat-wire",
 		Type:    constant.ChannelTypeZhipu_v4,
 		Models:  modelName,
-		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+		Setting: channelCacheTestSetting(t, shared.ChannelSettings{OpenAIWireAPI: shared.OpenAIWireAPIChat}),
 	})
 
 	InitChannelCache()
@@ -301,7 +301,7 @@ func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettin
 		modelName,
 		0,
 		constant.APITypeOpenAI,
-		types.RelayFormatOpenAIResponses,
+		relayconstant.RelayFormatOpenAIResponses,
 		0,
 	)
 	if err != nil {
@@ -329,7 +329,7 @@ func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettin
 		Name:    "zhipu-chat-wire",
 		Type:    constant.ChannelTypeZhipu_v4,
 		Models:  modelName,
-		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+		Setting: channelCacheTestSetting(t, shared.ChannelSettings{OpenAIWireAPI: shared.OpenAIWireAPIChat}),
 	})
 
 	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
@@ -337,7 +337,7 @@ func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettin
 		modelName,
 		0,
 		constant.APITypeOpenAI,
-		types.RelayFormatOpenAIResponses,
+		relayconstant.RelayFormatOpenAIResponses,
 		0,
 	)
 	if err != nil {

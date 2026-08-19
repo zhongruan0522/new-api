@@ -1,26 +1,34 @@
 # constant 包 (`/internal/constant`)
 
-该目录仅用于放置全局可复用的**常量定义**，不包含任何业务逻辑或依赖关系。
+跨领域的全局常量/全局配置变量。渠道域常量已迁至
+`internal/domain/channel/constant/`，relay 域常量（`RelayMode`、`FinishReason`、`RelayFormat`）
+在 `internal/relay/constant/`。
 
 ## 当前文件
 
-| 文件                   | 说明                                                                  |
-|----------------------|---------------------------------------------------------------------|
-| `azure.go`           | 定义与 Azure 相关的全局常量，如 `AzureNoRemoveDotTime`（控制删除 `.` 的截止时间）。         |
-| `cache_key.go`       | 缓存键格式字符串及 Token 相关字段常量，统一缓存命名规则。                                    |
-| `channel_setting.go` | Channel 级别的设置键，如 `proxy`、`force_format` 等。                          |
-| `context_key.go`     | 定义 `ContextKey` 类型以及在整个项目中使用的上下文键常量（请求时间、Token/Channel/User 相关信息等）。 |
-| `env.go`             | 环境配置相关的全局变量，在启动阶段根据配置文件或环境变量注入。                                     |
-| `finish_reason.go`   | OpenAI/GPT 请求返回的 `finish_reason` 字符串常量集合。                           |
-| `midjourney.go`      | Midjourney 相关错误码及动作(Action)常量与模型到动作的映射表。                            |
-| `setup.go`           | 标识项目是否已完成初始化安装 (`Setup` 布尔值)。                                       |
-| `task.go`            | 各种任务(Task)平台、动作常量及模型与动作映射表，如 Suno、Midjourney 等。                     |
-| `user_setting.go`    | 用户设置相关键常量以及通知类型(Email/Webhook)等。                                    |
+| 文件              | 说明                                                                                     |
+|-----------------|------------------------------------------------------------------------------------------|
+| `cache_key.go`   | 缓存键格式字符串及 Token 相关字段常量，统一缓存命名规则。                                        |
+| `context_key.go` | 定义 `ContextKey` 类型以及在整个项目中使用的上下文键常量（请求时间、Token/Channel/User 相关信息等）。 |
+| `env.go`         | 环境配置相关的全局变量，在启动阶段由 `internal/common/init.go` 根据配置或环境变量注入。                     |
+| `setup.go`       | 标识项目是否已完成初始化安装 (`Setup` 布尔值)。                                                    |
+
+## 为什么这些文件还在这里（过渡期说明）
+
+架构迁移 PRD（`docs/PRD/prd-architecture-migration.md` 阶段 5.1）原计划把它们并入
+`internal/domain/shared/`，但执行时发现循环导入：
+
+- `internal/domain/shared/`（原 `dto/`+`types/`）中的 `error.go`、`claude.go`、
+  `openai_request.go` 依赖 `internal/common` 的工具函数；
+- 而 `internal/common`（`gin.go`、`init.go`、`url_validator.go` 等）和 `internal/infra/log`
+  又依赖本包的 `ContextKey` / env 变量。
+
+同包合并会形成 `shared → common → shared` 的环，因此这四个文件留守本包，
+待阶段 4（`common/` 拆解）/ 5.4（`gin.go` 归 `httpapi/`）落地时随之解散归位。
 
 ## 使用约定
 
-1. `constant` 包**只能被其他包引用**（import），**禁止在此包中引用项目内的其他自定义包**。如确有需要，仅允许引用 **Go 标准库**。
-2. 不允许在此目录内编写任何与业务流程、数据库操作、第三方服务调用等相关的逻辑代码。
-3. 新增类型时，请保持命名语义清晰，并在本 README 的 **当前文件** 表格中补充说明，确保团队成员能够快速了解其用途。
-
-> ⚠️ 违反以上约定将导致包之间产生不必要的耦合，影响代码可维护性与可测试性。请在提交代码前自行检查。
+1. 本包**只能被其他包引用**（import），**禁止引用项目内其他自定义包**，仅允许标准库。
+2. 不允许在此目录编写业务流程、数据库操作、第三方调用相关逻辑。
+3. 新增跨领域常量前先确认归属：渠道域进 `internal/domain/channel/constant/`，
+   relay 域进 `internal/relay/constant/`；确属跨领域的才进本包，并在上表登记。

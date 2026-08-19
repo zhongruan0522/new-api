@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	channelconstant "github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,42 +20,42 @@ func TestGetRequestURLUsesCompatiblePath(t *testing.T) {
 		name           string
 		channelBaseURL string
 		requestPath    string
-		relayFormat    types.RelayFormat
+		relayFormat    relayconstant.RelayFormat
 		expectURL      string
 	}{
 		{
 			name:           "chat completions",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/chat/completions",
-			relayFormat:    types.RelayFormatOpenAI,
+			relayFormat:    relayconstant.RelayFormatOpenAI,
 			expectURL:      "http://ollama.local/v1/chat/completions",
 		},
 		{
 			name:           "anthropic messages with query",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/messages?beta=true",
-			relayFormat:    types.RelayFormatClaude,
+			relayFormat:    relayconstant.RelayFormatClaude,
 			expectURL:      "http://ollama.local/v1/messages?beta=true",
 		},
 		{
 			name:           "coding plan openai chat",
 			channelBaseURL: "ollama-coding-plan",
 			requestPath:    "/v1/chat/completions",
-			relayFormat:    types.RelayFormatOpenAI,
+			relayFormat:    relayconstant.RelayFormatOpenAI,
 			expectURL:      "https://ollama.com/v1/chat/completions",
 		},
 		{
 			name:           "coding plan claude messages",
 			channelBaseURL: "ollama-coding-plan",
 			requestPath:    "/v1/messages",
-			relayFormat:    types.RelayFormatClaude,
+			relayFormat:    relayconstant.RelayFormatClaude,
 			expectURL:      "https://ollama.com/v1/messages",
 		},
 		{
 			name:           "coding plan openai embeddings",
 			channelBaseURL: "ollama-coding-plan",
 			requestPath:    "/v1/embeddings",
-			relayFormat:    types.RelayFormatOpenAI,
+			relayFormat:    relayconstant.RelayFormatOpenAI,
 			expectURL:      "https://ollama.com/v1/embeddings",
 		},
 	}
@@ -87,7 +87,7 @@ func TestSetupRequestHeaderOpenAI(t *testing.T) {
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
 	info := &relaycommon.RelayInfo{
-		RelayFormat: types.RelayFormatOpenAI,
+		RelayFormat: relayconstant.RelayFormatOpenAI,
 		IsStream:    true,
 		ChannelMeta: &relaycommon.ChannelMeta{ApiKey: "secret-key"},
 	}
@@ -114,7 +114,7 @@ func TestSetupRequestHeaderClaude(t *testing.T) {
 	ctx.Request.Header.Set("anthropic-beta", "tools-2025-01-01")
 
 	info := &relaycommon.RelayInfo{
-		RelayFormat: types.RelayFormatClaude,
+		RelayFormat: relayconstant.RelayFormatClaude,
 		ChannelMeta: &relaycommon.ChannelMeta{ApiKey: "secret-key"},
 	}
 
@@ -140,16 +140,16 @@ func TestSetupRequestHeaderClaude(t *testing.T) {
 
 func TestConvertOpenAIResponsesRequestPassThrough(t *testing.T) {
 	adaptor := &Adaptor{}
-	request := dto.OpenAIResponsesRequest{Model: "qwen3:8b", Stream: true}
+	request := shared.OpenAIResponsesRequest{Model: "qwen3:8b", Stream: true}
 
 	converted, err := adaptor.ConvertOpenAIResponsesRequest(nil, nil, request)
 	if err != nil {
 		t.Fatalf("ConvertOpenAIResponsesRequest returned error: %v", err)
 	}
 
-	convertedRequest, ok := converted.(dto.OpenAIResponsesRequest)
+	convertedRequest, ok := converted.(shared.OpenAIResponsesRequest)
 	if !ok {
-		t.Fatalf("converted request type = %T, want dto.OpenAIResponsesRequest", converted)
+		t.Fatalf("converted request type = %T, want shared.OpenAIResponsesRequest", converted)
 	}
 	if convertedRequest.Model != request.Model || convertedRequest.Stream != request.Stream {
 		t.Fatalf("converted request = %+v, want %+v", convertedRequest, request)

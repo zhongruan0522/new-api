@@ -3,11 +3,11 @@ package zhipu_4v
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
-func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIRequest {
-	messages := make([]dto.Message, 0, len(request.Messages))
+func requestOpenAI2Zhipu(request shared.GeneralOpenAIRequest) *shared.GeneralOpenAIRequest {
+	messages := make([]shared.Message, 0, len(request.Messages))
 	for _, message := range request.Messages {
 		// 智谱只接受 system/user/assistant/tool 角色。OpenAI o 系列/gpt-5 使用 "developer"
 		// 作为系统角色（Responses → Chat 转换会按模型名生成它）。此外智谱对多条 system
@@ -22,13 +22,13 @@ func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIReq
 				appendZhipuSystemText(&messages[n-1], text)
 				continue
 			}
-			messages = append(messages, dto.Message{Role: "system", Content: text})
+			messages = append(messages, shared.Message{Role: "system", Content: text})
 			continue
 		}
 		if !message.IsStringContent() {
 			mediaMessages := message.ParseContent()
 			for j, mediaMessage := range mediaMessages {
-				if mediaMessage.Type == dto.ContentTypeImageURL {
+				if mediaMessage.Type == shared.ContentTypeImageURL {
 					imageUrl := mediaMessage.GetImageMedia()
 					// check if base64
 					if strings.HasPrefix(imageUrl.Url, "data:image/") {
@@ -43,7 +43,7 @@ func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIReq
 			}
 			message.SetMediaContent(mediaMessages)
 		}
-		messages = append(messages, dto.Message{
+		messages = append(messages, shared.Message{
 			Role:       message.Role,
 			Content:    message.Content,
 			ToolCalls:  message.ToolCalls,
@@ -57,7 +57,7 @@ func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIReq
 	} else {
 		Stop, _ = request.Stop.([]string)
 	}
-	return &dto.GeneralOpenAIRequest{
+	return &shared.GeneralOpenAIRequest{
 		Model:       request.Model,
 		Stream:      request.Stream,
 		Messages:    messages,
@@ -81,7 +81,7 @@ func isZhipuSystemRole(role string) bool {
 }
 
 // appendZhipuSystemText 将文本追加到已有 system 消息，文本以换行分隔。
-func appendZhipuSystemText(msg *dto.Message, addition string) {
+func appendZhipuSystemText(msg *shared.Message, addition string) {
 	if addition == "" {
 		return
 	}

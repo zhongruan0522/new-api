@@ -7,8 +7,8 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -93,8 +93,8 @@ func TestListModelsIncludesContextPricingOnlyModel(t *testing.T) {
 	ListModels(c, constant.ChannelTypeOpenAI)
 
 	var response struct {
-		Success bool               `json:"success"`
-		Data    []dto.OpenAIModels `json:"data"`
+		Success bool                  `json:"success"`
+		Data    []shared.OpenAIModels `json:"data"`
 	}
 	if err := jsonx.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("unmarshal response: %v", err)

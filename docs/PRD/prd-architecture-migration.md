@@ -275,6 +275,12 @@ internal/app/webdist/           ← 对 app 层暴露内部 webdist API 的门�
 
 **验证**：`go build ./... && go test ./...`。
 
+> **执行记录（2026-08-19，阶段 5.1 落地）**：channel 域常量 5 文件迁 `internal/domain/channel/constant/`、`finish_reason.go` 并入 `internal/relay/constant/`、`dto/`+`types/` 合并进 `internal/domain/shared/`（包名 `shared`，`dto/error.go` 因与 `types/error.go` 同名改称 `error_response.go`），并按表疏散 `channel_error.go` → `domain/channel/`、`context_pricing.go`+`price_data.go` → `domain/billing/`。执行中发现并处理两处 PRD 未预见的循环导入，偏离原映射：
+> 1. **`cache_key.go` / `env.go` / `setup.go` / `context_key.go` 留守 `internal/constant/`**（原计划并入 `domain/shared/`）：合并后的 `shared` 包中 `error.go`/`claude.go`/`openai_request.go` 依赖 `internal/common` 的 `MaskSensitiveInfoWithExemptions`/`Any2Type`/`Interface2String` 等，而 `internal/common`（`gin.go`/`init.go`/`url_validator.go`/`request_body_limit.go`）与 `internal/infra/log` 又依赖这四个文件的 `ContextKey`/env 变量，同包合并即成 `shared → common → shared` 环。这四个文件待阶段 4/5.4 拆解 `common/` 时随之解散（详见 `internal/constant/README.md` 过渡期说明）。
+> 2. **`types/relay_format.go` 改落 `internal/relay/constant/`**（原计划 relay 根包）：relay 根包依赖 `internal/model` 与 `internal/service`，而两者恰是 `RelayFormat` 的 48 个使用方中的成员，落 relay 根包必成环。`relay/constant` 是纯叶子包且已承载同族的 `RelayMode`，语义一致。
+>
+> 引用改写约定：仅用渠道常量的文件直接改 import 路径（限定符仍为 `constant`）；渠道常量与跨领域常量混用的文件以 `channelconstant` 别名引入新包；`FinishReason*`/`RelayFormat*` 统一以 `relayconstant` 别名（或既有限定符）引用；`domain/channel` 因使用方存在局部变量 `channel`，统一以 `domainchannel` 别名引入。验证：`go build ./...` 全绿，`go test ./...` 32 包通过（dto+types 两包合并为 shared，包数 33→32；测试函数 711=711 无丢失），`go list -deps ./pkg/...` 无业务依赖。
+
 #### 5.2 `model/` → `internal/store/`，按资源拆
 
 按现有文件名前缀归类（左侧为 model 现有文件，右侧为目标子包）：

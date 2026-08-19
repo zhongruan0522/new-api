@@ -4,20 +4,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {
-	chatReq := &dto.GeneralOpenAIRequest{
+	chatReq := &shared.GeneralOpenAIRequest{
 		Model: "gpt-4o",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "user", Content: "hi"},
 		},
-		Tools: []dto.ToolCallRequest{
+		Tools: []shared.ToolCallRequest{
 			{
 				Type: "function",
-				Function: dto.FunctionRequest{
+				Function: shared.FunctionRequest{
 					Name:        "get_weather",
 					Description: "get weather",
 					Parameters: map[string]any{
@@ -86,7 +86,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_Tools(t *testing.T) {
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	responsesReq := &dto.OpenAIResponsesRequest{
+	responsesReq := &shared.OpenAIResponsesRequest{
 		Model:      "gpt-4o",
 		Input:      inputRaw,
 		Tools:      toolsRaw,
@@ -166,7 +166,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_NamespaceTool(t *testin
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{
 		Model:      "gpt-5",
 		Input:      inputRaw,
 		Tools:      toolsRaw,
@@ -251,7 +251,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_LoadedNamespaceTools(t 
 		t.Fatalf("marshal tools error = %v", err)
 	}
 
-	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{
 		Model: "gpt-5",
 		Input: inputRaw,
 		Tools: toolsRaw,
@@ -300,7 +300,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_DropsBuiltInTools(t *te
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{
 		Model: "gpt-5",
 		Input: inputRaw,
 		Tools: toolsRaw,
@@ -332,7 +332,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_OnlyBuiltInTools(t *tes
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{
 		Model: "gpt-5",
 		Input: inputRaw,
 		Tools: toolsRaw,

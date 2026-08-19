@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -40,7 +40,7 @@ func TestRerankHandlerReturnsUpstreamErrorBody(t *testing.T) {
 	assert.Nil(t, usage)
 	assert.Contains(t, apiErr.Error(), "Concurrent rate limit exceeded")
 	assert.Equal(t, http.StatusTooManyRequests, apiErr.StatusCode)
-	assert.Equal(t, types.ErrorCode("429"), apiErr.GetErrorCode())
+	assert.Equal(t, shared.ErrorCode("429"), apiErr.GetErrorCode())
 }
 
 // 回归保护：正常 rerank 响应不受影响。

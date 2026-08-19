@@ -4,20 +4,20 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {
-	usage := GeminiUsageMetadataToOpenAIUsage(dto.GeminiUsageMetadata{
+	usage := GeminiUsageMetadataToOpenAIUsage(shared.GeminiUsageMetadata{
 		PromptTokenCount:        10,
 		CandidatesTokenCount:    6,
 		ThoughtsTokenCount:      4,
 		TotalTokenCount:         20,
 		CachedContentTokenCount: 3,
-		PromptTokensDetails:     []dto.GeminiPromptTokensDetails{{Modality: "TEXT", TokenCount: 8}, {Modality: "AUDIO", TokenCount: 2}},
-		CandidatesTokensDetails: []dto.GeminiPromptTokensDetails{{Modality: "TEXT", TokenCount: 6}},
+		PromptTokensDetails:     []shared.GeminiPromptTokensDetails{{Modality: "TEXT", TokenCount: 8}, {Modality: "AUDIO", TokenCount: 2}},
+		CandidatesTokensDetails: []shared.GeminiPromptTokensDetails{{Modality: "TEXT", TokenCount: 6}},
 	})
 
 	if usage.PromptTokens != 10 || usage.CompletionTokens != 10 || usage.TotalTokens != 20 {
@@ -35,19 +35,19 @@ func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {
 }
 
 func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.T) {
-	usage := GeminiUsageMetadataToOpenAIUsage(dto.GeminiUsageMetadata{
+	usage := GeminiUsageMetadataToOpenAIUsage(shared.GeminiUsageMetadata{
 		PromptTokenCount:        151,
 		ToolUsePromptTokenCount: 18329,
 		CandidatesTokenCount:    1089,
 		ThoughtsTokenCount:      1120,
 		TotalTokenCount:         20689,
-		PromptTokensDetails: []dto.GeminiPromptTokensDetails{
+		PromptTokensDetails: []shared.GeminiPromptTokensDetails{
 			{Modality: "TEXT", TokenCount: 151},
 		},
-		ToolUsePromptTokensDetails: []dto.GeminiPromptTokensDetails{
+		ToolUsePromptTokensDetails: []shared.GeminiPromptTokensDetails{
 			{Modality: "TEXT", TokenCount: 18329},
 		},
-		CandidatesTokensDetails: []dto.GeminiPromptTokensDetails{
+		CandidatesTokensDetails: []shared.GeminiPromptTokensDetails{
 			{Modality: "TEXT", TokenCount: 1089},
 		},
 	})
@@ -67,7 +67,7 @@ func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.
 }
 
 func TestGeminiUsageMetadataToOpenAIUsageAcceptsSnakeCaseToolUseFields(t *testing.T) {
-	var metadata dto.GeminiUsageMetadata
+	var metadata shared.GeminiUsageMetadata
 	if err := jsonx.Unmarshal([]byte(`{
 		"prompt_token_count": 2,
 		"tool_use_prompt_token_count": 3,
@@ -87,15 +87,15 @@ func TestGeminiUsageMetadataToOpenAIUsageAcceptsSnakeCaseToolUseFields(t *testin
 }
 
 func TestOpenAIUsageToGeminiUsage(t *testing.T) {
-	metadata := OpenAIUsageToGeminiUsage(dto.Usage{
+	metadata := OpenAIUsageToGeminiUsage(shared.Usage{
 		PromptTokens:     12,
 		CompletionTokens: 9,
 		TotalTokens:      21,
-		PromptTokensDetails: dto.InputTokenDetails{
+		PromptTokensDetails: shared.InputTokenDetails{
 			CachedTokens: 2,
 			TextTokens:   12,
 		},
-		CompletionTokenDetails: dto.OutputTokenDetails{
+		CompletionTokenDetails: shared.OutputTokenDetails{
 			TextTokens:      6,
 			ReasoningTokens: 3,
 		},
@@ -117,10 +117,10 @@ func TestOpenAIUsageToGeminiUsage(t *testing.T) {
 
 func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
 	thinking := "thinking"
-	resp := ResponseOpenAI2Gemini(&dto.OpenAITextResponse{
-		Choices: []dto.OpenAITextResponseChoice{{
+	resp := ResponseOpenAI2Gemini(&shared.OpenAITextResponse{
+		Choices: []shared.OpenAITextResponseChoice{{
 			Index: 0,
-			Message: dto.Message{
+			Message: shared.Message{
 				Role:               "assistant",
 				Content:            "answer",
 				ReasoningContent:   &thinking,
@@ -128,11 +128,11 @@ func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
 			},
 			FinishReason: "stop",
 		}},
-		Usage: dto.Usage{
+		Usage: shared.Usage{
 			PromptTokens:     7,
 			CompletionTokens: 5,
 			TotalTokens:      12,
-			CompletionTokenDetails: dto.OutputTokenDetails{
+			CompletionTokenDetails: shared.OutputTokenDetails{
 				ReasoningTokens: 2,
 			},
 		},
@@ -158,10 +158,10 @@ func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
 func TestStreamResponseOpenAI2GeminiPreservesReasoningDelta(t *testing.T) {
 	reasoning := "thinking"
 	content := "answer"
-	resp := StreamResponseOpenAI2Gemini(&dto.ChatCompletionsStreamResponse{
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+	resp := StreamResponseOpenAI2Gemini(&shared.ChatCompletionsStreamResponse{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{
 				ReasoningContent: &reasoning,
 				Content:          &content,
 			},
@@ -184,15 +184,15 @@ func TestStreamResponseOpenAI2GeminiPreservesReasoningDelta(t *testing.T) {
 
 func TestStreamResponseOpenAI2GeminiBuffersToolCallArguments(t *testing.T) {
 	info := &relaycommon.RelayInfo{}
-	firstChunk := StreamResponseOpenAI2Gemini(&dto.ChatCompletionsStreamResponse{
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+	firstChunk := StreamResponseOpenAI2Gemini(&shared.ChatCompletionsStreamResponse{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
-				ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{
+				ToolCalls: []shared.ToolCallResponse{{
 					Index: common.GetPointer(0),
 					ID:    "call_1",
 					Type:  "function",
-					Function: dto.FunctionResponse{
+					Function: shared.FunctionResponse{
 						Name:      "weather",
 						Arguments: `{"city":"Shang`,
 					},
@@ -206,15 +206,15 @@ func TestStreamResponseOpenAI2GeminiBuffersToolCallArguments(t *testing.T) {
 	}
 
 	finishReason := "tool_calls"
-	secondChunk := StreamResponseOpenAI2Gemini(&dto.ChatCompletionsStreamResponse{
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+	secondChunk := StreamResponseOpenAI2Gemini(&shared.ChatCompletionsStreamResponse{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{
 			Index: 0,
-			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
-				ToolCalls: []dto.ToolCallResponse{{
+			Delta: shared.ChatCompletionsStreamResponseChoiceDelta{
+				ToolCalls: []shared.ToolCallResponse{{
 					Index: common.GetPointer(0),
 					ID:    "call_1",
 					Type:  "function",
-					Function: dto.FunctionResponse{
+					Function: shared.FunctionResponse{
 						Arguments: `hai"}`,
 					},
 				}},

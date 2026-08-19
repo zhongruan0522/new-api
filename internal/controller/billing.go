@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,7 +25,7 @@ func GetSubscription(c *gin.Context) {
 		expiredTime = 0
 	}
 	if err != nil {
-		openAIError := types.OpenAIError{
+		openAIError := shared.OpenAIError{
 			Message: err.Error(),
 			Type:    "upstream_error",
 		}
@@ -61,7 +61,7 @@ func GetUsage(c *gin.Context) {
 		quota = snapshot.TotalUsed
 	}
 	if err != nil {
-		openAIError := types.OpenAIError{
+		openAIError := shared.OpenAIError{
 			Message: err.Error(),
 			Type:    "new_api_error",
 		}

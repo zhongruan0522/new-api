@@ -6,9 +6,8 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,17 +15,17 @@ import (
 func PlaygroundRequestContext() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		if c.GetBool("use_access_token") {
-			abortWithOpenAiMessage(c, http.StatusForbidden, "暂不支持使用 access token", types.ErrorCodeAccessDenied)
+			abortWithOpenAiMessage(c, http.StatusForbidden, "暂不支持使用 access token", shared.ErrorCodeAccessDenied)
 			return
 		}
 
-		playgroundRequest := &dto.PlayGroundRequest{}
+		playgroundRequest := &shared.PlayGroundRequest{}
 		if err := common.UnmarshalBodyReusable(c, playgroundRequest); err != nil {
 			statusCode := http.StatusBadRequest
-			errorCode := types.ErrorCodeInvalidRequest
+			errorCode := shared.ErrorCodeInvalidRequest
 			if common.IsRequestBodyTooLargeError(err) {
 				statusCode = http.StatusRequestEntityTooLarge
-				errorCode = types.ErrorCodeReadRequestBodyFailed
+				errorCode = shared.ErrorCodeReadRequestBodyFailed
 			}
 			abortWithOpenAiMessage(c, statusCode, "无效的游乐场请求: "+err.Error(), errorCode)
 			return
@@ -43,7 +42,7 @@ func PlaygroundRequestContext() func(c *gin.Context) {
 			userGroup = common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 		}
 		if !service.GroupInUserUsableGroups(userGroup, selectedGroup) && selectedGroup != userGroup {
-			abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组", types.ErrorCodeAccessDenied)
+			abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组", shared.ErrorCodeAccessDenied)
 			return
 		}
 

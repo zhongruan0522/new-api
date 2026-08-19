@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
 
+	"github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/gin-gonic/gin"
 )
 
@@ -57,7 +57,7 @@ func TestApplyContextPricingDisabledLeavesPriceDataUnchanged(t *testing.T) {
 		t.Fatalf("failed to reset context pricing: %v", err)
 	}
 
-	priceData := types.PriceData{
+	priceData := billing.PriceData{
 		ModelRatio:           1,
 		CompletionRatio:      2,
 		CacheRatio:           3,
@@ -82,11 +82,11 @@ func TestApplyContextPricingDisabledLeavesPriceDataUnchanged(t *testing.T) {
 func TestApplyContextPricingMatchesInputContextAndIgnoresOutput(t *testing.T) {
 	installServiceContextPricing(t)
 
-	usage := &dto.Usage{
+	usage := &shared.Usage{
 		PromptTokens:     199000,
 		CompletionTokens: 800000,
 	}
-	priceData := types.PriceData{}
+	priceData := billing.PriceData{}
 	result, enabled, err := ApplyContextPricingForUsage("service-tier-model", BuildContextPricingUsage(usage, false), &priceData)
 	if err != nil {
 		t.Fatalf("ApplyContextPricingForUsage returned error: %v", err)
@@ -105,15 +105,15 @@ func TestApplyContextPricingMatchesInputContextAndIgnoresOutput(t *testing.T) {
 func TestApplyContextPricingCacheCanPushClaudeUsageToHighTier(t *testing.T) {
 	installServiceContextPricing(t)
 
-	usage := &dto.Usage{
+	usage := &shared.Usage{
 		PromptTokens:     210000,
 		CompletionTokens: 1,
-		PromptTokensDetails: dto.InputTokenDetails{
+		PromptTokensDetails: shared.InputTokenDetails{
 			CachedTokens:         30000,
 			CachedCreationTokens: 30000,
 		},
 	}
-	priceData := types.PriceData{}
+	priceData := billing.PriceData{}
 	result, enabled, err := ApplyContextPricingForUsage("service-tier-model", BuildContextPricingUsage(usage, true), &priceData)
 	if err != nil {
 		t.Fatalf("ApplyContextPricingForUsage returned error: %v", err)
@@ -131,9 +131,9 @@ func TestApplyContextPricingCacheCanPushClaudeUsageToHighTier(t *testing.T) {
 }
 
 func TestContextTokensForTierAvoidsDoubleCountingClaudeCache(t *testing.T) {
-	usage := &dto.Usage{
+	usage := &shared.Usage{
 		PromptTokens: 180,
-		PromptTokensDetails: dto.InputTokenDetails{
+		PromptTokensDetails: shared.InputTokenDetails{
 			CachedTokens:         30,
 			CachedCreationTokens: 50,
 		},
@@ -160,15 +160,15 @@ func TestGenerateTextOtherInfoIncludesContextPricingAuditFields(t *testing.T) {
 		FirstResponseTime: time.Unix(100, int64(50*time.Millisecond)),
 		RequestURLPath:    "/v1/chat/completions",
 		ChannelMeta:       &relaycommon.ChannelMeta{},
-		PriceData: types.PriceData{
-			ContextPricing: &types.ContextPricingResult{
+		PriceData: billing.PriceData{
+			ContextPricing: &billing.ContextPricingResult{
 				Enabled:              true,
 				ContextTokensForTier: 250000,
 				TierIndex:            1,
 				TierName:             "200K~1000K",
 				MinTokens:            200000,
 				MaxTokens:            &maxTokens,
-				Prices: types.ContextPricingTierPrices{
+				Prices: billing.ContextPricingTierPrices{
 					ModelRatio:           10,
 					CompletionRatio:      20,
 					CacheRatio:           5,
@@ -195,7 +195,7 @@ func TestGenerateTextOtherInfoIncludesContextPricingAuditFields(t *testing.T) {
 	if got := other["dynamic_ratio"]; got != 1.2 {
 		t.Fatalf("dynamic_ratio = %#v, want 1.2", got)
 	}
-	prices, ok := other["context_pricing_prices"].(types.ContextPricingTierPrices)
+	prices, ok := other["context_pricing_prices"].(billing.ContextPricingTierPrices)
 	if !ok {
 		t.Fatalf("context_pricing_prices type = %T", other["context_pricing_prices"])
 	}

@@ -11,8 +11,9 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
@@ -103,18 +104,18 @@ func GetRandomSatisfiedChannelForRetry(group string, model string, priorityIndex
 	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId, allowExcludedFallback)
 }
 
-func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
+func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat relayconstant.RelayFormat, excludeChannelId int) (*Channel, error) {
 	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, false)
 }
 
 // GetRandomSatisfiedChannelWithRelayFormatForRetry prefers a different channel
 // but can reuse the excluded channel when the caller explicitly allows it and
 // no alternative remains.
-func GetRandomSatisfiedChannelWithRelayFormatForRetry(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
+func GetRandomSatisfiedChannelWithRelayFormatForRetry(group string, model string, priorityIndex int, preferredAPIType int, relayFormat relayconstant.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
 	return getRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, allowExcludedFallback)
 }
 
-func getRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
+func getRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat relayconstant.RelayFormat, excludeChannelId int, allowExcludedFallback bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
 		return getChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId, allowExcludedFallback)

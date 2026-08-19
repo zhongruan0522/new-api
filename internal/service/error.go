@@ -11,14 +11,14 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 //// OpenAIErrorWrapper wraps an error into an OpenAIErrorWithStatusCode
-//func OpenAIErrorWrapper(err error, code string, statusCode int) *dto.OpenAIErrorWithStatusCode {
+//func OpenAIErrorWrapper(err error, code string, statusCode int) *shared.OpenAIErrorWithStatusCode {
 //	text := err.Error()
 //	lowerText := strings.ToLower(text)
 //	if !strings.HasPrefix(lowerText, "get file base64 from url") && !strings.HasPrefix(lowerText, "mime type is not supported") {
@@ -27,24 +27,24 @@ import (
 //			text = "请求上游地址失败"
 //		}
 //	}
-//	openAIError := dto.OpenAIError{
+//	openAIError := shared.OpenAIError{
 //		Message: text,
 //		Type:    "new_api_error",
 //		Code:    code,
 //	}
-//	return &dto.OpenAIErrorWithStatusCode{
+//	return &shared.OpenAIErrorWithStatusCode{
 //		Error:      openAIError,
 //		StatusCode: statusCode,
 //	}
 //}
 //
-//func OpenAIErrorWrapperLocal(err error, code string, statusCode int) *dto.OpenAIErrorWithStatusCode {
+//func OpenAIErrorWrapperLocal(err error, code string, statusCode int) *shared.OpenAIErrorWithStatusCode {
 //	openaiErr := OpenAIErrorWrapper(err, code, statusCode)
 //	openaiErr.LocalError = true
 //	return openaiErr
 //}
 
-func ClaudeErrorWrapper(err error, code string, statusCode int) *dto.ClaudeErrorWithStatusCode {
+func ClaudeErrorWrapper(err error, code string, statusCode int) *shared.ClaudeErrorWithStatusCode {
 	text := err.Error()
 	lowerText := strings.ToLower(text)
 	if !strings.HasPrefix(lowerText, "get file base64 from url") {
@@ -53,24 +53,24 @@ func ClaudeErrorWrapper(err error, code string, statusCode int) *dto.ClaudeError
 			text = "请求上游地址失败"
 		}
 	}
-	claudeError := types.ClaudeError{
+	claudeError := shared.ClaudeError{
 		Message: text,
 		Type:    "new_api_error",
 	}
-	return &dto.ClaudeErrorWithStatusCode{
+	return &shared.ClaudeErrorWithStatusCode{
 		Error:      claudeError,
 		StatusCode: statusCode,
 	}
 }
 
-func ClaudeErrorWrapperLocal(err error, code string, statusCode int) *dto.ClaudeErrorWithStatusCode {
+func ClaudeErrorWrapperLocal(err error, code string, statusCode int) *shared.ClaudeErrorWithStatusCode {
 	claudeErr := ClaudeErrorWrapper(err, code, statusCode)
 	claudeErr.LocalError = true
 	return claudeErr
 }
 
-func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFail bool) (newApiErr *types.NookMuxError) {
-	newApiErr = types.InitOpenAIError(types.ErrorCodeBadResponseStatusCode, resp.StatusCode)
+func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFail bool) (newApiErr *shared.NookMuxError) {
+	newApiErr = shared.InitOpenAIError(shared.ErrorCodeBadResponseStatusCode, resp.StatusCode)
 	defer CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadErrorResponseBody(resp.Body)
@@ -78,7 +78,7 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 		newApiErr.Err = fmt.Errorf("failed to read upstream error response body: %w", err)
 		return
 	}
-	var errResponse dto.GeneralErrorResponse
+	var errResponse shared.GeneralErrorResponse
 	responseBodyText := string(responseBody)
 	responseBodyPreview := common.LocalLogPreview(responseBodyText)
 	buildErrWithBody := func(message string) error {
@@ -103,21 +103,21 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 		// General format error (OpenAI, Anthropic, Gemini, etc.)
 		oaiError := errResponse.TryToOpenAIError()
 		if oaiError != nil {
-			newApiErr = types.WithOpenAIError(*oaiError, resp.StatusCode)
+			newApiErr = shared.WithOpenAIError(*oaiError, resp.StatusCode)
 			if showBodyWhenFail {
 				newApiErr.Err = buildErrWithBody(newApiErr.Error())
 			}
 			return
 		}
 	}
-	newApiErr = types.NewOpenAIError(errors.New(errResponse.ToMessage()), types.ErrorCodeBadResponseStatusCode, resp.StatusCode)
+	newApiErr = shared.NewOpenAIError(errors.New(errResponse.ToMessage()), shared.ErrorCodeBadResponseStatusCode, resp.StatusCode)
 	if showBodyWhenFail {
 		newApiErr.Err = buildErrWithBody(newApiErr.Error())
 	}
 	return
 }
 
-func ResetStatusCode(newApiErr *types.NookMuxError, statusCodeMappingStr string) {
+func ResetStatusCode(newApiErr *shared.NookMuxError, statusCodeMappingStr string) {
 	if newApiErr == nil {
 		return
 	}

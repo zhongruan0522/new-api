@@ -7,22 +7,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
 func TestStreamResponseGeminiChat2OpenAIPreservesThoughtAndText(t *testing.T) {
 	stop := "STOP"
-	thought := dto.GeminiPart{Text: "thinking", Thought: true}
+	thought := shared.GeminiPart{Text: "thinking", Thought: true}
 	thought.SetThoughtSignature("sig_123")
-	resp, isStop := streamResponseGeminiChat2OpenAI(&dto.GeminiChatResponse{
-		Candidates: []dto.GeminiChatCandidate{{
+	resp, isStop := streamResponseGeminiChat2OpenAI(&shared.GeminiChatResponse{
+		Candidates: []shared.GeminiChatCandidate{{
 			Index:        0,
 			FinishReason: &stop,
-			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{thought, {
+			Content: shared.GeminiChatContent{Parts: []shared.GeminiPart{thought, {
 				Text: "answer",
 			}}},
 		}},
@@ -56,17 +57,17 @@ func TestGeminiChatStreamHandlerMasksResponseModel(t *testing.T) {
 	info := &relaycommon.RelayInfo{
 		OriginModelName:   "alias-model",
 		ResponseModelName: "alias-model",
-		RelayFormat:       types.RelayFormatOpenAI,
+		RelayFormat:       relayconstant.RelayFormatOpenAI,
 		ChannelMeta: &relaycommon.ChannelMeta{
 			UpstreamModelName: "real-model",
 		},
 	}
 	finish := "STOP"
-	event, err := jsonx.Marshal(dto.GeminiChatResponse{
-		Candidates: []dto.GeminiChatCandidate{{
+	event, err := jsonx.Marshal(shared.GeminiChatResponse{
+		Candidates: []shared.GeminiChatCandidate{{
 			Index:        0,
 			FinishReason: &finish,
-			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{{
+			Content: shared.GeminiChatContent{Parts: []shared.GeminiPart{{
 				Text: "answer",
 			}}},
 		}},
@@ -95,29 +96,29 @@ func TestGeminiChatStreamHandlerClaudeKeepsMultipleToolCallsDistinct(t *testing.
 	info := &relaycommon.RelayInfo{
 		OriginModelName:   "claude-alias",
 		ResponseModelName: "claude-alias",
-		RelayFormat:       types.RelayFormatClaude,
+		RelayFormat:       relayconstant.RelayFormatClaude,
 		ClaudeConvertInfo: &relaycommon.ClaudeConvertInfo{},
 		ChannelMeta: &relaycommon.ChannelMeta{
 			UpstreamModelName: "gemini-2.5-pro",
 		},
 	}
 
-	firstEvent := marshalGeminiStreamEvent(t, dto.GeminiChatResponse{
-		Candidates: []dto.GeminiChatCandidate{{
+	firstEvent := marshalGeminiStreamEvent(t, shared.GeminiChatResponse{
+		Candidates: []shared.GeminiChatCandidate{{
 			Index: 0,
-			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{{
-				FunctionCall: &dto.FunctionCall{FunctionName: "weather", Arguments: map[string]any{"city": "Shanghai"}},
+			Content: shared.GeminiChatContent{Parts: []shared.GeminiPart{{
+				FunctionCall: &shared.FunctionCall{FunctionName: "weather", Arguments: map[string]any{"city": "Shanghai"}},
 			}}},
 		}},
 	})
-	secondEvent := marshalGeminiStreamEvent(t, dto.GeminiChatResponse{
-		Candidates: []dto.GeminiChatCandidate{{
+	secondEvent := marshalGeminiStreamEvent(t, shared.GeminiChatResponse{
+		Candidates: []shared.GeminiChatCandidate{{
 			Index: 0,
-			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{{
-				FunctionCall: &dto.FunctionCall{FunctionName: "calendar", Arguments: map[string]any{"day": "today"}},
+			Content: shared.GeminiChatContent{Parts: []shared.GeminiPart{{
+				FunctionCall: &shared.FunctionCall{FunctionName: "calendar", Arguments: map[string]any{"day": "today"}},
 			}}},
 		}},
-		UsageMetadata: dto.GeminiUsageMetadata{
+		UsageMetadata: shared.GeminiUsageMetadata{
 			PromptTokenCount:        2,
 			ToolUsePromptTokenCount: 3,
 			CandidatesTokenCount:    5,
@@ -147,7 +148,7 @@ func TestGeminiChatStreamHandlerClaudeKeepsMultipleToolCallsDistinct(t *testing.
 	}
 }
 
-func marshalGeminiStreamEvent(t *testing.T, response dto.GeminiChatResponse) string {
+func marshalGeminiStreamEvent(t *testing.T, response shared.GeminiChatResponse) string {
 	t.Helper()
 	payload, err := jsonx.Marshal(response)
 	if err != nil {

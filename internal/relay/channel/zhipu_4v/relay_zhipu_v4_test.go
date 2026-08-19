@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 func TestRequestOpenAI2Zhipu_DeveloperRoleNormalizedToSystem(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "developer", Content: "system instructions"},
 			{Role: "user", Content: "hello"},
 			{Role: "assistant", Content: "hi"},
@@ -36,9 +36,9 @@ func TestRequestOpenAI2Zhipu_DeveloperRoleNormalizedToSystem(t *testing.T) {
 }
 
 func TestRequestOpenAI2Zhipu_DeveloperRoleNormalizedCaseInsensitive(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "Developer", Content: "x"},
 			{Role: "DEVELOPER", Content: "y"},
 		},
@@ -58,9 +58,9 @@ func TestRequestOpenAI2Zhipu_DeveloperRoleNormalizedCaseInsensitive(t *testing.T
 
 // 连续的 system/developer 消息必须合并为一条，否则智谱会覆盖丢失内容。
 func TestRequestOpenAI2Zhipu_MergesConsecutiveSystemMessages(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "developer", Content: "instructions from Responses conversion"},
 			{Role: "system", Content: "extra system rules"},
 			{Role: "user", Content: "hi"},
@@ -88,9 +88,9 @@ func TestRequestOpenAI2Zhipu_MergesConsecutiveSystemMessages(t *testing.T) {
 }
 
 func TestRequestOpenAI2Zhipu_NonConsecutiveSystemMessagesKeptSeparate(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "system", Content: "first"},
 			{Role: "user", Content: "hi"},
 			{Role: "system", Content: "second"},
@@ -104,9 +104,9 @@ func TestRequestOpenAI2Zhipu_NonConsecutiveSystemMessagesKeptSeparate(t *testing
 }
 
 func TestRequestOpenAI2Zhipu_SkipsEmptySystemMessages(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "developer", Content: "   "},
 			{Role: "user", Content: "hi"},
 		},
@@ -122,9 +122,9 @@ func TestRequestOpenAI2Zhipu_SkipsEmptySystemMessages(t *testing.T) {
 }
 
 func TestRequestOpenAI2Zhipu_PreservesValidRoles(t *testing.T) {
-	request := dto.GeneralOpenAIRequest{
+	request := shared.GeneralOpenAIRequest{
 		Model: "glm-4v-plus",
-		Messages: []dto.Message{
+		Messages: []shared.Message{
 			{Role: "system", Content: "s"},
 			{Role: "user", Content: "u"},
 		},

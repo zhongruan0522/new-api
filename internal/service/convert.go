@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/reasonmap"
@@ -45,7 +45,7 @@ func extractClaudeOutputConfigEffort(outputConfig json.RawMessage) string {
 		return ""
 	}
 
-	var config dto.ClaudeOutputConfig
+	var config shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(outputConfig, &config); err != nil {
 		return ""
 	}
@@ -55,7 +55,7 @@ func extractClaudeOutputConfigEffort(outputConfig json.RawMessage) string {
 	return config.Effort
 }
 
-func extractClaudeReasoningEffort(claudeRequest dto.ClaudeRequest) string {
+func extractClaudeReasoningEffort(claudeRequest shared.ClaudeRequest) string {
 	if effort := extractClaudeOutputConfigEffort(claudeRequest.OutputConfig); effort != "" {
 		return effort
 	}
@@ -108,7 +108,7 @@ func buildOpenAIReasoningPayload(maxTokens int) (json.RawMessage, error) {
 	return payload, nil
 }
 
-func buildOpenRouterClaudeReasoningPayload(claudeRequest dto.ClaudeRequest) (json.RawMessage, error) {
+func buildOpenRouterClaudeReasoningPayload(claudeRequest shared.ClaudeRequest) (json.RawMessage, error) {
 	effort := extractClaudeOutputConfigEffort(claudeRequest.OutputConfig)
 	if effort != "" {
 		payload, err := jsonx.Marshal(openrouter.RequestReasoning{
@@ -145,11 +145,11 @@ func buildOpenRouterClaudeReasoningPayload(claudeRequest dto.ClaudeRequest) (jso
 }
 
 func convertClaudeToolChoiceToOpenAI(toolChoice any) (any, *bool) {
-	var claudeToolChoice *dto.ClaudeToolChoice
+	var claudeToolChoice *shared.ClaudeToolChoice
 	switch v := toolChoice.(type) {
-	case *dto.ClaudeToolChoice:
+	case *shared.ClaudeToolChoice:
 		claudeToolChoice = v
-	case dto.ClaudeToolChoice:
+	case shared.ClaudeToolChoice:
 		claudeToolChoice = &v
 	}
 	if claudeToolChoice == nil {
@@ -180,7 +180,7 @@ func convertClaudeToolChoiceToOpenAI(toolChoice any) (any, *bool) {
 	return openAIToolChoice, parallelToolCalls
 }
 
-func convertGeminiToolConfigToOpenAI(toolConfig *dto.ToolConfig) any {
+func convertGeminiToolConfigToOpenAI(toolConfig *shared.ToolConfig) any {
 	if toolConfig == nil || toolConfig.FunctionCallingConfig == nil {
 		return nil
 	}
@@ -206,12 +206,12 @@ func convertGeminiToolConfigToOpenAI(toolConfig *dto.ToolConfig) any {
 	}
 }
 
-func buildOpenAIWebSearchOptions(tool *dto.ClaudeWebSearchTool) *dto.WebSearchOptions {
+func buildOpenAIWebSearchOptions(tool *shared.ClaudeWebSearchTool) *shared.WebSearchOptions {
 	if tool == nil {
 		return nil
 	}
 
-	options := &dto.WebSearchOptions{
+	options := &shared.WebSearchOptions{
 		SearchContextSize: claudeWebSearchMaxUsesToContextSize(tool.MaxUses),
 	}
 	if tool.UserLocation != nil {
@@ -236,8 +236,8 @@ func NormalizeCacheCreationSplit(totalTokens int, tokens5m int, tokens1h int) (i
 	return tokens5m + remainder, tokens1h
 }
 
-func buildClaudeUsageFromOpenAIUsage(openAIUsage *dto.Usage) *dto.ClaudeUsage {
-	usage := dto.OpenAIUsageToClaudeUsage(openAIUsage)
+func buildClaudeUsageFromOpenAIUsage(openAIUsage *shared.Usage) *shared.ClaudeUsage {
+	usage := shared.OpenAIUsageToClaudeUsage(openAIUsage)
 	if usage == nil {
 		return nil
 	}
@@ -249,7 +249,7 @@ func buildClaudeUsageFromOpenAIUsage(openAIUsage *dto.Usage) *dto.ClaudeUsage {
 	}
 	cacheCreation5m, cacheCreation1h = NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
 	if cacheCreation5m > 0 || cacheCreation1h > 0 {
-		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
+		usage.CacheCreation = &shared.ClaudeCacheCreationUsage{
 			Ephemeral5mInputTokens: cacheCreation5m,
 			Ephemeral1hInputTokens: cacheCreation1h,
 		}
@@ -257,13 +257,13 @@ func buildClaudeUsageFromOpenAIUsage(openAIUsage *dto.Usage) *dto.ClaudeUsage {
 	return usage
 }
 
-func appendOpenAIToolMessage(openAIMessages *[]dto.Message, claudeRequest dto.ClaudeRequest, mediaMsg dto.ClaudeMediaMessage) {
+func appendOpenAIToolMessage(openAIMessages *[]shared.Message, claudeRequest shared.ClaudeRequest, mediaMsg shared.ClaudeMediaMessage) {
 	toolName := mediaMsg.Name
 	if toolName == "" {
 		toolName = claudeRequest.SearchToolNameByToolCallId(mediaMsg.ToolUseId)
 	}
 
-	oaiToolMessage := dto.Message{
+	oaiToolMessage := shared.Message{
 		Role:            "tool",
 		Name:            &toolName,
 		ToolCallId:      mediaMsg.ToolUseId,
@@ -283,8 +283,8 @@ func appendOpenAIToolMessage(openAIMessages *[]dto.Message, claudeRequest dto.Cl
 	*openAIMessages = append(*openAIMessages, oaiToolMessage)
 }
 
-func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.RelayInfo) (*dto.GeneralOpenAIRequest, error) {
-	openAIRequest := dto.GeneralOpenAIRequest{
+func ClaudeToOpenAIRequest(claudeRequest shared.ClaudeRequest, info *relaycommon.RelayInfo) (*shared.GeneralOpenAIRequest, error) {
+	openAIRequest := shared.GeneralOpenAIRequest{
 		Model:       claudeRequest.Model,
 		MaxTokens:   claudeRequest.MaxTokens,
 		Temperature: claudeRequest.Temperature,
@@ -330,12 +330,12 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	}
 
 	// Convert tools
-	openAITools := make([]dto.ToolCallRequest, 0)
-	normalTools, webSearchTools := dto.ProcessTools(claudeRequest.GetTools())
+	openAITools := make([]shared.ToolCallRequest, 0)
+	normalTools, webSearchTools := shared.ProcessTools(claudeRequest.GetTools())
 	for _, claudeTool := range normalTools {
-		openAITool := dto.ToolCallRequest{
+		openAITool := shared.ToolCallRequest{
 			Type: "function",
-			Function: dto.FunctionRequest{
+			Function: shared.FunctionRequest{
 				Name:        claudeTool.Name,
 				Description: claudeTool.Description,
 				Parameters:  claudeTool.InputSchema,
@@ -350,12 +350,12 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	}
 
 	// Convert messages
-	openAIMessages := make([]dto.Message, 0)
+	openAIMessages := make([]shared.Message, 0)
 
 	// Add system message if present
 	if claudeRequest.System != nil {
 		if claudeRequest.IsStringSystem() && claudeRequest.GetStringSystem() != "" {
-			openAIMessage := dto.Message{
+			openAIMessage := shared.Message{
 				Role: "system",
 			}
 			openAIMessage.SetStringContent(claudeRequest.GetStringSystem())
@@ -363,14 +363,14 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		} else {
 			systems := claudeRequest.ParseSystem()
 			if len(systems) > 0 {
-				openAIMessage := dto.Message{
+				openAIMessage := shared.Message{
 					Role: "system",
 				}
 				isOpenRouterClaude := isOpenRouter && strings.HasPrefix(info.UpstreamModelName, "anthropic/claude")
 				if isOpenRouterClaude {
-					systemMediaMessages := make([]dto.MediaContent, 0, len(systems))
+					systemMediaMessages := make([]shared.MediaContent, 0, len(systems))
 					for _, system := range systems {
-						message := dto.MediaContent{
+						message := shared.MediaContent{
 							Type:         "text",
 							Text:         system.GetText(),
 							CacheControl: system.CacheControl,
@@ -392,7 +392,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		}
 	}
 	for _, claudeMessage := range claudeRequest.Messages {
-		openAIMessage := dto.Message{
+		openAIMessage := shared.Message{
 			Role: claudeMessage.Role,
 		}
 
@@ -404,8 +404,8 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				return nil, err
 			}
 			contents := content
-			var toolCalls []dto.ToolCallRequest
-			mediaMessages := make([]dto.MediaContent, 0, len(contents))
+			var toolCalls []shared.ToolCallRequest
+			mediaMessages := make([]shared.MediaContent, 0, len(contents))
 			var reasoningBuilder strings.Builder
 			var reasoningSignature string
 			var redactedReasoningBuilder strings.Builder
@@ -422,7 +422,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				case "redacted_thinking":
 					redactedReasoningBuilder.WriteString(mediaMsg.Data)
 				case "text":
-					message := dto.MediaContent{
+					message := shared.MediaContent{
 						Type:         "text",
 						Text:         mediaMsg.GetText(),
 						CacheControl: mediaMsg.CacheControl,
@@ -437,16 +437,16 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 						// Claude base64 images are converted back into OpenAI data URLs.
 						imageURL = fmt.Sprintf("data:%s;base64,%s", mediaMsg.Source.MediaType, mediaMsg.Source.Data)
 					}
-					mediaMessage := dto.MediaContent{
+					mediaMessage := shared.MediaContent{
 						Type:     "image_url",
-						ImageUrl: &dto.MessageImageUrl{Url: imageURL},
+						ImageUrl: &shared.MessageImageUrl{Url: imageURL},
 					}
 					mediaMessages = append(mediaMessages, mediaMessage)
 				case "tool_use":
-					toolCall := dto.ToolCallRequest{
+					toolCall := shared.ToolCallRequest{
 						ID:   mediaMsg.Id,
 						Type: "function",
-						Function: dto.FunctionRequest{
+						Function: shared.FunctionRequest{
 							Name:      mediaMsg.Name,
 							Arguments: toJSONString(mediaMsg.Input),
 						},
@@ -485,19 +485,19 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	return &openAIRequest, nil
 }
 
-func generateStopBlock(index int) *dto.ClaudeResponse {
-	return &dto.ClaudeResponse{
+func generateStopBlock(index int) *shared.ClaudeResponse {
+	return &shared.ClaudeResponse{
 		Type:  "content_block_stop",
 		Index: common.GetPointer[int](index),
 	}
 }
 
-func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) []*dto.ClaudeResponse {
+func StreamResponseOpenAI2Claude(openAIResponse *shared.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) []*shared.ClaudeResponse {
 	if info.ClaudeConvertInfo.Done {
 		return nil
 	}
 
-	var claudeResponses []*dto.ClaudeResponse
+	var claudeResponses []*shared.ClaudeResponse
 	// stopOpenBlocks emits the required content_block_stop event(s) for the currently open block(s)
 	// according to Anthropic's SSE streaming state machine:
 	// content_block_start -> content_block_delta* -> content_block_stop (per index).
@@ -543,10 +543,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeThinking {
 			stopOpenBlocksAndAdvance()
 			idx := info.ClaudeConvertInfo.Index
-			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 				Index: &idx,
 				Type:  "content_block_start",
-				ContentBlock: &dto.ClaudeMediaMessage{
+				ContentBlock: &shared.ClaudeMediaMessage{
 					Type:     "thinking",
 					Thinking: common.GetPointer[string](""),
 				},
@@ -555,10 +555,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		}
 		idx := info.ClaudeConvertInfo.Index
 		signature := info.ClaudeConvertInfo.PendingReasoningSignature
-		claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+		claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 			Index: &idx,
 			Type:  "content_block_delta",
-			Delta: &dto.ClaudeMediaMessage{
+			Delta: &shared.ClaudeMediaMessage{
 				Type:      "signature_delta",
 				Signature: signature,
 			},
@@ -569,29 +569,29 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		}
 	}
 	if info.SendResponseCount == 1 {
-		msg := &dto.ClaudeMediaMessage{
+		msg := &shared.ClaudeMediaMessage{
 			Id:    openAIResponse.Id,
 			Model: openAIResponse.Model,
 			Type:  "message",
 			Role:  "assistant",
-			Usage: &dto.ClaudeUsage{
+			Usage: &shared.ClaudeUsage{
 				InputTokens:  info.GetEstimatePromptTokens(),
 				OutputTokens: 0,
 			},
 		}
 		msg.SetContent(make([]any, 0))
-		claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+		claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 			Type:    "message_start",
 			Message: msg,
 		})
-		//claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+		//claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 		//	Type: "ping",
 		//})
 		if openAIResponse.IsToolCall() {
 			info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeTools
 			info.ClaudeConvertInfo.ToolCallBaseIndex = 0
 			info.ClaudeConvertInfo.ToolCallMaxIndexOffset = 0
-			var toolCall dto.ToolCallResponse
+			var toolCall shared.ToolCallResponse
 			if len(openAIResponse.Choices) > 0 && len(openAIResponse.Choices[0].Delta.ToolCalls) > 0 {
 				toolCall = openAIResponse.Choices[0].Delta.ToolCalls[0]
 			} else {
@@ -599,12 +599,12 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 				if first != nil {
 					toolCall = *first
 				} else {
-					toolCall = dto.ToolCallResponse{}
+					toolCall = shared.ToolCallResponse{}
 				}
 			}
-			resp := &dto.ClaudeResponse{
+			resp := &shared.ClaudeResponse{
 				Type: "content_block_start",
-				ContentBlock: &dto.ClaudeMediaMessage{
+				ContentBlock: &shared.ClaudeMediaMessage{
 					Id:    toolCall.ID,
 					Type:  "tool_use",
 					Name:  toolCall.Function.Name,
@@ -616,10 +616,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			// 首块包含工具 delta，则追加 input_json_delta
 			if toolCall.Function.Arguments != "" {
 				idx := 0
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 					Index: &idx,
 					Type:  "content_block_delta",
-					Delta: &dto.ClaudeMediaMessage{
+					Delta: &shared.ClaudeMediaMessage{
 						Type:        "input_json_delta",
 						PartialJson: &toolCall.Function.Arguments,
 					},
@@ -646,19 +646,19 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 					stopOpenBlocksAndAdvance()
 				}
 				idx := info.ClaudeConvertInfo.Index
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 					Index: &idx,
 					Type:  "content_block_start",
-					ContentBlock: &dto.ClaudeMediaMessage{
+					ContentBlock: &shared.ClaudeMediaMessage{
 						Type:     "thinking",
 						Thinking: common.GetPointer[string](""),
 					},
 				})
 				idx2 := idx
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 					Index: &idx2,
 					Type:  "content_block_delta",
-					Delta: &dto.ClaudeMediaMessage{
+					Delta: &shared.ClaudeMediaMessage{
 						Type:     "thinking_delta",
 						Thinking: &reasoning,
 					},
@@ -676,10 +676,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 					flushPendingThinkingSignature(true)
 					stopOpenBlocksAndAdvance()
 					idx := info.ClaudeConvertInfo.Index
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx,
 						Type:  "content_block_start",
-						ContentBlock: &dto.ClaudeMediaMessage{
+						ContentBlock: &shared.ClaudeMediaMessage{
 							Type: "redacted_thinking",
 							Data: redactedReasoning,
 						},
@@ -692,19 +692,19 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 						stopOpenBlocksAndAdvance()
 					}
 					idx := info.ClaudeConvertInfo.Index
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx,
 						Type:  "content_block_start",
-						ContentBlock: &dto.ClaudeMediaMessage{
+						ContentBlock: &shared.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](""),
 						},
 					})
 					idx2 := idx
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx2,
 						Type:  "content_block_delta",
-						Delta: &dto.ClaudeMediaMessage{
+						Delta: &shared.ClaudeMediaMessage{
 							Type: "text_delta",
 							Text: common.GetPointer[string](content),
 						},
@@ -725,15 +725,15 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			}
 			if oaiUsage != nil {
 				claudeUsage := buildClaudeUsageFromOpenAIUsage(oaiUsage)
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 					Type:  "message_delta",
 					Usage: claudeUsage,
-					Delta: &dto.ClaudeMediaMessage{
+					Delta: &shared.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
 					},
 				})
 			}
-			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 				Type: "message_stop",
 			})
 			info.ClaudeConvertInfo.Done = true
@@ -754,14 +754,14 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			if stopReason == "" {
 				stopReason = "end_turn"
 			}
-			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 				Type:  "message_delta",
 				Usage: buildClaudeUsageFromOpenAIUsage(oaiUsage),
-				Delta: &dto.ClaudeMediaMessage{
+				Delta: &shared.ClaudeMediaMessage{
 					StopReason: common.GetPointer[string](stopReason),
 				},
 			})
-			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 				Type: "message_stop",
 			})
 			info.ClaudeConvertInfo.Done = true
@@ -782,7 +782,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			info.ClaudeConvertInfo.PendingReasoningSignature = *chosenChoice.Delta.ReasoningSignature
 		}
 
-		var claudeResponse dto.ClaudeResponse
+		var claudeResponse shared.ClaudeResponse
 		var isEmpty bool
 		claudeResponse.Type = "content_block_delta"
 		if len(chosenChoice.Delta.ToolCalls) > 0 {
@@ -811,10 +811,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 
 				idx := blockIndex
 				if toolCall.Function.Name != "" {
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx,
 						Type:  "content_block_start",
-						ContentBlock: &dto.ClaudeMediaMessage{
+						ContentBlock: &shared.ClaudeMediaMessage{
 							Id:    toolCall.ID,
 							Type:  "tool_use",
 							Name:  toolCall.Function.Name,
@@ -824,10 +824,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 				}
 
 				if len(toolCall.Function.Arguments) > 0 {
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx,
 						Type:  "content_block_delta",
-						Delta: &dto.ClaudeMediaMessage{
+						Delta: &shared.ClaudeMediaMessage{
 							Type:        "input_json_delta",
 							PartialJson: &toolCall.Function.Arguments,
 						},
@@ -848,17 +848,17 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeThinking {
 						stopOpenBlocksAndAdvance()
 						idx := info.ClaudeConvertInfo.Index
-						claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 							Index: &idx,
 							Type:  "content_block_start",
-							ContentBlock: &dto.ClaudeMediaMessage{
+							ContentBlock: &shared.ClaudeMediaMessage{
 								Type:     "thinking",
 								Thinking: common.GetPointer[string](""),
 							},
 						})
 					}
 					info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeThinking
-					claudeResponse.Delta = &dto.ClaudeMediaMessage{
+					claudeResponse.Delta = &shared.ClaudeMediaMessage{
 						Type:     "thinking_delta",
 						Thinking: &reasoning,
 					}
@@ -869,10 +869,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 					flushPendingThinkingSignature(true)
 					stopOpenBlocksAndAdvance()
 					idx := info.ClaudeConvertInfo.Index
-					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+					claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 						Index: &idx,
 						Type:  "content_block_start",
-						ContentBlock: &dto.ClaudeMediaMessage{
+						ContentBlock: &shared.ClaudeMediaMessage{
 							Type: "redacted_thinking",
 							Data: redactedReasoning,
 						},
@@ -884,17 +884,17 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeText {
 						stopOpenBlocksAndAdvance()
 						idx := info.ClaudeConvertInfo.Index
-						claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 							Index: &idx,
 							Type:  "content_block_start",
-							ContentBlock: &dto.ClaudeMediaMessage{
+							ContentBlock: &shared.ClaudeMediaMessage{
 								Type: "text",
 								Text: common.GetPointer[string](""),
 							},
 						})
 					}
 					info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeText
-					claudeResponse.Delta = &dto.ClaudeMediaMessage{
+					claudeResponse.Delta = &shared.ClaudeMediaMessage{
 						Type: "text_delta",
 						Text: common.GetPointer[string](textContent),
 					}
@@ -921,15 +921,15 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			}
 			if oaiUsage != nil {
 				claudeUsage := buildClaudeUsageFromOpenAIUsage(oaiUsage)
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 					Type:  "message_delta",
 					Usage: claudeUsage,
-					Delta: &dto.ClaudeMediaMessage{
+					Delta: &shared.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
 					},
 				})
 			}
-			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			claudeResponses = append(claudeResponses, &shared.ClaudeResponse{
 				Type: "message_stop",
 			})
 			info.ClaudeConvertInfo.Done = true
@@ -940,10 +940,10 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 	return claudeResponses
 }
 
-func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relaycommon.RelayInfo) *dto.ClaudeResponse {
+func ResponseOpenAI2Claude(openAIResponse *shared.OpenAITextResponse, info *relaycommon.RelayInfo) *shared.ClaudeResponse {
 	var stopReason string
-	contents := make([]dto.ClaudeMediaMessage, 0)
-	claudeResponse := &dto.ClaudeResponse{
+	contents := make([]shared.ClaudeMediaMessage, 0)
+	claudeResponse := &shared.ClaudeResponse{
 		Id:    openAIResponse.Id,
 		Type:  "message",
 		Role:  "assistant",
@@ -954,19 +954,19 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 
 		reasoningText := choice.Message.GetReasoningContent()
 		if reasoningText != "" || choice.Message.ReasoningSignature != "" {
-			claudeContent := dto.ClaudeMediaMessage{Type: "thinking", Signature: choice.Message.ReasoningSignature}
+			claudeContent := shared.ClaudeMediaMessage{Type: "thinking", Signature: choice.Message.ReasoningSignature}
 			claudeContent.Thinking = common.GetPointer[string](reasoningText)
 			contents = append(contents, claudeContent)
 		}
 		if choice.Message.RedactedReasoningContent != "" {
-			contents = append(contents, dto.ClaudeMediaMessage{
+			contents = append(contents, shared.ClaudeMediaMessage{
 				Type: "redacted_thinking",
 				Data: choice.Message.RedactedReasoningContent,
 			})
 		}
 
 		for _, toolUse := range choice.Message.ParseToolCalls() {
-			claudeContent := dto.ClaudeMediaMessage{Type: "tool_use", Id: toolUse.ID, Name: toolUse.Function.Name}
+			claudeContent := shared.ClaudeMediaMessage{Type: "tool_use", Id: toolUse.ID, Name: toolUse.Function.Name}
 			var mapParams map[string]interface{}
 			if err := jsonx.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
 				claudeContent.Input = mapParams
@@ -979,7 +979,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 		if choice.Message.IsStringContent() {
 			text := choice.Message.StringContent()
 			if text != "" {
-				claudeContent := dto.ClaudeMediaMessage{Type: "text"}
+				claudeContent := shared.ClaudeMediaMessage{Type: "text"}
 				claudeContent.SetText(text)
 				contents = append(contents, claudeContent)
 			}
@@ -989,7 +989,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 		for _, media := range choice.Message.ParseContent() {
 			switch media.Type {
 			case "text":
-				claudeContent := dto.ClaudeMediaMessage{Type: "text"}
+				claudeContent := shared.ClaudeMediaMessage{Type: "text"}
 				claudeContent.SetText(media.Text)
 				contents = append(contents, claudeContent)
 			case "image_url":
@@ -997,7 +997,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 				if imageURL == nil || imageURL.Url == "" {
 					continue
 				}
-				claudeContent := dto.ClaudeMediaMessage{Type: "image", Source: &dto.ClaudeMessageSource{}}
+				claudeContent := shared.ClaudeMediaMessage{Type: "image", Source: &shared.ClaudeMessageSource{}}
 				if strings.HasPrefix(imageURL.Url, "data:") {
 					mimeType := imageURL.MimeType
 					base64Data := imageURL.Url
@@ -1038,8 +1038,8 @@ func toJSONString(v interface{}) string {
 	return string(b)
 }
 
-func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycommon.RelayInfo) (*dto.GeneralOpenAIRequest, error) {
-	openaiRequest := &dto.GeneralOpenAIRequest{
+func GeminiToOpenAIRequest(geminiRequest *shared.GeminiChatRequest, info *relaycommon.RelayInfo) (*shared.GeneralOpenAIRequest, error) {
+	openaiRequest := &shared.GeneralOpenAIRequest{
 		Model:  info.UpstreamModelName,
 		Stream: info.IsStream,
 	}
@@ -1060,17 +1060,17 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 	}
 
 	// 转换 messages
-	var messages []dto.Message
+	var messages []shared.Message
 	toolCallCounter := 0
 	toolCallIDsByName := make(map[string][]string)
 	for _, content := range geminiRequest.Contents {
-		message := dto.Message{
+		message := shared.Message{
 			Role: convertGeminiRoleToOpenAI(content.Role),
 		}
 
 		// 处理 parts
-		var mediaContents []dto.MediaContent
-		var toolCalls []dto.ToolCallRequest
+		var mediaContents []shared.MediaContent
+		var toolCalls []shared.ToolCallRequest
 		var reasoningTexts []string
 		reasoningSignature := ""
 		for _, part := range content.Parts {
@@ -1084,15 +1084,15 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 				continue
 			}
 			if part.Text != "" {
-				mediaContent := dto.MediaContent{
+				mediaContent := shared.MediaContent{
 					Type: "text",
 					Text: part.Text,
 				}
 				mediaContents = append(mediaContents, mediaContent)
 			} else if part.InlineData != nil {
-				mediaContent := dto.MediaContent{
+				mediaContent := shared.MediaContent{
 					Type: "image_url",
-					ImageUrl: &dto.MessageImageUrl{
+					ImageUrl: &shared.MessageImageUrl{
 						Url:      fmt.Sprintf("data:%s;base64,%s", part.InlineData.MimeType, part.InlineData.Data),
 						Detail:   "auto",
 						MimeType: part.InlineData.MimeType,
@@ -1100,9 +1100,9 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 				}
 				mediaContents = append(mediaContents, mediaContent)
 			} else if part.FileData != nil {
-				mediaContent := dto.MediaContent{
+				mediaContent := shared.MediaContent{
 					Type: "image_url",
-					ImageUrl: &dto.MessageImageUrl{
+					ImageUrl: &shared.MessageImageUrl{
 						Url:      part.FileData.FileUri,
 						Detail:   "auto",
 						MimeType: part.FileData.MimeType,
@@ -1113,10 +1113,10 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 				// 处理 Gemini 的工具调用
 				toolCallCounter++
 				toolCallID := fmt.Sprintf("call_%d", toolCallCounter)
-				toolCall := dto.ToolCallRequest{
+				toolCall := shared.ToolCallRequest{
 					ID:   toolCallID,
 					Type: "function",
-					Function: dto.FunctionRequest{
+					Function: shared.FunctionRequest{
 						Name:      part.FunctionCall.FunctionName,
 						Arguments: toJSONString(part.FunctionCall.Arguments),
 					},
@@ -1134,7 +1134,7 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 					toolCallID = queuedIDs[0]
 					toolCallIDsByName[part.FunctionResponse.Name] = queuedIDs[1:]
 				}
-				toolMessage := dto.Message{
+				toolMessage := shared.Message{
 					Role:       "tool",
 					ToolCallId: toolCallID,
 				}
@@ -1191,18 +1191,18 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 
 	// 转换工具调用
 	if len(geminiRequest.GetTools()) > 0 {
-		var tools []dto.ToolCallRequest
+		var tools []shared.ToolCallRequest
 		for _, tool := range geminiRequest.GetTools() {
 			if tool.FunctionDeclarations != nil {
-				functionDeclarations, err := common.Any2Type[[]dto.FunctionRequest](tool.FunctionDeclarations)
+				functionDeclarations, err := common.Any2Type[[]shared.FunctionRequest](tool.FunctionDeclarations)
 				if err != nil {
 					common.SysError(fmt.Sprintf("failed to parse gemini function declarations: %v (type=%T)", err, tool.FunctionDeclarations))
 					continue
 				}
 				for _, function := range functionDeclarations {
-					openAITool := dto.ToolCallRequest{
+					openAITool := shared.ToolCallRequest{
 						Type: "function",
-						Function: dto.FunctionRequest{
+						Function: shared.FunctionRequest{
 							Name:        function.Name,
 							Description: function.Description,
 							Parameters:  function.Parameters,
@@ -1221,11 +1221,11 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 	// gemini system instructions
 	if geminiRequest.SystemInstructions != nil {
 		// 将系统指令作为第一条消息插入
-		systemMessage := dto.Message{
+		systemMessage := shared.Message{
 			Role:    "system",
 			Content: extractTextFromGeminiParts(geminiRequest.SystemInstructions.Parts),
 		}
-		openaiRequest.Messages = append([]dto.Message{systemMessage}, openaiRequest.Messages...)
+		openaiRequest.Messages = append([]shared.Message{systemMessage}, openaiRequest.Messages...)
 	}
 
 	return openaiRequest, nil
@@ -1244,7 +1244,7 @@ func convertGeminiRoleToOpenAI(geminiRole string) string {
 	}
 }
 
-func extractTextFromGeminiParts(parts []dto.GeminiPart) string {
+func extractTextFromGeminiParts(parts []shared.GeminiPart) string {
 	var texts []string
 	for _, part := range parts {
 		if part.Text != "" {
@@ -1255,16 +1255,16 @@ func extractTextFromGeminiParts(parts []dto.GeminiPart) string {
 }
 
 // ResponseOpenAI2Gemini 将 OpenAI 响应转换为 Gemini 格式
-func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relaycommon.RelayInfo) *dto.GeminiChatResponse {
-	geminiResponse := &dto.GeminiChatResponse{
-		Candidates:    make([]dto.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
+func ResponseOpenAI2Gemini(openAIResponse *shared.OpenAITextResponse, info *relaycommon.RelayInfo) *shared.GeminiChatResponse {
+	geminiResponse := &shared.GeminiChatResponse{
+		Candidates:    make([]shared.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
 		UsageMetadata: OpenAIUsageToGeminiUsage(openAIResponse.Usage),
 	}
 
 	for _, choice := range openAIResponse.Choices {
-		candidate := dto.GeminiChatCandidate{
+		candidate := shared.GeminiChatCandidate{
 			Index:         int64(choice.Index),
-			SafetyRatings: []dto.GeminiChatSafetyRating{},
+			SafetyRatings: []shared.GeminiChatSafetyRating{},
 		}
 
 		// 设置结束原因
@@ -1284,14 +1284,14 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 		candidate.FinishReason = &finishReason
 
 		// 转换消息内容
-		content := dto.GeminiChatContent{
+		content := shared.GeminiChatContent{
 			Role:  "model",
-			Parts: make([]dto.GeminiPart, 0),
+			Parts: make([]shared.GeminiPart, 0),
 		}
 
 		reasoningContent := choice.Message.GetReasoningContent()
 		if reasoningContent != "" || choice.Message.ReasoningSignature != "" {
-			thoughtPart := dto.GeminiPart{
+			thoughtPart := shared.GeminiPart{
 				Text:    reasoningContent,
 				Thought: true,
 			}
@@ -1300,12 +1300,12 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 		}
 
 		if textContent := choice.Message.StringContent(); textContent != "" {
-			content.Parts = append(content.Parts, dto.GeminiPart{Text: textContent})
+			content.Parts = append(content.Parts, shared.GeminiPart{Text: textContent})
 		}
 
 		for _, toolCall := range choice.Message.ParseToolCalls() {
-			content.Parts = append(content.Parts, dto.GeminiPart{
-				FunctionCall: &dto.FunctionCall{
+			content.Parts = append(content.Parts, shared.GeminiPart{
+				FunctionCall: &shared.FunctionCall{
 					FunctionName: toolCall.Function.Name,
 					Arguments:    parseOpenAIFunctionArguments(toolCall.Function.Arguments),
 				},
@@ -1352,10 +1352,10 @@ func ensureGeminiChoiceToolCallState[K any](state map[int]map[int]K, choiceIndex
 }
 
 // StreamResponseOpenAI2Gemini 将 OpenAI 流式响应转换为 Gemini 格式
-func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) *dto.GeminiChatResponse {
-	geminiResponse := &dto.GeminiChatResponse{
-		Candidates: make([]dto.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
-		UsageMetadata: dto.GeminiUsageMetadata{
+func StreamResponseOpenAI2Gemini(openAIResponse *shared.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) *shared.GeminiChatResponse {
+	geminiResponse := &shared.GeminiChatResponse{
+		Candidates: make([]shared.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
+		UsageMetadata: shared.GeminiUsageMetadata{
 			PromptTokenCount:     info.GetEstimatePromptTokens(),
 			CandidatesTokenCount: 0, // 流式响应中可能没有完整的 usage 信息
 			TotalTokenCount:      info.GetEstimatePromptTokens(),
@@ -1371,9 +1371,9 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 	toolState := ensureGeminiConvertInfo(info)
 
 	for _, choice := range openAIResponse.Choices {
-		candidate := dto.GeminiChatCandidate{
+		candidate := shared.GeminiChatCandidate{
 			Index:         int64(choice.Index),
-			SafetyRatings: []dto.GeminiChatSafetyRating{},
+			SafetyRatings: []shared.GeminiChatSafetyRating{},
 		}
 
 		// 设置结束原因
@@ -1395,9 +1395,9 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 		}
 
 		// 转换消息内容
-		content := dto.GeminiChatContent{
+		content := shared.GeminiChatContent{
 			Role:  "model",
-			Parts: make([]dto.GeminiPart, 0),
+			Parts: make([]shared.GeminiPart, 0),
 		}
 
 		reasoningContent := choice.Delta.GetReasoningContent()
@@ -1406,7 +1406,7 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 			reasoningSignature = *choice.Delta.ReasoningSignature
 		}
 		if reasoningContent != "" || reasoningSignature != "" {
-			thoughtPart := dto.GeminiPart{
+			thoughtPart := shared.GeminiPart{
 				Text:    reasoningContent,
 				Thought: true,
 			}
@@ -1415,7 +1415,7 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 		}
 
 		if textContent := choice.Delta.GetContentString(); textContent != "" {
-			content.Parts = append(content.Parts, dto.GeminiPart{Text: textContent})
+			content.Parts = append(content.Parts, shared.GeminiPart{Text: textContent})
 		}
 
 		argsState := ensureGeminiChoiceToolCallState(toolState.ToolCallArguments, choice.Index)
@@ -1453,8 +1453,8 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 				continue
 			}
 
-			content.Parts = append(content.Parts, dto.GeminiPart{
-				FunctionCall: &dto.FunctionCall{
+			content.Parts = append(content.Parts, shared.GeminiPart{
+				FunctionCall: &shared.FunctionCall{
 					FunctionName: functionName,
 					Arguments:    parseOpenAIFunctionArguments(aggregatedArgs),
 				},

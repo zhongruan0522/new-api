@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +20,7 @@ func TestOpenaiHandlerCountsLlamaCachedTokensFromTimings(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 
 	info := &relaycommon.RelayInfo{
-		RelayFormat: types.RelayFormatOpenAI,
+		RelayFormat: relayconstant.RelayFormatOpenAI,
 		ChannelMeta: &relaycommon.ChannelMeta{
 			ChannelType:       constant.ChannelTypeOpenAI,
 			UpstreamModelName: "llama-3.1-8b",

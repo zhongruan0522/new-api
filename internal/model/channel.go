@@ -10,9 +10,8 @@ import (
 	"sync"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/samber/lo"
@@ -172,7 +171,7 @@ func (channel *Channel) DetectPlan() {
 	channel.ChannelInfo.PlanName = planName
 }
 
-func (channel *Channel) GetNextEnabledKey() (string, int, *types.NookMuxError) {
+func (channel *Channel) GetNextEnabledKey() (string, int, *shared.NookMuxError) {
 	// If not in multi-key mode, return the original key string directly.
 	if !channel.ChannelInfo.IsMultiKey {
 		return channel.Key, 0, nil
@@ -182,7 +181,7 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NookMuxError) {
 	keys := channel.GetKeys()
 	if len(keys) == 0 {
 		// No keys available, return error, should disable the channel
-		return "", 0, types.NewError(errors.New("no keys available"), types.ErrorCodeChannelNoAvailableKey)
+		return "", 0, shared.NewError(errors.New("no keys available"), shared.ErrorCodeChannelNoAvailableKey)
 	}
 
 	lock := GetChannelPollingLock(channel.Id)
@@ -212,7 +211,7 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NookMuxError) {
 	// properly handle a channel with no available keys (e.g. mark channel disabled).
 	// Returning the first key here caused requests to keep using an already-disabled key.
 	if len(enabledIdx) == 0 {
-		return "", 0, types.NewError(errors.New("no enabled keys"), types.ErrorCodeChannelNoAvailableKey)
+		return "", 0, shared.NewError(errors.New("no enabled keys"), shared.ErrorCodeChannelNoAvailableKey)
 	}
 
 	switch channel.ChannelInfo.MultiKeyMode {
@@ -225,7 +224,7 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NookMuxError) {
 
 		channelInfo, err := CacheGetChannelInfo(channel.Id)
 		if err != nil {
-			return "", 0, types.NewError(err, types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
+			return "", 0, shared.NewError(err, shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry())
 		}
 		//println("before polling index:", channel.ChannelInfo.MultiKeyPollingIndex)
 		defer func() {
@@ -1031,7 +1030,7 @@ func SearchTags(keyword string, group string, model string, idSort bool, idFilte
 }
 
 func (channel *Channel) ValidateSettings() error {
-	channelParams := &dto.ChannelSettings{}
+	channelParams := &shared.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
 		err := jsonx.Unmarshal([]byte(*channel.Setting), channelParams)
 		if err != nil {
@@ -1051,7 +1050,7 @@ func (channel *Channel) ValidateSettings() error {
 	}
 
 	if channel.OtherSettings != "" {
-		otherSettings := &dto.ChannelOtherSettings{}
+		otherSettings := &shared.ChannelOtherSettings{}
 		if err := jsonx.UnmarshalJsonStr(channel.OtherSettings, otherSettings); err != nil {
 			return err
 		}
@@ -1119,8 +1118,8 @@ func normalizeOptionalJSONPointer(value *string) *string {
 	return &trimmed
 }
 
-func (channel *Channel) GetSetting() dto.ChannelSettings {
-	setting := dto.ChannelSettings{}
+func (channel *Channel) GetSetting() shared.ChannelSettings {
+	setting := shared.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
 		raw := []byte(*channel.Setting)
 		err := jsonx.Unmarshal(raw, &setting)
@@ -1129,7 +1128,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 			channel.Setting = nil // 清空设置以避免后续错误
 			_ = channel.Save()    // 保存修改
 			setting.PassThroughHeadersEnabled = true
-			setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
+			setting.OpenAIWireAPI = shared.OpenAIWireAPIBoth
 			return setting
 		}
 
@@ -1142,17 +1141,17 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 				setting.PassThroughHeadersEnabled = true
 			}
 			if _, ok := rawMap["openai_wire_api"]; !ok {
-				setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
+				setting.OpenAIWireAPI = shared.OpenAIWireAPIBoth
 			}
 		}
 	} else {
 		setting.PassThroughHeadersEnabled = true
-		setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
+		setting.OpenAIWireAPI = shared.OpenAIWireAPIBoth
 	}
 	return setting
 }
 
-func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
+func (channel *Channel) SetSetting(setting shared.ChannelSettings) {
 	settingBytes, err := jsonx.Marshal(setting)
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to marshal setting: channel_id=%d, error=%v", channel.Id, err))
@@ -1161,8 +1160,8 @@ func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
 	channel.Setting = common.GetPointer[string](string(settingBytes))
 }
 
-func (channel *Channel) GetOtherSettings() dto.ChannelOtherSettings {
-	setting := dto.ChannelOtherSettings{}
+func (channel *Channel) GetOtherSettings() shared.ChannelOtherSettings {
+	setting := shared.ChannelOtherSettings{}
 	if channel.OtherSettings != "" {
 		err := jsonx.UnmarshalJsonStr(channel.OtherSettings, &setting)
 		if err != nil {
@@ -1174,7 +1173,7 @@ func (channel *Channel) GetOtherSettings() dto.ChannelOtherSettings {
 	return setting
 }
 
-func (channel *Channel) SetOtherSettings(setting dto.ChannelOtherSettings) {
+func (channel *Channel) SetOtherSettings(setting shared.ChannelOtherSettings) {
 	settingBytes, err := jsonx.Marshal(setting)
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to marshal setting: channel_id=%d, error=%v", channel.Id, err))

@@ -13,7 +13,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
@@ -1043,7 +1043,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 验证预警类型
-	if req.QuotaWarningType != dto.NotifyTypeEmail && req.QuotaWarningType != dto.NotifyTypeWebhook && req.QuotaWarningType != dto.NotifyTypeBark && req.QuotaWarningType != dto.NotifyTypeGotify {
+	if req.QuotaWarningType != shared.NotifyTypeEmail && req.QuotaWarningType != shared.NotifyTypeWebhook && req.QuotaWarningType != shared.NotifyTypeBark && req.QuotaWarningType != shared.NotifyTypeGotify {
 		common.ApiErrorI18n(c, i18n.MsgSettingInvalidType)
 		return
 	}
@@ -1055,7 +1055,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是webhook类型,验证webhook地址
-	if req.QuotaWarningType == dto.NotifyTypeWebhook {
+	if req.QuotaWarningType == shared.NotifyTypeWebhook {
 		if req.WebhookUrl == "" {
 			common.ApiErrorI18n(c, i18n.MsgSettingWebhookEmpty)
 			return
@@ -1068,7 +1068,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是邮件类型，验证邮箱地址
-	if req.QuotaWarningType == dto.NotifyTypeEmail && req.NotificationEmail != "" {
+	if req.QuotaWarningType == shared.NotifyTypeEmail && req.NotificationEmail != "" {
 		// 验证邮箱格式
 		if !strings.Contains(req.NotificationEmail, "@") {
 			common.ApiErrorI18n(c, i18n.MsgSettingEmailInvalid)
@@ -1077,7 +1077,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是Bark类型，验证Bark URL
-	if req.QuotaWarningType == dto.NotifyTypeBark {
+	if req.QuotaWarningType == shared.NotifyTypeBark {
 		if req.BarkUrl == "" {
 			common.ApiErrorI18n(c, i18n.MsgSettingBarkUrlEmpty)
 			return
@@ -1095,7 +1095,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是Gotify类型，验证Gotify URL和Token
-	if req.QuotaWarningType == dto.NotifyTypeGotify {
+	if req.QuotaWarningType == shared.NotifyTypeGotify {
 		if req.GotifyUrl == "" {
 			common.ApiErrorI18n(c, i18n.MsgSettingGotifyUrlEmpty)
 			return
@@ -1125,13 +1125,13 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 构建设置
-	settings := dto.UserSetting{
+	settings := shared.UserSetting{
 		NotifyType:            req.QuotaWarningType,
 		QuotaWarningThreshold: req.QuotaWarningThreshold,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置
-	if req.QuotaWarningType == dto.NotifyTypeWebhook {
+	if req.QuotaWarningType == shared.NotifyTypeWebhook {
 		settings.WebhookUrl = req.WebhookUrl
 		if req.WebhookSecret != "" {
 			settings.WebhookSecret = req.WebhookSecret
@@ -1139,17 +1139,17 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果提供了通知邮箱，添加到设置中
-	if req.QuotaWarningType == dto.NotifyTypeEmail && req.NotificationEmail != "" {
+	if req.QuotaWarningType == shared.NotifyTypeEmail && req.NotificationEmail != "" {
 		settings.NotificationEmail = req.NotificationEmail
 	}
 
 	// 如果是Bark类型，添加Bark URL到设置中
-	if req.QuotaWarningType == dto.NotifyTypeBark {
+	if req.QuotaWarningType == shared.NotifyTypeBark {
 		settings.BarkUrl = req.BarkUrl
 	}
 
 	// 如果是Gotify类型，添加Gotify配置到设置中
-	if req.QuotaWarningType == dto.NotifyTypeGotify {
+	if req.QuotaWarningType == shared.NotifyTypeGotify {
 		settings.GotifyUrl = req.GotifyUrl
 		settings.GotifyToken = req.GotifyToken
 		// Gotify优先级范围0-10，超出范围则使用默认值5

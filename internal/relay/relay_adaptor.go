@@ -1,7 +1,7 @@
 package relay
 
 import (
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/relay/channel"
 	"github.com/NookMux/NookMux/internal/relay/channel/aws"
 	"github.com/NookMux/NookMux/internal/relay/channel/bytedance"

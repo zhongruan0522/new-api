@@ -8,7 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/relay"
@@ -16,41 +16,42 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel/moonshot"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
 
-var openAIModels []dto.OpenAIModels
-var openAIModelsMap map[string]dto.OpenAIModels
+var openAIModels []shared.OpenAIModels
+var openAIModelsMap map[string]shared.OpenAIModels
 var channelId2Models map[int][]string
 
 func init() {
 	// 硬编码所有有效的 APIType，避免遍历已删除的稀疏槽位导致 nil panic
 	allAPITypes := []int{
-		constant.APITypeOpenAI,
-		constant.APITypeAnthropic,
-		constant.APITypeGemini,
-		constant.APITypeZhipuV4,
-		constant.APITypeOllama,
-		constant.APITypeAws,
-		constant.APITypeSiliconFlow,
-		constant.APITypeVertexAi,
-		constant.APITypeDeepSeek,
-		constant.APITypeOpenRouter,
-		constant.APITypeMoonshot,
-		constant.APITypeMiniMax,
-		constant.APITypeXiaomi,
-		constant.APITypeByteDance,
+		channelconstant.APITypeOpenAI,
+		channelconstant.APITypeAnthropic,
+		channelconstant.APITypeGemini,
+		channelconstant.APITypeZhipuV4,
+		channelconstant.APITypeOllama,
+		channelconstant.APITypeAws,
+		channelconstant.APITypeSiliconFlow,
+		channelconstant.APITypeVertexAi,
+		channelconstant.APITypeDeepSeek,
+		channelconstant.APITypeOpenRouter,
+		channelconstant.APITypeMoonshot,
+		channelconstant.APITypeMiniMax,
+		channelconstant.APITypeXiaomi,
+		channelconstant.APITypeByteDance,
 	}
 	for _, apiType := range allAPITypes {
 		adaptor := relay.GetAdaptor(apiType)
 		channelName := adaptor.GetChannelName()
 		modelNames := adaptor.GetModelList()
 		for _, modelName := range modelNames {
-			openAIModels = append(openAIModels, dto.OpenAIModels{
+			openAIModels = append(openAIModels, shared.OpenAIModels{
 				Id:      modelName,
 				Object:  "model",
 				Created: 1626777600,
@@ -59,7 +60,7 @@ func init() {
 		}
 	}
 	for _, modelName := range moonshot.ModelList {
-		openAIModels = append(openAIModels, dto.OpenAIModels{
+		openAIModels = append(openAIModels, shared.OpenAIModels{
 			Id:      modelName,
 			Object:  "model",
 			Created: 1626777600,
@@ -67,19 +68,19 @@ func init() {
 		})
 	}
 	for _, modelName := range minimax.ModelList {
-		openAIModels = append(openAIModels, dto.OpenAIModels{
+		openAIModels = append(openAIModels, shared.OpenAIModels{
 			Id:      modelName,
 			Object:  "model",
 			Created: 1626777600,
 			OwnedBy: minimax.ChannelName,
 		})
 	}
-	openAIModelsMap = make(map[string]dto.OpenAIModels)
+	openAIModelsMap = make(map[string]shared.OpenAIModels)
 	for _, aiModel := range openAIModels {
 		openAIModelsMap[aiModel.Id] = aiModel
 	}
 	channelId2Models = make(map[int][]string)
-	for i := 1; i <= constant.ChannelTypeDummy; i++ {
+	for i := 1; i <= channelconstant.ChannelTypeDummy; i++ {
 		apiType, success := common.ChannelType2APIType(i)
 		if !success {
 			continue
@@ -91,13 +92,13 @@ func init() {
 		adaptor.Init(meta)
 		channelId2Models[i] = adaptor.GetModelList()
 	}
-	openAIModels = lo.UniqBy(openAIModels, func(m dto.OpenAIModels) string {
+	openAIModels = lo.UniqBy(openAIModels, func(m shared.OpenAIModels) string {
 		return m.Id
 	})
 }
 
 func ListModels(c *gin.Context, modelType int) {
-	userOpenAiModels := make([]dto.OpenAIModels, 0)
+	userOpenAiModels := make([]shared.OpenAIModels, 0)
 
 	modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)
 	if modelLimitEnable {
@@ -117,7 +118,7 @@ func ListModels(c *gin.Context, modelType int) {
 				oaiModel.SupportedEndpointTypes = model.GetModelSupportEndpointTypes(allowModel)
 				userOpenAiModels = append(userOpenAiModels, oaiModel)
 			} else {
-				userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
+				userOpenAiModels = append(userOpenAiModels, shared.OpenAIModels{
 					Id:                     allowModel,
 					Object:                 "model",
 					Created:                1626777600,
@@ -163,7 +164,7 @@ func ListModels(c *gin.Context, modelType int) {
 				oaiModel.SupportedEndpointTypes = model.GetModelSupportEndpointTypes(modelName)
 				userOpenAiModels = append(userOpenAiModels, oaiModel)
 			} else {
-				userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
+				userOpenAiModels = append(userOpenAiModels, shared.OpenAIModels{
 					Id:                     modelName,
 					Object:                 "model",
 					Created:                1626777600,
@@ -175,10 +176,10 @@ func ListModels(c *gin.Context, modelType int) {
 	}
 
 	switch modelType {
-	case constant.ChannelTypeAnthropic:
-		useranthropicModels := make([]dto.AnthropicModel, len(userOpenAiModels))
+	case channelconstant.ChannelTypeAnthropic:
+		useranthropicModels := make([]shared.AnthropicModel, len(userOpenAiModels))
 		for i, model := range userOpenAiModels {
-			useranthropicModels[i] = dto.AnthropicModel{
+			useranthropicModels[i] = shared.AnthropicModel{
 				ID:          model.Id,
 				CreatedAt:   time.Unix(int64(model.Created), 0).UTC().Format(time.RFC3339),
 				DisplayName: model.Id,
@@ -191,10 +192,10 @@ func ListModels(c *gin.Context, modelType int) {
 			"has_more": false,
 			"last_id":  useranthropicModels[len(useranthropicModels)-1].ID,
 		})
-	case constant.ChannelTypeGemini:
-		userGeminiModels := make([]dto.GeminiModel, len(userOpenAiModels))
+	case channelconstant.ChannelTypeGemini:
+		userGeminiModels := make([]shared.GeminiModel, len(userOpenAiModels))
 		for i, model := range userOpenAiModels {
-			userGeminiModels[i] = dto.GeminiModel{
+			userGeminiModels[i] = shared.GeminiModel{
 				Name:        model.Id,
 				DisplayName: model.Id,
 			}
@@ -237,8 +238,8 @@ func RetrieveModel(c *gin.Context, modelType int) {
 	modelId := c.Param("model")
 	if aiModel, ok := openAIModelsMap[modelId]; ok {
 		switch modelType {
-		case constant.ChannelTypeAnthropic:
-			c.JSON(200, dto.AnthropicModel{
+		case channelconstant.ChannelTypeAnthropic:
+			c.JSON(200, shared.AnthropicModel{
 				ID:          aiModel.Id,
 				CreatedAt:   time.Unix(int64(aiModel.Created), 0).UTC().Format(time.RFC3339),
 				DisplayName: aiModel.Id,
@@ -248,7 +249,7 @@ func RetrieveModel(c *gin.Context, modelType int) {
 			c.JSON(200, aiModel)
 		}
 	} else {
-		openAIError := types.OpenAIError{
+		openAIError := shared.OpenAIError{
 			Message: fmt.Sprintf("The model '%s' does not exist", modelId),
 			Type:    "invalid_request_error",
 			Param:   "model",

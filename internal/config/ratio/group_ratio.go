@@ -6,7 +6,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/manager"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 var defaultGroupRatio = map[string]float64{
@@ -15,7 +15,7 @@ var defaultGroupRatio = map[string]float64{
 	"svip":    1,
 }
 
-var groupRatioMap = types.NewRWMap[string, float64]()
+var groupRatioMap = shared.NewRWMap[string, float64]()
 
 var defaultGroupGroupRatio = map[string]map[string]float64{
 	"vip": {
@@ -23,7 +23,7 @@ var defaultGroupGroupRatio = map[string]map[string]float64{
 	},
 }
 
-var groupGroupRatioMap = types.NewRWMap[string, map[string]float64]()
+var groupGroupRatioMap = shared.NewRWMap[string, map[string]float64]()
 
 var defaultGroupSpecialUsableGroup = map[string]map[string]string{
 	"vip": {
@@ -33,15 +33,15 @@ var defaultGroupSpecialUsableGroup = map[string]map[string]string{
 }
 
 type GroupRatioSetting struct {
-	GroupRatio              *types.RWMap[string, float64]            `json:"group_ratio"`
-	GroupGroupRatio         *types.RWMap[string, map[string]float64] `json:"group_group_ratio"`
-	GroupSpecialUsableGroup *types.RWMap[string, map[string]string]  `json:"group_special_usable_group"`
+	GroupRatio              *shared.RWMap[string, float64]            `json:"group_ratio"`
+	GroupGroupRatio         *shared.RWMap[string, map[string]float64] `json:"group_group_ratio"`
+	GroupSpecialUsableGroup *shared.RWMap[string, map[string]string]  `json:"group_special_usable_group"`
 }
 
 var groupRatioSetting GroupRatioSetting
 
 func init() {
-	groupSpecialUsableGroup := types.NewRWMap[string, map[string]string]()
+	groupSpecialUsableGroup := shared.NewRWMap[string, map[string]string]()
 	groupSpecialUsableGroup.AddAll(defaultGroupSpecialUsableGroup)
 
 	groupRatioMap.AddAll(defaultGroupRatio)
@@ -58,7 +58,7 @@ func init() {
 
 func GetGroupRatioSetting() *GroupRatioSetting {
 	if groupRatioSetting.GroupSpecialUsableGroup == nil {
-		groupRatioSetting.GroupSpecialUsableGroup = types.NewRWMap[string, map[string]string]()
+		groupRatioSetting.GroupSpecialUsableGroup = shared.NewRWMap[string, map[string]string]()
 		groupRatioSetting.GroupSpecialUsableGroup.AddAll(defaultGroupSpecialUsableGroup)
 	}
 	return &groupRatioSetting
@@ -78,7 +78,7 @@ func GroupRatio2JSONString() string {
 }
 
 func UpdateGroupRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(groupRatioMap, jsonStr)
+	return shared.LoadFromJsonString(groupRatioMap, jsonStr)
 }
 
 func GetGroupRatio(name string) float64 {
@@ -107,7 +107,7 @@ func GroupGroupRatio2JSONString() string {
 }
 
 func UpdateGroupGroupRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(groupGroupRatioMap, jsonStr)
+	return shared.LoadFromJsonString(groupGroupRatioMap, jsonStr)
 }
 
 func CheckGroupRatio(jsonStr string) error {

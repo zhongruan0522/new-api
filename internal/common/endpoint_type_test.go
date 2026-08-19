@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 )
 
 func TestGetEndpointTypesByChannelTypeForOllama(t *testing.T) {

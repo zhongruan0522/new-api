@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
@@ -17,13 +17,13 @@ func TestConvertOpenAIRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 			UpstreamModelName: "deepseek-v4-pro-max",
 		},
 	}
-	request := &dto.GeneralOpenAIRequest{Model: "deepseek-v4-pro-max"}
+	request := &shared.GeneralOpenAIRequest{Model: "deepseek-v4-pro-max"}
 
 	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, request)
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted := convertedAny.(*dto.GeneralOpenAIRequest)
+	converted := convertedAny.(*shared.GeneralOpenAIRequest)
 
 	if converted.Model != "deepseek-v4-pro" {
 		t.Fatalf("model = %q, want deepseek-v4-pro", converted.Model)
@@ -47,13 +47,13 @@ func TestConvertOpenAIRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 }
 
 func TestConvertOpenAIRequestAppliesDeepSeekV4NoneSuffix(t *testing.T) {
-	request := &dto.GeneralOpenAIRequest{Model: "deepseek-v4-flash-none"}
+	request := &shared.GeneralOpenAIRequest{Model: "deepseek-v4-flash-none"}
 
 	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, nil, request)
 	if err != nil {
 		t.Fatalf("ConvertOpenAIRequest error = %v", err)
 	}
-	converted := convertedAny.(*dto.GeneralOpenAIRequest)
+	converted := convertedAny.(*shared.GeneralOpenAIRequest)
 
 	if converted.Model != "deepseek-v4-flash" {
 		t.Fatalf("model = %q, want deepseek-v4-flash", converted.Model)
@@ -77,13 +77,13 @@ func TestConvertClaudeRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 			UpstreamModelName: "deepseek-v4-pro-max",
 		},
 	}
-	request := &dto.ClaudeRequest{Model: "deepseek-v4-pro-max"}
+	request := &shared.ClaudeRequest{Model: "deepseek-v4-pro-max"}
 
 	convertedAny, err := (&Adaptor{}).ConvertClaudeRequest(nil, info, request)
 	if err != nil {
 		t.Fatalf("ConvertClaudeRequest error = %v", err)
 	}
-	converted := convertedAny.(*dto.ClaudeRequest)
+	converted := convertedAny.(*shared.ClaudeRequest)
 
 	if converted.Model != "deepseek-v4-pro" {
 		t.Fatalf("model = %q, want deepseek-v4-pro", converted.Model)
@@ -91,7 +91,7 @@ func TestConvertClaudeRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 	if converted.Thinking == nil || converted.Thinking.Type != "enabled" {
 		t.Fatalf("thinking = %+v, want enabled", converted.Thinking)
 	}
-	var outputConfig dto.ClaudeOutputConfig
+	var outputConfig shared.ClaudeOutputConfig
 	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
@@ -104,7 +104,7 @@ func TestConvertClaudeRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 }
 
 func TestConvertClaudeRequestAppliesDeepSeekV4NoneSuffix(t *testing.T) {
-	request := &dto.ClaudeRequest{
+	request := &shared.ClaudeRequest{
 		Model:        "deepseek-v4-flash-none",
 		OutputConfig: json.RawMessage(`{"effort":"max"}`),
 	}
@@ -113,7 +113,7 @@ func TestConvertClaudeRequestAppliesDeepSeekV4NoneSuffix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConvertClaudeRequest error = %v", err)
 	}
-	converted := convertedAny.(*dto.ClaudeRequest)
+	converted := convertedAny.(*shared.ClaudeRequest)
 
 	if converted.Model != "deepseek-v4-flash" {
 		t.Fatalf("model = %q, want deepseek-v4-flash", converted.Model)

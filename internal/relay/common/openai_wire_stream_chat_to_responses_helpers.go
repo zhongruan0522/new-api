@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
-func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatCompletionsStreamResponse) {
+func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *shared.ChatCompletionsStreamResponse) {
 	if chunk == nil {
 		return
 	}
@@ -28,15 +28,15 @@ func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatComplet
 	}
 }
 
-func (c *chatToResponsesStreamConverter) buildOutput() ([]dto.ResponsesOutput, error) {
-	output := make([]dto.ResponsesOutput, 0, 2+len(c.toolCallsByID))
+func (c *chatToResponsesStreamConverter) buildOutput() ([]shared.ResponsesOutput, error) {
+	output := make([]shared.ResponsesOutput, 0, 2+len(c.toolCallsByID))
 	reasoning := c.reasoningBuilder.String()
 	if reasoning != "" {
-		output = append(output, dto.ResponsesOutput{
+		output = append(output, shared.ResponsesOutput{
 			Type:   "reasoning",
 			ID:     chatToResponsesReasoningItemID,
 			Status: "completed",
-			Summary: []dto.ResponsesContentPart{{
+			Summary: []shared.ResponsesContentPart{{
 				Type: "summary_text",
 				Text: reasoning,
 			}},
@@ -44,12 +44,12 @@ func (c *chatToResponsesStreamConverter) buildOutput() ([]dto.ResponsesOutput, e
 	}
 	text := c.textBuilder.String()
 	if text != "" {
-		output = append(output, dto.ResponsesOutput{
+		output = append(output, shared.ResponsesOutput{
 			Type:   "message",
 			ID:     chatToResponsesAssistantMessageID,
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{
+			Content: []shared.ResponsesOutputContent{
 				{Type: "output_text", Text: text},
 			},
 		})
@@ -93,7 +93,7 @@ func (s *chatToResponsesToolCallState) applyToolSpec(spec OpenAIWireToolSpec) {
 	s.namespace = spec.Namespace
 	s.customProxy = spec.IsCustom()
 	if spec.IsCustom() {
-		s.toolType = dto.CustomType
+		s.toolType = shared.CustomType
 		return
 	}
 	s.toolType = "function"
@@ -103,19 +103,19 @@ func (s *chatToResponsesToolCallState) isCustomTool() bool {
 	if s == nil {
 		return false
 	}
-	return s.toolType == dto.CustomType || (s.hasToolSpec && s.toolSpec.IsCustom())
+	return s.toolType == shared.CustomType || (s.hasToolSpec && s.toolSpec.IsCustom())
 }
 
 func (s *chatToResponsesToolCallState) isToolSearch() bool {
 	return s != nil && s.hasToolSpec && s.toolSpec.IsToolSearch()
 }
 
-func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.ResponsesOutput, error) {
+func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (shared.ResponsesOutput, error) {
 	if s == nil {
-		return dto.ResponsesOutput{}, fmt.Errorf("tool call state is nil")
+		return shared.ResponsesOutput{}, fmt.Errorf("tool call state is nil")
 	}
 	if s.isToolSearch() {
-		item := dto.ResponsesOutput{
+		item := shared.ResponsesOutput{
 			Type:      "tool_search_call",
 			ID:        s.id,
 			Status:    status,
@@ -125,14 +125,14 @@ func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.R
 		if status == "completed" {
 			arguments, err := BuildResponsesToolSearchArgumentsFromChatArguments(s.args.String())
 			if err != nil {
-				return dto.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
+				return shared.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
 			}
 			item.Arguments = arguments
 		}
 		return item, nil
 	}
 
-	item := dto.ResponsesOutput{
+	item := shared.ResponsesOutput{
 		Type:      "function_call",
 		ID:        s.id,
 		Status:    status,
@@ -146,7 +146,7 @@ func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.R
 		if status == "completed" {
 			input, err := s.responsesArguments()
 			if err != nil {
-				return dto.ResponsesOutput{}, err
+				return shared.ResponsesOutput{}, err
 			}
 			item.Input = input
 		}
@@ -155,14 +155,14 @@ func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.R
 	if status == "completed" {
 		arguments, err := s.responsesArguments()
 		if err != nil {
-			return dto.ResponsesOutput{}, err
+			return shared.ResponsesOutput{}, err
 		}
 		item.Arguments = arguments
 	}
 	return item, nil
 }
 
-func (c *chatToResponsesStreamConverter) buildUsage() *dto.Usage {
+func (c *chatToResponsesStreamConverter) buildUsage() *shared.Usage {
 	if c.usage == nil {
 		return nil
 	}
@@ -207,7 +207,7 @@ func (c *chatToResponsesStreamConverter) getOrCreateToolCall(callID string) *cha
 	return state
 }
 
-func (c *chatToResponsesStreamConverter) resolveToolCallID(call dto.ToolCallResponse) (string, bool) {
+func (c *chatToResponsesStreamConverter) resolveToolCallID(call shared.ToolCallResponse) (string, bool) {
 	callID := strings.TrimSpace(call.ID)
 	if call.Index != nil {
 		index := *call.Index
@@ -296,14 +296,14 @@ func (c *chatToResponsesStreamConverter) emitMessageDoneIfAny() (string, error) 
 	if !c.sentMsgAdded {
 		return "", nil
 	}
-	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type: "response.output_item.done",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "message",
 			ID:     chatToResponsesAssistantMessageID,
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{
+			Content: []shared.ResponsesOutputContent{
 				{Type: "output_text", Text: text},
 			},
 		},
@@ -319,13 +319,13 @@ func (c *chatToResponsesStreamConverter) emitReasoningDoneIfAny() (string, error
 		return "", nil
 	}
 	c.reasoningDone = true
-	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type: "response.output_item.done",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "reasoning",
 			ID:     chatToResponsesReasoningItemID,
 			Status: "completed",
-			Summary: []dto.ResponsesContentPart{{
+			Summary: []shared.ResponsesContentPart{{
 				Type: "summary_text",
 				Text: reasoning,
 			}},
@@ -334,7 +334,7 @@ func (c *chatToResponsesStreamConverter) emitReasoningDoneIfAny() (string, error
 	})
 }
 
-func encodeResponsesStreamEvent(stream dto.ResponsesStreamResponse) (string, error) {
+func encodeResponsesStreamEvent(stream shared.ResponsesStreamResponse) (string, error) {
 	if strings.TrimSpace(stream.Type) == "" {
 		return "", nil
 	}

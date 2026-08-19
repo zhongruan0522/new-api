@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,10 +17,10 @@ func TestGenRelayInfoOpenAI_StreamOptionsByChannelType(t *testing.T) {
 		channel int
 		want    bool
 	}{
-		{"moonshot", constant.ChannelTypeMoonshot, true},
-		{"minimax", constant.ChannelTypeMiniMax, true},
-		{"siliconflow", constant.ChannelTypeSiliconFlow, true},
-		{"openrouter_not_listed", constant.ChannelTypeOpenRouter, false},
+		{"moonshot", channelconstant.ChannelTypeMoonshot, true},
+		{"minimax", channelconstant.ChannelTypeMiniMax, true},
+		{"siliconflow", channelconstant.ChannelTypeSiliconFlow, true},
+		{"openrouter_not_listed", channelconstant.ChannelTypeOpenRouter, false},
 	}
 
 	for _, tc := range tests {

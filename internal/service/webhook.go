@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 // WebhookPayload webhook 通知的负载数据
@@ -31,7 +31,7 @@ func generateSignature(secret string, payload []byte) string {
 }
 
 // SendWebhookNotify 发送 webhook 通知
-func SendWebhookNotify(webhookURL string, secret string, data dto.Notify) error {
+func SendWebhookNotify(webhookURL string, secret string, data shared.Notify) error {
 	// 处理占位符
 	content := data.Content
 	for _, value := range data.Values {

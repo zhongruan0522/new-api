@@ -3,7 +3,7 @@ package reasonmap
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 )
 
 func ClaudeStopReasonToOpenAIFinishReason(stopReason string) string {
@@ -17,7 +17,7 @@ func ClaudeStopReasonToOpenAIFinishReason(stopReason string) string {
 	case "tool_use":
 		return "tool_calls"
 	case "refusal":
-		return constant.FinishReasonContentFilter
+		return relayconstant.FinishReasonContentFilter
 	default:
 		return stopReason
 	}
@@ -31,7 +31,7 @@ func OpenAIFinishReasonToClaudeStopReason(finishReason string) string {
 		return "stop_sequence"
 	case "length", "max_tokens":
 		return "max_tokens"
-	case constant.FinishReasonContentFilter:
+	case relayconstant.FinishReasonContentFilter:
 		return "refusal"
 	case "tool_calls":
 		return "tool_use"

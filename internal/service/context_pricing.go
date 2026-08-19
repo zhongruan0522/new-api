@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 type ContextPricingUsage struct {
@@ -18,7 +18,7 @@ type ContextPricingUsage struct {
 	IsClaudeUsageSemantic bool
 }
 
-func BuildContextPricingUsage(usage *dto.Usage, isClaudeUsageSemantic bool) ContextPricingUsage {
+func BuildContextPricingUsage(usage *shared.Usage, isClaudeUsageSemantic bool) ContextPricingUsage {
 	if usage == nil {
 		return ContextPricingUsage{IsClaudeUsageSemantic: isClaudeUsageSemantic}
 	}
@@ -49,7 +49,7 @@ func BuildContextPricingUsage(usage *dto.Usage, isClaudeUsageSemantic bool) Cont
 	}
 }
 
-func BuildRealtimeContextPricingUsage(usage *dto.RealtimeUsage) ContextPricingUsage {
+func BuildRealtimeContextPricingUsage(usage *shared.RealtimeUsage) ContextPricingUsage {
 	if usage == nil {
 		return ContextPricingUsage{}
 	}
@@ -76,7 +76,7 @@ func ContextTokensForTier(usage ContextPricingUsage) int {
 	return usage.PromptTokens
 }
 
-func ApplyContextPricingForUsage(modelName string, usage ContextPricingUsage, priceData *types.PriceData) (*types.ContextPricingResult, bool, error) {
+func ApplyContextPricingForUsage(modelName string, usage ContextPricingUsage, priceData *billing.PriceData) (*billing.ContextPricingResult, bool, error) {
 	contextTokens := ContextTokensForTier(usage)
 	result, enabled, err := ratio.MatchContextPricingTier(modelName, contextTokens)
 	if err != nil || !enabled || result == nil {

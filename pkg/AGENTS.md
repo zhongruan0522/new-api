@@ -2,8 +2,7 @@
 
 `pkg/` 存放可独立复用、无业务依赖的基础库。进入门槛是依赖核查通过：
 包内任何文件（含测试）不得 import `internal/` 下任何业务包（含
-`internal/common`、`internal/constant`、`internal/types`、`internal/dto`
-等）或其他业务代码。
+`internal/common`、`internal/constant`、`internal/domain/` 等）或其他业务代码。
 
 ## 现有包
 
@@ -28,4 +27,4 @@
 
 - `go build ./... && go test ./pkg/...`
 - `go list -deps ./pkg/...` 输出不出现 `github.com/NookMux/NookMux/` 前缀下的
-  `internal/`、`constant`、`types`、`dto`、`common` 路径。
+  `internal/` 任何路径（含 `constant`、`domain`、`common`）。

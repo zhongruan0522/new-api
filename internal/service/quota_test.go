@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
-
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +20,7 @@ func newQuotaTestContext() *gin.Context {
 }
 
 func TestNewEmptyUsageRetryErrorForNativeRequest(t *testing.T) {
-	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI}}
+	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAI}}
 
 	apiErr := NewEmptyUsageRetryError(newQuotaTestContext(), relayInfo)
 	if apiErr == nil {
@@ -32,13 +32,13 @@ func TestNewEmptyUsageRetryErrorForNativeRequest(t *testing.T) {
 	if !operation.ShouldRetryByStatusCode(apiErr.StatusCode) {
 		t.Fatalf("expected status %d to be included in automatic retry ranges", apiErr.StatusCode)
 	}
-	if types.IsSkipRetryError(apiErr) {
+	if shared.IsSkipRetryError(apiErr) {
 		t.Fatal("expected empty usage error not to skip retry")
 	}
 }
 
 func TestNewEmptyUsageRetryErrorSkipsConvertedRequest(t *testing.T) {
-	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAI, types.RelayFormatClaude}}
+	relayInfo := &relaycommon.RelayInfo{RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAI, relayconstant.RelayFormatClaude}}
 
 	if apiErr := NewEmptyUsageRetryError(newQuotaTestContext(), relayInfo); apiErr != nil {
 		t.Fatalf("expected converted empty usage not to force retry, got %v", apiErr)

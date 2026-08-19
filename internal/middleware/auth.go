@@ -11,10 +11,10 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-contrib/sessions"
@@ -405,7 +405,7 @@ func TokenAuth() func(c *gin.Context) {
 				return
 			}
 			if !common.IsIpInCIDRList(ip, allowIps) {
-				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", types.ErrorCodeAccessDenied)
+				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", shared.ErrorCodeAccessDenied)
 				return
 			}
 			log.LogDebug(c, "Client IP %s passed the token IP restrictions check", clientIp)

@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/types"
+
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func testRelayInfo(alias, upstream string) *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
 		OriginModelName:   alias,
 		ResponseModelName: alias,
-		RelayFormat:       types.RelayFormatOpenAI,
+		RelayFormat:       relayconstant.RelayFormatOpenAI,
 		ChannelMeta: &relaycommon.ChannelMeta{
 			UpstreamModelName: upstream,
 		},
@@ -62,7 +63,7 @@ func TestOpenAIStreamAndFinalUsageMaskResponseModel(t *testing.T) {
 	if err := sendStreamData(c, info, data, false); err != nil {
 		t.Fatalf("sendStreamData error: %v", err)
 	}
-	HandleFinalResponse(c, info, data, "chatcmpl_1", 1710000000, "real-model", "", &dto.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2}, false)
+	HandleFinalResponse(c, info, data, "chatcmpl_1", 1710000000, "real-model", "", &shared.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2}, false)
 
 	out := w.Body.String()
 	if strings.Contains(out, `"model":"real-model"`) {
@@ -79,23 +80,23 @@ func TestResponsesHandlerAndStreamMaskResponseModel(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	info := testRelayInfo("alias-model", "real-model")
 
-	respBody, err := jsonx.Marshal(dto.OpenAIResponsesResponse{
+	respBody, err := jsonx.Marshal(shared.OpenAIResponsesResponse{
 		ID:        "resp_1",
 		Object:    "response",
 		CreatedAt: 1710000000,
 		Status:    "completed",
 		Model:     "real-model",
-		Output: []dto.ResponsesOutput{{
+		Output: []shared.ResponsesOutput{{
 			Type:   "message",
 			ID:     "msg_1",
 			Status: "completed",
 			Role:   "assistant",
-			Content: []dto.ResponsesOutputContent{{
+			Content: []shared.ResponsesOutputContent{{
 				Type: "output_text",
 				Text: "ok",
 			}},
 		}},
-		Usage: &dto.Usage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
+		Usage: &shared.Usage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
 	})
 	if err != nil {
 		t.Fatalf("marshal response: %v", err)
@@ -108,15 +109,15 @@ func TestResponsesHandlerAndStreamMaskResponseModel(t *testing.T) {
 	streamRecorder := httptest.NewRecorder()
 	streamCtx, _ := gin.CreateTestContext(streamRecorder)
 	streamCtx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
-	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type: "response.completed",
-		Response: &dto.OpenAIResponsesResponse{
+		Response: &shared.OpenAIResponsesResponse{
 			ID:        "resp_1",
 			Object:    "response",
 			CreatedAt: 1710000000,
 			Status:    "completed",
 			Model:     "real-model",
-			Usage:     &dto.Usage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
+			Usage:     &shared.Usage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
 		},
 	})
 	if err != nil {

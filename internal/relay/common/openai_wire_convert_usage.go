@@ -1,10 +1,10 @@
 package common
 
-import "github.com/NookMux/NookMux/internal/dto"
+import "github.com/NookMux/NookMux/internal/domain/shared"
 
 // ApplyResponsesUsageToChatUsage maps OpenAI Responses usage fields onto the
 // Chat Completions usage fields used internally for quota calculation.
-func ApplyResponsesUsageToChatUsage(dst *dto.Usage, usage *dto.Usage) {
+func ApplyResponsesUsageToChatUsage(dst *shared.Usage, usage *shared.Usage) {
 	if dst == nil || usage == nil {
 		return
 	}
@@ -18,7 +18,7 @@ func ApplyResponsesUsageToChatUsage(dst *dto.Usage, usage *dto.Usage) {
 
 	if usage.InputTokensDetails != nil {
 		dst.PromptTokensDetails = *usage.InputTokensDetails
-	} else if usage.PromptTokensDetails != (dto.InputTokenDetails{}) {
+	} else if usage.PromptTokensDetails != (shared.InputTokenDetails{}) {
 		dst.PromptTokensDetails = usage.PromptTokensDetails
 	}
 	if dst.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens > 0 {
@@ -28,14 +28,14 @@ func ApplyResponsesUsageToChatUsage(dst *dto.Usage, usage *dto.Usage) {
 
 	if usage.OutputTokensDetails != nil {
 		dst.CompletionTokenDetails = *usage.OutputTokensDetails
-	} else if usage.CompletionTokenDetails != (dto.OutputTokenDetails{}) {
+	} else if usage.CompletionTokenDetails != (shared.OutputTokenDetails{}) {
 		dst.CompletionTokenDetails = usage.CompletionTokenDetails
 	}
 }
 
 // MapChatUsageToResponsesUsage maps Chat Completions usage to the Responses
 // usage shape, including token detail fields that affect billing.
-func MapChatUsageToResponsesUsage(u dto.Usage) *dto.Usage {
+func MapChatUsageToResponsesUsage(u shared.Usage) *shared.Usage {
 	inputTokens := firstNonZero(u.PromptTokens, u.InputTokens)
 	outputTokens := firstNonZero(u.CompletionTokens, u.OutputTokens)
 	totalTokens := u.TotalTokens
@@ -44,7 +44,7 @@ func MapChatUsageToResponsesUsage(u dto.Usage) *dto.Usage {
 	}
 
 	inputDetails := u.PromptTokensDetails
-	if inputDetails == (dto.InputTokenDetails{}) && u.InputTokensDetails != nil {
+	if inputDetails == (shared.InputTokenDetails{}) && u.InputTokensDetails != nil {
 		inputDetails = *u.InputTokensDetails
 	}
 	if inputDetails.CachedTokens == 0 && u.PromptCacheHitTokens > 0 {
@@ -52,21 +52,21 @@ func MapChatUsageToResponsesUsage(u dto.Usage) *dto.Usage {
 	}
 
 	outputDetails := u.CompletionTokenDetails
-	if outputDetails == (dto.OutputTokenDetails{}) && u.OutputTokensDetails != nil {
+	if outputDetails == (shared.OutputTokenDetails{}) && u.OutputTokensDetails != nil {
 		outputDetails = *u.OutputTokensDetails
 	}
 
-	return &dto.Usage{
+	return &shared.Usage{
 		InputTokens:  inputTokens,
 		OutputTokens: outputTokens,
 		TotalTokens:  totalTokens,
-		InputTokensDetails: &dto.InputTokenDetails{
+		InputTokensDetails: &shared.InputTokenDetails{
 			CachedTokens: inputDetails.CachedTokens,
 			TextTokens:   inputDetails.TextTokens,
 			AudioTokens:  inputDetails.AudioTokens,
 			ImageTokens:  inputDetails.ImageTokens,
 		},
-		OutputTokensDetails: &dto.OutputTokenDetails{
+		OutputTokensDetails: &shared.OutputTokenDetails{
 			TextTokens:      outputDetails.TextTokens,
 			AudioTokens:     outputDetails.AudioTokens,
 			ReasoningTokens: outputDetails.ReasoningTokens,

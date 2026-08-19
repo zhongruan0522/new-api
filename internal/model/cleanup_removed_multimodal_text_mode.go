@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"gorm.io/gorm"
 )
@@ -121,19 +121,19 @@ func normalizeRemovedMultimodalChannelOtherSettingsJSON(raw string) (normalized 
 		}
 		mode = strings.TrimSpace(strings.ToLower(modeValue))
 		switch mode {
-		case "", string(dto.ImageAutoConvertToURLModeOff):
-			if modeValue != string(dto.ImageAutoConvertToURLModeOff) {
-				settings["image_auto_convert_to_url_mode"] = string(dto.ImageAutoConvertToURLModeOff)
+		case "", string(shared.ImageAutoConvertToURLModeOff):
+			if modeValue != string(shared.ImageAutoConvertToURLModeOff) {
+				settings["image_auto_convert_to_url_mode"] = string(shared.ImageAutoConvertToURLModeOff)
 				changed = true
 			}
-		case string(dto.ImageAutoConvertToURLModeMCP):
-			if modeValue != string(dto.ImageAutoConvertToURLModeMCP) {
-				settings["image_auto_convert_to_url_mode"] = string(dto.ImageAutoConvertToURLModeMCP)
+		case string(shared.ImageAutoConvertToURLModeMCP):
+			if modeValue != string(shared.ImageAutoConvertToURLModeMCP) {
+				settings["image_auto_convert_to_url_mode"] = string(shared.ImageAutoConvertToURLModeMCP)
 				changed = true
 			}
 		case "third_party_model":
-			settings["image_auto_convert_to_url_mode"] = string(dto.ImageAutoConvertToURLModeMCP)
-			mode = string(dto.ImageAutoConvertToURLModeMCP)
+			settings["image_auto_convert_to_url_mode"] = string(shared.ImageAutoConvertToURLModeMCP)
+			mode = string(shared.ImageAutoConvertToURLModeMCP)
 			changed = true
 		default:
 			return "", false, fmt.Errorf("unsupported image_auto_convert_to_url_mode: %q", modeValue)
@@ -146,7 +146,7 @@ func normalizeRemovedMultimodalChannelOtherSettingsJSON(raw string) (normalized 
 			return "", false, fmt.Errorf("image_auto_convert_to_url must be a bool, got %T", legacyRaw)
 		}
 		if legacyEnabled && mode == "" {
-			settings["image_auto_convert_to_url_mode"] = string(dto.ImageAutoConvertToURLModeMCP)
+			settings["image_auto_convert_to_url_mode"] = string(shared.ImageAutoConvertToURLModeMCP)
 		}
 		delete(settings, "image_auto_convert_to_url")
 		changed = true

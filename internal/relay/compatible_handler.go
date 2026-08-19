@@ -14,32 +14,33 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
+
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NookMuxError) {
+func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shared.NookMuxError) {
 	info.InitChannelMeta(c)
 
-	textReq, ok := info.Request.(*dto.GeneralOpenAIRequest)
+	textReq, ok := info.Request.(*shared.GeneralOpenAIRequest)
 	if !ok {
-		return types.NewErrorWithStatusCode(fmt.Errorf("invalid request type, expected dto.GeneralOpenAIRequest, got %T", info.Request), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewErrorWithStatusCode(fmt.Errorf("invalid request type, expected shared.GeneralOpenAIRequest, got %T", info.Request), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	request, err := common.DeepCopy(textReq)
 	if err != nil {
-		return types.NewError(fmt.Errorf("failed to copy request to GeneralOpenAIRequest: %w", err), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewError(fmt.Errorf("failed to copy request to GeneralOpenAIRequest: %w", err), shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	if request.WebSearchOptions != nil {
@@ -48,16 +49,16 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+		return shared.NewError(err, shared.ErrorCodeChannelModelMappedError, shared.ErrOptionWithSkipRetry())
 	}
 
 	mediaMode, modeOK := info.ChannelOtherSettings.ParseImageAutoConvertToURLMode()
 	if !modeOK {
-		return types.NewErrorWithStatusCode(fmt.Errorf("invalid image_auto_convert_to_url_mode: %q", info.ChannelOtherSettings.ImageAutoConvertToURLMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		return shared.NewErrorWithStatusCode(fmt.Errorf("invalid image_auto_convert_to_url_mode: %q", info.ChannelOtherSettings.ImageAutoConvertToURLMode), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
 
 	// Channel-level multimodal handling for text-only upstream models.
-	if mediaMode != dto.ImageAutoConvertToURLModeOff {
+	if mediaMode != shared.ImageAutoConvertToURLModeOff {
 		storedURLBySHA := make(map[string]string)
 		imageMaxBytes := int64(constant.MaxImageUploadMB) * 1024 * 1024
 		videoMaxBytes := int64(constant.MaxVideoUploadMB) * 1024 * 1024
@@ -78,39 +79,39 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 			mimeType, b64, err := service.DecodeBase64FileData(rawURL)
 			if err != nil {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("decode media data failed: %w", err), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("decode media data failed: %w", err), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			mimeType = strings.TrimSpace(mimeType)
 			if mimeType == "" {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid media mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("invalid media mime type: %q", mimeType), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			lowerMime := strings.ToLower(mimeType)
-			isImage := mediaContentType == dto.ContentTypeImageURL
-			isVideo := mediaContentType == dto.ContentTypeVideoUrl
+			isImage := mediaContentType == shared.ContentTypeImageURL
+			isVideo := mediaContentType == shared.ContentTypeVideoUrl
 			if isImage && !strings.HasPrefix(lowerMime, "image/") {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid image mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("invalid image mime type: %q", mimeType), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			if isVideo && !strings.HasPrefix(lowerMime, "video/") {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid video mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("invalid video mime type: %q", mimeType), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			if !isImage && !isVideo {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("unsupported media content type: %q", mediaContentType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("unsupported media content type: %q", mediaContentType), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 
 			b64 = strings.TrimSpace(b64)
 			data, err := base64.StdEncoding.DecodeString(b64)
 			if err != nil {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("decode media base64 failed: %w", err), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("decode media base64 failed: %w", err), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			if len(data) == 0 {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("media data is empty"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("media data is empty"), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 
 			if isImage && imageMaxBytes > 0 && int64(len(data)) > imageMaxBytes {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("image size %d exceeds limit %d bytes", len(data), imageMaxBytes), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("image size %d exceeds limit %d bytes", len(data), imageMaxBytes), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 			if isVideo && videoMaxBytes > 0 && int64(len(data)) > videoMaxBytes {
-				return "", types.NewErrorWithStatusCode(fmt.Errorf("video size %d exceeds limit %d bytes", len(data), videoMaxBytes), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+				return "", shared.NewErrorWithStatusCode(fmt.Errorf("video size %d exceeds limit %d bytes", len(data), videoMaxBytes), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
 
 			sha := hex.EncodeToString(common.Sha256Raw(data))
@@ -126,7 +127,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 					storedURLBySHA[cacheKey] = u
 					return u, nil
 				} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					return "", types.NewError(fmt.Errorf("query stored image failed: %w", err), types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+					return "", shared.NewError(fmt.Errorf("query stored image failed: %w", err), shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 				}
 
 				img := &model.StoredImage{
@@ -138,10 +139,10 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 					Data:      model.LargeBlob(data),
 				}
 				if err := img.Insert(c.Request.Context()); err != nil {
-					return "", types.NewError(fmt.Errorf("store image failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+					return "", shared.NewError(fmt.Errorf("store image failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 				}
 				if _, err := model.EnsureStoredImagesPoolLimit(c.Request.Context(), imagePoolMaxBytes, 100); err != nil {
-					return "", types.NewError(fmt.Errorf("enforce stored image pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+					return "", shared.NewError(fmt.Errorf("enforce stored image pool limit failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 				}
 
 				newImageCount++
@@ -155,7 +156,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 				storedURLBySHA[cacheKey] = u
 				return u, nil
 			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return "", types.NewError(fmt.Errorf("query stored video failed: %w", err), types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+				return "", shared.NewError(fmt.Errorf("query stored video failed: %w", err), shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 			}
 
 			v := &model.StoredVideo{
@@ -167,10 +168,10 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 				Data:      model.LargeBlob(data),
 			}
 			if err := v.Insert(c.Request.Context()); err != nil {
-				return "", types.NewError(fmt.Errorf("store video failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+				return "", shared.NewError(fmt.Errorf("store video failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 			}
 			if _, err := model.EnsureStoredVideosPoolLimit(c.Request.Context(), videoPoolMaxBytes, 50); err != nil {
-				return "", types.NewError(fmt.Errorf("enforce stored video pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+				return "", shared.NewError(fmt.Errorf("enforce stored video pool limit failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 			}
 
 			newVideoCount++
@@ -179,13 +180,13 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			return u, nil
 		}
 
-		if mediaMode != dto.ImageAutoConvertToURLModeMCP {
-			return types.NewErrorWithStatusCode(fmt.Errorf("unsupported image_auto_convert_to_url_mode: %s", mediaMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		if mediaMode != shared.ImageAutoConvertToURLModeMCP {
+			return shared.NewErrorWithStatusCode(fmt.Errorf("unsupported image_auto_convert_to_url_mode: %s", mediaMode), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}
 
 		_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, resolveURL)
 		if convErr != nil {
-			return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+			return shared.NewError(convErr, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 		}
 
 		// 异步更新用户的多模态适配转换计数
@@ -206,7 +207,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	} else {
 		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
 		if constant.ForceStreamOption {
-			request.StreamOptions = &dto.StreamOptions{
+			request.StreamOptions = &shared.StreamOptions{
 				IncludeUsage: true,
 			}
 		}
@@ -216,13 +217,13 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
-		return types.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+		return shared.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), shared.ErrorCodeInvalidApiType, shared.ErrOptionWithSkipRetry())
 	}
 	adaptor.Init(info)
 
 	passThroughBody := info.ChannelSetting.PassThroughBodyEnabled
 	// Media handling rewrites the structured request; pass-through body would bypass it.
-	if mediaMode != dto.ImageAutoConvertToURLModeOff {
+	if mediaMode != shared.ImageAutoConvertToURLModeOff {
 		passThroughBody = false
 	}
 
@@ -231,7 +232,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	if passThroughBody {
 		storage, err := common.GetBodyStorage(c)
 		if err != nil {
-			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			return shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}
 		if common.DebugEnabled {
 			body, _ := storage.Bytes()
@@ -243,26 +244,26 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	} else {
 		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+			return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 		}
 		relaycommon.AppendRequestConversionFromRequest(info, convertedRequest)
 
 		jsonData, err := jsonx.Marshal(convertedRequest)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeJsonMarshalFailed, types.ErrOptionWithSkipRetry())
+			return shared.NewError(err, shared.ErrorCodeJsonMarshalFailed, shared.ErrOptionWithSkipRetry())
 		}
 
 		// remove disabled fields for OpenAI API
 		jsonData, err = relaycommon.RemoveDisabledFields(jsonData, info.ChannelOtherSettings)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+			return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 		}
 
 		// apply param override
 		if len(info.ParamOverride) > 0 {
 			jsonData, err = relaycommon.ApplyParamOverrideWithRelayInfo(jsonData, info)
 			if err != nil {
-				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
+				return shared.NewError(err, shared.ErrorCodeChannelParamOverrideInvalid, shared.ErrOptionWithSkipRetry())
 			}
 		}
 
@@ -270,7 +271,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 		body, size, closer, err := relaycommon.NewOutboundJSONBody(jsonData)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+			return shared.NewError(err, shared.ErrorCodeConvertRequestFailed, shared.ErrOptionWithSkipRetry())
 		}
 		defer closer.Close()
 		jsonData = nil
@@ -284,7 +285,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	var httpResp *http.Response
 	resp, err := adaptor.DoRequest(c, info, requestBody)
 	if err != nil {
-		return types.NewOpenAIError(err, types.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
+		return shared.NewOpenAIError(err, shared.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
 	}
 
 	statusCodeMappingStr := c.GetString("status_code_mapping")
@@ -307,25 +308,25 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return newApiErr
 	}
 
-	var containAudioTokens = usage.(*dto.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*dto.Usage).PromptTokensDetails.AudioTokens > 0
+	var containAudioTokens = usage.(*shared.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*shared.Usage).PromptTokensDetails.AudioTokens > 0
 	var containsAudioRatios = ratio.ContainsAudioRatio(info.OriginModelName) || ratio.ContainsAudioCompletionRatio(info.OriginModelName)
 
 	if containAudioTokens && containsAudioRatios {
-		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), ""); apiErr != nil {
+		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), ""); apiErr != nil {
 			return apiErr
 		}
 	} else {
-		if apiErr := postConsumeQuota(c, info, usage.(*dto.Usage)); apiErr != nil {
+		if apiErr := postConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {
 			return apiErr
 		}
 	}
 	return nil
 }
 
-func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent ...string) *types.NookMuxError {
+func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage, extraContent ...string) *shared.NookMuxError {
 	originUsage := usage
 	if usage == nil {
-		usage = &dto.Usage{
+		usage = &shared.Usage{
 			PromptTokens:     relayInfo.GetEstimatePromptTokens(),
 			CompletionTokens: 0,
 			TotalTokens:      relayInfo.GetEstimatePromptTokens(),
@@ -355,7 +356,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
 	modelPrice := relayInfo.PriceData.ModelPrice
 	cachedCreationRatio := relayInfo.PriceData.CacheCreationRatio
-	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == types.RelayFormatClaude
+	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude
 
 	if _, enabled, err := service.ApplyContextPricingForUsage(modelName, service.BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
 		if err != nil {
@@ -391,7 +392,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var webSearchPrice float64
 	// response api 格式工具计费
 	if relayInfo.ResponsesUsageInfo != nil {
-		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
+		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
 			// 优先使用可配置价格，回退到硬编码常量
 			if pricePerCall, ok := operation.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "openai"}); ok {
 				webSearchPrice = pricePerCall
@@ -463,7 +464,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var dFileSearchQuota decimal.Decimal
 	var fileSearchPrice float64
 	if relayInfo.ResponsesUsageInfo != nil {
-		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
 			fileSearchPrice = operation.GetFileSearchPricePerThousand()
 			dFileSearchQuota = decimal.NewFromFloat(fileSearchPrice).
 				Mul(decimal.NewFromInt(int64(fileSearchTool.CallCount))).
@@ -624,7 +625,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 	if !dWebSearchQuota.IsZero() {
 		if relayInfo.ResponsesUsageInfo != nil {
-			if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists {
+			if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolWebSearchPreview]; exists {
 				other["web_search"] = true
 				other["web_search_call_count"] = webSearchTool.CallCount
 				other["web_search_price"] = webSearchPrice
@@ -644,7 +645,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["web_search_price"] = geminiWebSearchPrice
 	}
 	if !dFileSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
-		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[shared.BuildInToolFileSearch]; exists {
 			other["file_search"] = true
 			other["file_search_call_count"] = fileSearchTool.CallCount
 			other["file_search_price"] = fileSearchPrice

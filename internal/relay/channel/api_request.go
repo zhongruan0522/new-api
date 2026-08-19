@@ -10,13 +10,12 @@ import (
 	"sync"
 
 	common2 "github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/internal/types"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -263,18 +262,18 @@ func processHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]s
 		}
 
 		if pattern == "" {
-			return nil, types.NewError(fmt.Errorf("header passthrough regex pattern is empty: %q", k), types.ErrorCodeChannelHeaderOverrideInvalid)
+			return nil, shared.NewError(fmt.Errorf("header passthrough regex pattern is empty: %q", k), shared.ErrorCodeChannelHeaderOverrideInvalid)
 		}
 		compiled, err := getHeaderPassthroughRegex(pattern)
 		if err != nil {
-			return nil, types.NewError(err, types.ErrorCodeChannelHeaderOverrideInvalid)
+			return nil, shared.NewError(err, shared.ErrorCodeChannelHeaderOverrideInvalid)
 		}
 		passthroughRegex = append(passthroughRegex, compiled)
 	}
 
 	if passAll || len(passthroughRegex) > 0 {
 		if c == nil || c.Request == nil {
-			return nil, types.NewError(fmt.Errorf("missing request context for header passthrough"), types.ErrorCodeChannelHeaderOverrideInvalid)
+			return nil, shared.NewError(fmt.Errorf("missing request context for header passthrough"), shared.ErrorCodeChannelHeaderOverrideInvalid)
 		}
 		for name := range c.Request.Header {
 			if shouldSkipPassthroughHeader(name) {
@@ -311,12 +310,12 @@ func processHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]s
 
 		str, ok := v.(string)
 		if !ok {
-			return nil, types.NewError(nil, types.ErrorCodeChannelHeaderOverrideInvalid)
+			return nil, shared.NewError(nil, shared.ErrorCodeChannelHeaderOverrideInvalid)
 		}
 
 		value, include, err := applyHeaderOverridePlaceholders(str, c, info.ApiKey)
 		if err != nil {
-			return nil, types.NewError(err, types.ErrorCodeChannelHeaderOverrideInvalid)
+			return nil, shared.NewError(err, shared.ErrorCodeChannelHeaderOverrideInvalid)
 		}
 		if !include {
 			continue
@@ -480,7 +479,7 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	resp, err := client.Do(req)
 	if err != nil {
 		log.LogError(c, "do request failed: "+err.Error())
-		return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg("upstream error: do request failed"))
+		return nil, shared.NewError(err, shared.ErrorCodeDoRequestFailed, shared.ErrOptionWithHideErrMsg("upstream error: do request failed"))
 	}
 	if resp == nil {
 		return nil, errors.New("resp is nil")

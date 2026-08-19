@@ -4,21 +4,21 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestClaudeToOpenAIRequestPreservesThinkingSignatureAndToolErrors(t *testing.T) {
 	toolError := true
-	request := dto.ClaudeRequest{
+	request := shared.ClaudeRequest{
 		Model:        "claude-3-7-sonnet",
 		OutputConfig: []byte(`{"effort":"max"}`),
-		Messages: []dto.ClaudeMessage{
+		Messages: []shared.ClaudeMessage{
 			{
 				Role: "assistant",
-				Content: []dto.ClaudeMediaMessage{
+				Content: []shared.ClaudeMediaMessage{
 					{Type: "thinking", Thinking: common.GetPointer[string]("plan"), Signature: "sig_123"},
 					{Type: "redacted_thinking", Data: "encrypted_payload"},
 					{Type: "text", Text: common.GetPointer[string]("hello")},
@@ -27,7 +27,7 @@ func TestClaudeToOpenAIRequestPreservesThinkingSignatureAndToolErrors(t *testing
 			},
 			{
 				Role: "user",
-				Content: []dto.ClaudeMediaMessage{
+				Content: []shared.ClaudeMediaMessage{
 					{Type: "tool_result", ToolUseId: "call_1", Content: "tool failed", IsError: &toolError},
 				},
 			},
@@ -78,9 +78,9 @@ func TestClaudeToOpenAIRequestPreservesThinkingSignatureAndToolErrors(t *testing
 
 func TestClaudeToOpenAIRequestMapsOpenRouterEnabledThinking(t *testing.T) {
 	budget := 2048
-	request := dto.ClaudeRequest{
+	request := shared.ClaudeRequest{
 		Model:    "anthropic/claude-sonnet-4",
-		Thinking: &dto.Thinking{Type: "enabled", BudgetTokens: &budget},
+		Thinking: &shared.Thinking{Type: "enabled", BudgetTokens: &budget},
 	}
 	info := &relaycommon.RelayInfo{
 		OriginModelName: "anthropic/claude-sonnet-4",
@@ -108,9 +108,9 @@ func TestClaudeToOpenAIRequestMapsOpenRouterEnabledThinking(t *testing.T) {
 }
 
 func TestClaudeToOpenAIRequestMapsOpenRouterAdaptiveThinking(t *testing.T) {
-	request := dto.ClaudeRequest{
+	request := shared.ClaudeRequest{
 		Model:    "anthropic/claude-sonnet-4",
-		Thinking: &dto.Thinking{Type: "adaptive"},
+		Thinking: &shared.Thinking{Type: "adaptive"},
 	}
 	info := &relaycommon.RelayInfo{
 		OriginModelName: "anthropic/claude-sonnet-4",
@@ -135,7 +135,7 @@ func TestClaudeToOpenAIRequestMapsOpenRouterAdaptiveThinking(t *testing.T) {
 }
 
 func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToReasoning(t *testing.T) {
-	request := dto.ClaudeRequest{
+	request := shared.ClaudeRequest{
 		Model:        "anthropic/claude-sonnet-4",
 		OutputConfig: []byte(`{"effort":"high"}`),
 	}
@@ -174,10 +174,10 @@ func TestStreamResponseOpenAI2ClaudeEmitsThinkingSignatureAfterThinkingDelta(t *
 		ClaudeConvertInfo: &relaycommon.ClaudeConvertInfo{},
 	}
 
-	responses := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{
-		Choices: []dto.ChatCompletionsStreamResponseChoice{
+	responses := StreamResponseOpenAI2Claude(&shared.ChatCompletionsStreamResponse{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{
 			{
-				Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+				Delta: shared.ChatCompletionsStreamResponseChoiceDelta{
 					ReasoningContent:   &reasoning,
 					ReasoningSignature: &signature,
 				},
@@ -208,16 +208,16 @@ func TestStreamResponseOpenAI2ClaudeEmitsUsageOnlyFinalMessageDelta(t *testing.T
 			Index:            0,
 		},
 	}
-	usage := &dto.Usage{
+	usage := &shared.Usage{
 		PromptTokens:     180,
 		CompletionTokens: 53,
-		PromptTokensDetails: dto.InputTokenDetails{
+		PromptTokensDetails: shared.InputTokenDetails{
 			CachedTokens:         30,
 			CachedCreationTokens: 50,
 		},
 	}
 
-	responses := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{Usage: usage}, info)
+	responses := StreamResponseOpenAI2Claude(&shared.ChatCompletionsStreamResponse{Usage: usage}, info)
 
 	if len(responses) != 3 {
 		t.Fatalf("responses len = %d, want content_block_stop + message_delta + message_stop", len(responses))
@@ -255,8 +255,8 @@ func TestStreamResponseOpenAI2ClaudeDefersStopUntilUsageOnlyChunk(t *testing.T) 
 		},
 	}
 
-	first := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{
-		Choices: []dto.ChatCompletionsStreamResponseChoice{{FinishReason: &finish}},
+	first := StreamResponseOpenAI2Claude(&shared.ChatCompletionsStreamResponse{
+		Choices: []shared.ChatCompletionsStreamResponseChoice{{FinishReason: &finish}},
 	}, info)
 	if len(first) != 0 {
 		t.Fatalf("finish-only chunk without usage should be deferred, got %+v", first)
@@ -265,8 +265,8 @@ func TestStreamResponseOpenAI2ClaudeDefersStopUntilUsageOnlyChunk(t *testing.T) 
 		t.Fatal("converter should not be done before final usage arrives")
 	}
 
-	usage := &dto.Usage{PromptTokens: 7, CompletionTokens: 3}
-	second := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{Usage: usage}, info)
+	usage := &shared.Usage{PromptTokens: 7, CompletionTokens: 3}
+	second := StreamResponseOpenAI2Claude(&shared.ChatCompletionsStreamResponse{Usage: usage}, info)
 	if len(second) != 3 {
 		t.Fatalf("responses len = %d, want deferred close with usage", len(second))
 	}

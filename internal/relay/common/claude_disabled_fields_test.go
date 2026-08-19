@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 func TestRemoveClaudeDisabledFieldsBlocksCacheControlAndSpeedByDefault(t *testing.T) {
@@ -17,7 +17,7 @@ func TestRemoveClaudeDisabledFieldsBlocksCacheControlAndSpeedByDefault(t *testin
 		"tools":[{"name":"lookup","description":"search","input_schema":{"type":"object"},"cache_control":{"type":"ephemeral"}}]
 	}`)
 
-	out, err := RemoveClaudeDisabledFields(requestBody, dto.ChannelOtherSettings{})
+	out, err := RemoveClaudeDisabledFields(requestBody, shared.ChannelOtherSettings{})
 	if err != nil {
 		t.Fatalf("RemoveClaudeDisabledFields returned error: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestRemoveClaudeDisabledFieldsAllowsConfiguredPassthrough(t *testing.T) {
 		"messages":[{"role":"user","content":[{"type":"text","text":"hello","cache_control":{"type":"ephemeral"}}]}]
 	}`)
 
-	out, err := RemoveClaudeDisabledFields(requestBody, dto.ChannelOtherSettings{
+	out, err := RemoveClaudeDisabledFields(requestBody, shared.ChannelOtherSettings{
 		AllowCacheControl: true,
 		AllowSpeed:        true,
 		AllowServiceTier:  true,

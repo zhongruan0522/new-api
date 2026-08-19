@@ -1,28 +1,28 @@
 package common
 
 import (
-	"github.com/NookMux/NookMux/internal/dto"
-	"github.com/NookMux/NookMux/internal/types"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 )
 
-func GuessRelayFormatFromRequest(req any) (types.RelayFormat, bool) {
+func GuessRelayFormatFromRequest(req any) (relayconstant.RelayFormat, bool) {
 	switch req.(type) {
-	case *dto.GeneralOpenAIRequest, dto.GeneralOpenAIRequest:
-		return types.RelayFormatOpenAI, true
-	case *dto.OpenAIResponsesRequest, dto.OpenAIResponsesRequest:
-		return types.RelayFormatOpenAIResponses, true
-	case *dto.ClaudeRequest, dto.ClaudeRequest:
-		return types.RelayFormatClaude, true
-	case *dto.GeminiChatRequest, dto.GeminiChatRequest:
-		return types.RelayFormatGemini, true
-	case *dto.EmbeddingRequest, dto.EmbeddingRequest:
-		return types.RelayFormatEmbedding, true
-	case *dto.RerankRequest, dto.RerankRequest:
-		return types.RelayFormatRerank, true
-	case *dto.ImageRequest, dto.ImageRequest:
-		return types.RelayFormatOpenAIImage, true
-	case *dto.AudioRequest, dto.AudioRequest:
-		return types.RelayFormatOpenAIAudio, true
+	case *shared.GeneralOpenAIRequest, shared.GeneralOpenAIRequest:
+		return relayconstant.RelayFormatOpenAI, true
+	case *shared.OpenAIResponsesRequest, shared.OpenAIResponsesRequest:
+		return relayconstant.RelayFormatOpenAIResponses, true
+	case *shared.ClaudeRequest, shared.ClaudeRequest:
+		return relayconstant.RelayFormatClaude, true
+	case *shared.GeminiChatRequest, shared.GeminiChatRequest:
+		return relayconstant.RelayFormatGemini, true
+	case *shared.EmbeddingRequest, shared.EmbeddingRequest:
+		return relayconstant.RelayFormatEmbedding, true
+	case *shared.RerankRequest, shared.RerankRequest:
+		return relayconstant.RelayFormatRerank, true
+	case *shared.ImageRequest, shared.ImageRequest:
+		return relayconstant.RelayFormatOpenAIImage, true
+	case *shared.AudioRequest, shared.AudioRequest:
+		return relayconstant.RelayFormatOpenAIAudio, true
 	default:
 		return "", false
 	}

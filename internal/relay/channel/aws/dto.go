@@ -7,27 +7,27 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 type AwsClaudeRequest struct {
 	// AnthropicVersion should be "bedrock-2023-05-31"
-	AnthropicVersion  string              `json:"anthropic_version"`
-	AnthropicBeta     json.RawMessage     `json:"anthropic_beta,omitempty"`
-	System            any                 `json:"system,omitempty"`
-	Messages          []dto.ClaudeMessage `json:"messages"`
-	MaxTokens         uint                `json:"max_tokens,omitempty"`
-	Temperature       *float64            `json:"temperature,omitempty"`
-	TopP              float64             `json:"top_p,omitempty"`
-	TopK              int                 `json:"top_k,omitempty"`
-	StopSequences     []string            `json:"stop_sequences,omitempty"`
-	Tools             any                 `json:"tools,omitempty"`
-	ToolChoice        any                 `json:"tool_choice,omitempty"`
-	ContextManagement json.RawMessage     `json:"context_management,omitempty"`
-	Thinking          *dto.Thinking       `json:"thinking,omitempty"`
-	OutputConfig      json.RawMessage     `json:"output_config,omitempty"`
+	AnthropicVersion  string                 `json:"anthropic_version"`
+	AnthropicBeta     json.RawMessage        `json:"anthropic_beta,omitempty"`
+	System            any                    `json:"system,omitempty"`
+	Messages          []shared.ClaudeMessage `json:"messages"`
+	MaxTokens         uint                   `json:"max_tokens,omitempty"`
+	Temperature       *float64               `json:"temperature,omitempty"`
+	TopP              float64                `json:"top_p,omitempty"`
+	TopK              int                    `json:"top_k,omitempty"`
+	StopSequences     []string               `json:"stop_sequences,omitempty"`
+	Tools             any                    `json:"tools,omitempty"`
+	ToolChoice        any                    `json:"tool_choice,omitempty"`
+	ContextManagement json.RawMessage        `json:"context_management,omitempty"`
+	Thinking          *shared.Thinking       `json:"thinking,omitempty"`
+	OutputConfig      json.RawMessage        `json:"output_config,omitempty"`
 }
 
 func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaudeRequest, error) {
@@ -79,7 +79,7 @@ type NovaInferenceConfig struct {
 }
 
 // 转换OpenAI请求为Nova格式
-func convertToNovaRequest(req *dto.GeneralOpenAIRequest) *NovaRequest {
+func convertToNovaRequest(req *shared.GeneralOpenAIRequest) *NovaRequest {
 	novaMessages := make([]NovaMessage, len(req.Messages))
 	for i, msg := range req.Messages {
 		novaMessages[i] = NovaMessage{

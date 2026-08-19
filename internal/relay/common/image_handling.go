@@ -3,7 +3,7 @@ package common
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
 type MediaURLResolver func(rawURL string, mediaContentType string) (resolvedURL string, err error)
@@ -20,7 +20,7 @@ type mediaURL struct {
 // an external image understanding tool (e.g. MCP), while the upstream request stays text-only.
 //
 // Note: despite the legacy name, this function now handles both images and videos.
-func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLResolver) (changed bool, err error) {
+func ApplyImageAutoConvertToURL(req *shared.GeneralOpenAIRequest, resolve MediaURLResolver) (changed bool, err error) {
 	if req == nil || len(req.Messages) == 0 {
 		return false, nil
 	}
@@ -28,13 +28,13 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 		resolve = func(rawURL string, _ string) (string, error) { return rawURL, nil }
 	}
 
-	extractText := func(contents []dto.MediaContent) string {
+	extractText := func(contents []shared.MediaContent) string {
 		if len(contents) == 0 {
 			return ""
 		}
 		var b strings.Builder
 		for _, part := range contents {
-			if part.Type != dto.ContentTypeText {
+			if part.Type != shared.ContentTypeText {
 				continue
 			}
 			if part.Text == "" {
@@ -58,7 +58,7 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 		mediaURLs := make([]mediaURL, 0)
 		for _, part := range contents {
 			switch part.Type {
-			case dto.ContentTypeImageURL:
+			case shared.ContentTypeImageURL:
 				image := part.GetImageMedia()
 				if image == nil {
 					continue
@@ -67,7 +67,7 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 				if url == "" {
 					continue
 				}
-				resolved, rErr := resolve(url, dto.ContentTypeImageURL)
+				resolved, rErr := resolve(url, shared.ContentTypeImageURL)
 				if rErr != nil {
 					return changed, rErr
 				}
@@ -76,7 +76,7 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 					continue
 				}
 				mediaURLs = append(mediaURLs, mediaURL{Kind: "image", URL: resolved})
-			case dto.ContentTypeVideoUrl:
+			case shared.ContentTypeVideoUrl:
 				video := part.GetVideoUrl()
 				if video == nil {
 					continue
@@ -85,7 +85,7 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 				if url == "" {
 					continue
 				}
-				resolved, rErr := resolve(url, dto.ContentTypeVideoUrl)
+				resolved, rErr := resolve(url, shared.ContentTypeVideoUrl)
 				if rErr != nil {
 					return changed, rErr
 				}

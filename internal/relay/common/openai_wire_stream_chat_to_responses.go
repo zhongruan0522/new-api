@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -31,7 +31,7 @@ type chatToResponsesStreamConverter struct {
 	toolCallOrder      []string
 	toolContext        *OpenAIWireToolContext
 
-	usage *dto.Usage
+	usage *shared.Usage
 	err   error
 }
 
@@ -98,21 +98,21 @@ func (c *chatToResponsesStreamConverter) ConvertFrame(event string, data string,
 }
 
 func (c *chatToResponsesStreamConverter) emitCreated() (string, error) {
-	resp := &dto.OpenAIResponsesResponse{
+	resp := &shared.OpenAIResponsesResponse{
 		ID:        c.ensureID(),
 		Object:    "response",
 		CreatedAt: int(c.ensureCreated()),
 		Status:    "in_progress",
 		Model:     c.model,
-		Output:    make([]dto.ResponsesOutput, 0),
+		Output:    make([]shared.ResponsesOutput, 0),
 	}
-	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:     "response.created",
 		Response: resp,
 	})
 }
 
-func (c *chatToResponsesStreamConverter) convertChunk(chunk *dto.ChatCompletionsStreamResponse) (string, error) {
+func (c *chatToResponsesStreamConverter) convertChunk(chunk *shared.ChatCompletionsStreamResponse) (string, error) {
 	c.hydrateFromChunk(chunk)
 
 	if chunk.Usage != nil && len(chunk.Choices) == 0 {
@@ -148,8 +148,8 @@ func (c *chatToResponsesStreamConverter) convertChunk(chunk *dto.ChatCompletions
 	return out.String(), nil
 }
 
-func (c *chatToResponsesStreamConverter) parseChatChunk(data string) (*dto.ChatCompletionsStreamResponse, error) {
-	var chunk dto.ChatCompletionsStreamResponse
+func (c *chatToResponsesStreamConverter) parseChatChunk(data string) (*shared.ChatCompletionsStreamResponse, error) {
+	var chunk shared.ChatCompletionsStreamResponse
 	if err := jsonx.UnmarshalJsonStr(data, &chunk); err != nil {
 		c.err = fmt.Errorf("unmarshal chat stream chunk failed: %w", err)
 		return nil, c.err
@@ -157,7 +157,7 @@ func (c *chatToResponsesStreamConverter) parseChatChunk(data string) (*dto.ChatC
 	return &chunk, nil
 }
 
-func (c *chatToResponsesStreamConverter) convertChoice(choice dto.ChatCompletionsStreamResponseChoice) (string, error) {
+func (c *chatToResponsesStreamConverter) convertChoice(choice shared.ChatCompletionsStreamResponseChoice) (string, error) {
 	c.captureFinishReason(choice)
 
 	var out strings.Builder
@@ -199,7 +199,7 @@ func (c *chatToResponsesStreamConverter) convertChoice(choice dto.ChatCompletion
 	return out.String(), nil
 }
 
-func (c *chatToResponsesStreamConverter) captureFinishReason(choice dto.ChatCompletionsStreamResponseChoice) {
+func (c *chatToResponsesStreamConverter) captureFinishReason(choice shared.ChatCompletionsStreamResponseChoice) {
 	if choice.FinishReason == nil {
 		return
 	}
@@ -222,7 +222,7 @@ func (c *chatToResponsesStreamConverter) emitAssistantTextDelta(delta string) (s
 		c.sentMsgAdded = true
 	}
 
-	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:   "response.output_text.delta",
 		Delta:  delta,
 		ItemID: chatToResponsesAssistantMessageID,
@@ -235,9 +235,9 @@ func (c *chatToResponsesStreamConverter) emitAssistantTextDelta(delta string) (s
 }
 
 func (c *chatToResponsesStreamConverter) emitMessageAdded() (string, error) {
-	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
+		Item: &shared.ResponsesOutput{
 			Type:   "message",
 			ID:     chatToResponsesAssistantMessageID,
 			Status: "in_progress",
@@ -248,15 +248,15 @@ func (c *chatToResponsesStreamConverter) emitMessageAdded() (string, error) {
 }
 
 func (c *chatToResponsesStreamConverter) emitInProgress() (string, error) {
-	resp := &dto.OpenAIResponsesResponse{
+	resp := &shared.OpenAIResponsesResponse{
 		ID:        c.ensureID(),
 		Object:    "response",
 		CreatedAt: int(c.ensureCreated()),
 		Status:    "in_progress",
 		Model:     c.model,
-		Output:    make([]dto.ResponsesOutput, 0),
+		Output:    make([]shared.ResponsesOutput, 0),
 	}
-	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:     "response.in_progress",
 		Response: resp,
 	})
@@ -269,13 +269,13 @@ func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (strin
 
 	var out strings.Builder
 	if !c.sentReasoningAdded {
-		added, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		added, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 			Type: "response.output_item.added",
-			Item: &dto.ResponsesOutput{
+			Item: &shared.ResponsesOutput{
 				Type:   "reasoning",
 				ID:     chatToResponsesReasoningItemID,
 				Status: "in_progress",
-				Summary: []dto.ResponsesContentPart{{
+				Summary: []shared.ResponsesContentPart{{
 					Type: "summary_text",
 				}},
 			},
@@ -288,7 +288,7 @@ func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (strin
 		c.sentReasoningAdded = true
 	}
 
-	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:   "response.reasoning_summary_text.delta",
 		Delta:  delta,
 		ItemID: chatToResponsesReasoningItemID,
@@ -300,7 +300,7 @@ func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (strin
 	return out.String(), nil
 }
 
-func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCallResponse) (string, error) {
+func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []shared.ToolCallResponse) (string, error) {
 	var out strings.Builder
 	for _, call := range calls {
 		callID, hasStableID := c.resolveToolCallID(call)
@@ -310,12 +310,12 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 		if call.Index != nil {
 			state.index = *call.Index
 		}
-		if strings.EqualFold(common.Interface2String(call.Type), dto.CustomType) || len(call.Custom) > 0 {
-			state.toolType = dto.CustomType
+		if strings.EqualFold(common.Interface2String(call.Type), shared.CustomType) || len(call.Custom) > 0 {
+			state.toolType = shared.CustomType
 		} else if strings.EqualFold(common.Interface2String(call.Type), "function") || strings.TrimSpace(call.Function.Name) != "" || strings.TrimSpace(call.Function.Arguments) != "" {
 			state.toolType = "function"
 		}
-		if state.toolType == dto.CustomType {
+		if state.toolType == shared.CustomType {
 			name, input, err := parseChatCustomToolCallDelta(call.Custom)
 			if err != nil {
 				return "", err
@@ -374,7 +374,7 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 			if state.isCustomTool() {
 				eventType = "response.custom_tool_call_input.delta"
 			}
-			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+			frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 				Type:   eventType,
 				Delta:  delta,
 				ItemID: callID,
@@ -403,7 +403,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	resp := &dto.OpenAIResponsesResponse{
+	resp := &shared.OpenAIResponsesResponse{
 		ID:        c.ensureID(),
 		Object:    "response",
 		CreatedAt: int(c.ensureCreated()),
@@ -437,7 +437,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		}
 		if state.customProxy {
 			if len(toolArgs) > 0 {
-				frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+				frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 					Type:   "response.custom_tool_call_input.delta",
 					Delta:  toolArgs,
 					ItemID: state.id,
@@ -449,7 +449,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 				out.WriteString(frame)
 				state.emittedArgsLen = len(toolArgs)
 			}
-			customDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+			customDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 				Type:   "response.custom_tool_call_input.done",
 				Input:  toolArgs,
 				ItemID: state.id,
@@ -462,7 +462,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		} else if !state.isToolSearch() && len(toolArgs) > state.emittedArgsLen {
 			// Regular function calls emit incremental deltas and a done event.
 			delta := toolArgs[state.emittedArgsLen:]
-			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+			frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 				Type:   "response.function_call_arguments.delta",
 				Delta:  delta,
 				ItemID: state.id,
@@ -475,7 +475,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		}
 		if !state.customProxy && !state.isToolSearch() {
 			if state.isCustomTool() {
-				customDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+				customDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 					Type:   "response.custom_tool_call_input.done",
 					Input:  toolArgs,
 					ItemID: state.id,
@@ -485,7 +485,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 				}
 				out.WriteString(customDoneFrame)
 			} else {
-				argumentsDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+				argumentsDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 					Type:      "response.function_call_arguments.done",
 					Arguments: toolArgs,
 					ItemID:    state.id,
@@ -500,7 +500,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 			Type:   "response.output_item.done",
 			Item:   &item,
 			ItemID: state.id,
@@ -517,7 +517,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 	} else if resp.Status == "failed" {
 		eventType = "response.failed"
 	}
-	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:     eventType,
 		Response: resp,
 	})
@@ -537,7 +537,7 @@ func (c *chatToResponsesStreamConverter) emitToolCallAdded(state *chatToResponse
 	if err != nil {
 		return "", err
 	}
-	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
 		Type:   "response.output_item.added",
 		Item:   &item,
 		ItemID: state.id,

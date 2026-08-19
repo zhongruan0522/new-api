@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/types"
 	"github.com/gin-gonic/gin"
 )
 
-func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string, code ...types.ErrorCode) {
+func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string, code ...shared.ErrorCode) {
 	codeStr := ""
 	if len(code) > 0 {
 		codeStr = string(code[0])

@@ -3,7 +3,7 @@ package claude
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +12,7 @@ import (
 
 func TestPatchClaudeMessageDeltaUsageDataPreserveUnknownFields(t *testing.T) {
 	originalData := `{"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":53},"vendor_meta":{"trace_id":"trace_001"}}`
-	usage := &dto.ClaudeUsage{
+	usage := &shared.ClaudeUsage{
 		InputTokens:              100,
 		CacheReadInputTokens:     30,
 		CacheCreationInputTokens: 50,
@@ -31,7 +31,7 @@ func TestPatchClaudeMessageDeltaUsageDataPreserveUnknownFields(t *testing.T) {
 
 func TestPatchClaudeMessageDeltaUsageDataZeroValueChecks(t *testing.T) {
 	originalData := `{"type":"message_delta","usage":{"output_tokens":53,"input_tokens":9,"cache_read_input_tokens":0}}`
-	usage := &dto.ClaudeUsage{
+	usage := &shared.ClaudeUsage{
 		InputTokens:              100,
 		CacheReadInputTokens:     30,
 		CacheCreationInputTokens: 0,
@@ -46,20 +46,20 @@ func TestPatchClaudeMessageDeltaUsageDataZeroValueChecks(t *testing.T) {
 
 func TestShouldSkipClaudeMessageDeltaUsagePatch(t *testing.T) {
 	assert.True(t, shouldSkipClaudeMessageDeltaUsagePatch(&relaycommon.RelayInfo{
-		ChannelMeta: &relaycommon.ChannelMeta{ChannelSetting: dto.ChannelSettings{PassThroughBodyEnabled: true}},
+		ChannelMeta: &relaycommon.ChannelMeta{ChannelSetting: shared.ChannelSettings{PassThroughBodyEnabled: true}},
 	}))
 	assert.False(t, shouldSkipClaudeMessageDeltaUsagePatch(&relaycommon.RelayInfo{
-		ChannelMeta: &relaycommon.ChannelMeta{ChannelSetting: dto.ChannelSettings{PassThroughBodyEnabled: false}},
+		ChannelMeta: &relaycommon.ChannelMeta{ChannelSetting: shared.ChannelSettings{PassThroughBodyEnabled: false}},
 	}))
 }
 
 func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 	t.Run("merge missing fields from claudeInfo", func(t *testing.T) {
-		claudeResponse := &dto.ClaudeResponse{Usage: &dto.ClaudeUsage{OutputTokens: 53}}
+		claudeResponse := &shared.ClaudeResponse{Usage: &shared.ClaudeUsage{OutputTokens: 53}}
 		claudeInfo := &ClaudeResponseInfo{
-			Usage: &dto.Usage{
+			Usage: &shared.Usage{
 				PromptTokens: 180,
-				PromptTokensDetails: dto.InputTokenDetails{
+				PromptTokensDetails: shared.InputTokenDetails{
 					CachedTokens:         30,
 					CachedCreationTokens: 50,
 				},
@@ -80,14 +80,14 @@ func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 	})
 
 	t.Run("keep upstream non-zero values", func(t *testing.T) {
-		claudeResponse := &dto.ClaudeResponse{Usage: &dto.ClaudeUsage{
+		claudeResponse := &shared.ClaudeResponse{Usage: &shared.ClaudeUsage{
 			InputTokens:              9,
 			CacheReadInputTokens:     7,
 			CacheCreationInputTokens: 6,
 		}}
-		claudeInfo := &ClaudeResponseInfo{Usage: &dto.Usage{
+		claudeInfo := &ClaudeResponseInfo{Usage: &shared.Usage{
 			PromptTokens: 180,
-			PromptTokensDetails: dto.InputTokenDetails{
+			PromptTokensDetails: shared.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
 			},

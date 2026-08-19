@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	channelconstant "github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )

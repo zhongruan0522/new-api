@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/dto"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -75,7 +75,7 @@ func TestChannelTestEmbeddingModelClassification(t *testing.T) {
 		t.Fatal("expected auto-detected embed model to skip text answer validation")
 	}
 	request := buildTestRequest(modelName, "", nil, false, channelTestPrompt{})
-	if _, ok := request.(*dto.EmbeddingRequest); !ok {
+	if _, ok := request.(*shared.EmbeddingRequest); !ok {
 		t.Fatalf("expected embed model to build embedding request, got %T", request)
 	}
 }
@@ -229,7 +229,7 @@ func TestSupportsChannelTestToolForChannel(t *testing.T) {
 }
 
 func TestApplyChannelTestToolsToChatRequestUsesCompatibleChoice(t *testing.T) {
-	req := &dto.GeneralOpenAIRequest{}
+	req := &shared.GeneralOpenAIRequest{}
 	applyChannelTestToolsToChatRequest(req, channelTestPrompt{isTool: true})
 
 	if len(req.Tools) != 1 {
@@ -248,7 +248,7 @@ func TestApplyChannelTestToolsToChatRequestUsesCompatibleChoice(t *testing.T) {
 }
 
 func TestApplyChannelTestToolsToChatRequestLeavesRequestUntouchedWhenNotTool(t *testing.T) {
-	req := &dto.GeneralOpenAIRequest{}
+	req := &shared.GeneralOpenAIRequest{}
 	applyChannelTestToolsToChatRequest(req, channelTestPrompt{isTool: false})
 
 	if req.Tools != nil {
@@ -260,7 +260,7 @@ func TestApplyChannelTestToolsToChatRequestLeavesRequestUntouchedWhenNotTool(t *
 }
 
 func TestApplyChannelTestToolsToResponsesRequestShape(t *testing.T) {
-	req := &dto.OpenAIResponsesRequest{}
+	req := &shared.OpenAIResponsesRequest{}
 	applyChannelTestToolsToResponsesRequest(req, channelTestPrompt{isTool: true})
 
 	if len(req.Tools) == 0 {
@@ -290,7 +290,7 @@ func TestApplyChannelTestToolsToResponsesRequestShape(t *testing.T) {
 }
 
 func TestApplyChannelTestToolsToResponsesRequestLeavesRequestUntouchedWhenNotTool(t *testing.T) {
-	req := &dto.OpenAIResponsesRequest{}
+	req := &shared.OpenAIResponsesRequest{}
 	applyChannelTestToolsToResponsesRequest(req, channelTestPrompt{isTool: false})
 
 	if len(req.Tools) != 0 {
@@ -309,7 +309,7 @@ func TestBuildTestRequestToolChatStreamOptions(t *testing.T) {
 		nil,
 		true,
 		channelTestPrompt{isTool: true},
-	).(*dto.GeneralOpenAIRequest)
+	).(*shared.GeneralOpenAIRequest)
 	if !ok {
 		t.Fatalf("expected general chat request for openai endpoint tool test, got %T", streamReq)
 	}
@@ -334,7 +334,7 @@ func TestBuildTestRequestToolResponsesShape(t *testing.T) {
 		nil,
 		false,
 		channelTestPrompt{isTool: true},
-	).(*dto.OpenAIResponsesRequest)
+	).(*shared.OpenAIResponsesRequest)
 	if !ok {
 		t.Fatalf("expected responses request for responses endpoint tool test, got %T", req)
 	}
@@ -482,7 +482,7 @@ func TestBuildTestRequestExplicitOpenAIGivesReasoningModelEnoughTokens(t *testin
 		nil,
 		false,
 		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
-	).(*dto.GeneralOpenAIRequest)
+	).(*shared.GeneralOpenAIRequest)
 	if !ok {
 		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
 	}
@@ -499,7 +499,7 @@ func TestBuildTestRequestExplicitOpenAIOSeriesUsesCompletionTokens(t *testing.T)
 		nil,
 		false,
 		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
-	).(*dto.GeneralOpenAIRequest)
+	).(*shared.GeneralOpenAIRequest)
 	if !ok {
 		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
 	}
@@ -518,7 +518,7 @@ func TestBuildTestRequestExplicitOpenAIPlainModelHasBaselineHeadroom(t *testing.
 		nil,
 		false,
 		channelTestPrompt{requiresTextAnswer: true, expectedAnswer: 10},
-	).(*dto.GeneralOpenAIRequest)
+	).(*shared.GeneralOpenAIRequest)
 	if !ok {
 		t.Fatalf("expected GeneralOpenAIRequest, got %T", req)
 	}
