@@ -25,6 +25,7 @@ import { FetchModelsDialog } from './dialogs/fetch-models-dialog'
 import { MultiKeyManageDialog } from './dialogs/multi-key-manage-dialog'
 import { OllamaModelsDialog } from './dialogs/ollama-models-dialog'
 import { PlanQuotaDialog } from './dialogs/plan-quota-dialog'
+import { ResetCardsDialog } from './dialogs/reset-cards-dialog'
 import { TagBatchEditDialog } from './dialogs/tag-batch-edit-dialog'
 import { ChannelMutateDrawer } from './drawers/channel-mutate-drawer'
 
@@ -79,6 +80,12 @@ export function ChannelsDialogs() {
       {/* Plan Quota/Usage */}
       <PlanQuotaDialog
         open={open === 'plan-quota'}
+        onOpenChange={(v) => !v && setOpen(null)}
+      />
+
+      {/* Reset Cards (GLM only) */}
+      <ResetCardsDialog
+        open={open === 'reset-cards'}
         onOpenChange={(v) => !v && setOpen(null)}
       />
 

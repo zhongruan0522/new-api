@@ -32,12 +32,15 @@ import type {
   GetChannelResponse,
   GetChannelsParams,
   GetChannelsResponse,
+  GlmPlanActivityResponse,
+  GlmResetCardListResponse,
+  GlmResetCardUseParams,
+  GlmResetCardUseResponse,
+  GlmRiskResponse,
+  GlmUsageParams,
   MultiKeyManageParams,
   MultiKeyStatusResponse,
   ProxyTestResponse,
-  GlmPlanActivityResponse,
-  GlmRiskResponse,
-  GlmUsageParams,
   PlanQuotaResponse,
   SearchChannelsParams,
   SearchChannelsResponse,
@@ -374,6 +377,36 @@ export async function getGlmPlanActivity(
   }
   const res = await api.get(
     `/api/channel/plan/glm/activity/${channelId}`,
+    config
+  )
+  return res.data
+}
+
+export async function getGlmResetCards(
+  channelId: number
+): Promise<GlmResetCardListResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/plan/glm/reset_cards/${channelId}`,
+    config
+  )
+  return res.data
+}
+
+export async function applyGlmResetCard(
+  channelId: number,
+  params: GlmResetCardUseParams
+): Promise<GlmResetCardUseResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.post(
+    `/api/channel/plan/glm/reset_cards/${channelId}/use`,
+    params,
     config
   )
   return res.data

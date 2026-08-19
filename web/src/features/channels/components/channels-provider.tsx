@@ -33,6 +33,7 @@ type DialogType =
   | 'ollama-models'
   | 'multi-key-manage'
   | 'plan-quota'
+  | 'reset-cards'
   | 'tag-batch-edit'
   | 'edit-tag'
   | 'copy-channel'

@@ -34,6 +34,7 @@ import {
   Loader2,
   PackageSearch,
   ShieldAlert,
+  CreditCard,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -133,6 +134,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const handlePlanQuota = () => {
     setCurrentRow(channel)
     setOpen('plan-quota')
+  }
+
+  const handleResetCards = () => {
+    setCurrentRow(channel)
+    setOpen('reset-cards')
   }
 
   const handleCheckRisk = async () => {
@@ -301,6 +307,15 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                 ) : (
                   <ShieldAlert size={16} />
                 )}
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
+          {isPlan && isGlmPlan && (
+            <DropdownMenuItem onClick={handleResetCards}>
+              {t('channels.actions.resetCards')}
+              <DropdownMenuShortcut>
+                <CreditCard size={16} />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           )}

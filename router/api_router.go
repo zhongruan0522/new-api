@@ -203,6 +203,8 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/plan/glm/usage/:id", controller.QueryGlmUsage)
 			channelRoute.GET("/plan/glm/risk/:id", controller.QueryRiskStatus)
 			channelRoute.GET("/plan/glm/activity/:id", controller.QueryGlmPlanActivity)
+			channelRoute.GET("/plan/glm/reset_cards/:id", controller.QueryGlmResetCards)
+			channelRoute.POST("/plan/glm/reset_cards/:id/use", controller.UseGlmResetCard)
 		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())

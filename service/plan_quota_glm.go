@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/google/uuid"
 )
 
 // GLM 套餐查询的 API 端点
@@ -742,4 +744,295 @@ func FetchGlmCreditUsageActivity(apiKey string, planBaseURL string, accountType 
 		data.Series = []GlmActivityDay{}
 	}
 	return data, nil
+}
+
+// ============================================================================
+// GLM 套餐额度重置卡 (customer-package-reset)
+// ============================================================================
+//
+// 智谱个人套餐提供「额度重置卡」机制：用户可在 5h 额度紧张时主动触发重置，
+// 或在周额度结算后通过重置卡恢复 5h 额度。重置卡按 resetType 分两类：
+//   - FIVE_HOUR：仅重置 5h 额度，不消耗周重置次数；
+//   - WEEK：重置周额度，同步重置 5h 额度，不额外消耗 5h 次数。
+//
+// 列表接口按 targetType (PERSONAL/TEAM) 返回当前可用的卡。本项目套餐均为个人
+// 套餐，因此固定 targetType=PERSONAL。接口路径与智谱官方前端一致，按套餐区域
+// 划分上游 base URL（国内 bigmodel.cn / 国际 api.z.ai），与 FetchGlmPlanQuota 等
+// 复用 getGlmApiBase。
+
+const (
+	glmResetCardListPath = "/api/biz/customer-package-reset/list"
+	glmResetCardUsePath  = "/api/biz/customer-package-reset/use"
+
+	// GlmResetCardTypePersonal 个人套餐固定 targetType，避免上层暴露给前端可注入。
+	GlmResetCardTypePersonal GlmResetCardType = "PERSONAL"
+
+	// glmResetCardQuotaUnitFiveHour / Week 对应智谱官方前端 quotaUnit 映射，
+	// 仅作为注释参考，不参与后端逻辑。
+	glmResetCardQuotaUnitFiveHour = 3
+	glmResetCardQuotaUnitWeek     = 6
+)
+
+// GlmResetCardType 枚举智谱官方 resetType 取值。
+type GlmResetCardType string
+
+const (
+	GlmResetCardTypeFiveHour GlmResetCardType = "FIVE_HOUR"
+	GlmResetCardTypeWeek     GlmResetCardType = "WEEK"
+)
+
+// glmResetCardSourceKey 把 resetType 映射到上游列表接口 data 字段名，
+// 与智谱官方前端 1.js 第 550-588 行的固定映射保持一致。
+var glmResetCardSourceKey = map[GlmResetCardType]string{
+	GlmResetCardTypeFiveHour: "fiveHourResets",
+	GlmResetCardTypeWeek:     "weekResets",
+}
+
+// GlmResetCard 单条重置卡信息。
+type GlmResetCard struct {
+	RecordId   string `json:"recordId"`
+	ExpireTime string `json:"expireTime"`
+	Available  bool   `json:"available"`
+	Priority   bool   `json:"priority,omitempty"`
+}
+
+// GlmResetCardListData 列表接口聚合后的展示结构，按 resetType 分组。
+// 字段名与智谱官方前端消费的 data 字段名一致（fiveHourResets / weekResets），
+// 前端可直接消费。
+type GlmResetCardListData struct {
+	FiveHourResets []GlmResetCard `json:"fiveHourResets"`
+	WeekResets     []GlmResetCard `json:"weekResets"`
+}
+
+// glmResetCardRaw 上游列表接口 data 字段的原始结构，用于解析后再归一化。
+type glmResetCardRaw struct {
+	FiveHourResets []GlmResetCard `json:"fiveHourResets"`
+	WeekResets     []GlmResetCard `json:"weekResets"`
+}
+
+// glmResetCardListResp 上游列表接口响应外壳。
+type glmResetCardListResp struct {
+	Code    int              `json:"code"`
+	Msg     string           `json:"msg"`
+	Success bool             `json:"success"`
+	Data    *glmResetCardRaw `json:"data"`
+}
+
+// GlmResetCardUseResult 使用重置卡的响应结果。RawMsg 透传上游 message，
+// 便于前端按 "指定的重置次数不可用，请刷新后重试" 等文案触发自动重新拉列表。
+type GlmResetCardUseResult struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+// postGlmAPI 向智谱后端发送 POST 请求，Key 由后端注入，不会暴露给客户端；
+// proxyURL 非空时请求经渠道代理发出。响应体不升级 ErrGlmKeyInvalid，由调用方按
+// 业务语义解析（use 接口失败时需透传上游 msg）。
+func postGlmAPI(baseURL, path, apiKey, proxyURL string, body []byte) ([]byte, error) {
+	url := strings.TrimRight(baseURL, "/") + path
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", strings.TrimSpace(apiKey))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	// 与智谱官方前端保持一致，避免被识别为非浏览器请求导致返回风控页
+	req.Header.Set("Referer", "https://bigmodel.cn/")
+	req.Header.Set("Origin", "https://bigmodel.cn")
+
+	client, err := newGlmHttpClient(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	respBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
+}
+
+// FetchGlmResetCards 拉取智谱套餐的重置卡列表，按 resetType 分组并标注优先卡。
+// 接口路径、targetType 与智谱官方前端保持一致，上游 base URL 按套餐区域划分
+// (glm-coding-plan → bigmodel.cn / glm-coding-plan-international → api.z.ai)。
+func FetchGlmResetCards(apiKey string, planBaseURL string, proxyURL string) (*GlmResetCardListData, error) {
+	apiBase := getGlmApiBase(planBaseURL)
+	if apiBase == "" {
+		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
+	}
+
+	path := fmt.Sprintf("%s?targetType=%s", glmResetCardListPath, url.QueryEscape(string(GlmResetCardTypePersonal)))
+	body, err := fetchGlmAPI(apiBase, path, apiKey, proxyURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp glmResetCardListResp
+	if err := common.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("解析重置卡列表失败: %w", err)
+	}
+
+	data := &GlmResetCardListData{}
+	if resp.Data != nil {
+		data.FiveHourResets = normalizeGlmResetCards(resp.Data.FiveHourResets)
+		data.WeekResets = normalizeGlmResetCards(resp.Data.WeekResets)
+	}
+	return data, nil
+}
+
+// normalizeGlmResetCards 按智谱官方前端逻辑归一化重置卡：
+//   - 仅保留未使用或近 7 天已过期的卡（available=true 直接保留；
+//     available=false 且过期 <=7 天保留为"已过期"，更早的丢弃）。
+//   - 可用卡按 expireTime 升序排列，首张标记为 priority=true。
+func normalizeGlmResetCards(cards []GlmResetCard) []GlmResetCard {
+	if len(cards) == 0 {
+		return []GlmResetCard{}
+	}
+
+	now := time.Now()
+	maxExpiredWindow := 7 * 24 * time.Hour
+
+	kept := make([]GlmResetCard, 0, len(cards))
+	for _, card := range cards {
+		if card.Available {
+			kept = append(kept, card)
+			continue
+		}
+		// 已过期卡按 expireTime 距离 now 是否 <=7 天决定保留与否
+		expireTime, err := parseGlmResetCardExpireTime(card.ExpireTime)
+		if err != nil {
+			// 无法解析时按保守策略保留，避免误删用户可见的卡
+			kept = append(kept, card)
+			continue
+		}
+		if expireTime.Add(maxExpiredWindow).After(now) {
+			kept = append(kept, card)
+		}
+	}
+
+	// 可用卡按 expireTime 升序；首张可用卡标注 priority
+	firstAvailable := -1
+	for i, card := range kept {
+		if card.Available {
+			firstAvailable = i
+			break
+		}
+	}
+	if firstAvailable >= 0 {
+		availableCards := make([]GlmResetCard, 0)
+		for _, card := range kept {
+			if card.Available {
+				availableCards = append(availableCards, card)
+			}
+		}
+		sortGlmResetCardsByExpire(availableCards)
+
+		// 重写 kept 中可用卡顺序，保留首张 priority 标记
+		writeIdx := 0
+		for i := range kept {
+			if kept[i].Available {
+				kept[i] = availableCards[writeIdx]
+				kept[i].Priority = writeIdx == 0
+				writeIdx++
+			} else {
+				kept[i].Priority = false
+			}
+		}
+	}
+	return kept
+}
+
+// parseGlmResetCardExpireTime 兼容 "2006-01-02 15:04:05" 与 RFC3339 两种格式。
+func parseGlmResetCardExpireTime(value string) (time.Time, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return time.Time{}, fmt.Errorf("expireTime 为空")
+	}
+	if t, err := time.ParseInLocation("2006-01-02 15:04:05", trimmed, time.Local); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse(time.RFC3339, trimmed); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("expireTime 格式不支持: %s", trimmed)
+}
+
+// sortGlmResetCardsByExpire 按 expireTime 升序排序（稳定插入排序，规模小）。
+func sortGlmResetCardsByExpire(cards []GlmResetCard) {
+	for i := 1; i < len(cards); i++ {
+		for j := i; j > 0; j-- {
+			if cards[j].ExpireTime < cards[j-1].ExpireTime {
+				cards[j], cards[j-1] = cards[j-1], cards[j]
+			}
+		}
+	}
+}
+
+// GlmResetCardUseRequest controller 解析后的使用请求，requestId 由 service 生成。
+type GlmResetCardUseRequest struct {
+	TargetType GlmResetCardType `json:"targetType"`
+	ResetType  GlmResetCardType `json:"resetType"`
+	RecordId   string           `json:"recordId"`
+}
+
+// UseGlmResetCard 调用智谱使用重置卡接口。targetType 固定 PERSONAL，
+// requestId 由后端生成 uuid 注入，避免前端重复提交或注入不合法 ID。
+func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req GlmResetCardUseRequest) (*GlmResetCardUseResult, error) {
+	apiBase := getGlmApiBase(planBaseURL)
+	if apiBase == "" {
+		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
+	}
+	if req.RecordId == "" {
+		return nil, fmt.Errorf("recordId 不能为空")
+	}
+	if _, ok := glmResetCardSourceKey[req.ResetType]; !ok {
+		return nil, fmt.Errorf("resetType 不支持: %s", req.ResetType)
+	}
+
+	payload := map[string]string{
+		"targetType": string(GlmResetCardTypePersonal),
+		"resetType":  string(req.ResetType),
+		"recordId":   req.RecordId,
+		"requestId":  uuid.NewString(),
+	}
+	body, err := common.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("构造使用重置卡请求失败: %w", err)
+	}
+
+	respBody, err := postGlmAPI(apiBase, glmResetCardUsePath, apiKey, proxyURL, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Code    int    `json:"code"`
+		Msg     string `json:"msg"`
+		Success bool   `json:"success"`
+	}
+	if err := common.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("解析使用重置卡响应失败: %w", err)
+	}
+
+	if !resp.Success {
+		return &GlmResetCardUseResult{
+			Success: false,
+			Message: strings.TrimSpace(resp.Msg),
+		}, nil
+	}
+
+	return &GlmResetCardUseResult{Success: true}, nil
 }

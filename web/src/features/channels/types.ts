@@ -322,6 +322,41 @@ export interface GlmPlanActivityResponse {
 }
 
 // ============================================================================
+// GLM Reset Card Types
+// ============================================================================
+
+export type GlmResetCardType = 'FIVE_HOUR' | 'WEEK'
+
+export interface GlmResetCard {
+  recordId?: string
+  expireTime?: string
+  available?: boolean
+  priority?: boolean
+}
+
+export interface GlmResetCardListData {
+  fiveHourResets?: GlmResetCard[]
+  weekResets?: GlmResetCard[]
+}
+
+export interface GlmResetCardListResponse {
+  success: boolean
+  message?: string
+  data?: GlmResetCardListData
+}
+
+export interface GlmResetCardUseParams {
+  resetType: GlmResetCardType
+  recordId: string
+}
+
+export interface GlmResetCardUseResponse {
+  success: boolean
+  message?: string
+  msg?: string
+}
+
+// ============================================================================
 // API Request Parameters
 // ============================================================================
 

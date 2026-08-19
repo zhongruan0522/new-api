@@ -2507,3 +2507,114 @@ func QueryRiskStatus(c *gin.Context) {
 		"data":    result,
 	})
 }
+
+// QueryGlmResetCards 查询智谱 GLM 套餐的重置卡列表。
+// 上游 base URL 按套餐区域划分（国内 bigmodel.cn / 国际 api.z.ai），targetType 固定 PERSONAL。
+func QueryGlmResetCards(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotPlan)
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		common.ApiErrorI18n(c, i18n.MsgChannelResetCardUnsupported)
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	data, err := service.FetchGlmResetCards(key, planName, channel.GetSetting().Proxy)
+	if err != nil {
+		if errors.Is(err, service.ErrGlmKeyInvalid) {
+			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
+		common.ApiErrorI18n(c, i18n.MsgChannelResetCardQueryFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}
+
+// UseGlmResetCard 使用智谱 GLM 套餐的重置卡。请求体含 resetType 与 recordId，
+// targetType 由后端固定为 PERSONAL，requestId 由后端生成 uuid 注入，避免前端注入。
+func UseGlmResetCard(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotPlan)
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		common.ApiErrorI18n(c, i18n.MsgChannelResetCardUnsupported)
+		return
+	}
+
+	var req struct {
+		ResetType string `json:"resetType"`
+		RecordId  string `json:"recordId"`
+	}
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		common.ApiErrorI18n(c, i18n.MsgChannelInvalidRequestParameters)
+		return
+	}
+	if req.ResetType == "" || req.RecordId == "" {
+		common.ApiErrorI18n(c, i18n.MsgChannelInvalidRequestParameters)
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	result, err := service.UseGlmResetCard(key, planName, channel.GetSetting().Proxy, service.GlmResetCardUseRequest{
+		TargetType: service.GlmResetCardTypePersonal,
+		ResetType:  service.GlmResetCardType(req.ResetType),
+		RecordId:   req.RecordId,
+	})
+	if err != nil {
+		if errors.Is(err, service.ErrGlmKeyInvalid) {
+			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
+		common.ApiErrorI18n(c, i18n.MsgChannelResetCardUseFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+
+	// 上游失败时 success=false，msg 透传给前端，便于前端按特定文案触发重新拉列表
+	if !result.Success {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"msg":     result.Message,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+	})
+}
