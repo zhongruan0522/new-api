@@ -125,7 +125,7 @@ func serializeSide(original interface{}, m map[string]interface{}, ok bool) stri
 }
 
 // normalizeToMap 将任意值归一化为 map[string]interface{}。
-// 支持 map[string]interface{}、map[string]bool 等具体类型；struct 或 JSON 字符串通过 common.Marshal 再 Unmarshal 转换。
+// 支持 map[string]interface{}、map[string]bool 等具体类型；struct 或 JSON 字符串通过 jsonx.Marshal 再 Unmarshal 转换。
 // 第二个返回值表示是否成功归一化为非空 map。
 func normalizeToMap(v interface{}) (map[string]interface{}, bool) {
 	if v == nil {
