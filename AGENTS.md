@@ -12,7 +12,7 @@
 阅读顺序：根 `AGENTS.md` → 目标目录的 `AGENTS.md` → 如有更深层级继续向下。
 
 涉及跨包改动时，阅读所有受影响包的 `AGENTS.md`。例如改 controller 调用
-service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.md`。
+service 的逻辑时，同时阅读 `internal/controller/AGENTS.md` 和 `internal/service/AGENTS.md`。
 
 ## 子规则索引
 
@@ -28,15 +28,15 @@ service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.m
 
 后端 Go 包:
 
-- [common/AGENTS.md](common/AGENTS.md)
-- [router/AGENTS.md](router/AGENTS.md)
-- [controller/AGENTS.md](controller/AGENTS.md)
-- [middleware/AGENTS.md](middleware/AGENTS.md)
-- [service/AGENTS.md](service/AGENTS.md)
-- [model/AGENTS.md](model/AGENTS.md)
-- [setting/AGENTS.md](setting/AGENTS.md)
-- [relay/AGENTS.md](relay/AGENTS.md)
-- [i18n/AGENTS.md](i18n/AGENTS.md)
+- [internal/common/AGENTS.md](internal/common/AGENTS.md)
+- [internal/router/AGENTS.md](internal/router/AGENTS.md)
+- [internal/controller/AGENTS.md](internal/controller/AGENTS.md)
+- [internal/middleware/AGENTS.md](internal/middleware/AGENTS.md)
+- [internal/service/AGENTS.md](internal/service/AGENTS.md)
+- [internal/model/AGENTS.md](internal/model/AGENTS.md)
+- [internal/config/AGENTS.md](internal/config/AGENTS.md)
+- [internal/relay/AGENTS.md](internal/relay/AGENTS.md)
+- [internal/i18n/AGENTS.md](internal/i18n/AGENTS.md)
 - [pkg/AGENTS.md](pkg/AGENTS.md)
 
 文档:
@@ -54,15 +54,17 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 
 - `cmd/server/`: 进程入口，只处理退出码并调用 `internal/app.Run()`。
 - `internal/app/`: 启动资源初始化、Gin 装配、路由挂载和分析脚本注入。
-- `router/`: API、relay、dashboard、web 静态路由。
-- `controller/`: HTTP 边界、请求校验、响应组织。
-- `middleware/`: 认证、限速、日志、分发、安全校验。
-- `service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
-- `model/`: GORM 模型、迁移、缓存、数据库访问。
-- `setting/`: 系统、运营、模型、倍率、性能、审计等配置。
-- `common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
-- `relay/`: AI 请求中继、协议转换、供应商适配。
-- `i18n/`: 后端 API 响应消息多语言翻译。
+- `internal/router/`: API、relay、dashboard、web 静态路由。
+- `internal/controller/`: HTTP 边界、请求校验、响应组织。
+- `internal/middleware/`: 认证、限速、日志、分发、安全校验。
+- `internal/service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
+- `internal/model/`: GORM 模型、迁移、缓存、数据库访问。
+- `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
+- `internal/common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
+- `internal/relay/`: AI 请求中继、协议转换、供应商适配。
+- `internal/oauth/`、`internal/dto/`、`internal/types/`、`internal/constant/`: OAuth 供应商、协议 DTO、共享类型、全局常量。
+- `internal/i18n/`: 后端 API 响应消息多语言翻译。
+- `internal/infra/log/`: 日志工具（原 `logger/`）。
 - `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild；`web/embed.go` 是 `web/dist` 的 Go embed 声明载体，经 `internal/app/webdist` 暴露给启动装配层。
 
@@ -74,7 +76,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - 不写入 secrets。环境变量、数据库 DSN、OAuth 密钥、API key 都不得硬编码到源码或文档示例的真实值。
 - 不用模拟成功、静默降级、吞错或假数据让流程"看起来能跑"。失败必须清晰暴露。
 - 外部输入必须在系统边界校验：HTTP 参数、表单、文件、网络、数据库、缓存、权限、安全逻辑。
-- 新增通用能力前先搜索现有工具函数；确有复用价值再放入 `common/` 或对应前端 `lib/`。
+- 新增通用能力前先搜索现有工具函数；确有复用价值再放入 `internal/common/` 或对应前端 `lib/`。
 - 不要顺手删除、替换或改名项目标识、AGPL/版权头、Go module path、Docker/CI 镜像名等元数据。
 
 ## 后端规则
@@ -91,20 +93,20 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
 - relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
 - relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。
-- 后端 API 响应消息的多语言翻译遵守 [i18n/AGENTS.md](i18n/AGENTS.md)：用户可见提示走 `i18n.Msg*` 常量，不要硬编码中英文字符串。
+- 后端 API 响应消息的多语言翻译遵守 [internal/i18n/AGENTS.md](internal/i18n/AGENTS.md)：用户可见提示走 `i18n.Msg*` 常量，不要硬编码中英文字符串。
 
 ### 审计日志
 
 管理员对系统资源（渠道、用户、令牌、系统设置等）的增删改操作必须接入审计日志。
-通过 `service.RecordAudit(...)` 记录，详见 `controller/AGENTS.md` 和 `service/AGENTS.md`。
-新增需要审计的资源类型时，按 `controller/AGENTS.md` 中的检查清单同步更新 model、
-setting、前端常量和 i18n。
+通过 `service.RecordAudit(...)` 记录，详见 `internal/controller/AGENTS.md` 和 `internal/service/AGENTS.md`。
+新增需要审计的资源类型时，按 `internal/controller/AGENTS.md` 中的检查清单同步更新 model、
+config、前端常量和 i18n。
 
 常用验证:
 
 - `go test ./...`
-- `go test ./relay/... ./controller/... ./service/...`
-- `go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server`
+- `go test ./internal/relay/... ./internal/controller/... ./internal/service/...`
+- `go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server`
 
 ## 前端规则
 

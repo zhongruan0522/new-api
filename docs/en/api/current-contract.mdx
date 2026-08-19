@@ -7,10 +7,10 @@ description: Interface differences verified against NookMux runtime routes and r
 
 This page uses the current repository code as the source of truth, and the verification scope is limited to `docs/en/api/`:
 
-- Routing: `router/api-router.go`, `router/relay-router.go`, `router/dashboard.go`
-- Request boundaries: `controller/`
-- AI request shapes: `dto/`, `relay/`
-- Management resource shapes: `model/`, `setting/`
+- Routing: `internal/router/api-router.go`, `internal/router/relay-router.go`, `internal/router/dashboard.go`
+- Request boundaries: `internal/controller/`
+- AI request shapes: `internal/dto/`, `internal/relay/`
+- Management resource shapes: `internal/model/`, `internal/config/`
 
 The current verification starts with **255** runtime method/path entries; after normalization, the original Chinese generated page covers **180** entries. The mechanical set difference is **99 missing** and **24 stale** entries. Dynamic routes such as `/api/oauth/:provider`, `/v1/models/*path`, and `/v1beta/models/*path` cover multiple concrete URLs, so they cannot be judged by string matching alone.
 

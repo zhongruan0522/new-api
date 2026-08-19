@@ -15,7 +15,7 @@
 ## 后端嵌入载体
 
 - `web/embed.go` 是后端专用 Go 源文件，用于在 `web/dist` 旁声明 `//go:embed`；Go embed 不支持 `..`，因此该文件不能移入 `internal/app/webdist/`。
-- `internal/app/webdist/` 是启动装配层使用的门面包；修改嵌入路径时必须同步检查该包和 `router/web_router.go`。
+- `internal/app/webdist/` 是启动装配层使用的门面包；修改嵌入路径时必须同步检查该包和 `internal/router/web_router.go`。
 - 修改 `web/embed.go` 后至少执行 `go test ./internal/app/... ./router/...`。
 
 ## 命令

@@ -22,14 +22,14 @@ Gin 路由层（router）
 
 ## 后端分层
 
-- `router/`：挂载 API、relay、dashboard、静态资源和调试路由。
-- `controller/`：HTTP 边界、请求校验、响应组织和管理操作审计埋点。
-- `middleware/`：认证、限速、请求体恢复、分发和安全校验。
-- `service/`：业务逻辑、计费、迁移、通知、审计记录和外部服务编排。
-- `model/`：GORM 模型、迁移、缓存和数据库访问，需兼容 SQLite / MySQL / PostgreSQL。
-- `setting/`：系统、运营、模型、计费、审计和性能配置。
-- `relay/`：AI 请求中继、协议转换、供应商适配、usage 统计和计费保护。
-- `common/`：JSON 包装、环境变量、缓存、URL/安全工具、静态资源服务。
+- `internal/router/`：挂载 API、relay、dashboard、静态资源和调试路由。
+- `internal/controller/`：HTTP 边界、请求校验、响应组织和管理操作审计埋点。
+- `internal/middleware/`：认证、限速、请求体恢复、分发和安全校验。
+- `internal/service/`：业务逻辑、计费、迁移、通知、审计记录和外部服务编排。
+- `internal/model/`：GORM 模型、迁移、缓存和数据库访问，需兼容 SQLite / MySQL / PostgreSQL。
+- `internal/config/`：系统、运营、模型、计费、审计和性能配置。
+- `internal/relay/`：AI 请求中继、协议转换、供应商适配、usage 统计和计费保护。
+- `internal/common/`：JSON 包装、环境变量、缓存、URL/安全工具、静态资源服务。
 
 ## 前端架构
 

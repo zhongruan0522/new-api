@@ -6,7 +6,7 @@ title: 渠道
 
 ## Coding Plan 套餐特殊渠道参数
 
-如果使用内置 Coding Plan 套餐，`API 地址` 字段不要填写真实 URL，而是填写对应特殊标识。当前项目在 `constant/channel.go` 的 `ChannelSpecialBases` 中内置以下标识：
+如果使用内置 Coding Plan 套餐，`API 地址` 字段不要填写真实 URL，而是填写对应特殊标识。当前项目在 `internal/constant/channel.go` 的 `ChannelSpecialBases` 中内置以下标识：
 
 | 套餐名称          | 渠道类型选择 | API 地址（填写标识）                |
 | ----------------- | ------------ | ----------------------------------- |
@@ -68,4 +68,4 @@ title: 渠道
 }
 ```
 
-相关实现：`relay/common/override.go`、`constant/channel.go`。
+相关实现：`internal/relay/common/override.go`、`internal/constant/channel.go`。

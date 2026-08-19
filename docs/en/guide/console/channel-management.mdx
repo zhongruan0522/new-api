@@ -6,7 +6,7 @@ The `/channels` page is used to manage upstream providers, keys, groups, model m
 
 ## Special Channel Parameters for Coding Plan Packages
 
-If you use a built-in Coding Plan package, the `API Address` field must use the corresponding special identifier instead of a real URL. These identifiers are built into `constant/channel.go` in `ChannelSpecialBases`.
+If you use a built-in Coding Plan package, the `API Address` field must use the corresponding special identifier instead of a real URL. These identifiers are built into `internal/constant/channel.go` in `ChannelSpecialBases`.
 
 | Package Name | Channel Type | API Address (Identifier) |
 | --- | --- | --- |
@@ -68,4 +68,4 @@ Example:
 }
 ```
 
-Related implementation: `relay/common/override.go`, `constant/channel.go`.
+Related implementation: `internal/relay/common/override.go`, `internal/constant/channel.go`.

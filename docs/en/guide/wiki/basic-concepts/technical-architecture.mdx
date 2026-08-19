@@ -22,14 +22,14 @@ Gin router layer (`router`)
 
 ## Backend Layers
 
-- `router/`: mounts API, relay, dashboard, static assets, and debug routes.
-- `controller/`: HTTP boundary, request validation, response shaping, and audit hooks for admin actions.
-- `middleware/`: authentication, rate limiting, request-body restoration, dispatch, and security checks.
-- `service/`: business logic, billing, migrations, notifications, audit records, and external service orchestration.
-- `model/`: GORM models, migrations, cache, and database access; must be compatible with SQLite / MySQL / PostgreSQL.
-- `setting/`: system, operations, model, billing, audit, and performance configuration.
-- `relay/`: AI request relay, protocol conversion, provider adaptation, usage tracking, and billing protection.
-- `common/`: JSON wrappers, environment variables, cache, URL/security utilities, and static asset service.
+- `internal/router/`: mounts API, relay, dashboard, static assets, and debug routes.
+- `internal/controller/`: HTTP boundary, request validation, response shaping, and audit hooks for admin actions.
+- `internal/middleware/`: authentication, rate limiting, request-body restoration, dispatch, and security checks.
+- `internal/service/`: business logic, billing, migrations, notifications, audit records, and external service orchestration.
+- `internal/model/`: GORM models, migrations, cache, and database access; must be compatible with SQLite / MySQL / PostgreSQL.
+- `internal/config/`: system, operations, model, billing, audit, and performance configuration.
+- `internal/relay/`: AI request relay, protocol conversion, provider adaptation, usage tracking, and billing protection.
+- `internal/common/`: JSON wrappers, environment variables, cache, URL/security utilities, and static asset service.
 
 ## Frontend Architecture
 

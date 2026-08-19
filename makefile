@@ -11,7 +11,7 @@ build-frontend:
 
 build-backend:
 	@echo "Building backend..."
-	@cd $(BACKEND_DIR) && go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(shell git rev-parse HEAD)'" -o NookMux ./cmd/server
+	@cd $(BACKEND_DIR) && go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(shell git rev-parse HEAD)'" -o NookMux ./cmd/server
 
 test-backend:
 	@echo "Testing backend..."

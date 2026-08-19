@@ -1,0 +1,22 @@
+# internal/router/AGENTS.md
+
+`internal/router/` 只负责挂载路由和静态资源，不承载业务逻辑。
+
+## Web 路由
+
+- `SetWebRouter` 使用 `WebAssets` 和 `common.EmbedFolder` 服务 `web/dist`。
+- `NoRoute` 中 `/v1`、`/api`、`/assets` 仍应返回 relay/API 404，不要误返回前端 HTML。
+- 分析脚本注入在 `internal/app/analytics.go` 中处理，修改的是 `internal/app/webdist` 提供的 index 字节副本。
+- `FRONTEND_BASE_URL` 只在非 master 节点生效，保持现有重定向行为。
+
+## 路由边界
+
+- API、dashboard、relay、web 路由分层清晰；新增业务接口优先放对应 router 文件。
+- 不要在路由层解析复杂业务参数或访问数据库。
+- 不要添加会破坏 SSE/streaming 的全局 gzip；web 静态资源 gzip 只在 web router 中处理。
+- 挂载匿名路由（无 `AdminAuth()`/`UserAuth()`）时，确认对应 controller 不返回角色受限数据；公开面与管理面路由分开，详见 [controller/AGENTS.md](../controller/AGENTS.md) 的「API 设计」。
+
+## 验证
+
+- 改 web router 或 embed 资源后执行 `go test ./internal/router/... ./internal/common/...` 和 `go build`。
+- 如果影响 relay 路由，执行相关 `relay` 测试并检查流式响应路径。

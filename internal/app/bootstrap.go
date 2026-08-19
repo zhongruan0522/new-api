@@ -3,14 +3,14 @@ package app
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
-	"github.com/NookMux/NookMux/i18n"
-	"github.com/NookMux/NookMux/logger"
-	"github.com/NookMux/NookMux/model"
-	"github.com/NookMux/NookMux/service"
-	"github.com/NookMux/NookMux/setting/dashboard_setting"
-	_ "github.com/NookMux/NookMux/setting/performance_setting"
-	"github.com/NookMux/NookMux/setting/ratio_setting"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/dashboard"
+	_ "github.com/NookMux/NookMux/internal/config/performance"
+	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/service"
 	"github.com/joho/godotenv"
 )
 
@@ -27,10 +27,10 @@ func Bootstrap() error {
 	// 加载环境变量
 	common.InitEnv()
 
-	logger.SetupLogger()
+	log.SetupLogger()
 
 	// Initialize model settings
-	ratio_setting.InitRatioSettings()
+	ratio.InitRatioSettings()
 
 	service.InitHttpClient()
 
@@ -50,7 +50,7 @@ func Bootstrap() error {
 
 	// 迁移 console_setting 面板开关到 dashboard_config（一次性，幂等）
 	// 失败仅记日志不阻断启动，console_setting 仍可作为 fallback 直到双源统一
-	if err := dashboard_setting.MigrateFromConsoleSetting(); err != nil {
+	if err := dashboard.MigrateFromConsoleSetting(); err != nil {
 		common.SysError("dashboard config migration failed: " + err.Error())
 	}
 
