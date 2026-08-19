@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { z } from 'zod'
 import { CHANNEL_STATUS } from '../constants'
-import type { Channel } from '../types'
+import type { Channel, UpdateChannelParams } from '../types'
 
 // ============================================================================
 // Form Validation Schema
@@ -409,13 +409,16 @@ export function transformFormDataToCreatePayload(formData: ChannelFormValues): {
 }
 
 /**
- * Transform form data to API payload for updating channel
+ * Transform form data to API payload for updating channel.
+ * isMultiKey 为 true 时（编辑多密钥渠道）额外携带 multi_key_mode，
+ * 使保存时可以切换 随机/轮询 取用策略。
  */
 export function transformFormDataToUpdatePayload(
   formData: ChannelFormValues,
-  channelId: number
-): Partial<Channel> {
-  const payload: Partial<Channel> = {
+  channelId: number,
+  isMultiKey = false
+): UpdateChannelParams {
+  const payload: UpdateChannelParams = {
     id: channelId,
     name: formData.name,
     type: formData.type,
@@ -442,6 +445,12 @@ export function transformFormDataToUpdatePayload(
   // Only include key if it was changed (not empty)
   if (formData.key && formData.key.trim()) {
     payload.key = formData.key
+  }
+
+  // Multi-key channels carry their key strategy on every update so the
+  // random/polling selector stays in effect after each save.
+  if (isMultiKey) {
+    payload.multi_key_mode = formData.multi_key_type || 'random'
   }
 
   // Clean up empty strings to null for optional fields

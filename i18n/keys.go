@@ -194,6 +194,7 @@ const (
 	MsgChannelParamOverrideJSONInvalid         = "channel.param_override_json_invalid"
 	MsgChannelHeaderOverrideJSONInvalid        = "channel.header_override_json_invalid"
 	MsgChannelAppendKeysParseFailed            = "channel.append_keys_parse_failed"
+	MsgChannelMultiKeyModeInvalid              = "channel.multi_key_mode_invalid"
 	MsgChannelCopyInfoFailed                   = "channel.copy_info_failed"
 	MsgChannelCopyFailed                       = "channel.copy_failed"
 	MsgChannelNotMultiKey                      = "channel.not_multi_key"

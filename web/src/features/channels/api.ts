@@ -45,6 +45,7 @@ import type {
   SearchChannelsParams,
   SearchChannelsResponse,
   TagOperationParams,
+  UpdateChannelParams,
 } from './types'
 
 // Extended API config types
@@ -143,7 +144,7 @@ export async function createChannel(
  */
 export async function updateChannel(
   id: number,
-  data: Partial<Channel>
+  data: UpdateChannelParams
 ): Promise<{ success: boolean; message?: string; data?: Channel }> {
   const res = await api.put('/api/channel/', { id, ...data })
   return res.data

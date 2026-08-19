@@ -856,6 +856,10 @@ func AddChannel(c *gin.Context) {
 	var keys []string
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
+		if !addChannelRequest.MultiKeyMode.Valid() {
+			common.ApiErrorI18n(c, i18n.MsgChannelMultiKeyModeInvalid, map[string]any{"Mode": addChannelRequest.MultiKeyMode})
+			return
+		}
 		addChannelRequest.Channel.ChannelInfo.IsMultiKey = true
 		addChannelRequest.Channel.ChannelInfo.MultiKeyMode = addChannelRequest.MultiKeyMode
 		if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi && addChannelRequest.Channel.GetOtherSettings().VertexKeyType != dto.VertexKeyTypeAPIKey {
@@ -1138,7 +1142,12 @@ func UpdateChannel(c *gin.Context) {
 
 	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
-		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
+		mode := constant.MultiKeyMode(*channel.MultiKeyMode)
+		if !mode.Valid() {
+			common.ApiErrorI18n(c, i18n.MsgChannelMultiKeyModeInvalid, map[string]any{"Mode": *channel.MultiKeyMode})
+			return
+		}
+		channel.ChannelInfo.MultiKeyMode = mode
 	}
 
 	// 使用统一的校验函数（在继承必要字段后再校验，避免缺字段导致误判）

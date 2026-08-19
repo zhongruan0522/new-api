@@ -41,6 +41,52 @@ describe('transformFormDataToUpdatePayload', () => {
     assert.equal(settings.allow_cache_control, true)
     assert.equal(settings.allow_speed, true)
   })
+
+  test('carries multi_key_mode when updating a multi-key channel', () => {
+    const payload = transformFormDataToUpdatePayload(
+      {
+        ...CHANNEL_FORM_DEFAULT_VALUES,
+        name: 'Key pool',
+        models: 'gpt-4o-mini',
+        group: ['default'],
+        multi_key_type: 'polling',
+      },
+      42,
+      true
+    )
+
+    assert.equal(payload.multi_key_mode, 'polling')
+  })
+
+  test('keeps multi_key_mode default for multi-key channel without explicit choice', () => {
+    const payload = transformFormDataToUpdatePayload(
+      {
+        ...CHANNEL_FORM_DEFAULT_VALUES,
+        name: 'Key pool',
+        models: 'gpt-4o-mini',
+        group: ['default'],
+      },
+      42,
+      true
+    )
+
+    assert.equal(payload.multi_key_mode, 'random')
+  })
+
+  test('omits multi_key_mode when updating a single-key channel', () => {
+    const payload = transformFormDataToUpdatePayload(
+      {
+        ...CHANNEL_FORM_DEFAULT_VALUES,
+        name: 'Solo key',
+        models: 'gpt-4o-mini',
+        group: ['default'],
+        multi_key_type: 'polling',
+      },
+      42
+    )
+
+    assert.equal('multi_key_mode' in payload, false)
+  })
 })
 
 describe('transformChannelToFormDefaults', () => {

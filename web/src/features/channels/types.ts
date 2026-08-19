@@ -483,3 +483,14 @@ export interface AddChannelRequest {
   batch_add_set_key_prefix_2_name?: boolean
   channel: Partial<Channel>
 }
+
+// ============================================================================
+// Update Channel Request (top-level extras beyond Channel fields)
+// ============================================================================
+
+export interface UpdateChannelParams extends Partial<Channel> {
+  /** 多密钥取用策略，编辑多密钥渠道时随更新提交以支持切换 */
+  multi_key_mode?: 'random' | 'polling'
+  /** 多密钥渠道编辑时新密钥的写入方式 */
+  key_mode?: 'append' | 'replace'
+}

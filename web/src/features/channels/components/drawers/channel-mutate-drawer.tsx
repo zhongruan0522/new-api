@@ -904,7 +904,11 @@ export function ChannelMutateDrawer({
       try {
         if (isEditing && currentRow) {
           // Update existing channel
-          const payload = transformFormDataToUpdatePayload(data, currentRow.id)
+          const payload = transformFormDataToUpdatePayload(
+            data,
+            currentRow.id,
+            isMultiKeyChannel
+          )
           const payloadWithKeyMode =
             isMultiKeyChannel && data.key_mode
               ? {
@@ -1735,7 +1739,8 @@ export function ChannelMutateDrawer({
                   />
                 )}
 
-                {!isEditing && multiKeyMode === 'multi_to_single' && (
+                {((!isEditing && multiKeyMode === 'multi_to_single') ||
+                  (isEditing && isMultiKeyChannel)) && (
                   <FormField
                     control={form.control}
                     name='multi_key_type'
