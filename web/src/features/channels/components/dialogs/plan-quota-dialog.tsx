@@ -1100,13 +1100,126 @@ function ActivitySection({ channelId }: { channelId: number }) {
     [series]
   )
 
-  return (
-    <section className='space-y-3 rounded-lg border p-4'>
-      <div className='flex flex-wrap items-center justify-between gap-2'>
-        <div className='text-sm font-semibold'>
-          {t('channels.titles.planActivity')}
+  const summaryContent = (
+    <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
+      <ActivityStat
+        label={t('channels.fields.planTotalTokens')}
+        value={formatCompactNumber(summary?.totalTokens)}
+      />
+      <ActivityStat
+        label={t('channels.fields.planPeakTokens')}
+        value={formatCompactNumber(summary?.peakDailyTokens)}
+        hint={
+          summary?.peakDailyTokensDate
+            ? `${t('channels.fields.planPeakTokensDate')}: ${summary.peakDailyTokensDate}`
+            : undefined
+        }
+      />
+      <ActivityStat
+        label={t('channels.fields.planTotalUsageDuration')}
+        value={formatActivityDuration(summary?.totalUsageDurationMs)}
+      />
+      <ActivityStat
+        label={t('channels.fields.planCurrentStreakDays')}
+        value={String(summary?.currentStreakDays ?? 0)}
+      />
+      <ActivityStat
+        label={t('channels.fields.planLongestStreakDays')}
+        value={String(summary?.longestStreakDays ?? 0)}
+      />
+    </div>
+  )
+
+  const heatmapContent = (
+    <div className='space-y-1.5'>
+      <div className='flex items-center justify-between gap-2'>
+        <div className='text-muted-foreground text-xs font-medium'>
+          {t('channels.fields.planActivityHeatmapTitle')}
         </div>
-        {loadError && (
+        <div className='text-muted-foreground flex items-center gap-1 text-xs'>
+          {t('channels.fields.planActivityHeatmapLegendLess')}
+          {ACTIVITY_HEAT_COLORS.map((color, index) => (
+            <span
+              key={index}
+              className='size-2.5 rounded-[3px]'
+              style={{ backgroundColor: color }}
+            />
+          ))}
+          {t('channels.fields.planActivityHeatmapLegendMore')}
+        </div>
+      </div>
+      <div className='overflow-x-auto pb-1'>
+        <div className='flex gap-1'>
+          <div className='flex flex-col gap-[2px] pt-[18px]'>
+            {weekdayLabels.map((label, index) => (
+              <div
+                key={index}
+                className='text-muted-foreground flex h-2.5 items-center justify-end pr-1 text-[9px] leading-none'
+              >
+                {index % 2 === 0 ? label : ''}
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className='mb-1 flex h-3.5 items-end gap-[2px]'>
+              {monthLabels.map((label, index) => (
+                <div
+                  key={index}
+                  className='text-muted-foreground w-2.5 text-[9px] leading-none whitespace-nowrap'
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div className='flex gap-[2px]'>
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className='flex flex-col gap-[2px]'>
+                  {week.map((cell) => (
+                    <div
+                      key={cell.date}
+                      className='size-2.5 rounded-[3px]'
+                      style={{
+                        backgroundColor:
+                          ACTIVITY_HEAT_COLORS[
+                            activityHeatLevel(cell.tokens, maxTokens)
+                          ],
+                      }}
+                      title={activityCellTitle(cell)}
+                      role='img'
+                      aria-label={activityCellTitle(cell)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (loading) {
+    return (
+      <section className='space-y-3 rounded-lg border p-4'>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <div className='text-sm font-semibold'>
+            {t('channels.titles.planActivity')}
+          </div>
+        </div>
+        <div className='flex h-32 items-center justify-center'>
+          <Loader2 className='text-muted-foreground h-5 w-5 animate-spin' />
+        </div>
+      </section>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <section className='space-y-3 rounded-lg border p-4'>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <div className='text-sm font-semibold'>
+            {t('channels.titles.planActivity')}
+          </div>
           <Button
             type='button'
             variant='outline'
@@ -1121,123 +1234,66 @@ function ActivitySection({ channelId }: { channelId: number }) {
             )}
             {t('channels.actions.refresh')}
           </Button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className='flex h-32 items-center justify-center'>
-          <Loader2 className='text-muted-foreground h-5 w-5 animate-spin' />
         </div>
-      ) : loadError ? (
         <div className='text-muted-foreground flex h-24 items-center justify-center text-sm'>
           {t('channels.tips.planActivityLoadFailed')}
         </div>
-      ) : !hasData ? (
+      </section>
+    )
+  }
+
+  if (!hasData) {
+    return (
+      <section className='space-y-3 rounded-lg border p-4'>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <div className='text-sm font-semibold'>
+            {t('channels.titles.planActivity')}
+          </div>
+        </div>
         <div className='text-muted-foreground flex h-24 items-center justify-center text-sm'>
           {t('channels.fields.planActivityNoData')}
         </div>
-      ) : (
-        <>
-          <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
-            <ActivityStat
-              label={t('channels.fields.planTotalTokens')}
-              value={formatCompactNumber(summary?.totalTokens)}
-            />
-            <ActivityStat
-              label={t('channels.fields.planPeakTokens')}
-              value={formatCompactNumber(summary?.peakDailyTokens)}
-              hint={
-                summary?.peakDailyTokensDate
-                  ? `${t('channels.fields.planPeakTokensDate')}: ${summary.peakDailyTokensDate}`
-                  : undefined
-              }
-            />
-            <ActivityStat
-              label={t('channels.fields.planTotalUsageDuration')}
-              value={formatActivityDuration(summary?.totalUsageDurationMs)}
-            />
-            <ActivityStat
-              label={t('channels.fields.planCurrentStreakDays')}
-              value={String(summary?.currentStreakDays ?? 0)}
-            />
-            <ActivityStat
-              label={t('channels.fields.planLongestStreakDays')}
-              value={String(summary?.longestStreakDays ?? 0)}
-            />
-          </div>
+      </section>
+    )
+  }
 
-          <div className='space-y-1.5'>
-            <div className='flex items-center justify-between gap-2'>
-              <div className='text-muted-foreground text-xs font-medium'>
-                {t('channels.fields.planActivityHeatmapTitle')}
-              </div>
-              <div className='text-muted-foreground flex items-center gap-1 text-xs'>
-                {t('channels.fields.planActivityHeatmapLegendLess')}
-                {ACTIVITY_HEAT_COLORS.map((color, index) => (
-                  <span
-                    key={index}
-                    className='size-2.5 rounded-[3px]'
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-                {t('channels.fields.planActivityHeatmapLegendMore')}
-              </div>
-            </div>
-            <div className='overflow-x-auto pb-1'>
-              <div className='flex gap-1'>
-                <div className='flex flex-col gap-[2px] pt-[18px]'>
-                  {weekdayLabels.map((label, index) => (
-                    <div
-                      key={index}
-                      className='text-muted-foreground flex h-2.5 items-center justify-end pr-1 text-[9px] leading-none'
-                    >
-                      {index % 2 === 0 ? label : ''}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className='mb-1 flex h-3.5 items-end gap-[2px]'>
-                    {monthLabels.map((label, index) => (
-                      <div
-                        key={index}
-                        className='text-muted-foreground w-2.5 text-[9px] leading-none whitespace-nowrap'
-                      >
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                  <div className='flex gap-[2px]'>
-                    {weeks.map((week, weekIndex) => (
-                      <div key={weekIndex} className='flex flex-col gap-[2px]'>
-                        {week.map((cell) => (
-                          <div
-                            key={cell.date}
-                            className='size-2.5 rounded-[3px]'
-                            style={{
-                              backgroundColor:
-                                ACTIVITY_HEAT_COLORS[
-                                  activityHeatLevel(cell.tokens, maxTokens)
-                                ],
-                            }}
-                            title={activityCellTitle(cell)}
-                            role='img'
-                            aria-label={activityCellTitle(cell)}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+  return (
+    <div className='space-y-3'>
+      {/* 板块一：汇总统计 */}
+      <section className='rounded-lg border p-4'>
+        <div className='mb-3 text-sm font-semibold'>
+          {t('channels.titles.planActivity')}
+        </div>
+        {summaryContent}
+      </section>
 
-          <div className='text-muted-foreground text-right text-xs'>
-            {t('channels.tips.planDataDelay')}
+      {/* 板块二：Token 活动热力图 */}
+      <section className='rounded-lg border p-4'>
+        <div className='mb-3 flex flex-wrap items-center justify-between gap-2'>
+          <div className='text-sm font-semibold'>
+            {t('channels.fields.planActivityHeatmapTitle')}
           </div>
-        </>
-      )}
-    </section>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={fetchActivity}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <RefreshCw className='mr-1.5 h-3.5 w-3.5' />
+            )}
+            {t('channels.actions.refresh')}
+          </Button>
+        </div>
+        {heatmapContent}
+        <div className='text-muted-foreground mt-2 text-right text-xs'>
+          {t('channels.tips.planDataDelay')}
+        </div>
+      </section>
+    </div>
   )
 }
 
