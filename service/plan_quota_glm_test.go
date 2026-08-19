@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/NookMux/NookMux/common"
 )
 
 // buildGlmPlanQuotaData 的套餐代次判定必须与智谱官方前端一致：
@@ -205,3 +207,61 @@ func TestCreateBigModelUsageHeaders_Authorization(t *testing.T) {
 
 func intPtr(v int) *int    { return &v }
 func boolPtr(v bool) *bool { return &v }
+
+// 上游重置卡列表的 recordId 是数字（数据库自增 ID），曾按 string 解析导致
+// "cannot unmarshal number into Go struct field ... recordId of type string"。
+// 这里用上游真实响应结构做回归，覆盖解析与归一化两条路径。
+func TestGlmResetCardListParse_NumericRecordId(t *testing.T) {
+	raw := `{
+		"code": 200,
+		"msg": "操作成功",
+		"data": {
+			"customerId": 18211736137540903,
+			"targetType": "PERSONAL",
+			"organizationId": null,
+			"projectId": null,
+			"lastFiveHourResetTime": null,
+			"lastWeekResetTime": null,
+			"fiveHourResets": [],
+			"weekResets": [
+				{
+					"recordId": 8938,
+					"expireTime": "2026-08-26 23:59:59",
+					"available": true
+				}
+			]
+		},
+		"success": true
+	}`
+
+	var resp glmResetCardListResp
+	if err := common.Unmarshal([]byte(raw), &resp); err != nil {
+		t.Fatalf("unmarshal reset card list failed: %v", err)
+	}
+	if !resp.Success {
+		t.Fatal("Success = false, want true")
+	}
+	if resp.Data == nil {
+		t.Fatal("Data = nil, want parsed")
+	}
+	if len(resp.Data.FiveHourResets) != 0 {
+		t.Fatalf("FiveHourResets length = %d, want 0", len(resp.Data.FiveHourResets))
+	}
+	if len(resp.Data.WeekResets) != 1 {
+		t.Fatalf("WeekResets length = %d, want 1", len(resp.Data.WeekResets))
+	}
+	if got := resp.Data.WeekResets[0].RecordId; got != 8938 {
+		t.Fatalf("RecordId = %d, want 8938", got)
+	}
+
+	week := normalizeGlmResetCards(resp.Data.WeekResets)
+	if len(week) != 1 {
+		t.Fatalf("normalized week cards length = %d, want 1", len(week))
+	}
+	if week[0].RecordId != 8938 {
+		t.Fatalf("normalized RecordId = %d, want 8938", week[0].RecordId)
+	}
+	if !week[0].Available || !week[0].Priority {
+		t.Fatal("first available card must keep available=true and be marked priority")
+	}
+}

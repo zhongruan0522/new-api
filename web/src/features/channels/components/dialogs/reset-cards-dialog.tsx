@@ -56,11 +56,11 @@ function ResetCardRow({
   card: GlmResetCard
   resetType: GlmResetCardType
   pending: boolean
-  onUse: (resetType: GlmResetCardType, recordId: string) => void
+  onUse: (resetType: GlmResetCardType, recordId: number) => void
 }) {
   const { t } = useTranslation()
   const expired = isExpiredCard(card)
-  const recordId = card.recordId || ''
+  const recordId = card.recordId || 0
   const disabled = expired || pending || !recordId
 
   return (
@@ -111,8 +111,8 @@ function ResetCardSection({
   title: string
   resetType: GlmResetCardType
   cards: GlmResetCard[]
-  pendingRecordId?: string
-  onUse: (resetType: GlmResetCardType, recordId: string) => void
+  pendingRecordId?: number
+  onUse: (resetType: GlmResetCardType, recordId: number) => void
 }) {
   const { t } = useTranslation()
   const sortedCards = useMemo(() => {
@@ -160,7 +160,7 @@ export function ResetCardsDialog({ open, onOpenChange }: ResetCardsDialogProps) 
   const { t } = useTranslation()
   const { currentRow } = useChannels()
   const [loading, setLoading] = useState(false)
-  const [usingRecordId, setUsingRecordId] = useState<string | undefined>()
+  const [usingRecordId, setUsingRecordId] = useState<number | undefined>()
   const [cards, setCards] = useState<{
     fiveHourResets: GlmResetCard[]
     weekResets: GlmResetCard[]
@@ -204,7 +204,7 @@ export function ResetCardsDialog({ open, onOpenChange }: ResetCardsDialogProps) 
 
   if (!currentRow) return null
 
-  const handleUse = async (resetType: GlmResetCardType, recordId: string) => {
+  const handleUse = async (resetType: GlmResetCardType, recordId: number) => {
     if (!currentRow?.id || !recordId) return
     setUsingRecordId(recordId)
     try {

@@ -328,7 +328,7 @@ export interface GlmPlanActivityResponse {
 export type GlmResetCardType = 'FIVE_HOUR' | 'WEEK'
 
 export interface GlmResetCard {
-  recordId?: string
+  recordId?: number
   expireTime?: string
   available?: boolean
   priority?: boolean
@@ -347,7 +347,7 @@ export interface GlmResetCardListResponse {
 
 export interface GlmResetCardUseParams {
   resetType: GlmResetCardType
-  recordId: string
+  recordId: number
 }
 
 export interface GlmResetCardUseResponse {

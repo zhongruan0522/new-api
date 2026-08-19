@@ -788,9 +788,10 @@ var glmResetCardSourceKey = map[GlmResetCardType]string{
 	GlmResetCardTypeWeek:     "weekResets",
 }
 
-// GlmResetCard 单条重置卡信息。
+// GlmResetCard 单条重置卡信息。上游 recordId 是数字（数据库自增 ID），
+// 智谱官方前端也从列表原样以数字提交回 use 接口，因此用 int64 保持两端一致。
 type GlmResetCard struct {
-	RecordId   string `json:"recordId"`
+	RecordId   int64  `json:"recordId"`
 	ExpireTime string `json:"expireTime"`
 	Available  bool   `json:"available"`
 	Priority   bool   `json:"priority,omitempty"`
@@ -985,7 +986,7 @@ func sortGlmResetCardsByExpire(cards []GlmResetCard) {
 type GlmResetCardUseRequest struct {
 	TargetType GlmResetCardType `json:"targetType"`
 	ResetType  GlmResetCardType `json:"resetType"`
-	RecordId   string           `json:"recordId"`
+	RecordId   int64            `json:"recordId"`
 }
 
 // UseGlmResetCard 调用智谱使用重置卡接口。targetType 固定 PERSONAL，
@@ -995,14 +996,15 @@ func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req Glm
 	if apiBase == "" {
 		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
 	}
-	if req.RecordId == "" {
-		return nil, fmt.Errorf("recordId 不能为空")
+	if req.RecordId <= 0 {
+		return nil, fmt.Errorf("recordId 无效")
 	}
 	if _, ok := glmResetCardSourceKey[req.ResetType]; !ok {
 		return nil, fmt.Errorf("resetType 不支持: %s", req.ResetType)
 	}
 
-	payload := map[string]string{
+	// recordId 与智谱官方前端一致按数字提交（官方前端从列表响应原样透传）
+	payload := map[string]any{
 		"targetType": string(GlmResetCardTypePersonal),
 		"resetType":  string(req.ResetType),
 		"recordId":   req.RecordId,

@@ -2579,13 +2579,13 @@ func UseGlmResetCard(c *gin.Context) {
 
 	var req struct {
 		ResetType string `json:"resetType"`
-		RecordId  string `json:"recordId"`
+		RecordId  int64  `json:"recordId"`
 	}
 	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelInvalidRequestParameters)
 		return
 	}
-	if req.ResetType == "" || req.RecordId == "" {
+	if req.ResetType == "" || req.RecordId <= 0 {
 		common.ApiErrorI18n(c, i18n.MsgChannelInvalidRequestParameters)
 		return
 	}
