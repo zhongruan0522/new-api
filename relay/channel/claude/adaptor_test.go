@@ -7,6 +7,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
 )
@@ -114,7 +115,7 @@ func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T
 }
 
 func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.T) {
-	toolsRaw, err := common.Marshal([]map[string]any{{
+	toolsRaw, err := jsonx.Marshal([]map[string]any{{
 		"type":        "function",
 		"name":        "weather",
 		"description": "Get weather",
@@ -128,7 +129,7 @@ func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
-	inputRaw, err := common.Marshal([]map[string]any{
+	inputRaw, err := jsonx.Marshal([]map[string]any{
 		{
 			"type":    "message",
 			"role":    "user",
@@ -214,7 +215,7 @@ func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingEnabled(t *testi
 		t.Fatalf("thinking = %+v, want adaptive without budget_tokens", converted.Thinking)
 	}
 	var outputConfig dto.ClaudeOutputConfig
-	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
 	if outputConfig.Effort != "high" {
@@ -259,7 +260,7 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47UsesSummarizedAdaptiveThinking(t
 		t.Fatalf("thinking = %+v, want adaptive summarized without budget_tokens", converted.Thinking)
 	}
 	var outputConfig dto.ClaudeOutputConfig
-	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
 	if outputConfig.Effort != "high" {
@@ -294,7 +295,7 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47ThinkingSuffixUsesHighEffort(t *
 		t.Fatalf("thinking = %+v, want adaptive summarized", converted.Thinking)
 	}
 	var outputConfig dto.ClaudeOutputConfig
-	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
 	if outputConfig.Effort != "high" {
@@ -354,7 +355,7 @@ func TestAdaptorConvertOpenAIRequestDeepSeekClaudeEffortUsesOutputConfigOnly(t *
 		t.Fatalf("thinking = %+v, want nil for DeepSeek Anthropic-compatible effort", converted.Thinking)
 	}
 	var outputConfig dto.ClaudeOutputConfig
-	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
 	if outputConfig.Effort != "max" {

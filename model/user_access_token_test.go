@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -176,7 +177,7 @@ func TestUserAccessTokenIsNotSerialized(t *testing.T) {
 		AffCode:     "serialize-aff-1",
 	}
 
-	data, err := common.Marshal(user)
+	data, err := jsonx.Marshal(user)
 	if err != nil {
 		t.Fatalf("marshal user: %v", err)
 	}

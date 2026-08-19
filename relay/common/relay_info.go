@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/model_setting"
 	"github.com/NookMux/NookMux/types"
@@ -614,7 +615,7 @@ func (info *RelayInfo) HasSendResponse() bool {
 // safety_identifier: 安全标识符，用于向 OpenAI 报告违规用户（仅 OpenAI 支持，涉及用户隐私）
 func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
 	var data map[string]interface{}
-	if err := common.Unmarshal(jsonData, &data); err != nil {
+	if err := jsonx.Unmarshal(jsonData, &data); err != nil {
 		common.SysError("RemoveDisabledFields Unmarshal error :" + err.Error())
 		return jsonData, nil
 	}
@@ -634,7 +635,7 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		delete(data, "safety_identifier")
 	}
 
-	jsonDataAfter, err := common.Marshal(data)
+	jsonDataAfter, err := jsonx.Marshal(data)
 	if err != nil {
 		common.SysError("RemoveDisabledFields Marshal error :" + err.Error())
 		return jsonData, nil
@@ -655,7 +656,7 @@ func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings dto.Channe
 	}
 
 	var data any
-	if err := common.Unmarshal(jsonData, &data); err != nil {
+	if err := jsonx.Unmarshal(jsonData, &data); err != nil {
 		common.SysError("RemoveClaudeDisabledFields Unmarshal error :" + err.Error())
 		return jsonData, nil
 	}
@@ -668,7 +669,7 @@ func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings dto.Channe
 		removeJSONFieldRecursive(data, "cache_control")
 	}
 
-	jsonDataAfter, err := common.Marshal(data)
+	jsonDataAfter, err := jsonx.Marshal(data)
 	if err != nil {
 		common.SysError("RemoveClaudeDisabledFields Marshal error :" + err.Error())
 		return jsonData, nil
@@ -698,7 +699,7 @@ func RemoveGeminiDisabledFields(jsonData []byte) ([]byte, error) {
 	}
 
 	var data map[string]interface{}
-	if err := common.Unmarshal(jsonData, &data); err != nil {
+	if err := jsonx.Unmarshal(jsonData, &data); err != nil {
 		common.SysError("RemoveGeminiDisabledFields Unmarshal error: " + err.Error())
 		return jsonData, nil
 	}
@@ -726,7 +727,7 @@ func RemoveGeminiDisabledFields(jsonData []byte) ([]byte, error) {
 		}
 	}
 
-	jsonDataAfter, err := common.Marshal(data)
+	jsonDataAfter, err := jsonx.Marshal(data)
 	if err != nil {
 		common.SysError("RemoveGeminiDisabledFields Marshal error: " + err.Error())
 		return jsonData, nil

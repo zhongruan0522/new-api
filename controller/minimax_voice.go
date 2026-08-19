@@ -13,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 )
 
@@ -68,7 +69,7 @@ type miniMaxVoiceUpsertRequest struct {
 // 操作人 ID 记录为当前管理员，OperatorKind=admin。
 func CreateMiniMaxVoice(c *gin.Context) {
 	var req miniMaxVoiceUpsertRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
@@ -142,7 +143,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 	var req miniMaxVoiceUpsertRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}

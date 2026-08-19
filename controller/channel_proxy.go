@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,7 @@ type proxyTestRequest struct {
 // affordance.
 func TestProxy(c *gin.Context) {
 	var req proxyTestRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}

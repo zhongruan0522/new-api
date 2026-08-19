@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/helper"
@@ -119,7 +120,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 	reasoningBudget := 0
 	if textRequest.Reasoning != nil {
 		var reasoning openrouter.RequestReasoning
-		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+		if err := jsonx.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
 			return err
 		}
 		if strings.TrimSpace(reasoning.Effort) != "" {
@@ -161,7 +162,7 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 		} else {
 			claudeRequest.Thinking = nil
 		}
-		outputConfig, err := common.Marshal(dto.ClaudeOutputConfig{Effort: claudeEffort})
+		outputConfig, err := jsonx.Marshal(dto.ClaudeOutputConfig{Effort: claudeEffort})
 		if err != nil {
 			return fmt.Errorf("failed to marshal claude output_config: %w", err)
 		}
@@ -934,7 +935,7 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 
 func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *types.NookMuxError {
 	var claudeResponse dto.ClaudeResponse
-	err := common.UnmarshalJsonStr(data, &claudeResponse)
+	err := jsonx.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
 		common.SysLog("error unmarshalling stream response: " + err.Error())
 		return types.NewError(err, types.ErrorCodeBadResponseBody)
@@ -968,7 +969,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 				data = patchClaudeMessageDeltaUsageData(data, buildMessageDeltaPatchUsage(&claudeResponse, claudeInfo))
 			}
 		}
-		data = string(helper.MaskClaudeEventModelJSON(common.StringToByteSlice(data), info))
+		data = string(helper.MaskClaudeEventModelJSON(jsonx.StringToByteSlice(data), info))
 		helper.ClaudeChunkData(c, claudeResponse, data)
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
@@ -1012,7 +1013,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 			return nil
 		}
 
-		geminiResponseStr, marshalErr := common.Marshal(geminiResponse)
+		geminiResponseStr, marshalErr := jsonx.Marshal(geminiResponse)
 		if marshalErr != nil {
 			return types.NewError(marshalErr, types.ErrorCodeBadResponseBody)
 		}
@@ -1067,7 +1068,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		if geminiResponse == nil {
 			return
 		}
-		geminiResponseStr, err := common.Marshal(geminiResponse)
+		geminiResponseStr, err := jsonx.Marshal(geminiResponse)
 		if err != nil {
 			common.SysLog("send final gemini response failed: " + err.Error())
 			return
@@ -1086,7 +1087,7 @@ func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInf
 
 func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *dto.ChatCompletionsStreamResponse) *types.NookMuxError {
 	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
-	data, err := common.Marshal(response)
+	data, err := jsonx.Marshal(response)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
@@ -1114,7 +1115,7 @@ func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo,
 
 	if claudeInfo.Usage != nil {
 		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
-		data, err := common.Marshal(usageChunk)
+		data, err := jsonx.Marshal(usageChunk)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
@@ -1162,7 +1163,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 
 func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *types.NookMuxError {
 	var claudeResponse dto.ClaudeResponse
-	err := common.Unmarshal(data, &claudeResponse)
+	err := jsonx.Unmarshal(data, &claudeResponse)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
@@ -1194,7 +1195,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if convErr != nil {
 			return types.NewError(convErr, types.ErrorCodeBadResponseBody)
 		}
-		responseData, err = common.Marshal(responsesResp)
+		responseData, err = jsonx.Marshal(responsesResp)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
@@ -1205,7 +1206,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
-		responseData, err = common.Marshal(geminiResponse)
+		responseData, err = jsonx.Marshal(geminiResponse)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}

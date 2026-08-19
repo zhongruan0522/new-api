@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // MiniMaxPlanQuotaData MiniMax 套餐额度数据
@@ -93,7 +93,7 @@ func FetchMiniMaxPlanQuota(apiKey string, planName string, proxyURL string) (*Mi
 	}
 
 	var resp minimaxResp
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return &MiniMaxPlanQuotaData{
 			PlanName:   planName,
 			Credential: "error",

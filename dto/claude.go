@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
@@ -84,7 +85,7 @@ func (c *ClaudeMediaMessage) GetStringContent() string {
 }
 
 func (c *ClaudeMediaMessage) GetJsonRowString() string {
-	jsonContent, _ := common.Marshal(c)
+	jsonContent, _ := jsonx.Marshal(c)
 	return string(jsonContent)
 }
 
@@ -297,12 +298,12 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 					texts = append(texts, media.Name)
 				}
 				if media.Input != nil {
-					b, _ := common.Marshal(media.Input)
+					b, _ := jsonx.Marshal(media.Input)
 					texts = append(texts, string(b))
 				}
 			case "tool_result":
 				if media.Content != nil {
-					b, _ := common.Marshal(media.Content)
+					b, _ := jsonx.Marshal(media.Content)
 					texts = append(texts, string(b))
 				}
 			}
@@ -322,7 +323,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 				texts = append(texts, t.Description)
 			}
 			if t.InputSchema != nil {
-				b, _ := common.Marshal(t.InputSchema)
+				b, _ := jsonx.Marshal(t.InputSchema)
 				texts = append(texts, string(b))
 			}
 		}
@@ -332,7 +333,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 				texts = append(texts, t.Name)
 			}
 			if t.UserLocation != nil {
-				b, _ := common.Marshal(t.UserLocation)
+				b, _ := jsonx.Marshal(t.UserLocation)
 				texts = append(texts, string(b))
 			}
 		}

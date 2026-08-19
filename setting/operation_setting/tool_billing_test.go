@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestGetToolBillingPrice_WebSearchOpenAI(t *testing.T) {
@@ -323,7 +324,7 @@ func TestMigrateLegacyRules(t *testing.T) {
 
 	// 验证迁移后能正确匹配
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(migrated), &rules); err != nil {
 		t.Fatalf("failed to parse migrated rules: %v", err)
 	}
 	if len(rules) != 1 {
@@ -374,7 +375,7 @@ func TestMigrateLegacyRules_ModelFilter(t *testing.T) {
 	}
 
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(migrated), &rules); err != nil {
 		t.Fatalf("failed to parse migrated rules: %v", err)
 	}
 
@@ -429,7 +430,7 @@ func TestMigrateLegacyRules_ModelFilterExactEntriesStayExact(t *testing.T) {
 	}
 
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(migrated), &rules); err != nil {
 		t.Fatalf("failed to parse migrated rules: %v", err)
 	}
 
@@ -485,7 +486,7 @@ func TestMigrateLegacyRules_ModelFilterWildcardOnlyOmitsModelCondition(t *testin
 	}
 
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(migrated), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(migrated), &rules); err != nil {
 		t.Fatalf("failed to parse migrated rules: %v", err)
 	}
 	if len(rules[0].Conditions) != 1 {

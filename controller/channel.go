@@ -14,6 +14,7 @@ import (
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/gemini"
 	"github.com/NookMux/NookMux/relay/channel/ollama"
 	"github.com/NookMux/NookMux/service"
@@ -806,7 +807,7 @@ func getVertexArrayKeys(c *gin.Context, keys string) ([]string, error) {
 		return nil, nil
 	}
 	var keyArray []interface{}
-	err := common.Unmarshal([]byte(keys), &keyArray)
+	err := jsonx.Unmarshal([]byte(keys), &keyArray)
 	if err != nil {
 		return nil, fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelVertexBatchKeysJSONInvalid, map[string]any{"Error": err.Error()}))
 	}
@@ -1412,7 +1413,7 @@ func FetchModels(c *gin.Context) {
 		} `json:"data"`
 	}
 
-	if err := common.DecodeJson(response.Body, &result); err != nil {
+	if err := jsonx.DecodeJson(response.Body, &result); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
@@ -1608,12 +1609,12 @@ func ManageMultiKeys(c *gin.Context) {
 	// 保存更新前的 channel 快照（map 副本），用于审计差异对比。
 	// 使用 JSON 往返实现深拷贝，避免指针修改导致 before 数据被污染。
 	originChannelMap := func() map[string]interface{} {
-		bytes, err := common.Marshal(channel)
+		bytes, err := jsonx.Marshal(channel)
 		if err != nil {
 			return nil
 		}
 		var m map[string]interface{}
-		if err := common.Unmarshal(bytes, &m); err != nil {
+		if err := jsonx.Unmarshal(bytes, &m); err != nil {
 			return nil
 		}
 		return m
@@ -2590,7 +2591,7 @@ func UseGlmResetCard(c *gin.Context) {
 		ResetType string `json:"resetType"`
 		RecordId  int64  `json:"recordId"`
 	}
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelInvalidRequestParameters)
 		return
 	}

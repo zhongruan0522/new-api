@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // KimiPlanQuotaData Kimi 套餐额度数据
@@ -107,7 +107,7 @@ func FetchKimiPlanQuota(apiKey string, proxyURL string) (*KimiPlanQuotaData, err
 	}
 
 	var resp kimiUsageResp
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return &KimiPlanQuotaData{
 			PlanName:   "kimi-coding-plan",
 			Credential: "error",

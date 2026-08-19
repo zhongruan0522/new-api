@@ -37,6 +37,7 @@ service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.m
 - [setting/AGENTS.md](setting/AGENTS.md)
 - [relay/AGENTS.md](relay/AGENTS.md)
 - [i18n/AGENTS.md](i18n/AGENTS.md)
+- [pkg/AGENTS.md](pkg/AGENTS.md)
 
 文档:
 
@@ -59,9 +60,10 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
 - `model/`: GORM 模型、迁移、缓存、数据库访问。
 - `setting/`: 系统、运营、模型、倍率、性能、审计等配置。
-- `common/`: JSON、缓存、环境变量、静态文件服务、安全工具。
+- `common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
 - `relay/`: AI 请求中继、协议转换、供应商适配。
 - `i18n/`: 后端 API 响应消息多语言翻译。
+- `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild；`web/embed.go` 是 `web/dist` 的 Go embed 声明载体，经 `internal/app/webdist` 暴露给启动装配层。
 
 ## 全局工作规则
@@ -78,7 +80,8 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 ## 后端规则
 
 - Go 版本以 `go.mod` 为准。
-- JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
+- JSON 序列化/反序列化调用使用 `pkg/jsonx` 的包装函数（`jsonx.Marshal` / `jsonx.Unmarshal` /
+  `jsonx.UnmarshalJsonStr` / `jsonx.DecodeJson`）；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
 - 渠道相关的外网请求（中继、测试、模型拉取、余额/套餐查询、WebSocket 等）必须走该渠道配置的代理（`service.NewProxyHttpClient` / `NewProxyWebSocketDialer`）。

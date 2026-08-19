@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
@@ -49,7 +49,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 		return nil, err
 	}
 	if req != nil && req.Thinking != nil && req.Thinking.Type == "enabled" && len(oaiReq.Reasoning) == 0 {
-		reasoningPayload, marshalErr := common.Marshal(openrouter.RequestReasoning{MaxTokens: req.Thinking.GetBudgetTokens()})
+		reasoningPayload, marshalErr := jsonx.Marshal(openrouter.RequestReasoning{MaxTokens: req.Thinking.GetBudgetTokens()})
 		if marshalErr != nil {
 			return nil, marshalErr
 		}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
@@ -67,7 +68,7 @@ func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.
 
 func TestGeminiUsageMetadataToOpenAIUsageAcceptsSnakeCaseToolUseFields(t *testing.T) {
 	var metadata dto.GeminiUsageMetadata
-	if err := common.Unmarshal([]byte(`{
+	if err := jsonx.Unmarshal([]byte(`{
 		"prompt_token_count": 2,
 		"tool_use_prompt_token_count": 3,
 		"candidates_token_count": 5,

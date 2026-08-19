@@ -182,6 +182,8 @@ internal/app/webdist/           ← 对 app 层暴露内部 webdist API 的门�
 
 **验证**：`go build ./... && go test ./pkg/...`；`go list -deps ./pkg/...` 输出不出现 `internal/`、`constant`、`types`、`dto`、`common` 路径。
 
+> **执行记录（2026-08-19，阶段 2 落地）**：`common/json.go` 已迁至 `pkg/jsonx`，`common/str.go` 的 `StringToByteSlice`（`UnmarshalJsonStr` 的零拷贝依赖，unsafe 实现）随迁避免双份维护，全仓 533 处调用同步改写为 `jsonx.*`。`body_storage.go` 按上文二选一决策点完成符号级复核：其本体引用 `common/gin.go` 的 `ErrRequestBodyTooLarge` / `IsRequestBodyTooLargeError`、`disk_cache*.go` 的缓存配置与计数器、`sys_log.go` 的 `SysError`，测试文件直接 import `gin` + `constant` 且测试的是 `gin.go` 的 `GetRequestBody` / `UnmarshalBodyReusable`——结论为**暂留 `common/`**（不设 `pkg/ginext`），随阶段 3 平移、阶段 4 归 `internal/infra/cache/`。
+
 ### 阶段 3：`internal/` 外壳 + 业务包整体平移（机械迁移）
 
 把所有业务包从根目录搬进 `internal/`，**内部结构不变**，仅路径前缀变化：

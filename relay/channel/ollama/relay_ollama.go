@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	channelconstant "github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 )
 
@@ -60,7 +61,7 @@ func FetchOllamaModels(baseURL, apiKey, proxyURL string) ([]OllamaModel, error) 
 		return nil, fmt.Errorf("读取响应失败: %v", err)
 	}
 
-	err = common.Unmarshal(body, &listResponse)
+	err = jsonx.Unmarshal(body, &listResponse)
 	if err != nil {
 		return nil, fmt.Errorf("解析响应失败: %v", err)
 	}
@@ -109,7 +110,7 @@ func PullOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 		Stream: false, // 非流式，简化处理
 	}
 
-	requestBody, err := common.Marshal(pullRequest)
+	requestBody, err := jsonx.Marshal(pullRequest)
 	if err != nil {
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
@@ -151,7 +152,7 @@ func PullOllamaModelStream(baseURL, apiKey, proxyURL, modelName string, progress
 		Stream: true, // 启用流式
 	}
 
-	requestBody, err := common.Marshal(pullRequest)
+	requestBody, err := jsonx.Marshal(pullRequest)
 	if err != nil {
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
@@ -188,7 +189,7 @@ func PullOllamaModelStream(baseURL, apiKey, proxyURL, modelName string, progress
 		}
 
 		var pullResponse OllamaPullResponse
-		if err := common.Unmarshal([]byte(line), &pullResponse); err != nil {
+		if err := jsonx.Unmarshal([]byte(line), &pullResponse); err != nil {
 			continue // 忽略解析失败的行
 		}
 
@@ -225,7 +226,7 @@ func DeleteOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 		Name: modelName,
 	}
 
-	requestBody, err := common.Marshal(deleteRequest)
+	requestBody, err := jsonx.Marshal(deleteRequest)
 	if err != nil {
 		return fmt.Errorf("序列化请求失败: %v", err)
 	}
@@ -295,7 +296,7 @@ func FetchOllamaVersion(baseURL, apiKey, proxyURL string) (string, error) {
 		Version string `json:"version"`
 	}
 
-	if err := common.Unmarshal(body, &versionResp); err != nil {
+	if err := jsonx.Unmarshal(body, &versionResp); err != nil {
 		return "", fmt.Errorf("解析响应失败: %v", err)
 	}
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/types"
@@ -99,7 +99,7 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	info.RequestURLPath = "/v1/responses"
 	info.IsStream = responsesReq.Stream
 
-	bodyBytes, err := common.Marshal(responsesReq)
+	bodyBytes, err := jsonx.Marshal(responsesReq)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 	}
@@ -146,7 +146,7 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 	info.RequestURLPath = "/v1/chat/completions"
 	info.IsStream = chatReq.Stream
 
-	bodyBytes, err := common.Marshal(chatReq)
+	bodyBytes, err := jsonx.Marshal(chatReq)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 	}

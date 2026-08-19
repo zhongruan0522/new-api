@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
@@ -133,7 +134,7 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	// Parse response
 	var minimaxResp MiniMaxTTSResponse
-	if unmarshalErr := common.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
+	if unmarshalErr := jsonx.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
 		return nil, types.NewErrorWithStatusCode(
 			fmt.Errorf("failed to parse TTS response: %w", unmarshalErr),
 			types.ErrorCodeBadResponseBody,

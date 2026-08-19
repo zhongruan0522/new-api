@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestNormalizeEffort(t *testing.T) {
@@ -39,28 +39,28 @@ func TestExtractEffortFromOpenAIRequest(t *testing.T) {
 	}
 
 	// 2. Reasoning JSON with effort
-	reasoningJSON, _ := common.Marshal(map[string]string{"effort": "medium"})
+	reasoningJSON, _ := jsonx.Marshal(map[string]string{"effort": "medium"})
 	req = &dto.GeneralOpenAIRequest{Reasoning: reasoningJSON}
 	if e := ExtractEffortFromOpenAIRequest(req); e != "medium" {
 		t.Fatalf("reasoning.effort: got %q, want medium", e)
 	}
 
 	// 3. Reasoning enabled but no effort -> auto
-	reasoningJSON, _ = common.Marshal(map[string]interface{}{"enabled": true})
+	reasoningJSON, _ = jsonx.Marshal(map[string]interface{}{"enabled": true})
 	req = &dto.GeneralOpenAIRequest{Reasoning: reasoningJSON}
 	if e := ExtractEffortFromOpenAIRequest(req); e != "auto" {
 		t.Fatalf("reasoning.enabled: got %q, want auto", e)
 	}
 
 	// 4. THINKING with type=enabled -> auto
-	thinkingJSON, _ := common.Marshal(dto.Thinking{Type: "enabled", BudgetTokens: intPtr(2048)})
+	thinkingJSON, _ := jsonx.Marshal(dto.Thinking{Type: "enabled", BudgetTokens: intPtr(2048)})
 	req = &dto.GeneralOpenAIRequest{THINKING: thinkingJSON}
 	if e := ExtractEffortFromOpenAIRequest(req); e != "auto" {
 		t.Fatalf("thinking.type=enabled: got %q, want auto", e)
 	}
 
 	// 5. THINKING with type=adaptive -> auto
-	thinkingJSON, _ = common.Marshal(dto.Thinking{Type: "adaptive"})
+	thinkingJSON, _ = jsonx.Marshal(dto.Thinking{Type: "adaptive"})
 	req = &dto.GeneralOpenAIRequest{THINKING: thinkingJSON}
 	if e := ExtractEffortFromOpenAIRequest(req); e != "auto" {
 		t.Fatalf("thinking.type=adaptive: got %q, want auto", e)
@@ -80,7 +80,7 @@ func TestExtractEffortFromOpenAIRequest(t *testing.T) {
 	}
 
 	// 8. Top-level effort takes priority over Reasoning JSON
-	reasoningJSON, _ = common.Marshal(map[string]string{"effort": "low"})
+	reasoningJSON, _ = jsonx.Marshal(map[string]string{"effort": "low"})
 	req = &dto.GeneralOpenAIRequest{ReasoningEffort: "high", Reasoning: reasoningJSON}
 	if e := ExtractEffortFromOpenAIRequest(req); e != "high" {
 		t.Fatalf("priority: got %q, want high", e)
@@ -123,14 +123,14 @@ func TestExtractEffortFromOpenAIResponsesRequest(t *testing.T) {
 
 func TestExtractEffortFromClaudeRequest(t *testing.T) {
 	// 1. output_config.effort
-	outputConfig, _ := common.Marshal(dto.ClaudeOutputConfig{Effort: "medium"})
+	outputConfig, _ := jsonx.Marshal(dto.ClaudeOutputConfig{Effort: "medium"})
 	req := &dto.ClaudeRequest{OutputConfig: outputConfig}
 	if e := ExtractEffortFromClaudeRequest(req); e != "medium" {
 		t.Fatalf("output_config.effort=medium: got %q, want medium", e)
 	}
 
 	// 2. output_config.effort=max -> xhigh (本项目统一映射)
-	outputConfig, _ = common.Marshal(dto.ClaudeOutputConfig{Effort: "max"})
+	outputConfig, _ = jsonx.Marshal(dto.ClaudeOutputConfig{Effort: "max"})
 	req = &dto.ClaudeRequest{OutputConfig: outputConfig}
 	if e := ExtractEffortFromClaudeRequest(req); e != "xhigh" {
 		t.Fatalf("output_config.effort=max: got %q, want xhigh", e)
@@ -155,7 +155,7 @@ func TestExtractEffortFromClaudeRequest(t *testing.T) {
 	}
 
 	// 6. output_config takes priority over thinking
-	outputConfig, _ = common.Marshal(dto.ClaudeOutputConfig{Effort: "low"})
+	outputConfig, _ = jsonx.Marshal(dto.ClaudeOutputConfig{Effort: "low"})
 	req = &dto.ClaudeRequest{
 		OutputConfig: outputConfig,
 		Thinking:     &dto.Thinking{Type: "enabled", BudgetTokens: intPtr(2048)},

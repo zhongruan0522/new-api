@@ -5,6 +5,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/helper"
 	"github.com/NookMux/NookMux/service"
@@ -22,7 +23,7 @@ func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, 
 	}
 
 	var compactResp dto.OpenAIResponsesCompactionResponse
-	if err := common.Unmarshal(responseBody, &compactResp); err != nil {
+	if err := jsonx.Unmarshal(responseBody, &compactResp); err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if oaiError := compactResp.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {

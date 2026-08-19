@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/helper"
 	"github.com/NookMux/NookMux/service"
@@ -40,7 +41,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 		helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 			if service.SundaySearch(data, "usage") {
 				var simpleResponse dto.SimpleResponse
-				err := common.Unmarshal([]byte(data), &simpleResponse)
+				err := jsonx.Unmarshal([]byte(data), &simpleResponse)
 				if err != nil {
 					logger.LogError(c, err.Error())
 				}
@@ -126,7 +127,7 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	var responseData struct {
 		Usage *dto.Usage `json:"usage"`
 	}
-	if err := common.Unmarshal(responseBody, &responseData); err == nil && responseData.Usage != nil {
+	if err := jsonx.Unmarshal(responseBody, &responseData); err == nil && responseData.Usage != nil {
 		if responseData.Usage.TotalTokens > 0 {
 			usage := responseData.Usage
 			if usage.PromptTokens == 0 {

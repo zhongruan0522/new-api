@@ -6,6 +6,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/operation_setting"
 	"github.com/gin-gonic/gin"
 )
@@ -135,12 +136,12 @@ func normalizeToMap(v interface{}) (map[string]interface{}, bool) {
 		return m, true
 	}
 	// 通过反射无法直接判断 map[string]XXX，借助 JSON 往返转换统一处理。
-	bytes, err := common.Marshal(v)
+	bytes, err := jsonx.Marshal(v)
 	if err != nil {
 		return nil, false
 	}
 	var m map[string]interface{}
-	if err := common.Unmarshal(bytes, &m); err != nil {
+	if err := jsonx.Unmarshal(bytes, &m); err != nil {
 		return nil, false
 	}
 	return m, true
@@ -190,8 +191,8 @@ func valueEqual(a, b interface{}) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	ab, _ := common.Marshal(a)
-	bb, _ := common.Marshal(b)
+	ab, _ := jsonx.Marshal(a)
+	bb, _ := jsonx.Marshal(b)
 	return string(ab) == string(bb)
 }
 
@@ -200,7 +201,7 @@ func marshalIfPresent(v interface{}) string {
 	if v == nil {
 		return ""
 	}
-	bytes, err := common.Marshal(v)
+	bytes, err := jsonx.Marshal(v)
 	if err != nil {
 		return ""
 	}
@@ -212,7 +213,7 @@ func mapToJsonStr(m map[string]interface{}) string {
 	if len(m) == 0 {
 		return ""
 	}
-	bytes, err := common.Marshal(m)
+	bytes, err := jsonx.Marshal(m)
 	if err != nil {
 		return ""
 	}
@@ -247,9 +248,9 @@ func sanitizeValue(v interface{}) interface{} {
 		// 只对看起来像 JSON 对象/数组的字符串处理，避免对普通文本做无意义解析。
 		if len(child) > 0 && (child[0] == '{' || child[0] == '[') {
 			var parsed interface{}
-			if err := common.Unmarshal([]byte(child), &parsed); err == nil {
+			if err := jsonx.Unmarshal([]byte(child), &parsed); err == nil {
 				sanitizeValue(parsed)
-				if bytes, err := common.Marshal(parsed); err == nil {
+				if bytes, err := jsonx.Marshal(parsed); err == nil {
 					return string(bytes)
 				}
 			}

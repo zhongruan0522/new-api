@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
@@ -55,7 +56,7 @@ func oaiImage2MiniMaxImageRequest(request dto.ImageRequest) MiniMaxImageRequest 
 	}
 	if raw, ok := request.Extra["prompt_optimizer"]; ok {
 		var promptOptimizer bool
-		if err := common.Unmarshal(raw, &promptOptimizer); err == nil {
+		if err := jsonx.Unmarshal(raw, &promptOptimizer); err == nil {
 			minimaxRequest.PromptOptimizer = &promptOptimizer
 		}
 	}
@@ -66,7 +67,7 @@ func oaiImage2MiniMaxImageRequest(request dto.ImageRequest) MiniMaxImageRequest 
 func aspectRatioFromImageRequest(request dto.ImageRequest) string {
 	if raw, ok := request.Extra["aspect_ratio"]; ok {
 		var aspectRatio string
-		if err := common.Unmarshal(raw, &aspectRatio); err == nil && aspectRatio != "" {
+		if err := jsonx.Unmarshal(raw, &aspectRatio); err == nil && aspectRatio != "" {
 			return aspectRatio
 		}
 	}
@@ -161,7 +162,7 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 		imageResponse.Data = append(imageResponse.Data, dto.ImageData{B64Json: imageBase64})
 	}
 	if len(response.Metadata) > 0 {
-		metadata, err := common.Marshal(response.Metadata)
+		metadata, err := jsonx.Marshal(response.Metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +181,7 @@ func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	}
 
 	var minimaxResponse MiniMaxImageResponse
-	if err := common.Unmarshal(responseBody, &minimaxResponse); err != nil {
+	if err := jsonx.Unmarshal(responseBody, &minimaxResponse); err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if minimaxResponse.BaseResp.StatusCode != 0 {
@@ -195,7 +196,7 @@ func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	if convertErr != nil {
 		return nil, types.NewError(convertErr, types.ErrorCodeBadResponseBody)
 	}
-	jsonResponse, err := common.Marshal(openAIResponse)
+	jsonResponse, err := jsonx.Marshal(openAIResponse)
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}

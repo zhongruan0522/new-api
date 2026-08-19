@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/relay/helper"
@@ -43,7 +44,7 @@ func HandleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string
 
 func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo) error {
 	var streamResponse dto.ChatCompletionsStreamResponse
-	if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
+	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 		return err
 	}
 	helper.MaskChatStreamResponseModel(&streamResponse, info)
@@ -60,7 +61,7 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 
 func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo) error {
 	var streamResponse dto.ChatCompletionsStreamResponse
-	if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
+	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 		logger.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		return err
 	}
@@ -73,7 +74,7 @@ func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 		return nil
 	}
 
-	geminiResponseStr, err := common.Marshal(geminiResponse)
+	geminiResponseStr, err := jsonx.Marshal(geminiResponse)
 	if err != nil {
 		logger.LogError(c, "failed to marshal gemini response: "+err.Error())
 		return err
@@ -106,13 +107,13 @@ func ProcessStreamFrame(relayMode int, data string, responseTextBuilder *strings
 	switch relayMode {
 	case relayconstant.RelayModeChatCompletions:
 		var streamResponse dto.ChatCompletionsStreamResponse
-		if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
+		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 			return err
 		}
 		return ProcessStreamResponse(streamResponse, responseTextBuilder, toolCount)
 	case relayconstant.RelayModeCompletions:
 		var streamResponse dto.CompletionsStreamResponse
-		if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
+		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(data), &streamResponse); err != nil {
 			return err
 		}
 		for _, choice := range streamResponse.Choices {
@@ -128,7 +129,7 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 	shouldSendLastResp *bool) error {
 
 	var lastStreamResponse dto.ChatCompletionsStreamResponse
-	if err := common.Unmarshal(common.StringToByteSlice(lastStreamData), &lastStreamResponse); err != nil {
+	if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &lastStreamResponse); err != nil {
 		return err
 	}
 
@@ -169,7 +170,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 
 	case types.RelayFormatClaude:
 		var streamResponse dto.ChatCompletionsStreamResponse
-		if err := common.Unmarshal(common.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
+		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
 		}
@@ -185,7 +186,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 
 	case types.RelayFormatGemini:
 		var streamResponse dto.ChatCompletionsStreamResponse
-		if err := common.Unmarshal(common.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
+		if err := jsonx.Unmarshal(jsonx.StringToByteSlice(lastStreamData), &streamResponse); err != nil {
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
 		}
@@ -203,7 +204,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 			return
 		}
 
-		geminiResponseStr, err := common.Marshal(geminiResponse)
+		geminiResponseStr, err := jsonx.Marshal(geminiResponse)
 		if err != nil {
 			common.SysLog("error marshalling gemini response: " + err.Error())
 			return

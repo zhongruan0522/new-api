@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
@@ -29,7 +29,7 @@ func vertexInfo(t *testing.T, baseURL string, apiKey string, apiVersion string, 
 
 func serviceAccountJSON(t *testing.T, projectID string) string {
 	t.Helper()
-	raw, err := common.Marshal(Credentials{ProjectID: projectID})
+	raw, err := jsonx.Marshal(Credentials{ProjectID: projectID})
 	if err != nil {
 		t.Fatalf("marshal credentials: %v", err)
 	}

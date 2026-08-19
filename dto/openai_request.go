@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
@@ -227,8 +228,8 @@ func (r *GeneralOpenAIRequest) SetModelName(modelName string) {
 
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {
 	result := make(map[string]any)
-	data, _ := common.Marshal(r)
-	_ = common.Unmarshal(data, &result)
+	data, _ := jsonx.Marshal(r)
+	_ = jsonx.Unmarshal(data, &result)
 	return result
 }
 
@@ -930,7 +931,7 @@ func (r *OpenAIResponsesRequest) SetModelName(modelName string) {
 func (r *OpenAIResponsesRequest) GetToolsMap() []map[string]any {
 	var toolsMap []map[string]any
 	if len(r.Tools) > 0 {
-		_ = common.Unmarshal(r.Tools, &toolsMap)
+		_ = jsonx.Unmarshal(r.Tools, &toolsMap)
 	}
 	return toolsMap
 }
@@ -968,31 +969,31 @@ func (r *OpenAIResponsesRequest) ParseInput() []MediaInput {
 	var mediaInputs []MediaInput
 
 	// Try string first
-	// if str, ok := common.GetJsonType(r.Input); ok {
+	// if str, ok := jsonx.GetJsonType(r.Input); ok {
 	// 	inputs = append(inputs, MediaInput{Type: "input_text", Text: str})
 	// 	return inputs
 	// }
-	if common.GetJsonType(r.Input) == "string" {
+	if jsonx.GetJsonType(r.Input) == "string" {
 		var str string
-		_ = common.Unmarshal(r.Input, &str)
+		_ = jsonx.Unmarshal(r.Input, &str)
 		mediaInputs = append(mediaInputs, MediaInput{Type: "input_text", Text: str})
 		return mediaInputs
 	}
 
 	// Try array of parts
-	if common.GetJsonType(r.Input) == "array" {
+	if jsonx.GetJsonType(r.Input) == "array" {
 		var inputs []Input
-		_ = common.Unmarshal(r.Input, &inputs)
+		_ = jsonx.Unmarshal(r.Input, &inputs)
 		for _, input := range inputs {
-			if common.GetJsonType(input.Content) == "string" {
+			if jsonx.GetJsonType(input.Content) == "string" {
 				var str string
-				_ = common.Unmarshal(input.Content, &str)
+				_ = jsonx.Unmarshal(input.Content, &str)
 				mediaInputs = append(mediaInputs, MediaInput{Type: "input_text", Text: str})
 			}
 
-			if common.GetJsonType(input.Content) == "array" {
+			if jsonx.GetJsonType(input.Content) == "array" {
 				var array []any
-				_ = common.Unmarshal(input.Content, &array)
+				_ = jsonx.Unmarshal(input.Content, &array)
 				for _, itemAny := range array {
 					// Already parsed MediaContent
 					if media, ok := itemAny.(MediaInput); ok {

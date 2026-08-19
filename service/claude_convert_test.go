@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
@@ -95,7 +96,7 @@ func TestClaudeToOpenAIRequestMapsOpenRouterEnabledThinking(t *testing.T) {
 	}
 
 	var reasoning map[string]any
-	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+	if err := jsonx.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
 	if reasoning["enabled"] != true || reasoning["max_tokens"].(float64) != 2048 {
@@ -125,7 +126,7 @@ func TestClaudeToOpenAIRequestMapsOpenRouterAdaptiveThinking(t *testing.T) {
 	}
 
 	var reasoning map[string]any
-	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+	if err := jsonx.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
 	if reasoning["enabled"] != true || reasoning["effort"] != "high" || len(reasoning) != 2 {
@@ -151,7 +152,7 @@ func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToReasoning(t *tes
 		t.Fatalf("ClaudeToOpenAIRequest error = %v", err)
 	}
 	var reasoning map[string]any
-	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+	if err := jsonx.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
 	if reasoning["enabled"] != true || reasoning["effort"] != "high" || len(reasoning) != 2 {

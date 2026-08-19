@@ -17,6 +17,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/model_setting"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"github.com/gin-gonic/gin"
@@ -98,19 +99,19 @@ func (id *customVoiceFileID) UnmarshalJSON(data []byte) error {
 	}
 
 	id.Raw = append(id.Raw[:0], trimmed...)
-	if common.GetJsonType(trimmed) == "string" {
+	if jsonx.GetJsonType(trimmed) == "string" {
 		var value string
-		if err := common.Unmarshal(trimmed, &value); err != nil {
+		if err := jsonx.Unmarshal(trimmed, &value); err != nil {
 			return err
 		}
 		id.Display = strings.TrimSpace(value)
 		return nil
 	}
-	if common.GetJsonType(trimmed) == "number" {
+	if jsonx.GetJsonType(trimmed) == "number" {
 		id.Display = string(trimmed)
 		return nil
 	}
-	return fmt.Errorf("unsupported file_id json type: %s", common.GetJsonType(trimmed))
+	return fmt.Errorf("unsupported file_id json type: %s", jsonx.GetJsonType(trimmed))
 }
 
 func (id customVoiceFileID) String() string {
@@ -267,7 +268,7 @@ func normalizeUpstreamError(status int, rawBody []byte) error {
 	}
 	// 尝试解析上游 base_resp，进一步精简提示，但绝不回传完整原始信息。
 	var br upstreamBaseResp
-	if err := common.Unmarshal(rawBody, &br); err == nil {
+	if err := jsonx.Unmarshal(rawBody, &br); err == nil {
 		if br.BaseResp.StatusCode != 0 {
 			inner := strings.TrimSpace(br.BaseResp.StatusMsg)
 			if inner != "" {
@@ -615,7 +616,7 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 		} `json:"file"`
 		upstreamBaseResp
 	}
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return customVoiceFileID{}, errors.New("上游响应解析失败")
 	}
 	if resp.BaseResp.StatusCode != 0 || resp.File.FileId.IsZero() {
@@ -627,7 +628,7 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 // cloneVoiceUpstream 调用上游 voice_clone 接口生成试听音频，返回 demo_audio URL。
 func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req CustomVoicePreviewRequest) (string, error) {
 	payload := buildVoiceClonePayload(fileId, req)
-	bodyBytes, err := common.Marshal(payload)
+	bodyBytes, err := jsonx.Marshal(payload)
 	if err != nil {
 		return "", errors.New("请求构建失败")
 	}
@@ -647,7 +648,7 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 		DemoAudio string `json:"demo_audio"`
 		upstreamBaseResp
 	}
-	if err := common.Unmarshal(respBody, &resp); err != nil {
+	if err := jsonx.Unmarshal(respBody, &resp); err != nil {
 		return "", errors.New("上游响应解析失败")
 	}
 	if resp.BaseResp.StatusCode != 0 {

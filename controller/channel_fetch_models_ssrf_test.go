@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/system_setting"
 
@@ -113,7 +113,7 @@ func TestFetchModelsRedirectBlockedByControlledClient(t *testing.T) {
 		Success bool   `json:"success"`
 		Message string `json:"message"`
 	}
-	if err := common.DecodeJson(bytes.NewReader(w.Body.Bytes()), &resp); err != nil {
+	if err := jsonx.DecodeJson(bytes.NewReader(w.Body.Bytes()), &resp); err != nil {
 		t.Fatalf("decode response: %v, body: %s", err, w.Body.String())
 	}
 	if resp.Success {

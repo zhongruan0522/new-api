@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 type responsesToChatStreamConverter struct {
@@ -71,7 +72,7 @@ func (c *responsesToChatStreamConverter) ConvertFrame(event string, data string,
 	}
 
 	var stream dto.ResponsesStreamResponse
-	if err := common.UnmarshalJsonStr(data, &stream); err != nil {
+	if err := jsonx.UnmarshalJsonStr(data, &stream); err != nil {
 		c.err = fmt.Errorf("unmarshal responses stream frame failed: %w", err)
 		return "", c.err
 	}
@@ -288,7 +289,7 @@ func (c *responsesToChatStreamConverter) emitToolCallAddedByID(callID string, na
 
 func (c *responsesToChatStreamConverter) newChatToolCallAdded(callID string, idx int, name string) (dto.ToolCallResponse, error) {
 	if c.toolCallTypeByID[callID] == "custom_tool_call" {
-		custom, err := common.Marshal(map[string]any{"name": name})
+		custom, err := jsonx.Marshal(map[string]any{"name": name})
 		if err != nil {
 			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
 		}
@@ -538,7 +539,7 @@ func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID str
 		},
 	}
 	if c.toolCallTypeByID[callID] == "custom_tool_call" {
-		custom, err := common.Marshal(map[string]any{"input": delta})
+		custom, err := jsonx.Marshal(map[string]any{"input": delta})
 		if err != nil {
 			return "", fmt.Errorf("marshal custom tool call input delta failed: %w", err)
 		}
@@ -599,7 +600,7 @@ func encodeChatSSEChunk(chunk *dto.ChatCompletionsStreamResponse) (string, error
 	if chunk == nil {
 		return "", nil
 	}
-	raw, err := common.Marshal(chunk)
+	raw, err := jsonx.Marshal(chunk)
 	if err != nil {
 		return "", fmt.Errorf("marshal chat chunk failed: %w", err)
 	}

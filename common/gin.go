@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/constant"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
@@ -141,7 +142,7 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 		if _, err := storage.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
-		if err := DecodeJson(storage, v); err != nil {
+		if err := jsonx.DecodeJson(storage, v); err != nil {
 			return err
 		}
 		if _, err := storage.Seek(0, io.SeekStart); err != nil {
@@ -159,7 +160,7 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	//	println("UnmarshalBodyReusable request body:", string(requestBody))
 	//}
 	if strings.HasPrefix(contentType, "application/json") {
-		err = Unmarshal(requestBody, v)
+		err = jsonx.Unmarshal(requestBody, v)
 	} else if strings.Contains(contentType, gin.MIMEPOSTForm) {
 		err = parseFormData(requestBody, v)
 	} else if strings.Contains(contentType, gin.MIMEMultipartPOSTForm) {
@@ -297,12 +298,12 @@ func ParseMultipartFormReusable(c *gin.Context) (*multipart.Form, error) {
 }
 
 func processFormMap(formMap map[string]any, v any) error {
-	jsonData, err := Marshal(formMap)
+	jsonData, err := jsonx.Marshal(formMap)
 	if err != nil {
 		return err
 	}
 
-	err = Unmarshal(jsonData, v)
+	err = jsonx.Unmarshal(jsonData, v)
 	if err != nil {
 		return err
 	}
@@ -332,7 +333,7 @@ func parseMultipartFormData(c *gin.Context, data []byte, v any) error {
 	boundary, err := parseBoundary(contentType)
 	if err != nil {
 		if errors.Is(err, errBoundaryNotFound) {
-			return Unmarshal(data, v) // Fallback to JSON
+			return jsonx.Unmarshal(data, v) // Fallback to JSON
 		}
 		return err
 	}

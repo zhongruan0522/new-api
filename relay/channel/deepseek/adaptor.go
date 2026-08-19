@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/claude"
 	"github.com/NookMux/NookMux/relay/channel/openai"
@@ -92,7 +92,7 @@ func applyDeepSeekV4OpenAIThinkingSuffix(info *relaycommon.RelayInfo, request *d
 		return nil
 	}
 
-	thinking, err := common.Marshal(map[string]string{
+	thinking, err := jsonx.Marshal(map[string]string{
 		"type": thinkingType,
 	})
 	if err != nil {
@@ -125,7 +125,7 @@ func applyDeepSeekV4ClaudeThinkingSuffix(info *relaycommon.RelayInfo, request *d
 	if effort == "" {
 		request.OutputConfig = nil
 	} else {
-		outputConfig, err := common.Marshal(map[string]string{
+		outputConfig, err := jsonx.Marshal(map[string]string{
 			"effort": effort,
 		})
 		if err != nil {

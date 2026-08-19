@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 
 	"github.com/samber/lo"
@@ -105,7 +106,7 @@ func ApplyChannelGroupFilter(query *gorm.DB, group string) *gorm.DB {
 // PostgreSQL 的 json/jsonb 列在 pgx 驱动下对 []byte 参数支持不稳定，
 // 返回 string 形式的 JSON 能同时兼容 SQLite/MySQL/PostgreSQL。
 func (c ChannelInfo) Value() (driver.Value, error) {
-	bytes, err := common.Marshal(&c)
+	bytes, err := jsonx.Marshal(&c)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (c *ChannelInfo) Scan(value interface{}) error {
 		*c = ChannelInfo{}
 		return nil
 	}
-	return common.Unmarshal(raw, c)
+	return jsonx.Unmarshal(raw, c)
 }
 
 func (channel *Channel) GetKeys() []string {
@@ -147,7 +148,7 @@ func (channel *Channel) GetKeys() []string {
 	// If the key starts with '[', try to parse it as a JSON array (e.g., for Vertex AI scenarios)
 	if strings.HasPrefix(trimmed, "[") {
 		var arr []json.RawMessage
-		if err := common.Unmarshal([]byte(trimmed), &arr); err == nil {
+		if err := jsonx.Unmarshal([]byte(trimmed), &arr); err == nil {
 			res := make([]string, len(arr))
 			for i, v := range arr {
 				res[i] = string(v)
@@ -283,7 +284,7 @@ func (channel *Channel) GetGroups() []string {
 func (channel *Channel) GetOtherInfo() map[string]interface{} {
 	otherInfo := make(map[string]interface{})
 	if channel.OtherInfo != "" {
-		err := common.Unmarshal([]byte(channel.OtherInfo), &otherInfo)
+		err := jsonx.Unmarshal([]byte(channel.OtherInfo), &otherInfo)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal other info: channel_id=%d, tag=%s, name=%s, error=%v", channel.Id, channel.GetTag(), channel.Name, err))
 		}
@@ -640,7 +641,7 @@ func (channel *Channel) Update() error {
 			trimmed := strings.TrimSpace(keyStr)
 			if strings.HasPrefix(trimmed, "[") {
 				var arr []json.RawMessage
-				if err := common.Unmarshal([]byte(trimmed), &arr); err == nil {
+				if err := jsonx.Unmarshal([]byte(trimmed), &arr); err == nil {
 					keys = make([]string, len(arr))
 					for i, v := range arr {
 						keys[i] = string(v)
@@ -1032,14 +1033,14 @@ func SearchTags(keyword string, group string, model string, idSort bool, idFilte
 func (channel *Channel) ValidateSettings() error {
 	channelParams := &dto.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
-		err := common.Unmarshal([]byte(*channel.Setting), channelParams)
+		err := jsonx.Unmarshal([]byte(*channel.Setting), channelParams)
 		if err != nil {
 			return err
 		}
 
 		// 拒绝已移除的字段，避免旧客户端静默写入导致"配置存在但运行时不生效"
 		var rawMap map[string]json.RawMessage
-		if err := common.Unmarshal([]byte(*channel.Setting), &rawMap); err == nil {
+		if err := jsonx.Unmarshal([]byte(*channel.Setting), &rawMap); err == nil {
 			if _, ok := rawMap["system_prompt"]; ok {
 				return fmt.Errorf("channel setting \"system_prompt\" 已移除，请删除该字段")
 			}
@@ -1051,7 +1052,7 @@ func (channel *Channel) ValidateSettings() error {
 
 	if channel.OtherSettings != "" {
 		otherSettings := &dto.ChannelOtherSettings{}
-		if err := common.UnmarshalJsonStr(channel.OtherSettings, otherSettings); err != nil {
+		if err := jsonx.UnmarshalJsonStr(channel.OtherSettings, otherSettings); err != nil {
 			return err
 		}
 		if _, ok := otherSettings.ParseImageAutoConvertToURLMode(); !ok {
@@ -1059,13 +1060,13 @@ func (channel *Channel) ValidateSettings() error {
 		}
 
 		var rawMap map[string]json.RawMessage
-		if err := common.Unmarshal([]byte(channel.OtherSettings), &rawMap); err == nil {
+		if err := jsonx.Unmarshal([]byte(channel.OtherSettings), &rawMap); err == nil {
 			if _, ok := rawMap["image_auto_convert_to_url"]; ok {
 				return fmt.Errorf("channel other setting \"image_auto_convert_to_url\" 已移除，请删除该字段")
 			}
 			if rawMode, ok := rawMap["image_auto_convert_to_url_mode"]; ok {
 				var mode string
-				if err := common.Unmarshal(rawMode, &mode); err != nil {
+				if err := jsonx.Unmarshal(rawMode, &mode); err != nil {
 					return fmt.Errorf("channel other setting \"image_auto_convert_to_url_mode\" 必须是字符串")
 				}
 				if strings.EqualFold(strings.TrimSpace(mode), "third_party_model") {
@@ -1099,7 +1100,7 @@ func validateOptionalJSONField(value *string, fieldName string) error {
 		return nil
 	}
 	var raw json.RawMessage
-	if err := common.Unmarshal([]byte(trimmed), &raw); err != nil {
+	if err := jsonx.Unmarshal([]byte(trimmed), &raw); err != nil {
 		return fmt.Errorf("channel %s 必须是合法的 JSON：%v", fieldName, err)
 	}
 	return nil
@@ -1122,7 +1123,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 	setting := dto.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
 		raw := []byte(*channel.Setting)
-		err := common.Unmarshal(raw, &setting)
+		err := jsonx.Unmarshal(raw, &setting)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal setting: channel_id=%d, error=%v", channel.Id, err))
 			channel.Setting = nil // 清空设置以避免后续错误
@@ -1136,7 +1137,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 		// - Existing channels may have a JSON setting without "pass_through_headers_enabled".
 		// - Default is enabled (true) unless explicitly set to false.
 		var rawMap map[string]json.RawMessage
-		if err := common.Unmarshal(raw, &rawMap); err == nil {
+		if err := jsonx.Unmarshal(raw, &rawMap); err == nil {
 			if _, ok := rawMap["pass_through_headers_enabled"]; !ok {
 				setting.PassThroughHeadersEnabled = true
 			}
@@ -1152,7 +1153,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 }
 
 func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
-	settingBytes, err := common.Marshal(setting)
+	settingBytes, err := jsonx.Marshal(setting)
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to marshal setting: channel_id=%d, error=%v", channel.Id, err))
 		return
@@ -1163,7 +1164,7 @@ func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
 func (channel *Channel) GetOtherSettings() dto.ChannelOtherSettings {
 	setting := dto.ChannelOtherSettings{}
 	if channel.OtherSettings != "" {
-		err := common.UnmarshalJsonStr(channel.OtherSettings, &setting)
+		err := jsonx.UnmarshalJsonStr(channel.OtherSettings, &setting)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal setting: channel_id=%d, error=%v", channel.Id, err))
 			channel.OtherSettings = "{}" // 清空设置以避免后续错误
@@ -1174,7 +1175,7 @@ func (channel *Channel) GetOtherSettings() dto.ChannelOtherSettings {
 }
 
 func (channel *Channel) SetOtherSettings(setting dto.ChannelOtherSettings) {
-	settingBytes, err := common.Marshal(setting)
+	settingBytes, err := jsonx.Marshal(setting)
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to marshal setting: channel_id=%d, error=%v", channel.Id, err))
 		return
@@ -1185,7 +1186,7 @@ func (channel *Channel) SetOtherSettings(setting dto.ChannelOtherSettings) {
 func (channel *Channel) GetParamOverride() map[string]interface{} {
 	paramOverride := make(map[string]interface{})
 	if channel.ParamOverride != nil && *channel.ParamOverride != "" {
-		err := common.Unmarshal([]byte(*channel.ParamOverride), &paramOverride)
+		err := jsonx.Unmarshal([]byte(*channel.ParamOverride), &paramOverride)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal param override: channel_id=%d, error=%v", channel.Id, err))
 		}
@@ -1196,7 +1197,7 @@ func (channel *Channel) GetParamOverride() map[string]interface{} {
 func (channel *Channel) GetHeaderOverride() map[string]interface{} {
 	headerOverride := make(map[string]interface{})
 	if channel.HeaderOverride != nil && *channel.HeaderOverride != "" {
-		err := common.Unmarshal([]byte(*channel.HeaderOverride), &headerOverride)
+		err := jsonx.Unmarshal([]byte(*channel.HeaderOverride), &headerOverride)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal header override: channel_id=%d, error=%v", channel.Id, err))
 		}

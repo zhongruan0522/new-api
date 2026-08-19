@@ -3,9 +3,9 @@ package openai
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
@@ -31,7 +31,7 @@ func TestConvertOpenAIRequestOpenRouterThinkingEnabled(t *testing.T) {
 	}
 
 	var reasoning map[string]any
-	if err := common.Unmarshal(convertedRequest.Reasoning, &reasoning); err != nil {
+	if err := jsonx.Unmarshal(convertedRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
 	if reasoning["enabled"] != true || reasoning["max_tokens"].(float64) != 2048 {
@@ -58,7 +58,7 @@ func TestConvertOpenAIRequestOpenRouterThinkingAdaptive(t *testing.T) {
 	convertedRequest := converted.(*dto.GeneralOpenAIRequest)
 
 	var reasoning map[string]any
-	if err := common.Unmarshal(convertedRequest.Reasoning, &reasoning); err != nil {
+	if err := jsonx.Unmarshal(convertedRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
 	if reasoning["enabled"] != true || len(reasoning) != 1 {

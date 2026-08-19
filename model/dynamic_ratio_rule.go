@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"gorm.io/gorm"
 )
@@ -42,7 +43,7 @@ func (r *DynamicRatioRule) Validate() error {
 	}
 	if r.Models != "" {
 		var models []string
-		if err := common.UnmarshalJsonStr(r.Models, &models); err != nil {
+		if err := jsonx.UnmarshalJsonStr(r.Models, &models); err != nil {
 			return fmt.Errorf("模型列表格式错误，应为 JSON 字符串数组")
 		}
 		for _, m := range models {
@@ -72,7 +73,7 @@ func (r *DynamicRatioRule) Validate() error {
 	}
 	if r.Weekdays != "" {
 		var days []int
-		if err := common.UnmarshalJsonStr(r.Weekdays, &days); err != nil {
+		if err := jsonx.UnmarshalJsonStr(r.Weekdays, &days); err != nil {
 			return fmt.Errorf("星期格式错误，应为 JSON 数组")
 		}
 		for _, d := range days {

@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting"
 	"github.com/NookMux/NookMux/setting/console_setting"
@@ -173,7 +174,7 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 		value = "{}"
 	}
 	items := map[string]string{}
-	if err := common.UnmarshalJsonStr(value, &items); err != nil {
+	if err := jsonx.UnmarshalJsonStr(value, &items); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 		return nil, "", false
 	}
@@ -193,7 +194,7 @@ func readPricingJsonMapOption(c *gin.Context, key string) (map[string]json.RawMe
 		value = "{}"
 	}
 	items := map[string]json.RawMessage{}
-	if err := common.UnmarshalJsonStr(value, &items); err != nil {
+	if err := jsonx.UnmarshalJsonStr(value, &items); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 		return nil, "", false
 	}
@@ -205,11 +206,11 @@ func validatePricingJsonMapOption(key string, value string) error {
 		return ratio_setting.ValidateContextPricing(value)
 	}
 	values := map[string]float64{}
-	return common.UnmarshalJsonStr(value, &values)
+	return jsonx.UnmarshalJsonStr(value, &values)
 }
 
 func marshalPricingJsonMapOption(key string, items map[string]json.RawMessage) (string, error) {
-	bytes, err := common.Marshal(items)
+	bytes, err := jsonx.Marshal(items)
 	if err != nil {
 		return "", err
 	}
@@ -390,7 +391,7 @@ func UpsertOptionJsonArrayEntry(c *gin.Context) {
 
 func DeleteOptionJsonMapEntry(c *gin.Context) {
 	var req OptionJsonMapDeleteRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": i18n.T(c, i18n.MsgOptionInvalidParams),
@@ -417,7 +418,7 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		}
 
 		delete(items, req.MapKey)
-		bytes, err := common.Marshal(items)
+		bytes, err := jsonx.Marshal(items)
 		if err != nil {
 			common.SysError("failed to marshal option items: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -469,7 +470,7 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 
 func UpsertOptionJsonMapEntry(c *gin.Context) {
 	var req OptionJsonMapUpsertRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": i18n.T(c, i18n.MsgOptionInvalidParams),
@@ -508,7 +509,7 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		}
 
 		items[mapKey] = strings.TrimSpace(req.Value)
-		bytes, err := common.Marshal(items)
+		bytes, err := jsonx.Marshal(items)
 		if err != nil {
 			common.SysError("failed to marshal option items: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -596,7 +597,7 @@ func optionUpdateValueToString(value any) (string, bool) {
 
 func UpdateOption(c *gin.Context) {
 	var option OptionUpdateRequest
-	err := common.DecodeJson(c.Request.Body, &option)
+	err := jsonx.DecodeJson(c.Request.Body, &option)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,

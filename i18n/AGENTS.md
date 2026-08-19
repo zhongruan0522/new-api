@@ -26,7 +26,7 @@
   `zh` 和 `en`，无法识别时回落到默认中文（`DefaultLang`）。不要在业务代码里
   自行解析语言串。
 - 内部日志（`SysError` / `SysLog`）、调试输出、发给上游供应商的请求体不翻译。
-- i18n 包不承载业务逻辑；JSON 序列化遵守根目录 `common/json.go` 规则。
+- i18n 包不承载业务逻辑；JSON 序列化遵守根目录规则（调用 `pkg/jsonx` 包装函数）。
 - 不要绕过 `ApiErrorI18n` / `i18n.T` 直接调 `i18n.Translate` 传硬编码语言。
 
 ## 初始化

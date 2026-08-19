@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -226,7 +226,7 @@ func checkSingleCondition(data []byte, contextJSON string, condition ConditionOp
 	}
 
 	// 利用gjson的类型解析
-	targetBytes, err := common.Marshal(condition.Value)
+	targetBytes, err := jsonx.Marshal(condition.Value)
 	if err != nil {
 		return false, fmt.Errorf("failed to marshal condition value: %v", err)
 	}
@@ -680,7 +680,7 @@ func mergeObjects(data []byte, path string, value interface{}, keepOrigin bool) 
 	var currentMap, newMap map[string]interface{}
 
 	// 解析当前值
-	if err := common.UnmarshalJsonStr(current.Raw, &currentMap); err != nil {
+	if err := jsonx.UnmarshalJsonStr(current.Raw, &currentMap); err != nil {
 		return nil, err
 	}
 	// 解析新值
@@ -688,8 +688,8 @@ func mergeObjects(data []byte, path string, value interface{}, keepOrigin bool) 
 	case map[string]interface{}:
 		newMap = v
 	default:
-		jsonBytes, _ := common.Marshal(v)
-		if err := common.Unmarshal(jsonBytes, &newMap); err != nil {
+		jsonBytes, _ := jsonx.Marshal(v)
+		if err := jsonx.Unmarshal(jsonBytes, &newMap); err != nil {
 			return nil, err
 		}
 	}
@@ -772,7 +772,7 @@ func marshalContextJSON(context map[string]interface{}) (string, error) {
 	if len(context) == 0 {
 		return "", nil
 	}
-	contextBytes, err := common.Marshal(context)
+	contextBytes, err := jsonx.Marshal(context)
 	if err != nil {
 		return "", err
 	}
@@ -794,7 +794,7 @@ func resolveOperationPaths(data []byte, mode string, path string) ([]string, err
 		return []string{path}, nil
 	}
 	var decoded interface{}
-	if err := common.Unmarshal(data, &decoded); err != nil {
+	if err := jsonx.Unmarshal(data, &decoded); err != nil {
 		return nil, err
 	}
 	paths := collectWildcardPaths(decoded, strings.Split(path, "."), nil, mode == "set")
@@ -1172,11 +1172,11 @@ func pruneObjects(data []byte, path string, contextJSON string, value interface{
 	}
 	if current.Type == gjson.JSON {
 		objectValue := make(map[string]interface{})
-		if err := common.UnmarshalJsonStr(current.Raw, &objectValue); err != nil {
+		if err := jsonx.UnmarshalJsonStr(current.Raw, &objectValue); err != nil {
 			return nil, err
 		}
 		for key, item := range objectValue {
-			itemBytes, err := common.Marshal(item)
+			itemBytes, err := jsonx.Marshal(item)
 			if err != nil {
 				return nil, err
 			}

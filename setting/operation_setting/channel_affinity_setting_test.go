@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestChannelAffinityRuleSerializesSkipRetryFalse(t *testing.T) {
@@ -19,7 +19,7 @@ func TestChannelAffinityRuleSerializesSkipRetryFalse(t *testing.T) {
 		IncludeRuleName:    true,
 	}
 
-	data, err := common.Marshal(rule)
+	data, err := jsonx.Marshal(rule)
 	if err != nil {
 		t.Fatalf("marshal channel affinity rule: %v", err)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 const openAIResponsesChatToolNameMaxLen = 64
@@ -25,7 +26,7 @@ type openAIResponsesFunctionTool struct {
 func convertChatToolChoiceToResponsesRaw(choice any) (json.RawMessage, error) {
 	switch v := choice.(type) {
 	case string:
-		raw, err := common.Marshal(v)
+		raw, err := jsonx.Marshal(v)
 		if err != nil {
 			return nil, fmt.Errorf("marshal tool_choice failed: %w", err)
 		}
@@ -55,7 +56,7 @@ func convertChatToolChoiceObjectToResponsesRaw(obj map[string]any) (json.RawMess
 		return nil, fmt.Errorf("tool_choice.%s.name is required", toolType)
 	}
 
-	raw, err := common.Marshal(map[string]any{"type": toolType, "name": name})
+	raw, err := jsonx.Marshal(map[string]any{"type": toolType, "name": name})
 	if err != nil {
 		return nil, fmt.Errorf("marshal tool_choice failed: %w", err)
 	}
@@ -80,7 +81,7 @@ func convertChatToolsToResponsesRaw(tools []dto.ToolCallRequest) (json.RawMessag
 		}
 		out = append(out, item)
 	}
-	raw, err := common.Marshal(out)
+	raw, err := jsonx.Marshal(out)
 	if err != nil {
 		return nil, fmt.Errorf("marshal tools failed: %w", err)
 	}
@@ -105,7 +106,7 @@ func convertOneChatToolToResponsesTool(index int, tool dto.ToolCallRequest) (ope
 
 	var params json.RawMessage
 	if tool.Function.Parameters != nil {
-		raw, err := common.Marshal(tool.Function.Parameters)
+		raw, err := jsonx.Marshal(tool.Function.Parameters)
 		if err != nil {
 			return openAIResponsesFunctionTool{}, fmt.Errorf("marshal tools[%d].function.parameters failed: %w", index, err)
 		}
@@ -125,13 +126,13 @@ func convertOneChatCustomToolToResponsesTool(index int, tool dto.ToolCallRequest
 	if len(tool.Custom) == 0 {
 		return openAIResponsesFunctionTool{}, fmt.Errorf("tools[%d].custom is required", index)
 	}
-	if err := common.Unmarshal(tool.Custom, &custom); err != nil {
+	if err := jsonx.Unmarshal(tool.Custom, &custom); err != nil {
 		return openAIResponsesFunctionTool{}, fmt.Errorf("unmarshal tools[%d].custom failed: %w", index, err)
 	}
 
 	var name string
 	if raw := custom["name"]; len(raw) > 0 {
-		if err := common.Unmarshal(raw, &name); err != nil {
+		if err := jsonx.Unmarshal(raw, &name); err != nil {
 			return openAIResponsesFunctionTool{}, fmt.Errorf("unmarshal tools[%d].custom.name failed: %w", index, err)
 		}
 	}
@@ -141,7 +142,7 @@ func convertOneChatCustomToolToResponsesTool(index int, tool dto.ToolCallRequest
 
 	var description string
 	if raw := custom["description"]; len(raw) > 0 {
-		if err := common.Unmarshal(raw, &description); err != nil {
+		if err := jsonx.Unmarshal(raw, &description); err != nil {
 			return openAIResponsesFunctionTool{}, fmt.Errorf("unmarshal tools[%d].custom.description failed: %w", index, err)
 		}
 	}
@@ -156,7 +157,7 @@ func convertOneChatCustomToolToResponsesTool(index int, tool dto.ToolCallRequest
 
 func convertResponsesToolChoiceToChatAny(raw json.RawMessage) (any, error) {
 	var v any
-	if err := common.Unmarshal(raw, &v); err != nil {
+	if err := jsonx.Unmarshal(raw, &v); err != nil {
 		return nil, fmt.Errorf("unmarshal tool_choice failed: %w", err)
 	}
 
@@ -211,7 +212,7 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 
 func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	var tools []openAIResponsesFunctionTool
-	if err := common.Unmarshal(raw, &tools); err != nil {
+	if err := jsonx.Unmarshal(raw, &tools); err != nil {
 		return nil, fmt.Errorf("unmarshal tools failed: %w", err)
 	}
 
@@ -228,7 +229,7 @@ func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, too
 
 func collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	var value any
-	if err := common.Unmarshal(raw, &value); err != nil {
+	if err := jsonx.Unmarshal(raw, &value); err != nil {
 		return nil, fmt.Errorf("unmarshal input for tool_search tools failed: %w", err)
 	}
 	out := make([]dto.ToolCallRequest, 0)
@@ -249,7 +250,7 @@ func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest, t
 	case map[string]any:
 		if typ, _ := v["type"].(string); strings.TrimSpace(typ) == openAIResponsesInputItemTypeToolSearchOutput {
 			if toolsAny, ok := v["tools"]; ok {
-				raw, err := common.Marshal(toolsAny)
+				raw, err := jsonx.Marshal(toolsAny)
 				if err != nil {
 					return fmt.Errorf("marshal tool_search_output.tools failed: %w", err)
 				}
@@ -303,7 +304,7 @@ func chatToolRequestName(tool dto.ToolCallRequest) string {
 		return ""
 	}
 	var custom map[string]any
-	if err := common.Unmarshal(tool.Custom, &custom); err != nil {
+	if err := jsonx.Unmarshal(tool.Custom, &custom); err != nil {
 		return ""
 	}
 	return strings.TrimSpace(common.Interface2String(custom["name"]))
@@ -362,7 +363,7 @@ func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFu
 
 	var params any
 	if len(tool.Parameters) > 0 {
-		if err := common.Unmarshal(tool.Parameters, &params); err != nil {
+		if err := jsonx.Unmarshal(tool.Parameters, &params); err != nil {
 			return dto.ToolCallRequest{}, fmt.Errorf("unmarshal tools[%d].parameters failed: %w", index, err)
 		}
 	}
@@ -421,7 +422,7 @@ func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponses
 		return nil, fmt.Errorf("tools[%d].tools is required for namespace tool", index)
 	}
 	var children []openAIResponsesFunctionTool
-	if err := common.Unmarshal(childrenRaw, &children); err != nil {
+	if err := jsonx.Unmarshal(childrenRaw, &children); err != nil {
 		return nil, fmt.Errorf("unmarshal tools[%d].tools failed: %w", index, err)
 	}
 	out := make([]dto.ToolCallRequest, 0, len(children))
@@ -468,10 +469,10 @@ func buildResponsesCustomToolChatDescription(tool openAIResponsesFunctionTool) s
 		return description
 	}
 	var format any
-	if err := common.Unmarshal(tool.Format, &format); err != nil {
+	if err := jsonx.Unmarshal(tool.Format, &format); err != nil {
 		return description
 	}
-	formatRaw, err := common.Marshal(format)
+	formatRaw, err := jsonx.Marshal(format)
 	if err != nil {
 		return description
 	}

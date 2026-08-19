@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // TestChatCompletionRequestPreservesExplicitEmptyReasoningContent reproduces the
@@ -24,7 +24,7 @@ func TestChatCompletionRequestPreservesExplicitEmptyReasoningContent(t *testing.
 	}`)
 
 	var req dto.GeneralOpenAIRequest
-	if err := common.Unmarshal(raw, &req); err != nil {
+	if err := jsonx.Unmarshal(raw, &req); err != nil {
 		t.Fatalf("unmarshal request error = %v", err)
 	}
 
@@ -45,7 +45,7 @@ func TestChatCompletionRequestPreservesExplicitEmptyReasoningContent(t *testing.
 
 	// The re-marshalled upstream body must carry the empty placeholders verbatim,
 	// because that is exactly what DeepSeek-reasoner expects in the history.
-	out, err := common.Marshal(req)
+	out, err := jsonx.Marshal(req)
 	if err != nil {
 		t.Fatalf("marshal request error = %v", err)
 	}

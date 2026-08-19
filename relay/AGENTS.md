@@ -12,7 +12,7 @@
 - 请求 DTO 中需要重新 marshal 给上游的可选标量字段，使用 `*int`、`*uint`、`*float64`、`*bool` 等指针类型加 `omitempty`，避免显式零值被丢弃。
 - 不要吞掉上游错误；错误类型、HTTP 状态和用户可见信息要保持可诊断。
 - 请求身份、渠道 key、用户 token、签名和敏感 header 不得写入日志。
-- JSON marshal/unmarshal 调用遵守根目录 `common/json.go` 规则。
+- JSON marshal/unmarshal 调用遵守根目录规则：统一走 `pkg/jsonx` 包装函数，不直接调用 `encoding/json`。
 
 ## 验证
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestNormalizeRemovedMultimodalChannelOtherSettingsJSON(t *testing.T) {
@@ -19,7 +19,7 @@ func TestNormalizeRemovedMultimodalChannelOtherSettingsJSON(t *testing.T) {
 	}
 
 	var got map[string]interface{}
-	if err := common.Unmarshal([]byte(normalized), &got); err != nil {
+	if err := jsonx.Unmarshal([]byte(normalized), &got); err != nil {
 		t.Fatalf("expected normalized JSON to be valid, got %v", err)
 	}
 	if got["image_auto_convert_to_url_mode"] != "mcp" {

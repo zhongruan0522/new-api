@@ -16,6 +16,7 @@ import (
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/logger"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting"
 
@@ -52,7 +53,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	var loginRequest LoginRequest
-	err := common.DecodeJson(c.Request.Body, &loginRequest)
+	err := jsonx.DecodeJson(c.Request.Body, &loginRequest)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -167,7 +168,7 @@ func Register(c *gin.Context) {
 		return
 	}
 	var user model.User
-	err := common.DecodeJson(c.Request.Body, &user)
+	err := jsonx.DecodeJson(c.Request.Body, &user)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -434,7 +435,7 @@ func GetSelf(c *gin.Context) {
 	userSetting := user.GetSetting()
 
 	// 重新序列化用户设置，确保已移除的字段不会出现在响应中
-	settingJSON, err := common.Marshal(userSetting)
+	settingJSON, err := jsonx.Marshal(userSetting)
 	if err != nil {
 		common.SysError("failed to marshal user setting: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -513,7 +514,7 @@ type UpdateUserRequest struct {
 
 func UpdateUser(c *gin.Context) {
 	var req UpdateUserRequest
-	err := common.DecodeJson(c.Request.Body, &req)
+	err := jsonx.DecodeJson(c.Request.Body, &req)
 	if err != nil || req.Id == 0 {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -578,7 +579,7 @@ func UpdateUser(c *gin.Context) {
 
 func UpdateSelf(c *gin.Context) {
 	var user model.User
-	err := common.DecodeJson(c.Request.Body, &user)
+	err := jsonx.DecodeJson(c.Request.Body, &user)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -697,7 +698,7 @@ func DeleteSelf(c *gin.Context) {
 
 func CreateUser(c *gin.Context) {
 	var user model.User
-	err := common.DecodeJson(c.Request.Body, &user)
+	err := jsonx.DecodeJson(c.Request.Body, &user)
 	user.Username = strings.TrimSpace(user.Username)
 	if err != nil || user.Username == "" || user.Password == "" {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
@@ -745,7 +746,7 @@ type ManageRequest struct {
 // ManageUser Only admin user can do this
 func ManageUser(c *gin.Context) {
 	var req ManageRequest
-	err := common.DecodeJson(c.Request.Body, &req)
+	err := jsonx.DecodeJson(c.Request.Body, &req)
 
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
@@ -898,7 +899,7 @@ type emailBindRequest struct {
 
 func EmailBind(c *gin.Context) {
 	var req emailBindRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}

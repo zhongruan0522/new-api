@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	channelconstant "github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/model_setting"
@@ -65,7 +65,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathAppliesSystemPolicy(t *testing.T) {
 			t.Fatalf("read body: %v", err)
 		}
 		var got dto.AudioRequest
-		if err := common.Unmarshal(body, &got); err != nil {
+		if err := jsonx.Unmarshal(body, &got); err != nil {
 			t.Fatalf("unmarshal body: %v", err)
 		}
 
@@ -122,7 +122,7 @@ func TestConvertAudioRequestMiniMaxOpenAIPathTTSEmotion(t *testing.T) {
 			t.Fatalf("read body: %v", err)
 		}
 		var got dto.AudioRequest
-		if err := common.Unmarshal(body, &got); err != nil {
+		if err := jsonx.Unmarshal(body, &got); err != nil {
 			t.Fatalf("unmarshal body: %v", err)
 		}
 		if got.Input != "文本(笑)" {

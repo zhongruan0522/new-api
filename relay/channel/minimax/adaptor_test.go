@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/setting/model_setting"
@@ -41,7 +41,7 @@ func decodeTTSBody(t *testing.T, r io.Reader) MiniMaxTTSRequest {
 		t.Fatalf("read body: %v", err)
 	}
 	var req MiniMaxTTSRequest
-	if err := common.Unmarshal(body, &req); err != nil {
+	if err := jsonx.Unmarshal(body, &req); err != nil {
 		t.Fatalf("unmarshal body: %v", err)
 	}
 	return req

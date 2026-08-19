@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"gorm.io/gorm"
 )
 
@@ -107,7 +108,7 @@ func normalizeRemovedMultimodalChannelOtherSettingsJSON(raw string) (normalized 
 	}
 
 	settings := make(map[string]interface{})
-	if err := common.UnmarshalJsonStr(trimmed, &settings); err != nil {
+	if err := jsonx.UnmarshalJsonStr(trimmed, &settings); err != nil {
 		return "", false, err
 	}
 
@@ -155,13 +156,13 @@ func normalizeRemovedMultimodalChannelOtherSettingsJSON(raw string) (normalized 
 		return raw, false, nil
 	}
 
-	settingBytes, err := common.Marshal(settings)
+	settingBytes, err := jsonx.Marshal(settings)
 	if err != nil {
 		return "", false, err
 	}
 
 	var normalizedMap map[string]json.RawMessage
-	if err := common.Unmarshal(settingBytes, &normalizedMap); err != nil {
+	if err := jsonx.Unmarshal(settingBytes, &normalizedMap); err != nil {
 		return "", false, err
 	}
 	if len(normalizedMap) == 0 {

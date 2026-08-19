@@ -5,6 +5,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
@@ -23,7 +24,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		println("reranker response body: ", string(responseBody))
 	}
 	var rerankResp dto.RerankResponse
-	err = common.Unmarshal(responseBody, &rerankResp)
+	err = jsonx.Unmarshal(responseBody, &rerankResp)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -32,7 +33,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
 	// 「502 上游没有返回计费信息」。
 	var errProbe dto.SimpleResponse
-	if probeErr := common.Unmarshal(responseBody, &errProbe); probeErr == nil {
+	if probeErr := jsonx.Unmarshal(responseBody, &errProbe); probeErr == nil {
 		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
 			return nil, types.WithOpenAIError(*oaiError, service.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
 		}

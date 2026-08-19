@@ -3,8 +3,8 @@ package reasoning
 import (
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 )
 
@@ -57,7 +57,7 @@ func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
 	// 2. Reasoning JSON (OpenRouter / Responses)
 	if len(request.Reasoning) > 0 {
 		var rr openrouter.RequestReasoning
-		if err := common.Unmarshal(request.Reasoning, &rr); err == nil {
+		if err := jsonx.Unmarshal(request.Reasoning, &rr); err == nil {
 			if effort := NormalizeEffort(rr.Effort); effort != "" {
 				return effort
 			}
@@ -71,7 +71,7 @@ func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
 	// 3. THINKING (zhipu_v4 / Claude-style passthrough)
 	if len(request.THINKING) > 0 {
 		var thinking dto.Thinking
-		if err := common.Unmarshal(request.THINKING, &thinking); err == nil {
+		if err := jsonx.Unmarshal(request.THINKING, &thinking); err == nil {
 			if IsThinkingEnabled(thinking.Type) {
 				return "auto"
 			}
@@ -81,7 +81,7 @@ func ExtractEffortFromOpenAIRequest(request *dto.GeneralOpenAIRequest) string {
 	// 4. EnableThinking (Ali Qwen passthrough)
 	if len(request.EnableThinking) > 0 {
 		var enabled bool
-		if err := common.Unmarshal(request.EnableThinking, &enabled); err == nil && enabled {
+		if err := jsonx.Unmarshal(request.EnableThinking, &enabled); err == nil && enabled {
 			return "auto"
 		}
 	}
@@ -108,7 +108,7 @@ func ExtractEffortFromOpenAIResponsesRequest(request *dto.OpenAIResponsesRequest
 	// 2. EnableThinking (Ali Qwen passthrough)
 	if len(request.EnableThinking) > 0 {
 		var enabled bool
-		if err := common.Unmarshal(request.EnableThinking, &enabled); err == nil && enabled {
+		if err := jsonx.Unmarshal(request.EnableThinking, &enabled); err == nil && enabled {
 			return "auto"
 		}
 	}
@@ -128,7 +128,7 @@ func ExtractEffortFromClaudeRequest(request *dto.ClaudeRequest) string {
 	// 1. output_config.effort
 	if len(request.OutputConfig) > 0 {
 		var config dto.ClaudeOutputConfig
-		if err := common.Unmarshal(request.OutputConfig, &config); err == nil {
+		if err := jsonx.Unmarshal(request.OutputConfig, &config); err == nil {
 			// Claude effort "max" 在本项目统一映射为 "xhigh"
 			if strings.EqualFold(config.Effort, "max") {
 				return "xhigh"

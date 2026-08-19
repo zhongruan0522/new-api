@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func ConvertResponsesRequestToChatCompletionsRequest(responsesReq *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, error) {
@@ -68,9 +68,9 @@ func newChatRequestFromResponses(responsesReq *dto.OpenAIResponsesRequest, messa
 	if responsesReq.Reasoning != nil && strings.TrimSpace(responsesReq.Reasoning.Effort) != "" {
 		out.ReasoningEffort = responsesReq.Reasoning.Effort
 	}
-	if len(responsesReq.PromptCacheKey) > 0 && common.GetJsonType(responsesReq.PromptCacheKey) == "string" {
+	if len(responsesReq.PromptCacheKey) > 0 && jsonx.GetJsonType(responsesReq.PromptCacheKey) == "string" {
 		var promptCacheKey string
-		if err := common.Unmarshal(responsesReq.PromptCacheKey, &promptCacheKey); err == nil {
+		if err := jsonx.Unmarshal(responsesReq.PromptCacheKey, &promptCacheKey); err == nil {
 			out.PromptCacheKey = promptCacheKey
 		}
 	}
@@ -84,12 +84,12 @@ func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessa
 	if len(raw) == 0 {
 		return nil, nil
 	}
-	if common.GetJsonType(raw) != "string" {
-		return nil, fmt.Errorf("instructions must be a string, got %s", common.GetJsonType(raw))
+	if jsonx.GetJsonType(raw) != "string" {
+		return nil, fmt.Errorf("instructions must be a string, got %s", jsonx.GetJsonType(raw))
 	}
 
 	var s string
-	if err := common.Unmarshal(raw, &s); err != nil {
+	if err := jsonx.Unmarshal(raw, &s); err != nil {
 		return nil, fmt.Errorf("unmarshal instructions failed: %w", err)
 	}
 	if strings.TrimSpace(s) == "" {
@@ -124,7 +124,7 @@ func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.
 
 	if len(responsesReq.ParallelToolCalls) > 0 {
 		var enabled bool
-		if err := common.Unmarshal(responsesReq.ParallelToolCalls, &enabled); err != nil {
+		if err := jsonx.Unmarshal(responsesReq.ParallelToolCalls, &enabled); err != nil {
 			return fmt.Errorf("unmarshal parallel_tool_calls failed: %w", err)
 		}
 		out.ParallelTooCalls = &enabled
@@ -138,7 +138,7 @@ func applyResponsesToChatTextFormat(out *dto.GeneralOpenAIRequest, raw json.RawM
 		return nil
 	}
 	var payload map[string]json.RawMessage
-	if err := common.Unmarshal(raw, &payload); err != nil {
+	if err := jsonx.Unmarshal(raw, &payload); err != nil {
 		return fmt.Errorf("unmarshal text failed: %w", err)
 	}
 	formatRaw, ok := payload["format"]
@@ -169,12 +169,12 @@ func applyResponsesToChatTextFormat(out *dto.GeneralOpenAIRequest, raw json.RawM
 // into Chat response_format for OpenAI-compatible upstreams.
 func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFormat, error) {
 	var formatMap map[string]json.RawMessage
-	if err := common.Unmarshal(raw, &formatMap); err != nil {
+	if err := jsonx.Unmarshal(raw, &formatMap); err != nil {
 		return nil, fmt.Errorf("unmarshal text.format failed: %w", err)
 	}
 
 	var formatType string
-	if err := common.Unmarshal(formatMap["type"], &formatType); err != nil {
+	if err := jsonx.Unmarshal(formatMap["type"], &formatType); err != nil {
 		return nil, fmt.Errorf("unmarshal text.format.type failed: %w", err)
 	}
 	formatType = strings.TrimSpace(formatType)
@@ -187,18 +187,18 @@ func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFor
 
 	jsonSchema := dto.FormatJsonSchema{}
 	if nameRaw, ok := formatMap["name"]; ok && len(nameRaw) > 0 {
-		if err := common.Unmarshal(nameRaw, &jsonSchema.Name); err != nil {
+		if err := jsonx.Unmarshal(nameRaw, &jsonSchema.Name); err != nil {
 			return nil, fmt.Errorf("unmarshal text.format.name failed: %w", err)
 		}
 	}
 	if descRaw, ok := formatMap["description"]; ok && len(descRaw) > 0 {
-		if err := common.Unmarshal(descRaw, &jsonSchema.Description); err != nil {
+		if err := jsonx.Unmarshal(descRaw, &jsonSchema.Description); err != nil {
 			return nil, fmt.Errorf("unmarshal text.format.description failed: %w", err)
 		}
 	}
 	if schemaRaw, ok := formatMap["schema"]; ok && len(schemaRaw) > 0 {
 		var schema any
-		if err := common.Unmarshal(schemaRaw, &schema); err != nil {
+		if err := jsonx.Unmarshal(schemaRaw, &schema); err != nil {
 			return nil, fmt.Errorf("unmarshal text.format.schema failed: %w", err)
 		}
 		jsonSchema.Schema = schema
@@ -206,7 +206,7 @@ func buildChatResponseFormatFromResponses(raw json.RawMessage) (*dto.ResponseFor
 	if strictRaw, ok := formatMap["strict"]; ok && len(strictRaw) > 0 {
 		jsonSchema.Strict = strictRaw
 	}
-	jsonSchemaRaw, err := common.Marshal(jsonSchema)
+	jsonSchemaRaw, err := jsonx.Marshal(jsonSchema)
 	if err != nil {
 		return nil, fmt.Errorf("marshal response_format.json_schema failed: %w", err)
 	}

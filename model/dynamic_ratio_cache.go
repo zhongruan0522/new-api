@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析
@@ -38,7 +39,7 @@ func parseDynamicRatioRules(rules []DynamicRatioRule) []parsedDynamicRatioRule {
 		// 预解析 Weekdays
 		if r.Weekdays != "" {
 			var days []int
-			if err := common.UnmarshalJsonStr(r.Weekdays, &days); err == nil && len(days) > 0 {
+			if err := jsonx.UnmarshalJsonStr(r.Weekdays, &days); err == nil && len(days) > 0 {
 				parsed.ParsedWeekdays = days
 			}
 		}
@@ -46,7 +47,7 @@ func parseDynamicRatioRules(rules []DynamicRatioRule) []parsedDynamicRatioRule {
 		// 预解析 Models
 		if r.Models != "" {
 			var models []string
-			if err := common.UnmarshalJsonStr(r.Models, &models); err == nil && len(models) > 0 {
+			if err := jsonx.UnmarshalJsonStr(r.Models, &models); err == nil && len(models) > 0 {
 				parsed.ParsedModels = models
 			}
 		}

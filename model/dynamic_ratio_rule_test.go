@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func int64Ptr(v int64) *int64 {
@@ -439,7 +440,7 @@ func TestDynamicRatioStatusDoesNotExposeRuleModels(t *testing.T) {
 	})
 
 	status := GetDynamicRatioStatus("default")
-	payload, err := common.Marshal(status)
+	payload, err := jsonx.Marshal(status)
 	if err != nil {
 		t.Fatalf("marshal status: %v", err)
 	}

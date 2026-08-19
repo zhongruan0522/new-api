@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 const (
@@ -126,7 +127,7 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				callID = fmt.Sprintf("call_%d", len(calls))
 			}
 			if itemType == openAIResponsesOutputTypeCustomToolCall {
-				custom, marshalErr := common.Marshal(map[string]any{"name": item.Name, "input": item.Input})
+				custom, marshalErr := jsonx.Marshal(map[string]any{"name": item.Name, "input": item.Input})
 				if marshalErr != nil {
 					return "", "", nil, fmt.Errorf("marshal custom tool call failed: %w", marshalErr)
 				}
@@ -182,7 +183,7 @@ func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto
 	if len(toolCalls) == 0 {
 		return msg, nil
 	}
-	raw, err := common.Marshal(toolCalls)
+	raw, err := jsonx.Marshal(toolCalls)
 	if err != nil {
 		return dto.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
@@ -305,7 +306,7 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *Ope
 	}
 
 	var calls []dto.ToolCallResponse
-	if err := common.Unmarshal(raw, &calls); err != nil {
+	if err := jsonx.Unmarshal(raw, &calls); err != nil {
 		return nil, fmt.Errorf("unmarshal tool_calls failed: %w", err)
 	}
 	if len(calls) == 0 {
@@ -408,7 +409,7 @@ func parseChatCustomToolCall(raw json.RawMessage) (name string, input string, er
 		return "", "", fmt.Errorf("custom is required")
 	}
 	var custom map[string]any
-	if err := common.Unmarshal(raw, &custom); err != nil {
+	if err := jsonx.Unmarshal(raw, &custom); err != nil {
 		return "", "", fmt.Errorf("unmarshal custom failed: %w", err)
 	}
 	name = strings.TrimSpace(common.Interface2String(custom["name"]))

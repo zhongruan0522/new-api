@@ -2,6 +2,7 @@ package operation_setting
 
 import (
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/config"
 )
 
@@ -67,7 +68,7 @@ func IsAuditModuleEnabled(module string) bool {
 		return false
 	}
 	m := make(map[string]bool)
-	if err := common.Unmarshal([]byte(auditSetting.Modules), &m); err != nil {
+	if err := jsonx.Unmarshal([]byte(auditSetting.Modules), &m); err != nil {
 		common.SysError("failed to parse audit modules setting: " + err.Error())
 		return false
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // ConfigManager 统一管理所有配置
@@ -134,7 +135,7 @@ func configToMap(config interface{}) (map[string]string, error) {
 		case reflect.Ptr:
 			// 处理指针类型：如果非 nil，序列化指向的值
 			if !field.IsNil() {
-				bytes, err := common.Marshal(field.Interface())
+				bytes, err := jsonx.Marshal(field.Interface())
 				if err != nil {
 					return nil, err
 				}
@@ -145,7 +146,7 @@ func configToMap(config interface{}) (map[string]string, error) {
 			}
 		case reflect.Map, reflect.Slice, reflect.Struct:
 			// 复杂类型使用JSON序列化
-			bytes, err := common.Marshal(field.Interface())
+			bytes, err := jsonx.Marshal(field.Interface())
 			if err != nil {
 				return nil, err
 			}
@@ -268,13 +269,13 @@ func setFieldFromString(field reflect.Value, strValue string) error {
 			return nil
 		}
 		newValue := reflect.New(field.Type().Elem())
-		if err := common.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
+		if err := jsonx.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
 			return err
 		}
 		field.Set(newValue)
 	case reflect.Map, reflect.Slice, reflect.Struct:
 		newValue := reflect.New(field.Type())
-		if err := common.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
+		if err := jsonx.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
 			// 兼容历史持久化数据中 `[]string` 字段被写成 JSON 数字数组（如
 			// allowed_ports 存为 [80,443] 而非 ["80","443"]）的情形。这种情况
 			// 直接 Unmarshal 进 []string 会失败，导致整个配置模块被跳过、所有
@@ -299,7 +300,7 @@ func coerceStringSlice(strValue string, targetType reflect.Type) (reflect.Value,
 		return reflect.Value{}, false
 	}
 	var raw []interface{}
-	if err := common.Unmarshal([]byte(strValue), &raw); err != nil {
+	if err := jsonx.Unmarshal([]byte(strValue), &raw); err != nil {
 		return reflect.Value{}, false
 	}
 	out := reflect.MakeSlice(targetType, 0, len(raw))

@@ -1,9 +1,10 @@
-package common
+package jsonx
 
 import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"unsafe"
 )
 
 func Unmarshal(data []byte, v any) error {
@@ -42,4 +43,11 @@ func GetJsonType(data json.RawMessage) string {
 	default:
 		return "number"
 	}
+}
+
+// StringToByteSlice []byte only read, panic on append
+func StringToByteSlice(s string) []byte {
+	tmp1 := (*[2]uintptr)(unsafe.Pointer(&s))
+	tmp2 := [3]uintptr{tmp1[0], tmp1[1], tmp1[1]}
+	return *(*[]byte)(unsafe.Pointer(&tmp2))
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/helper"
@@ -107,7 +108,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 
 	if isNovaModel(awsModelId) {
 		var novaReq *NovaRequest
-		err = common.DecodeJson(requestBody, &novaReq)
+		err = jsonx.DecodeJson(requestBody, &novaReq)
 		if err != nil {
 			return nil, types.NewError(errors.Wrap(err, "decode nova request fail"), types.ErrorCodeBadRequestBody)
 		}
@@ -119,7 +120,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 			ContentType: aws.String("application/json"),
 		}
 
-		reqBody, err := common.Marshal(novaReq)
+		reqBody, err := jsonx.Marshal(novaReq)
 		if err != nil {
 			return nil, types.NewError(errors.Wrap(err, "marshal nova request"), types.ErrorCodeBadResponseBody)
 		}
@@ -168,14 +169,14 @@ func buildAwsRequestBody(c *gin.Context, info *relaycommon.RelayInfo, awsClaudeR
 			return nil, errors.Wrap(err, "get request body for pass-through fail")
 		}
 		var data map[string]interface{}
-		if err := common.Unmarshal(body, &data); err != nil {
+		if err := jsonx.Unmarshal(body, &data); err != nil {
 			return nil, errors.Wrap(err, "pass-through unmarshal request body fail")
 		}
 		delete(data, "model")
 		delete(data, "stream")
-		return common.Marshal(data)
+		return jsonx.Marshal(data)
 	}
-	return common.Marshal(awsClaudeReq)
+	return jsonx.Marshal(awsClaudeReq)
 }
 
 func getAwsRegionPrefix(awsRegionId string) string {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
@@ -39,7 +39,7 @@ type ImageRequest struct {
 func (i *ImageRequest) UnmarshalJSON(data []byte) error {
 	// 先解析成 map[string]interface{}
 	var rawMap map[string]json.RawMessage
-	if err := common.Unmarshal(data, &rawMap); err != nil {
+	if err := jsonx.Unmarshal(data, &rawMap); err != nil {
 		return err
 	}
 
@@ -49,7 +49,7 @@ func (i *ImageRequest) UnmarshalJSON(data []byte) error {
 	// 再正常解析已定义字段
 	type Alias ImageRequest
 	var known Alias
-	if err := common.Unmarshal(data, &known); err != nil {
+	if err := jsonx.Unmarshal(data, &known); err != nil {
 		return err
 	}
 	*i = ImageRequest(known)
@@ -69,13 +69,13 @@ func (r ImageRequest) MarshalJSON() ([]byte, error) {
 	// 将已定义字段转为 map
 	type Alias ImageRequest
 	alias := Alias(r)
-	base, err := common.Marshal(alias)
+	base, err := jsonx.Marshal(alias)
 	if err != nil {
 		return nil, err
 	}
 
 	var baseMap map[string]json.RawMessage
-	if err := common.Unmarshal(base, &baseMap); err != nil {
+	if err := jsonx.Unmarshal(base, &baseMap); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (r ImageRequest) MarshalJSON() ([]byte, error) {
 	//	}
 	//}
 
-	return common.Marshal(baseMap)
+	return jsonx.Marshal(baseMap)
 }
 
 func GetJSONFieldNames(t reflect.Type) map[string]struct{} {

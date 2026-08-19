@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 var autoGroups = []string{
@@ -21,11 +21,11 @@ func ContainsAutoGroup(group string) bool {
 
 func UpdateAutoGroupsByJsonString(jsonString string) error {
 	autoGroups = make([]string, 0)
-	return common.Unmarshal([]byte(jsonString), &autoGroups)
+	return jsonx.Unmarshal([]byte(jsonString), &autoGroups)
 }
 
 func AutoGroups2JsonString() string {
-	jsonBytes, err := common.Marshal(autoGroups)
+	jsonBytes, err := jsonx.Marshal(autoGroups)
 	if err != nil {
 		return "[]"
 	}

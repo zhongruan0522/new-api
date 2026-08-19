@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/openai"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
@@ -38,9 +38,9 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
 	// 解析extra到SFImageRequest里，以填入SiliconFlow特殊字段。若失败重建一个空的。
 	sfRequest := &SFImageRequest{}
-	extra, err := common.Marshal(request.Extra)
+	extra, err := jsonx.Marshal(request.Extra)
 	if err == nil {
-		err = common.Unmarshal(extra, sfRequest)
+		err = jsonx.Unmarshal(extra, sfRequest)
 		if err != nil {
 			sfRequest = &SFImageRequest{}
 		}

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/types"
@@ -33,7 +33,7 @@ func TestHandleTTSResponse_BillingFields(t *testing.T) {
 		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 42},
 		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
 	}
-	body, _ := common.Marshal(respBody)
+	body, _ := jsonx.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -91,7 +91,7 @@ func TestHandleTTSResponse_ZeroUsage(t *testing.T) {
 		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 0},
 		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
 	}
-	body, _ := common.Marshal(respBody)
+	body, _ := jsonx.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -135,7 +135,7 @@ func TestHandleTTSResponse_UsesRequestedContentType(t *testing.T) {
 		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 1},
 		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
 	}
-	body, _ := common.Marshal(respBody)
+	body, _ := jsonx.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -170,7 +170,7 @@ func TestHandleTTSResponse_ErrorStatus(t *testing.T) {
 	respBody := MiniMaxTTSResponse{
 		BaseResp: MiniMaxBaseResp{StatusCode: 1001, StatusMsg: "invalid voice"},
 	}
-	body, _ := common.Marshal(respBody)
+	body, _ := jsonx.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -202,7 +202,7 @@ func TestHandleTTSResponse_ErrorStatusSanitizesProviderName(t *testing.T) {
 	respBody := MiniMaxTTSResponse{
 		BaseResp: MiniMaxBaseResp{StatusCode: 1001, StatusMsg: "MiniMax invalid voice"},
 	}
-	body, _ := common.Marshal(respBody)
+	body, _ := jsonx.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

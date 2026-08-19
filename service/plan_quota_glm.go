@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/google/uuid"
 )
 
@@ -72,7 +72,7 @@ type glmBizResp struct {
 // 因此以稳定的 code 码作为判定依据，而不是匹配 msg 文案。
 func isGlmAuthFailure(body []byte) bool {
 	var resp glmBizResp
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return false
 	}
 	return resp.Code == glmAuthFailureCode
@@ -143,7 +143,7 @@ func (t *glmResetTime) UnmarshalJSON(data []byte) error {
 	}
 
 	var text string
-	if err := common.Unmarshal(data, &text); err == nil {
+	if err := jsonx.Unmarshal(data, &text); err == nil {
 		normalized, err := normalizeGlmResetTime(text)
 		if err != nil {
 			return err
@@ -153,7 +153,7 @@ func (t *glmResetTime) UnmarshalJSON(data []byte) error {
 	}
 
 	var number json.Number
-	if err := common.Unmarshal(data, &number); err == nil {
+	if err := jsonx.Unmarshal(data, &number); err == nil {
 		normalized, err := normalizeGlmResetTime(number.String())
 		if err != nil {
 			return err
@@ -296,7 +296,7 @@ func CheckGlmRiskStatus(apiKey string, proxyURL string) (*GlmRiskCheckResult, er
 		Data    interface{} `json:"data"`
 		Success bool        `json:"success"`
 	}
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %w", err)
 	}
 
@@ -347,7 +347,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string, proxyURL string) (*Glm
 			return
 		}
 		var sub glmSubscriptionResp
-		if err := common.Unmarshal(resp, &sub); err != nil {
+		if err := jsonx.Unmarshal(resp, &sub); err != nil {
 			errCh <- fmt.Errorf("解析订阅信息失败: %w", err)
 			return
 		}
@@ -361,7 +361,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string, proxyURL string) (*Glm
 			return
 		}
 		var lim glmLimitResp
-		if err := common.Unmarshal(resp, &lim); err != nil {
+		if err := jsonx.Unmarshal(resp, &lim); err != nil {
 			errCh <- fmt.Errorf("解析限额信息失败: %w", err)
 			return
 		}
@@ -624,9 +624,9 @@ func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, start
 // 智谱在 success 字段缺失或为 true 且 code 为 0/200/null 时视为成功；
 // 与 glmBizResp 不同之处在于该接口的成功判定更宽松，因此单独建模。
 type glmActivityResp struct {
-	Code    *int               `json:"code"`
-	Msg     string             `json:"msg"`
-	Success *bool              `json:"success"`
+	Code    *int                `json:"code"`
+	Msg     string              `json:"msg"`
+	Success *bool               `json:"success"`
 	Data    *GlmActivityPayload `json:"data"`
 }
 
@@ -724,7 +724,7 @@ func FetchGlmCreditUsageActivity(apiKey string, planBaseURL string, accountType 
 	}
 
 	var resp glmActivityResp
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("解析活跃数据响应失败: %w", err)
 	}
 	if !isGlmActivitySuccess(&resp) {
@@ -882,7 +882,7 @@ func FetchGlmResetCards(apiKey string, planBaseURL string, proxyURL string) (*Gl
 	}
 
 	var resp glmResetCardListResp
-	if err := common.Unmarshal(body, &resp); err != nil {
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("解析重置卡列表失败: %w", err)
 	}
 
@@ -1010,7 +1010,7 @@ func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req Glm
 		"recordId":   req.RecordId,
 		"requestId":  uuid.NewString(),
 	}
-	body, err := common.Marshal(payload)
+	body, err := jsonx.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("构造使用重置卡请求失败: %w", err)
 	}
@@ -1025,7 +1025,7 @@ func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req Glm
 		Msg     string `json:"msg"`
 		Success bool   `json:"success"`
 	}
-	if err := common.Unmarshal(respBody, &resp); err != nil {
+	if err := jsonx.Unmarshal(respBody, &resp); err != nil {
 		return nil, fmt.Errorf("解析使用重置卡响应失败: %w", err)
 	}
 

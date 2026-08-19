@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 )
 
@@ -32,7 +32,7 @@ func TestConvertOpenAIRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 		t.Fatalf("reasoning_effort = %q, want max", converted.ReasoningEffort)
 	}
 	var thinking map[string]string
-	if err := common.Unmarshal(converted.THINKING, &thinking); err != nil {
+	if err := jsonx.Unmarshal(converted.THINKING, &thinking); err != nil {
 		t.Fatalf("unmarshal thinking error = %v", err)
 	}
 	if thinking["type"] != "enabled" {
@@ -62,7 +62,7 @@ func TestConvertOpenAIRequestAppliesDeepSeekV4NoneSuffix(t *testing.T) {
 		t.Fatalf("reasoning_effort = %q, want empty for disabled thinking", converted.ReasoningEffort)
 	}
 	var thinking map[string]string
-	if err := common.Unmarshal(converted.THINKING, &thinking); err != nil {
+	if err := jsonx.Unmarshal(converted.THINKING, &thinking); err != nil {
 		t.Fatalf("unmarshal thinking error = %v", err)
 	}
 	if thinking["type"] != "disabled" {
@@ -92,7 +92,7 @@ func TestConvertClaudeRequestAppliesDeepSeekV4MaxSuffix(t *testing.T) {
 		t.Fatalf("thinking = %+v, want enabled", converted.Thinking)
 	}
 	var outputConfig dto.ClaudeOutputConfig
-	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
 		t.Fatalf("unmarshal output_config error = %v", err)
 	}
 	if outputConfig.Effort != "max" {

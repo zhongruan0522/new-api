@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/claude"
 	"github.com/NookMux/NookMux/relay/channel/gemini"
@@ -123,7 +123,7 @@ func (a *Adaptor) getRequestUrl(info *relaycommon.RelayInfo, modelName, suffix s
 	region := GetModelRegion(info.ApiVersion, info.OriginModelName)
 	if info.ChannelOtherSettings.VertexKeyType != dto.VertexKeyTypeAPIKey {
 		adc := &Credentials{}
-		if err := common.Unmarshal([]byte(info.ApiKey), adc); err != nil {
+		if err := jsonx.Unmarshal([]byte(info.ApiKey), adc); err != nil {
 			return "", fmt.Errorf("failed to decode credentials file: %w", err)
 		}
 		a.AccountCredentials = *adc
@@ -383,13 +383,13 @@ func (a *Adaptor) GetChannelName() string {
 
 func stripGeminiFunctionResponseIDFromJSON(jsonData []byte) ([]byte, error) {
 	var data map[string]interface{}
-	if err := common.Unmarshal(jsonData, &data); err != nil {
+	if err := jsonx.Unmarshal(jsonData, &data); err != nil {
 		return nil, fmt.Errorf("invalid gemini request body: %w", err)
 	}
 
 	stripGeminiFunctionResponseIDFromMap(data)
 
-	cleaned, err := common.Marshal(data)
+	cleaned, err := jsonx.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("marshal cleaned gemini request body failed: %w", err)
 	}

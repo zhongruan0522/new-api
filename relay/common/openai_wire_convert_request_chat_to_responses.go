@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func ConvertChatCompletionsRequestToResponsesRequest(chatReq *dto.GeneralOpenAIRequest) (*dto.OpenAIResponsesRequest, error) {
@@ -55,7 +55,7 @@ func newResponsesRequestFromChat(chatReq *dto.GeneralOpenAIRequest, input json.R
 		Store:            chatReq.Store,
 	}
 	if strings.TrimSpace(chatReq.PromptCacheKey) != "" {
-		if raw, err := common.Marshal(chatReq.PromptCacheKey); err == nil {
+		if raw, err := jsonx.Marshal(chatReq.PromptCacheKey); err == nil {
 			out.PromptCacheKey = raw
 		}
 	}
@@ -69,7 +69,7 @@ func applyChatToResponsesInstructions(out *dto.OpenAIResponsesRequest, instructi
 	if strings.TrimSpace(instructions) == "" {
 		return nil
 	}
-	raw, err := common.Marshal(instructions)
+	raw, err := jsonx.Marshal(instructions)
 	if err != nil {
 		return fmt.Errorf("marshal instructions failed: %w", err)
 	}
@@ -95,7 +95,7 @@ func applyChatToResponsesTools(out *dto.OpenAIResponsesRequest, chatReq *dto.Gen
 	}
 
 	if chatReq.ParallelTooCalls != nil {
-		raw, err := common.Marshal(*chatReq.ParallelTooCalls)
+		raw, err := jsonx.Marshal(*chatReq.ParallelTooCalls)
 		if err != nil {
 			return fmt.Errorf("marshal parallel_tool_calls failed: %w", err)
 		}
@@ -126,7 +126,7 @@ func applyChatToResponsesTextFormat(out *dto.OpenAIResponsesRequest, chatReq *dt
 	}
 	if len(chatReq.Verbosity) > 0 {
 		var verbosity any
-		if err := common.Unmarshal(chatReq.Verbosity, &verbosity); err != nil {
+		if err := jsonx.Unmarshal(chatReq.Verbosity, &verbosity); err != nil {
 			return fmt.Errorf("unmarshal verbosity failed: %w", err)
 		}
 		payload["verbosity"] = verbosity
@@ -134,7 +134,7 @@ func applyChatToResponsesTextFormat(out *dto.OpenAIResponsesRequest, chatReq *dt
 	if len(payload) == 0 {
 		return nil
 	}
-	raw, err := common.Marshal(payload)
+	raw, err := jsonx.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal text.format failed: %w", err)
 	}
@@ -156,7 +156,7 @@ func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]an
 	if len(format.JsonSchema) == 0 {
 		return nil, fmt.Errorf("response_format.json_schema is required when type=json_schema")
 	}
-	if err := common.Unmarshal(format.JsonSchema, &schema); err != nil {
+	if err := jsonx.Unmarshal(format.JsonSchema, &schema); err != nil {
 		return nil, fmt.Errorf("unmarshal response_format.json_schema failed: %w", err)
 	}
 	if strings.TrimSpace(schema.Name) == "" {
@@ -171,7 +171,7 @@ func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]an
 	}
 	if len(schema.Strict) > 0 {
 		var strict any
-		if err := common.Unmarshal(schema.Strict, &strict); err != nil {
+		if err := jsonx.Unmarshal(schema.Strict, &strict); err != nil {
 			return nil, fmt.Errorf("unmarshal response_format.json_schema.strict failed: %w", err)
 		}
 		out["strict"] = strict

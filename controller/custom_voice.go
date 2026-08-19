@@ -7,6 +7,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/i18n"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/model_setting"
 )
@@ -61,7 +62,7 @@ func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
 	}
 
 	var req customVoiceConfirmRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}
@@ -87,7 +88,7 @@ func CustomVoiceConfirmHandler(c *gin.Context) {
 	}
 
 	var req customVoiceConfirmRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgInvalidParams)})
 		return
 	}

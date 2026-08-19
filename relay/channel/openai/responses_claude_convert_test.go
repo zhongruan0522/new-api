@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
 	"github.com/NookMux/NookMux/types"
@@ -115,7 +115,7 @@ func TestConvertResponsesBodyToClaudeBodyPreservesTextToolAndUsage(t *testing.T)
 	}
 
 	var got dto.ClaudeResponse
-	if err := common.Unmarshal(body, &got); err != nil {
+	if err := jsonx.Unmarshal(body, &got); err != nil {
 		t.Fatalf("unmarshal Claude response error = %v", err)
 	}
 	if got.Type != "message" || got.StopReason != "tool_use" {
@@ -154,7 +154,7 @@ func TestWriteResponsesStreamAsClaudeEmitsClaudeEvents(t *testing.T) {
 	}
 	converter := relaycommon.NewResponsesToChatStreamConverter(false)
 
-	textEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+	textEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
 		Type:  "response.output_text.delta",
 		Delta: "hello",
 		Response: &dto.OpenAIResponsesResponse{
@@ -170,7 +170,7 @@ func TestWriteResponsesStreamAsClaudeEmitsClaudeEvents(t *testing.T) {
 		t.Fatalf("write text event error = %v", err)
 	}
 
-	completedEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
 		Type: "response.completed",
 		Response: &dto.OpenAIResponsesResponse{
 			ID:        "resp_1",

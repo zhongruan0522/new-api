@@ -3,7 +3,7 @@ package dto
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestGeminiChatResponseUnmarshalSnakeCaseUsageMetadata(t *testing.T) {
@@ -26,7 +26,7 @@ func TestGeminiChatResponseUnmarshalSnakeCaseUsageMetadata(t *testing.T) {
 	}`)
 
 	var resp GeminiChatResponse
-	if err := common.Unmarshal(raw, &resp); err != nil {
+	if err := jsonx.Unmarshal(raw, &resp); err != nil {
 		t.Fatalf("unmarshal response error = %v", err)
 	}
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"gorm.io/gorm"
 )
 
@@ -95,7 +96,7 @@ func removeUserSettingSidebarModules(settingJSON string) (string, bool, error) {
 	}
 
 	var m map[string]any
-	if err := common.Unmarshal([]byte(settingJSON), &m); err != nil {
+	if err := jsonx.Unmarshal([]byte(settingJSON), &m); err != nil {
 		// Setting JSON is corrupted; avoid destructive updates.
 		return settingJSON, false, nil
 	}
@@ -106,7 +107,7 @@ func removeUserSettingSidebarModules(settingJSON string) (string, bool, error) {
 
 	delete(m, "sidebar_modules")
 
-	b, err := common.Marshal(m)
+	b, err := jsonx.Marshal(m)
 	if err != nil {
 		return "", false, err
 	}

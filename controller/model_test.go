@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -95,7 +96,7 @@ func TestListModelsIncludesContextPricingOnlyModel(t *testing.T) {
 		Success bool               `json:"success"`
 		Data    []dto.OpenAIModels `json:"data"`
 	}
-	if err := common.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+	if err := jsonx.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("unmarshal response: %v", err)
 	}
 	if !response.Success {

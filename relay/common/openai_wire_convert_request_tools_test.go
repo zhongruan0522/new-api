@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {
@@ -43,7 +43,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {
 	}
 
 	var tools []openAIResponsesFunctionTool
-	if err := common.Unmarshal(got.Tools, &tools); err != nil {
+	if err := jsonx.Unmarshal(got.Tools, &tools); err != nil {
 		t.Fatalf("unmarshal tools error = %v", err)
 	}
 	if len(tools) != 1 {
@@ -54,7 +54,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {
 	}
 
 	var toolChoice map[string]any
-	if err := common.Unmarshal(got.ToolChoice, &toolChoice); err != nil {
+	if err := jsonx.Unmarshal(got.ToolChoice, &toolChoice); err != nil {
 		t.Fatalf("unmarshal tool_choice error = %v", err)
 	}
 	if toolChoice["type"] != "function" {
@@ -66,7 +66,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {
 }
 
 func TestConvertResponsesRequestToChatCompletionsRequest_Tools(t *testing.T) {
-	toolsRaw, err := common.Marshal([]openAIResponsesFunctionTool{
+	toolsRaw, err := jsonx.Marshal([]openAIResponsesFunctionTool{
 		{
 			Type:        "function",
 			Name:        "get_weather",
@@ -77,11 +77,11 @@ func TestConvertResponsesRequestToChatCompletionsRequest_Tools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
-	choiceRaw, err := common.Marshal(map[string]any{"type": "function", "name": "get_weather"})
+	choiceRaw, err := jsonx.Marshal(map[string]any{"type": "function", "name": "get_weather"})
 	if err != nil {
 		t.Fatalf("marshal tool_choice error = %v", err)
 	}
-	inputRaw, err := common.Marshal("hi")
+	inputRaw, err := jsonx.Marshal("hi")
 	if err != nil {
 		t.Fatalf("marshal input error = %v", err)
 	}
@@ -122,7 +122,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_Tools(t *testing.T) {
 }
 
 func TestConvertResponsesRequestToChatCompletionsRequest_NamespaceTool(t *testing.T) {
-	toolsRaw, err := common.Marshal([]map[string]any{
+	toolsRaw, err := jsonx.Marshal([]map[string]any{
 		{
 			"type":        "namespace",
 			"name":        "mcp__codex_apps__gmail",
@@ -147,7 +147,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_NamespaceTool(t *testin
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
-	choiceRaw, err := common.Marshal(map[string]any{
+	choiceRaw, err := jsonx.Marshal(map[string]any{
 		"type":      "function",
 		"name":      "_search_emails",
 		"namespace": "mcp__codex_apps__gmail",
@@ -155,7 +155,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_NamespaceTool(t *testin
 	if err != nil {
 		t.Fatalf("marshal tool_choice error = %v", err)
 	}
-	inputRaw, err := common.Marshal([]map[string]any{{
+	inputRaw, err := jsonx.Marshal([]map[string]any{{
 		"type":      "function_call",
 		"call_id":   "call_gmail",
 		"namespace": "mcp__codex_apps__gmail",
@@ -207,7 +207,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_NamespaceTool(t *testin
 }
 
 func TestConvertResponsesRequestToChatCompletionsRequest_LoadedNamespaceTools(t *testing.T) {
-	inputRaw, err := common.Marshal([]map[string]any{
+	inputRaw, err := jsonx.Marshal([]map[string]any{
 		{
 			"type":      "tool_search_call",
 			"call_id":   "call_tool_search_1",
@@ -246,7 +246,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_LoadedNamespaceTools(t 
 	if err != nil {
 		t.Fatalf("marshal input error = %v", err)
 	}
-	toolsRaw, err := common.Marshal([]map[string]any{{"type": "tool_search"}})
+	toolsRaw, err := jsonx.Marshal([]map[string]any{{"type": "tool_search"}})
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
@@ -285,7 +285,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_LoadedNamespaceTools(t 
 }
 
 func TestConvertResponsesRequestToChatCompletionsRequest_DropsBuiltInTools(t *testing.T) {
-	toolsRaw, err := common.Marshal([]map[string]any{
+	toolsRaw, err := jsonx.Marshal([]map[string]any{
 		{"type": "function", "name": "get_weather"},
 		{"type": "web_search"},
 		{"type": "web_search_preview", "search_context_size": "medium"},
@@ -295,7 +295,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_DropsBuiltInTools(t *te
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
-	inputRaw, err := common.Marshal("hi")
+	inputRaw, err := jsonx.Marshal("hi")
 	if err != nil {
 		t.Fatalf("marshal input error = %v", err)
 	}
@@ -320,14 +320,14 @@ func TestConvertResponsesRequestToChatCompletionsRequest_DropsBuiltInTools(t *te
 
 func TestConvertResponsesRequestToChatCompletionsRequest_OnlyBuiltInTools(t *testing.T) {
 	// 当请求只包含内置工具时，转换不应报错，且 tools 为空。
-	toolsRaw, err := common.Marshal([]map[string]any{
+	toolsRaw, err := jsonx.Marshal([]map[string]any{
 		{"type": "web_search"},
 		{"type": "image_generation"},
 	})
 	if err != nil {
 		t.Fatalf("marshal tools error = %v", err)
 	}
-	inputRaw, err := common.Marshal("draw a cat")
+	inputRaw, err := jsonx.Marshal("draw a cat")
 	if err != nil {
 		t.Fatalf("marshal input error = %v", err)
 	}

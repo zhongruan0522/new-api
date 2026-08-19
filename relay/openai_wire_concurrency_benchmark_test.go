@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openai"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
@@ -116,7 +116,7 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 						IncludeUsage: true,
 					},
 				}
-				body, err := common.Marshal(request)
+				body, err := jsonx.Marshal(request)
 				if err != nil {
 					b.Errorf("marshal request: %v", err)
 					return
@@ -149,7 +149,7 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 					b.Errorf("convert request: %v", err)
 					return
 				}
-				jsonData, err := common.Marshal(converted)
+				jsonData, err := jsonx.Marshal(converted)
 				if err != nil {
 					b.Errorf("marshal converted request: %v", err)
 					return

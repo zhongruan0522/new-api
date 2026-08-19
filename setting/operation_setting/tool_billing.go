@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/config"
 )
 
@@ -199,7 +200,7 @@ func UpdateToolBillingRules(rules []ToolBillingRule) {
 // (the one used when tool_billing_setting.rules has never been customized)
 // to a JSON string. Used by the reset endpoint to restore defaults.
 func DefaultToolBillingRules2JSONString() string {
-	jsonBytes, err := common.Marshal(ToolBillingSetting{Rules: defaultToolBillingRules()})
+	jsonBytes, err := jsonx.Marshal(ToolBillingSetting{Rules: defaultToolBillingRules()})
 	if err != nil {
 		common.SysError("error marshalling default tool billing rules: " + err.Error())
 		return "[]"
@@ -213,13 +214,13 @@ func DefaultToolBillingRules2JSONString() string {
 func ValidateToolBillingRules(jsonStr string) error {
 	// 先尝试新格式
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(jsonStr), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(jsonStr), &rules); err != nil {
 		return fmt.Errorf("invalid JSON: %v", err)
 	}
 
 	// 检测是否是旧格式：尝试解析为 legacy，看是否有 model_filter/quality/size/provider 非空
 	var legacyRules []toolBillingLegacyRule
-	_ = common.Unmarshal([]byte(jsonStr), &legacyRules)
+	_ = jsonx.Unmarshal([]byte(jsonStr), &legacyRules)
 
 	for i, rule := range rules {
 		if strings.TrimSpace(rule.ID) == "" {
@@ -342,13 +343,13 @@ func validateConditionNumericValue(value interface{}) error {
 func MigrateLegacyRules(jsonStr string) (string, bool, error) {
 	// 解析为新格式
 	var rules []ToolBillingRule
-	if err := common.Unmarshal([]byte(jsonStr), &rules); err != nil {
+	if err := jsonx.Unmarshal([]byte(jsonStr), &rules); err != nil {
 		return "", false, fmt.Errorf("invalid JSON: %v", err)
 	}
 
 	// 同时解析为 legacy 格式以检测旧字段
 	var legacyRules []toolBillingLegacyRule
-	if err := common.Unmarshal([]byte(jsonStr), &legacyRules); err != nil {
+	if err := jsonx.Unmarshal([]byte(jsonStr), &legacyRules); err != nil {
 		// legacy 解析失败说明不是旧格式，直接返回新格式
 		return jsonStr, false, nil
 	}
@@ -382,7 +383,7 @@ func MigrateLegacyRules(jsonStr string) (string, bool, error) {
 		return jsonStr, false, nil
 	}
 
-	data, err := common.Marshal(rules)
+	data, err := jsonx.Marshal(rules)
 	if err != nil {
 		return "", false, fmt.Errorf("failed to marshal migrated rules: %v", err)
 	}

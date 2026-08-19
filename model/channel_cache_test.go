@@ -7,6 +7,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -104,7 +105,7 @@ func createChannelCacheTestChannel(t *testing.T, channel Channel) Channel {
 func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string {
 	t.Helper()
 
-	data, err := common.Marshal(setting)
+	data, err := jsonx.Marshal(setting)
 	if err != nil {
 		t.Fatalf("marshal channel setting: %v", err)
 	}

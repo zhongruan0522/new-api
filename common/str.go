@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unsafe"
 
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/samber/lo"
 )
 
@@ -59,7 +59,7 @@ func MapToJsonStr(m map[string]interface{}) string {
 
 func StrToMap(str string) (map[string]interface{}, error) {
 	m := make(map[string]interface{})
-	err := Unmarshal([]byte(str), &m)
+	err := jsonx.Unmarshal([]byte(str), &m)
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +100,6 @@ func StringsContains(strs []string, str string) bool {
 		}
 	}
 	return false
-}
-
-// StringToByteSlice []byte only read, panic on append
-func StringToByteSlice(s string) []byte {
-	tmp1 := (*[2]uintptr)(unsafe.Pointer(&s))
-	tmp2 := [3]uintptr{tmp1[0], tmp1[1], tmp1[1]}
-	return *(*[]byte)(unsafe.Pointer(&tmp2))
 }
 
 func EncodeBase64(str string) string {

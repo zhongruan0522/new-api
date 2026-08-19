@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/config"
 )
 
@@ -363,7 +363,7 @@ func GetCustomVoiceConfigReady() bool {
 // 导致配置显示已清空但运行时仍使用旧值。清空请传 "{}"。
 func validateStringMap(value string) error {
 	var m map[string]string
-	if err := common.UnmarshalJsonStr(value, &m); err != nil {
+	if err := jsonx.UnmarshalJsonStr(value, &m); err != nil {
 		return fmt.Errorf("invalid JSON for string map: %w", err)
 	}
 	return nil

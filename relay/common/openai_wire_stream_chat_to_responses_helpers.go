@@ -7,6 +7,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatCompletionsStreamResponse) {
@@ -337,7 +338,7 @@ func encodeResponsesStreamEvent(stream dto.ResponsesStreamResponse) (string, err
 	if strings.TrimSpace(stream.Type) == "" {
 		return "", nil
 	}
-	raw, err := common.Marshal(stream)
+	raw, err := jsonx.Marshal(stream)
 	if err != nil {
 		return "", fmt.Errorf("marshal responses stream event failed: %w", err)
 	}

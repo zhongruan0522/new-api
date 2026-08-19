@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/reasonmap"
@@ -45,7 +46,7 @@ func extractClaudeOutputConfigEffort(outputConfig json.RawMessage) string {
 	}
 
 	var config dto.ClaudeOutputConfig
-	if err := common.Unmarshal(outputConfig, &config); err != nil {
+	if err := jsonx.Unmarshal(outputConfig, &config); err != nil {
 		return ""
 	}
 	if config.Effort == "max" {
@@ -100,7 +101,7 @@ func buildOpenAIReasoningPayload(maxTokens int) (json.RawMessage, error) {
 		return nil, nil
 	}
 
-	payload, err := common.Marshal(openrouter.RequestReasoning{MaxTokens: maxTokens})
+	payload, err := jsonx.Marshal(openrouter.RequestReasoning{MaxTokens: maxTokens})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal reasoning payload: %w", err)
 	}
@@ -110,7 +111,7 @@ func buildOpenAIReasoningPayload(maxTokens int) (json.RawMessage, error) {
 func buildOpenRouterClaudeReasoningPayload(claudeRequest dto.ClaudeRequest) (json.RawMessage, error) {
 	effort := extractClaudeOutputConfigEffort(claudeRequest.OutputConfig)
 	if effort != "" {
-		payload, err := common.Marshal(openrouter.RequestReasoning{
+		payload, err := jsonx.Marshal(openrouter.RequestReasoning{
 			Enabled: true,
 			Effort:  effort,
 		})
@@ -136,7 +137,7 @@ func buildOpenRouterClaudeReasoningPayload(claudeRequest dto.ClaudeRequest) (jso
 		return nil, nil
 	}
 
-	payload, err := common.Marshal(reasoning)
+	payload, err := jsonx.Marshal(reasoning)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal reasoning: %w", err)
 	}
@@ -214,7 +215,7 @@ func buildOpenAIWebSearchOptions(tool *dto.ClaudeWebSearchTool) *dto.WebSearchOp
 		SearchContextSize: claudeWebSearchMaxUsesToContextSize(tool.MaxUses),
 	}
 	if tool.UserLocation != nil {
-		payload, err := common.Marshal(map[string]any{
+		payload, err := jsonx.Marshal(map[string]any{
 			"approximate": tool.UserLocation,
 		})
 		if err == nil {
@@ -275,7 +276,7 @@ func appendOpenAIToolMessage(openAIMessages *[]dto.Message, claudeRequest dto.Cl
 		if len(mediaContents) == 0 {
 			oaiToolMessage.SetStringContent("")
 		} else {
-			encodeJSON, _ := common.Marshal(mediaContents)
+			encodeJSON, _ := jsonx.Marshal(mediaContents)
 			oaiToolMessage.SetStringContent(string(encodeJSON))
 		}
 	}
@@ -967,7 +968,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 		for _, toolUse := range choice.Message.ParseToolCalls() {
 			claudeContent := dto.ClaudeMediaMessage{Type: "tool_use", Id: toolUse.ID, Name: toolUse.Function.Name}
 			var mapParams map[string]interface{}
-			if err := common.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
+			if err := jsonx.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
 				claudeContent.Input = mapParams
 			} else {
 				claudeContent.Input = toolUse.Function.Arguments
@@ -1481,7 +1482,7 @@ func parseOpenAIFunctionArguments(arguments string) any {
 	}
 
 	var args any
-	if err := common.Unmarshal([]byte(arguments), &args); err == nil {
+	if err := jsonx.Unmarshal([]byte(arguments), &args); err == nil {
 		return args
 	}
 	return map[string]interface{}{"arguments": arguments}

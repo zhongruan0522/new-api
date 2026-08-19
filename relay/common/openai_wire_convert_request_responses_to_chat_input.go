@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 type responsesInputTypeProbe struct {
@@ -39,23 +39,23 @@ func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]dto.Message, er
 		return nil, fmt.Errorf("input is required")
 	}
 
-	switch common.GetJsonType(raw) {
+	switch jsonx.GetJsonType(raw) {
 	case "string":
 		var s string
-		if err := common.Unmarshal(raw, &s); err != nil {
+		if err := jsonx.Unmarshal(raw, &s); err != nil {
 			return nil, fmt.Errorf("unmarshal input string failed: %w", err)
 		}
 		return []dto.Message{{Role: "user", Content: s}}, nil
 	case "array":
 		return buildChatMessagesFromResponsesInputArray(raw)
 	default:
-		return nil, fmt.Errorf("unsupported input type: %s", common.GetJsonType(raw))
+		return nil, fmt.Errorf("unsupported input type: %s", jsonx.GetJsonType(raw))
 	}
 }
 
 func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Message, error) {
 	var items []json.RawMessage
-	if err := common.Unmarshal(raw, &items); err != nil {
+	if err := jsonx.Unmarshal(raw, &items); err != nil {
 		return nil, fmt.Errorf("unmarshal input array failed: %w", err)
 	}
 	if len(items) == 0 {
@@ -173,7 +173,7 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 
 func probeResponsesInputItemType(raw json.RawMessage) (string, error) {
 	var probe responsesInputTypeProbe
-	if err := common.Unmarshal(raw, &probe); err != nil {
+	if err := jsonx.Unmarshal(raw, &probe); err != nil {
 		return "", fmt.Errorf("unmarshal input item type failed: %w", err)
 	}
 	return strings.TrimSpace(probe.Type), nil
@@ -181,7 +181,7 @@ func probeResponsesInputItemType(raw json.RawMessage) (string, error) {
 
 func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]dto.Message, error) {
 	var item dto.Input
-	if err := common.Unmarshal(raw, &item); err != nil {
+	if err := jsonx.Unmarshal(raw, &item); err != nil {
 		return nil, fmt.Errorf("unmarshal message item failed: %w", err)
 	}
 
@@ -198,16 +198,16 @@ func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]dto.Messa
 }
 
 func buildChatMessageFromResponsesMessageContent(role string, raw json.RawMessage) (dto.Message, error) {
-	switch common.GetJsonType(raw) {
+	switch jsonx.GetJsonType(raw) {
 	case "string":
 		var s string
-		if err := common.Unmarshal(raw, &s); err != nil {
+		if err := jsonx.Unmarshal(raw, &s); err != nil {
 			return dto.Message{}, fmt.Errorf("unmarshal content string failed: %w", err)
 		}
 		return dto.Message{Role: role, Content: s}, nil
 	case "array":
 		var parts []map[string]any
-		if err := common.Unmarshal(raw, &parts); err != nil {
+		if err := jsonx.Unmarshal(raw, &parts); err != nil {
 			return dto.Message{}, fmt.Errorf("unmarshal content parts failed: %w", err)
 		}
 		media, err := convertResponsesContentPartsToChat(parts)
@@ -219,7 +219,7 @@ func buildChatMessageFromResponsesMessageContent(role string, raw json.RawMessag
 		}
 		return dto.Message{Role: role, Content: media}, nil
 	default:
-		return dto.Message{}, fmt.Errorf("unsupported content type: %s", common.GetJsonType(raw))
+		return dto.Message{}, fmt.Errorf("unsupported content type: %s", jsonx.GetJsonType(raw))
 	}
 }
 
@@ -229,7 +229,7 @@ func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (dto
 		return dto.Message{}, err
 	}
 
-	rawToolCalls, err := common.Marshal([]dto.ToolCallResponse{call})
+	rawToolCalls, err := jsonx.Marshal([]dto.ToolCallResponse{call})
 	if err != nil {
 		return dto.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
@@ -243,7 +243,7 @@ func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (dto
 
 func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCallResponse, error) {
 	var item responsesFunctionCallInput
-	if err := common.Unmarshal(raw, &item); err != nil {
+	if err := jsonx.Unmarshal(raw, &item); err != nil {
 		return dto.ToolCallResponse{}, fmt.Errorf("unmarshal function_call item failed: %w", err)
 	}
 	callID := strings.TrimSpace(item.CallID)
@@ -295,7 +295,7 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 
 func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessage) (dto.Message, error) {
 	var item responsesFunctionCallOutputInput
-	if err := common.Unmarshal(raw, &item); err != nil {
+	if err := jsonx.Unmarshal(raw, &item); err != nil {
 		return dto.Message{}, fmt.Errorf("unmarshal function_call_output item failed: %w", err)
 	}
 	callID := strings.TrimSpace(item.CallID)
@@ -329,13 +329,13 @@ func appendToolCallsToChatAssistantMessage(msg *dto.Message, reasoning string, t
 		msg.SetReasoningContent(appendReasoningSummary(msg.GetReasoningContent(), reasoning))
 	}
 	existing := make([]dto.ToolCallResponse, 0)
-	if len(msg.ToolCalls) > 0 && common.GetJsonType(msg.ToolCalls) != "null" {
-		if err := common.Unmarshal(msg.ToolCalls, &existing); err != nil {
+	if len(msg.ToolCalls) > 0 && jsonx.GetJsonType(msg.ToolCalls) != "null" {
+		if err := jsonx.Unmarshal(msg.ToolCalls, &existing); err != nil {
 			return fmt.Errorf("unmarshal existing tool_calls failed: %w", err)
 		}
 	}
 	existing = append(existing, toolCalls...)
-	raw, err := common.Marshal(existing)
+	raw, err := jsonx.Marshal(existing)
 	if err != nil {
 		return fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
@@ -344,22 +344,22 @@ func appendToolCallsToChatAssistantMessage(msg *dto.Message, reasoning string, t
 }
 
 func responsesFunctionCallOutputToChatContent(raw json.RawMessage) (any, error) {
-	if len(raw) == 0 || common.GetJsonType(raw) == "null" {
+	if len(raw) == 0 || jsonx.GetJsonType(raw) == "null" {
 		return "", nil
 	}
-	if common.GetJsonType(raw) == "string" {
+	if jsonx.GetJsonType(raw) == "string" {
 		var output string
-		if err := common.Unmarshal(raw, &output); err != nil {
+		if err := jsonx.Unmarshal(raw, &output); err != nil {
 			return nil, fmt.Errorf("unmarshal function_call_output.output failed: %w", err)
 		}
 		return output, nil
 	}
-	if common.GetJsonType(raw) != "array" {
-		return nil, fmt.Errorf("function_call_output.output must be a string or content array, got %s", common.GetJsonType(raw))
+	if jsonx.GetJsonType(raw) != "array" {
+		return nil, fmt.Errorf("function_call_output.output must be a string or content array, got %s", jsonx.GetJsonType(raw))
 	}
 
 	var parts []map[string]any
-	if err := common.Unmarshal(raw, &parts); err != nil {
+	if err := jsonx.Unmarshal(raw, &parts); err != nil {
 		return nil, fmt.Errorf("unmarshal function_call_output.output failed: %w", err)
 	}
 	media, err := convertResponsesContentPartsToChat(parts)
@@ -374,21 +374,21 @@ func responsesFunctionCallOutputToChatContent(raw json.RawMessage) (any, error) 
 }
 
 func responsesArgumentsToChatString(raw json.RawMessage) (string, error) {
-	if len(raw) == 0 || common.GetJsonType(raw) == "null" {
+	if len(raw) == 0 || jsonx.GetJsonType(raw) == "null" {
 		return "{}", nil
 	}
-	if common.GetJsonType(raw) == "string" {
+	if jsonx.GetJsonType(raw) == "string" {
 		var arguments string
-		if err := common.Unmarshal(raw, &arguments); err != nil {
+		if err := jsonx.Unmarshal(raw, &arguments); err != nil {
 			return "", fmt.Errorf("unmarshal function_call.arguments failed: %w", err)
 		}
 		return arguments, nil
 	}
 	var arguments any
-	if err := common.Unmarshal(raw, &arguments); err != nil {
+	if err := jsonx.Unmarshal(raw, &arguments); err != nil {
 		return "", fmt.Errorf("unmarshal function_call.arguments failed: %w", err)
 	}
-	encoded, err := common.Marshal(arguments)
+	encoded, err := jsonx.Marshal(arguments)
 	if err != nil {
 		return "", fmt.Errorf("marshal function_call.arguments failed: %w", err)
 	}
@@ -455,7 +455,7 @@ func appendReasoningSummary(existing string, next string) string {
 
 func extractResponsesReasoningSummary(raw json.RawMessage) (string, error) {
 	var item responsesReasoningInput
-	if err := common.Unmarshal(raw, &item); err != nil {
+	if err := jsonx.Unmarshal(raw, &item); err != nil {
 		return "", fmt.Errorf("unmarshal reasoning item failed: %w", err)
 	}
 	parts := make([]string, 0, len(item.Summary))

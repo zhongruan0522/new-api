@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/relay/helper"
 	"github.com/NookMux/NookMux/service"
@@ -25,7 +26,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
-	err = common.Unmarshal(responseBody, &responsesResponse)
+	err = jsonx.Unmarshal(responseBody, &responsesResponse)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -102,7 +103,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 
 		// 检查当前数据是否包含 completed 状态和 usage 信息
 		var streamResponse dto.ResponsesStreamResponse
-		if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil {
+		if err := jsonx.UnmarshalJsonStr(data, &streamResponse); err == nil {
 			// 上游在 HTTP 200 流内返回错误载荷：官方 type:"error" 事件、
 			// 部分网关转成 200 下发的裸 {"error":{...}} 帧、response.failed
 			// 事件（错误可能在顶层或 response 内）。识别后保留真实上游错误，
@@ -115,7 +116,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 				}
 			}
 			helper.MaskResponsesStreamResponseModel(&streamResponse, info)
-			maskedData = string(helper.MaskResponseEventModelJSON(common.StringToByteSlice(data), info))
+			maskedData = string(helper.MaskResponseEventModelJSON(jsonx.StringToByteSlice(data), info))
 			switch streamResponse.Type {
 			case "response.completed":
 				if streamResponse.Response != nil {
@@ -203,7 +204,7 @@ func convertResponsesBodyToClaudeBody(responsesResponse *dto.OpenAIResponsesResp
 		chatResponse.Usage = *usage
 	}
 	claudeResp := service.ResponseOpenAI2Claude(chatResponse, info)
-	return common.Marshal(claudeResp)
+	return jsonx.Marshal(claudeResp)
 }
 
 func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, converter relaycommon.OpenAIWireStreamConverter, data string) error {
@@ -214,7 +215,7 @@ func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, c
 		info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
 	}
 	var streamResponse dto.ResponsesStreamResponse
-	if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil && streamResponse.Response != nil && streamResponse.Response.Usage != nil {
+	if err := jsonx.UnmarshalJsonStr(data, &streamResponse); err == nil && streamResponse.Response != nil && streamResponse.Response.Usage != nil {
 		usage := &dto.Usage{}
 		relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
 		info.ClaudeConvertInfo.Usage = usage

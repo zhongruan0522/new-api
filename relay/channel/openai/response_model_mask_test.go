@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
@@ -79,7 +79,7 @@ func TestResponsesHandlerAndStreamMaskResponseModel(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	info := testRelayInfo("alias-model", "real-model")
 
-	respBody, err := common.Marshal(dto.OpenAIResponsesResponse{
+	respBody, err := jsonx.Marshal(dto.OpenAIResponsesResponse{
 		ID:        "resp_1",
 		Object:    "response",
 		CreatedAt: 1710000000,
@@ -108,7 +108,7 @@ func TestResponsesHandlerAndStreamMaskResponseModel(t *testing.T) {
 	streamRecorder := httptest.NewRecorder()
 	streamCtx, _ := gin.CreateTestContext(streamRecorder)
 	streamCtx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
-	completedEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+	completedEvent, err := jsonx.Marshal(dto.ResponsesStreamResponse{
 		Type: "response.completed",
 		Response: &dto.OpenAIResponsesResponse{
 			ID:        "resp_1",

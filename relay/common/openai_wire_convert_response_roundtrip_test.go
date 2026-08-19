@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // Test reasoning preservation because Responses reasoning items are otherwise
@@ -240,7 +240,7 @@ func TestConvertChatCompletionResponseToResponsesResponse_CustomToolCall(t *test
 // freeform, while Chat-only upstreams can only represent them as function
 // arguments with an input string.
 func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
-	toolsRaw, err := common.Marshal([]map[string]any{{
+	toolsRaw, err := jsonx.Marshal([]map[string]any{{
 		"type":        "custom",
 		"name":        "shell_exec",
 		"description": "execute shell text",
@@ -281,7 +281,7 @@ func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build custom tool arguments error = %v", err)
 	}
-	toolCallsRaw, err := common.Marshal([]map[string]any{{
+	toolCallsRaw, err := jsonx.Marshal([]map[string]any{{
 		"id":   "call_shell",
 		"type": "function",
 		"function": map[string]any{

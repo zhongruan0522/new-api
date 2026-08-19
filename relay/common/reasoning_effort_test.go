@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func TestEnsureReasoningEffort(t *testing.T) {
@@ -36,7 +36,7 @@ func TestEnsureReasoningEffort(t *testing.T) {
 
 	// 4. Claude 请求兜底解析
 	info = &RelayInfo{}
-	outputConfig, _ := common.Marshal(dto.ClaudeOutputConfig{Effort: "low"})
+	outputConfig, _ := jsonx.Marshal(dto.ClaudeOutputConfig{Effort: "low"})
 	claudeReq := &dto.ClaudeRequest{OutputConfig: outputConfig}
 	EnsureReasoningEffort(info, claudeReq)
 	if info.ReasoningEffort != "low" {

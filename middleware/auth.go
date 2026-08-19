@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/logger"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/setting/ratio_setting"
 	"github.com/NookMux/NookMux/types"
@@ -232,7 +233,7 @@ func PricingAuth() func(c *gin.Context) {
 					RequireAuth bool `json:"requireAuth"`
 				} `json:"pricing"`
 			}
-			if err := common.Unmarshal([]byte(headerNavModulesStr), &modules); err == nil {
+			if err := jsonx.Unmarshal([]byte(headerNavModulesStr), &modules); err == nil {
 				if modules.Pricing.RequireAuth {
 					authHelper(c, common.RoleCommonUser)
 					return

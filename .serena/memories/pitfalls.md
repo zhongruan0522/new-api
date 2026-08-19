@@ -9,9 +9,9 @@
 
 ## 后端 — JSON / 序列化
 
-### 直接用 encoding/json 而非 common 包装
+### 直接用 encoding/json 而非 jsonx 包装
 **后果**:与全局序列化行为不一致(数字精度、tag 处理、 RawMessage 类型判定等),relay/计费等敏感路径数据错乱。
-**规则**:`common/AGENTS.md` — 业务代码禁止直接调 `json.Marshal`/`Unmarshal`/`NewDecoder`,必须用 `common.Marshal`/`common.Unmarshal`/`common.UnmarshalJsonStr`/`common.DecodeJson`(`common/json.go`)。
+**规则**:`common/AGENTS.md` + `pkg/AGENTS.md` — 业务代码禁止直接调 `json.Marshal`/`Unmarshal`/`NewDecoder`,必须用 `jsonx.Marshal`/`jsonx.Unmarshal`/`jsonx.UnmarshalJsonStr`/`jsonx.DecodeJson`(`pkg/jsonx`,原 `common/json.go` 已迁移)。
 **场景**:`encoding/json` 的 import 只允许引用类型(如 `json.RawMessage`),不能调函数。
 
 ---

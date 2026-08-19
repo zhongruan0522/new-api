@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
@@ -99,24 +100,24 @@ func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dt
 	switch {
 	case upstream == dto.OpenAIWireAPIResponses && downstream == dto.OpenAIWireAPIChat:
 		var resp dto.OpenAIResponsesResponse
-		if err := common.Unmarshal(body, &resp); err != nil {
+		if err := jsonx.Unmarshal(body, &resp); err != nil {
 			return nil, fmt.Errorf("unmarshal responses response failed: %w", err)
 		}
 		chatResp, err := relaycommon.ConvertResponsesResponseToChatCompletionResponse(&resp)
 		if err != nil {
 			return nil, err
 		}
-		return common.Marshal(chatResp)
+		return jsonx.Marshal(chatResp)
 	case upstream == dto.OpenAIWireAPIChat && downstream == dto.OpenAIWireAPIResponses:
 		var chatResp dto.OpenAITextResponse
-		if err := common.Unmarshal(body, &chatResp); err != nil {
+		if err := jsonx.Unmarshal(body, &chatResp); err != nil {
 			return nil, fmt.Errorf("unmarshal chat completion response failed: %w", err)
 		}
 		resp, err := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(&chatResp, opts.ToolContext)
 		if err != nil {
 			return nil, err
 		}
-		return common.Marshal(resp)
+		return jsonx.Marshal(resp)
 	default:
 		return nil, fmt.Errorf("unsupported non-stream conversion: %s -> %s", upstream, downstream)
 	}

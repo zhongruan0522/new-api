@@ -3,7 +3,7 @@ package dto
 import (
 	"encoding/json"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 )
 
@@ -41,7 +41,7 @@ type GeneralErrorResponse struct {
 func (e GeneralErrorResponse) TryToOpenAIError() *types.OpenAIError {
 	var openAIError types.OpenAIError
 	if len(e.Error) > 0 {
-		err := common.Unmarshal(e.Error, &openAIError)
+		err := jsonx.Unmarshal(e.Error, &openAIError)
 		if err == nil && openAIError.Message != "" {
 			return &openAIError
 		}
@@ -51,16 +51,16 @@ func (e GeneralErrorResponse) TryToOpenAIError() *types.OpenAIError {
 
 func (e GeneralErrorResponse) ToMessage() string {
 	if len(e.Error) > 0 {
-		switch common.GetJsonType(e.Error) {
+		switch jsonx.GetJsonType(e.Error) {
 		case "object":
 			var openAIError types.OpenAIError
-			err := common.Unmarshal(e.Error, &openAIError)
+			err := jsonx.Unmarshal(e.Error, &openAIError)
 			if err == nil && openAIError.Message != "" {
 				return openAIError.Message
 			}
 		case "string":
 			var msg string
-			err := common.Unmarshal(e.Error, &msg)
+			err := jsonx.Unmarshal(e.Error, &msg)
 			if err == nil && msg != "" {
 				return msg
 			}

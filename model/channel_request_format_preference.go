@@ -5,6 +5,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 )
 
@@ -122,7 +123,7 @@ func explicitlyConfiguredOpenAIWireAPI(channel *Channel) (dto.OpenAIWireAPI, boo
 	}
 
 	var raw map[string]json.RawMessage
-	if err := common.Unmarshal([]byte(*channel.Setting), &raw); err != nil {
+	if err := jsonx.Unmarshal([]byte(*channel.Setting), &raw); err != nil {
 		return "", false
 	}
 
@@ -132,7 +133,7 @@ func explicitlyConfiguredOpenAIWireAPI(channel *Channel) (dto.OpenAIWireAPI, boo
 	}
 
 	var configured dto.OpenAIWireAPI
-	if err := common.Unmarshal(rawWire, &configured); err != nil {
+	if err := jsonx.Unmarshal(rawWire, &configured); err != nil {
 		return "", false
 	}
 

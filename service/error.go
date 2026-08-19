@@ -13,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 )
 
@@ -87,7 +88,7 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 		return fmt.Errorf("bad response status code %d, message: %s, body: %s", resp.StatusCode, message, responseBodyText)
 	}
 
-	err = common.Unmarshal(responseBody, &errResponse)
+	err = jsonx.Unmarshal(responseBody, &errResponse)
 	if err != nil {
 		if showBodyWhenFail {
 			newApiErr.Err = buildErrWithBody("")
@@ -98,7 +99,7 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 		return
 	}
 
-	if common.GetJsonType(errResponse.Error) == "object" {
+	if jsonx.GetJsonType(errResponse.Error) == "object" {
 		// General format error (OpenAI, Anthropic, Gemini, etc.)
 		oaiError := errResponse.TryToOpenAIError()
 		if oaiError != nil {
@@ -124,7 +125,7 @@ func ResetStatusCode(newApiErr *types.NookMuxError, statusCodeMappingStr string)
 		return
 	}
 	statusCodeMapping := make(map[string]any)
-	err := common.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
+	err := jsonx.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
 	if err != nil {
 		return
 	}
@@ -150,16 +151,16 @@ func ResetStatusCode(newApiErr *types.NookMuxError, statusCodeMappingStr string)
 // 参考: https://developers.openai.com/api/docs/guides/error-codes
 var upstreamErrorStatusCodeByCode = map[string]int{
 	// 429 - billing / quota
-	"insufficient_quota":              http.StatusTooManyRequests,
-	"credit_balance_exhausted":        http.StatusTooManyRequests,
+	"insufficient_quota":                http.StatusTooManyRequests,
+	"credit_balance_exhausted":          http.StatusTooManyRequests,
 	"organization_spend_limit_exceeded": http.StatusTooManyRequests,
-	"project_spend_limit_exceeded":    http.StatusTooManyRequests,
+	"project_spend_limit_exceeded":      http.StatusTooManyRequests,
 	"organization_usage_limit_exceeded": http.StatusTooManyRequests,
-	"rate_limit_exceeded":             http.StatusTooManyRequests,
+	"rate_limit_exceeded":               http.StatusTooManyRequests,
 	// 5xx - server side
-	"server_error":          http.StatusInternalServerError,
-	"model_overloaded":      http.StatusServiceUnavailable,
-	"engine_overloaded":     http.StatusServiceUnavailable,
+	"server_error":            http.StatusInternalServerError,
+	"model_overloaded":        http.StatusServiceUnavailable,
+	"engine_overloaded":       http.StatusServiceUnavailable,
 	"context_length_exceeded": http.StatusBadRequest,
 }
 

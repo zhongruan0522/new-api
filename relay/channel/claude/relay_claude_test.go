@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
@@ -201,7 +201,7 @@ func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
 		Usage:      &dto.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
 		Done:       true,
 	}
-	messageStart, err := common.Marshal(dto.ClaudeResponse{
+	messageStart, err := jsonx.Marshal(dto.ClaudeResponse{
 		Type: "message_start",
 		Message: &dto.ClaudeMediaMessage{
 			Id:    "msg_1",

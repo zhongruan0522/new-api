@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 )
 
@@ -126,7 +126,7 @@ func ValidateContextPricing(jsonStr string) error {
 	}
 
 	raw := make(map[string]rawContextPricingConfig)
-	if err := common.Unmarshal([]byte(jsonStr), &raw); err != nil {
+	if err := jsonx.Unmarshal([]byte(jsonStr), &raw); err != nil {
 		return err
 	}
 

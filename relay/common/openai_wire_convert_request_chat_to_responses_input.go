@@ -7,6 +7,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 type chatToolCall struct {
@@ -35,7 +36,7 @@ func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessag
 		return nil, fmt.Errorf("responses input items are empty")
 	}
 
-	raw, err := common.Marshal(items)
+	raw, err := jsonx.Marshal(items)
 	if err != nil {
 		return nil, fmt.Errorf("marshal responses input failed: %w", err)
 	}
@@ -239,7 +240,7 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
-	rawType := common.GetJsonType(raw)
+	rawType := jsonx.GetJsonType(raw)
 	if rawType == "null" {
 		return nil, nil
 	}
@@ -248,7 +249,7 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 	}
 
 	var items []map[string]any
-	if err := common.Unmarshal(raw, &items); err != nil {
+	if err := jsonx.Unmarshal(raw, &items); err != nil {
 		return nil, fmt.Errorf("unmarshal tool_calls failed: %w", err)
 	}
 	if len(items) == 0 {

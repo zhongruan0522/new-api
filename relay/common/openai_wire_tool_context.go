@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // OpenAIWireToolContext carries per-request metadata needed to undo tool
@@ -117,7 +117,7 @@ func (c *OpenAIWireToolContext) HasCustomToolProxies() bool {
 }
 
 func BuildChatArgumentsForResponsesCustomToolInput(input string) (string, error) {
-	raw, err := common.Marshal(map[string]any{openAIResponsesCustomInputField: input})
+	raw, err := jsonx.Marshal(map[string]any{openAIResponsesCustomInputField: input})
 	if err != nil {
 		return "", err
 	}
@@ -134,10 +134,10 @@ func ExtractResponsesCustomToolInputFromChatArguments(arguments string) (input s
 	}
 
 	var payload map[string]json.RawMessage
-	if err := common.Unmarshal([]byte(trimmed), &payload); err == nil {
+	if err := jsonx.Unmarshal([]byte(trimmed), &payload); err == nil {
 		if raw := payload[openAIResponsesCustomInputField]; len(raw) > 0 {
 			var s string
-			if err := common.Unmarshal(raw, &s); err == nil {
+			if err := jsonx.Unmarshal(raw, &s); err == nil {
 				return s, true
 			}
 			return string(raw), true
@@ -145,7 +145,7 @@ func ExtractResponsesCustomToolInputFromChatArguments(arguments string) (input s
 	}
 
 	var s string
-	if err := common.Unmarshal([]byte(trimmed), &s); err == nil {
+	if err := jsonx.Unmarshal([]byte(trimmed), &s); err == nil {
 		return s, true
 	}
 	return arguments, false
@@ -157,7 +157,7 @@ func BuildResponsesToolSearchArgumentsFromChatArguments(arguments string) (any, 
 		return map[string]any{}, nil
 	}
 	var payload any
-	if err := common.Unmarshal([]byte(trimmed), &payload); err != nil {
+	if err := jsonx.Unmarshal([]byte(trimmed), &payload); err != nil {
 		return nil, err
 	}
 	if _, ok := payload.(map[string]any); !ok {
@@ -181,12 +181,12 @@ func ResponsesArgumentsToChatString(arguments any) (string, error) {
 			return "", nil
 		}
 		var s string
-		if err := common.Unmarshal(v, &s); err == nil {
+		if err := jsonx.Unmarshal(v, &s); err == nil {
 			return s, nil
 		}
 		return string(v), nil
 	default:
-		raw, err := common.Marshal(v)
+		raw, err := jsonx.Marshal(v)
 		if err != nil {
 			return "", err
 		}

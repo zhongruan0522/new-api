@@ -1,7 +1,7 @@
 package console_setting
 
 import (
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/config"
 )
 
@@ -150,7 +150,7 @@ func parseUsageLogFields(raw string) (map[string]UsageLogFieldVisibleConfig, err
 		return nil, nil
 	}
 	m := make(map[string]UsageLogFieldVisibleConfig)
-	if err := common.UnmarshalJsonStr(raw, &m); err != nil {
+	if err := jsonx.UnmarshalJsonStr(raw, &m); err != nil {
 		return nil, err
 	}
 	return m, nil

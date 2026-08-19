@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // TestMessageExplicitEmptyReasoningSurvivesJSON ensures that a client sending
@@ -14,7 +14,7 @@ func TestMessageExplicitEmptyReasoningSurvivesJSON(t *testing.T) {
 	raw := []byte(`{"role":"assistant","content":"ok","reasoning_content":"","reasoning":""}`)
 
 	var msg Message
-	if err := common.Unmarshal(raw, &msg); err != nil {
+	if err := jsonx.Unmarshal(raw, &msg); err != nil {
 		t.Fatalf("unmarshal error = %v", err)
 	}
 
@@ -31,7 +31,7 @@ func TestMessageExplicitEmptyReasoningSurvivesJSON(t *testing.T) {
 		t.Fatalf("reasoning = %q, want \"\"", *msg.Reasoning)
 	}
 
-	out, err := common.Marshal(msg)
+	out, err := jsonx.Marshal(msg)
 	if err != nil {
 		t.Fatalf("marshal error = %v", err)
 	}
@@ -49,7 +49,7 @@ func TestMessageExplicitEmptyReasoningSurvivesJSON(t *testing.T) {
 func TestMessageAbsentReasoningOmitted(t *testing.T) {
 	msg := Message{Role: "user", Content: "hi"}
 
-	out, err := common.Marshal(msg)
+	out, err := jsonx.Marshal(msg)
 	if err != nil {
 		t.Fatalf("marshal error = %v", err)
 	}

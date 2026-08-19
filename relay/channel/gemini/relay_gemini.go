@@ -14,6 +14,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openai"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
@@ -44,7 +45,7 @@ func reasoningEffortToGeminiThinkingLevel(effort string) string {
 func openAIReasoningToGeminiThinkingConfig(textRequest dto.GeneralOpenAIRequest) (*dto.GeminiThinkingConfig, error) {
 	if len(textRequest.Reasoning) > 0 {
 		var reasoning openrouter.RequestReasoning
-		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+		if err := jsonx.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
 			return nil, fmt.Errorf("invalid reasoning payload: %w", err)
 		}
 		if reasoning.MaxTokens > 0 {
@@ -105,7 +106,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 	thoughtSignatureValue := thoughtSignatureBypassValue
 	if len(textRequest.ExtraBody) > 0 {
 		var extraBody map[string]interface{}
-		if err := common.Unmarshal(textRequest.ExtraBody, &extraBody); err != nil {
+		if err := jsonx.Unmarshal(textRequest.ExtraBody, &extraBody); err != nil {
 			return nil, fmt.Errorf("invalid extra body: %w", err)
 		}
 		// eg. {"google":{"thinking_config":{"thinking_budget":5324,"include_thoughts":true}}}
@@ -189,7 +190,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			}
 
 			if len(geminiImageConfig) > 0 {
-				imageConfigBytes, err := common.Marshal(geminiImageConfig)
+				imageConfigBytes, err := jsonx.Marshal(geminiImageConfig)
 				if err != nil {
 					return nil, fmt.Errorf("failed to marshal image_config: %w", err)
 				}
@@ -290,7 +291,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		if len(textRequest.ResponseFormat.JsonSchema) > 0 {
 			// 先将json.RawMessage解析
 			var jsonSchema dto.FormatJsonSchema
-			if err := common.Unmarshal(textRequest.ResponseFormat.JsonSchema, &jsonSchema); err == nil {
+			if err := jsonx.Unmarshal(textRequest.ResponseFormat.JsonSchema, &jsonSchema); err == nil {
 				cleanedSchema := removeAdditionalPropertiesWithDepth(jsonSchema.Schema, 0)
 				geminiRequest.GenerationConfig.ResponseSchema = cleanedSchema
 			}
@@ -853,7 +854,7 @@ func getResponseToolCall(item *dto.GeminiPart) *dto.ToolCallResponse {
 	var err error
 	// 直接序列化结构化参数，避免把 Gemini 的函数参数再额外转义一次。
 	// JSON 序列化/反序列化已经正确处理了转义字符
-	argsBytes, err = common.Marshal(item.FunctionCall.Arguments)
+	argsBytes, err = jsonx.Marshal(item.FunctionCall.Arguments)
 
 	if err != nil {
 		return nil
@@ -1142,7 +1143,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 }
 
 func handleStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.ChatCompletionsStreamResponse) error {
-	streamData, err := common.Marshal(resp)
+	streamData, err := jsonx.Marshal(resp)
 	if err != nil {
 		return fmt.Errorf("failed to marshal stream response: %w", err)
 	}
@@ -1154,7 +1155,7 @@ func handleStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.ChatCom
 }
 
 func handleFinalStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.ChatCompletionsStreamResponse) error {
-	streamData, err := common.Marshal(resp)
+	streamData, err := jsonx.Marshal(resp)
 	if err != nil {
 		return fmt.Errorf("failed to marshal stream response: %w", err)
 	}
@@ -1170,7 +1171,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse dto.GeminiChatResponse
-		err := common.UnmarshalJsonStr(data, &geminiResponse)
+		err := jsonx.UnmarshalJsonStr(data, &geminiResponse)
 		if err != nil {
 			logger.LogError(c, "error unmarshalling stream response: "+err.Error())
 			return false
@@ -1351,7 +1352,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		println(string(responseBody))
 	}
 	var geminiResponse dto.GeminiChatResponse
-	err = common.Unmarshal(responseBody, &geminiResponse)
+	err = jsonx.Unmarshal(responseBody, &geminiResponse)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1414,13 +1415,13 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
-		responseBody, err = common.Marshal(fullTextResponse)
+		responseBody, err = jsonx.Marshal(fullTextResponse)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 	case types.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(fullTextResponse, info)
-		claudeRespStr, err := common.Marshal(claudeResp)
+		claudeRespStr, err := jsonx.Marshal(claudeResp)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
@@ -1443,7 +1444,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	}
 
 	var geminiResponse dto.GeminiBatchEmbeddingResponse
-	if jsonErr := common.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
+	if jsonErr := jsonx.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
 		return nil, types.NewOpenAIError(jsonErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
@@ -1470,7 +1471,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	usage := service.ResponseText2Usage(c, "", info.UpstreamModelName, info.GetEstimatePromptTokens())
 	openAIResponse.Usage = *usage
 
-	jsonResponse, jsonErr := common.Marshal(openAIResponse)
+	jsonResponse, jsonErr := jsonx.Marshal(openAIResponse)
 	if jsonErr != nil {
 		return nil, types.NewOpenAIError(jsonErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1488,7 +1489,7 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 	}
 
 	var geminiResponse dto.GeminiImageResponse
-	if jsonErr := common.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
+	if jsonErr := jsonx.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
 		return nil, types.NewOpenAIError(jsonErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
@@ -1511,7 +1512,7 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 		})
 	}
 
-	jsonResponse, jsonErr := common.Marshal(openAIResponse)
+	jsonResponse, jsonErr := jsonx.Marshal(openAIResponse)
 	if jsonErr != nil {
 		return nil, types.NewError(jsonErr, types.ErrorCodeBadResponseBody)
 	}
@@ -1615,7 +1616,7 @@ func FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL string, headers http
 		}
 
 		var modelsResponse GeminiModelsResponse
-		if err = common.Unmarshal(body, &modelsResponse); err != nil {
+		if err = jsonx.Unmarshal(body, &modelsResponse); err != nil {
 			return nil, fmt.Errorf("解析响应失败: %v", err)
 		}
 

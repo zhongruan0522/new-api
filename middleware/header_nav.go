@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +29,7 @@ func getHeaderNavAccess(module string) headerNavAccess {
 	}
 
 	var parsed map[string]any
-	if err := common.Unmarshal([]byte(raw), &parsed); err != nil {
+	if err := jsonx.Unmarshal([]byte(raw), &parsed); err != nil {
 		return fallback
 	}
 	return parseHeaderNavAccess(parsed[module], fallback)

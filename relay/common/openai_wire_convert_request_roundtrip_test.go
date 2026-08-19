@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // Test assistant history and json_schema mapping because both are required for
@@ -29,7 +29,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_AssistantHistoryAndJSON
 	}
 
 	var instructions string
-	if err := common.Unmarshal(got.Instructions, &instructions); err != nil {
+	if err := jsonx.Unmarshal(got.Instructions, &instructions); err != nil {
 		t.Fatalf("unmarshal instructions error = %v", err)
 	}
 	if instructions != "You are helpful." {
@@ -37,7 +37,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_AssistantHistoryAndJSON
 	}
 
 	var items []map[string]any
-	if err := common.Unmarshal(got.Input, &items); err != nil {
+	if err := jsonx.Unmarshal(got.Input, &items); err != nil {
 		t.Fatalf("unmarshal input error = %v", err)
 	}
 	if len(items) != 2 {
@@ -63,7 +63,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_AssistantHistoryAndJSON
 	}
 
 	var textPayload map[string]any
-	if err := common.Unmarshal(got.Text, &textPayload); err != nil {
+	if err := jsonx.Unmarshal(got.Text, &textPayload); err != nil {
 		t.Fatalf("unmarshal text payload error = %v", err)
 	}
 	format, ok := textPayload["format"].(map[string]any)
@@ -90,7 +90,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_AssistantHistoryAndJSON
 // Test Responses -> Chat conversion for assistant output_text history and
 // flattened json_schema because upstream Responses clients rely on both.
 func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJSONSchema(t *testing.T) {
-	inputRaw, err := common.Marshal([]map[string]any{
+	inputRaw, err := jsonx.Marshal([]map[string]any{
 		{
 			"type": "message",
 			"role": "assistant",
@@ -104,7 +104,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 		t.Fatalf("marshal input error = %v", err)
 	}
 
-	textRaw, err := common.Marshal(map[string]any{
+	textRaw, err := jsonx.Marshal(map[string]any{
 		"format": map[string]any{
 			"type":   "json_schema",
 			"name":   "answer_format",
@@ -145,7 +145,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 	}
 
 	var schema dto.FormatJsonSchema
-	if err := common.Unmarshal(got.ResponseFormat.JsonSchema, &schema); err != nil {
+	if err := jsonx.Unmarshal(got.ResponseFormat.JsonSchema, &schema); err != nil {
 		t.Fatalf("unmarshal response_format.json_schema error = %v", err)
 	}
 	if schema.Name != "answer_format" {
@@ -160,7 +160,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 // parallel tool calls to share one assistant message before tool outputs arrive.
 func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCallsAndToolOutput(t *testing.T) {
 	isError := true
-	inputRaw, err := common.Marshal([]map[string]any{
+	inputRaw, err := jsonx.Marshal([]map[string]any{
 		{
 			"type": "reasoning",
 			"summary": []map[string]any{{
@@ -224,7 +224,7 @@ func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCalls
 // Test custom tools because the current OpenAI Chat schema supports custom
 // tool calls and Responses represents them as custom_tool_call items.
 func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *testing.T) {
-	customToolRaw, err := common.Marshal(map[string]any{
+	customToolRaw, err := jsonx.Marshal(map[string]any{
 		"name":        "code_exec",
 		"description": "run code",
 		"format":      map[string]any{"type": "text"},
@@ -232,7 +232,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *te
 	if err != nil {
 		t.Fatalf("marshal custom tool error = %v", err)
 	}
-	customCallRaw, err := common.Marshal([]map[string]any{{
+	customCallRaw, err := jsonx.Marshal([]map[string]any{{
 		"id":   "call_custom",
 		"type": "custom",
 		"custom": map[string]any{
@@ -258,7 +258,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *te
 	}
 
 	var tools []map[string]any
-	if err := common.Unmarshal(got.Tools, &tools); err != nil {
+	if err := jsonx.Unmarshal(got.Tools, &tools); err != nil {
 		t.Fatalf("unmarshal tools error = %v", err)
 	}
 	if len(tools) != 1 || tools[0]["type"] != "custom" || tools[0]["name"] != "code_exec" {
@@ -266,7 +266,7 @@ func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *te
 	}
 
 	var items []map[string]any
-	if err := common.Unmarshal(got.Input, &items); err != nil {
+	if err := jsonx.Unmarshal(got.Input, &items); err != nil {
 		t.Fatalf("unmarshal input error = %v", err)
 	}
 	if len(items) != 3 {

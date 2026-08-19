@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 	"github.com/NookMux/NookMux/relay/channel/claude"
 	"github.com/NookMux/NookMux/relay/channel/openai"
@@ -80,7 +80,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	//    必须在管理员强制策略之前合并，使管理员映射具有最高优先级，
 	//    防止用户通过 metadata 覆盖 model/voice_id 等策略字段 (issue #107)。
 	if len(request.Metadata) > 0 {
-		if err := common.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
+		if err := jsonx.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
 			return nil, fmt.Errorf("error unmarshalling metadata to TTS request: %w", err)
 		}
 	}
@@ -129,7 +129,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	c.Set("response_format", "hex")
 	c.Set("minimax_audio_format", minimaxRequest.AudioSetting.Format)
 
-	jsonData, err := common.Marshal(minimaxRequest)
+	jsonData, err := jsonx.Marshal(minimaxRequest)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling TTS request: %w", err)
 	}

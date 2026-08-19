@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // buildGlmPlanQuotaData 的套餐代次判定必须与智谱官方前端一致：
@@ -235,7 +235,7 @@ func TestGlmResetCardListParse_NumericRecordId(t *testing.T) {
 	}`
 
 	var resp glmResetCardListResp
-	if err := common.Unmarshal([]byte(raw), &resp); err != nil {
+	if err := jsonx.Unmarshal([]byte(raw), &resp); err != nil {
 		t.Fatalf("unmarshal reset card list failed: %v", err)
 	}
 	if !resp.Success {

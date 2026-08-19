@@ -11,6 +11,7 @@ import (
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/middleware"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting"
 	"github.com/NookMux/NookMux/setting/console_setting"
 	"github.com/NookMux/NookMux/setting/dashboard_setting"
@@ -191,7 +192,7 @@ func stripAdminSidebarSection(raw string) (string, bool) {
 		return "", false
 	}
 	var config map[string]json.RawMessage
-	if err := common.Unmarshal([]byte(raw), &config); err != nil {
+	if err := jsonx.Unmarshal([]byte(raw), &config); err != nil {
 		return "", false
 	}
 	if _, exists := config["admin"]; !exists {
@@ -199,7 +200,7 @@ func stripAdminSidebarSection(raw string) (string, bool) {
 		return raw, true
 	}
 	delete(config, "admin")
-	out, err := common.Marshal(config)
+	out, err := jsonx.Marshal(config)
 	if err != nil {
 		return "", false
 	}
@@ -353,7 +354,7 @@ type PasswordResetRequest struct {
 
 func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
-	err := common.DecodeJson(c.Request.Body, &req)
+	err := jsonx.DecodeJson(c.Request.Body, &req)
 	if err != nil || req.Email == "" || req.Token == "" {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return

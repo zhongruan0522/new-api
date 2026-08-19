@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 type AwsClaudeRequest struct {
@@ -32,7 +32,7 @@ type AwsClaudeRequest struct {
 
 func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaudeRequest, error) {
 	var awsClaudeRequest AwsClaudeRequest
-	err := common.DecodeJson(requestBody, &awsClaudeRequest)
+	err := jsonx.DecodeJson(requestBody, &awsClaudeRequest)
 	if err != nil {
 		return nil, err
 	}

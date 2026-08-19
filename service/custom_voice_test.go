@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/setting/model_setting"
 	"github.com/NookMux/NookMux/setting/system_setting"
 )
@@ -150,7 +150,7 @@ func TestCustomVoiceFileID_NumericRoundTrip(t *testing.T) {
 			FileId customVoiceFileID `json:"file_id"`
 		} `json:"file"`
 	}
-	if err := common.Unmarshal([]byte(`{"file":{"file_id":123456789}}`), &resp); err != nil {
+	if err := jsonx.Unmarshal([]byte(`{"file":{"file_id":123456789}}`), &resp); err != nil {
 		t.Fatalf("unmarshal numeric file_id failed: %v", err)
 	}
 	if got := resp.File.FileId.String(); got != "123456789" {
@@ -158,7 +158,7 @@ func TestCustomVoiceFileID_NumericRoundTrip(t *testing.T) {
 	}
 
 	payload := buildVoiceClonePayload(resp.File.FileId, CustomVoicePreviewRequest{VoiceId: "voice-id"})
-	body, err := common.Marshal(payload)
+	body, err := jsonx.Marshal(payload)
 	if err != nil {
 		t.Fatalf("marshal voice_clone payload failed: %v", err)
 	}

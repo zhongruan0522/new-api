@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/constant"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
@@ -27,12 +28,12 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	}
 
 	if !forceFormat {
-		data = string(helper.MaskTopLevelModelJSON(common.StringToByteSlice(data), info))
+		data = string(helper.MaskTopLevelModelJSON(jsonx.StringToByteSlice(data), info))
 		return helper.StringData(c, data)
 	}
 
 	var lastStreamResponse dto.ChatCompletionsStreamResponse
-	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
+	if err := jsonx.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
 	helper.MaskChatStreamResponseModel(&lastStreamResponse, info)
@@ -71,7 +72,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			var errFrame struct {
 				Error any `json:"error"`
 			}
-			if err := common.UnmarshalJsonStr(data, &errFrame); err == nil && errFrame.Error != nil {
+			if err := jsonx.UnmarshalJsonStr(data, &errFrame); err == nil && errFrame.Error != nil {
 				if oaiError := dto.GetOpenAIError(errFrame.Error); oaiError != nil && oaiError.Message != "" {
 					streamApiErr = types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 					return false
@@ -103,7 +104,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		var streamResp struct {
 			Usage *dto.Usage `json:"usage"`
 		}
-		err := common.Unmarshal([]byte(secondLastStreamData), &streamResp)
+		err := jsonx.Unmarshal([]byte(secondLastStreamData), &streamResp)
 		if err == nil && streamResp.Usage != nil && service.ValidUsage(streamResp.Usage) {
 			usage = streamResp.Usage
 			containStreamUsage = true
@@ -146,7 +147,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		usage.CompletionTokens += toolCount * 7
 	}
 
-	applyUsagePostProcessing(info, usage, common.StringToByteSlice(lastStreamData))
+	applyUsagePostProcessing(info, usage, jsonx.StringToByteSlice(lastStreamData))
 
 	HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
 
@@ -168,7 +169,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if info.ChannelType == constant.ChannelTypeOpenRouter && info.ChannelOtherSettings.IsOpenRouterEnterprise() {
 		// 尝试解析为 openrouter enterprise
 		var enterpriseResponse openrouter.OpenRouterEnterpriseResponse
-		err = common.Unmarshal(responseBody, &enterpriseResponse)
+		err = jsonx.Unmarshal(responseBody, &enterpriseResponse)
 		if err != nil {
 			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
@@ -180,7 +181,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		}
 	}
 
-	err = common.Unmarshal(responseBody, &simpleResponse)
+	err = jsonx.Unmarshal(responseBody, &simpleResponse)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -225,15 +226,15 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	case types.RelayFormatOpenAI:
 		if usageModified {
 			var bodyMap map[string]interface{}
-			err = common.Unmarshal(responseBody, &bodyMap)
+			err = jsonx.Unmarshal(responseBody, &bodyMap)
 			if err != nil {
 				return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 			}
 			bodyMap["usage"] = simpleResponse.Usage
-			responseBody, _ = common.Marshal(bodyMap)
+			responseBody, _ = jsonx.Marshal(bodyMap)
 		}
 		if forceFormat {
-			responseBody, err = common.Marshal(simpleResponse)
+			responseBody, err = jsonx.Marshal(simpleResponse)
 			if err != nil {
 				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 			}
@@ -243,14 +244,14 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		}
 	case types.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
-		claudeRespStr, err := common.Marshal(claudeResp)
+		claudeRespStr, err := jsonx.Marshal(claudeResp)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
 	case types.RelayFormatGemini:
 		geminiResp := service.ResponseOpenAI2Gemini(&simpleResponse, info)
-		geminiRespStr, err := common.Marshal(geminiResp)
+		geminiRespStr, err := jsonx.Marshal(geminiResp)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
@@ -300,7 +301,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				}
 
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = common.Unmarshal(message, realtimeEvent)
+				err = jsonx.Unmarshal(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -355,7 +356,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				}
 				info.SetFirstResponseTime()
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = common.Unmarshal(message, realtimeEvent)
+				err = jsonx.Unmarshal(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -486,14 +487,14 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	// 识别后向上暴露真实上游错误，避免计费阶段因 usage 全零被误记为
 	// 「502 上游没有返回计费信息」。
 	var errProbe dto.SimpleResponse
-	if probeErr := common.Unmarshal(responseBody, &errProbe); probeErr == nil {
+	if probeErr := jsonx.Unmarshal(responseBody, &errProbe); probeErr == nil {
 		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
 			return nil, types.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 		}
 	}
 
 	var usageResp dto.SimpleResponse
-	err = common.Unmarshal(responseBody, &usageResp)
+	err = jsonx.Unmarshal(responseBody, &usageResp)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -586,7 +587,7 @@ func extractCachedTokensFromBody(body []byte) (int, bool) {
 		} `json:"usage"`
 	}
 
-	if err := common.Unmarshal(body, &payload); err != nil {
+	if err := jsonx.Unmarshal(body, &payload); err != nil {
 		return 0, false
 	}
 
@@ -617,7 +618,7 @@ func extractMoonshotCachedTokensFromBody(body []byte) (int, bool) {
 		} `json:"choices"`
 	}
 
-	if err := common.Unmarshal(body, &payload); err != nil {
+	if err := jsonx.Unmarshal(body, &payload); err != nil {
 		return 0, false
 	}
 
@@ -643,7 +644,7 @@ func extractLlamaCachedTokensFromBody(body []byte) (int, bool) {
 		} `json:"timings"`
 	}
 
-	if err := common.Unmarshal(body, &payload); err != nil {
+	if err := jsonx.Unmarshal(body, &payload); err != nil {
 		return 0, false
 	}
 	if payload.Timings.CachedTokens == nil {

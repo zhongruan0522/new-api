@@ -7,6 +7,7 @@ import (
 
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 const chatToResponsesAssistantMessageID = "msg_0"
@@ -149,7 +150,7 @@ func (c *chatToResponsesStreamConverter) convertChunk(chunk *dto.ChatCompletions
 
 func (c *chatToResponsesStreamConverter) parseChatChunk(data string) (*dto.ChatCompletionsStreamResponse, error) {
 	var chunk dto.ChatCompletionsStreamResponse
-	if err := common.UnmarshalJsonStr(data, &chunk); err != nil {
+	if err := jsonx.UnmarshalJsonStr(data, &chunk); err != nil {
 		c.err = fmt.Errorf("unmarshal chat stream chunk failed: %w", err)
 		return nil, c.err
 	}
@@ -553,7 +554,7 @@ func parseChatCustomToolCallDelta(raw json.RawMessage) (name string, input strin
 		return "", "", nil
 	}
 	var custom map[string]any
-	if err := common.Unmarshal(raw, &custom); err != nil {
+	if err := jsonx.Unmarshal(raw, &custom); err != nil {
 		return "", "", fmt.Errorf("unmarshal custom tool call delta failed: %w", err)
 	}
 	return strings.TrimSpace(common.Interface2String(custom["name"])), common.Interface2String(custom["input"]), nil

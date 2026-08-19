@@ -6,7 +6,7 @@ This file is the old version of the payment settings file. If you need to add ne
 package operation_setting
 
 import (
-	"github.com/NookMux/NookMux/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 var PayAddress = ""
@@ -37,11 +37,11 @@ var PayMethods = []map[string]string{
 
 func UpdatePayMethodsByJsonString(jsonString string) error {
 	PayMethods = make([]map[string]string, 0)
-	return common.Unmarshal([]byte(jsonString), &PayMethods)
+	return jsonx.Unmarshal([]byte(jsonString), &PayMethods)
 }
 
 func PayMethods2JsonString() string {
-	jsonBytes, err := common.Marshal(PayMethods)
+	jsonBytes, err := jsonx.Marshal(PayMethods)
 	if err != nil {
 		return "[]"
 	}

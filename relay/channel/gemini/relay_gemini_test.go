@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/types"
 	"github.com/gin-gonic/gin"
@@ -62,7 +62,7 @@ func TestGeminiChatStreamHandlerMasksResponseModel(t *testing.T) {
 		},
 	}
 	finish := "STOP"
-	event, err := common.Marshal(dto.GeminiChatResponse{
+	event, err := jsonx.Marshal(dto.GeminiChatResponse{
 		Candidates: []dto.GeminiChatCandidate{{
 			Index:        0,
 			FinishReason: &finish,
@@ -149,7 +149,7 @@ func TestGeminiChatStreamHandlerClaudeKeepsMultipleToolCallsDistinct(t *testing.
 
 func marshalGeminiStreamEvent(t *testing.T, response dto.GeminiChatResponse) string {
 	t.Helper()
-	payload, err := common.Marshal(response)
+	payload, err := jsonx.Marshal(response)
 	if err != nil {
 		t.Fatalf("marshal gemini event: %v", err)
 	}

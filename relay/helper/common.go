@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/types"
 
 	"github.com/gin-gonic/gin"
@@ -55,7 +56,7 @@ func SetEventStreamHeaders(c *gin.Context) {
 }
 
 func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
-	jsonData, err := common.Marshal(resp)
+	jsonData, err := jsonx.Marshal(resp)
 	if err != nil {
 		common.SysError("error marshalling stream response: " + err.Error())
 	} else {
@@ -110,7 +111,7 @@ func ObjectData(c *gin.Context, object interface{}) error {
 	if object == nil {
 		return errors.New("object is nil")
 	}
-	jsonData, err := common.Marshal(object)
+	jsonData, err := jsonx.Marshal(object)
 	if err != nil {
 		return fmt.Errorf("error marshalling object: %w", err)
 	}
@@ -131,7 +132,7 @@ func WssString(c *gin.Context, ws *websocket.Conn, str string) error {
 }
 
 func WssObject(c *gin.Context, ws *websocket.Conn, object interface{}) error {
-	jsonData, err := common.Marshal(object)
+	jsonData, err := jsonx.Marshal(object)
 	if err != nil {
 		return fmt.Errorf("error marshalling object: %w", err)
 	}

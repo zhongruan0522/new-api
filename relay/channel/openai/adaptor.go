@@ -18,6 +18,7 @@ import (
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/logger"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay/channel"
 
 	"github.com/NookMux/NookMux/relay/channel/openrouter"
@@ -249,7 +250,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 				}
 				if request.ReasoningEffort != "none" {
 					reasoning["effort"] = request.ReasoningEffort
-					marshal, err := common.Marshal(reasoning)
+					marshal, err := jsonx.Marshal(reasoning)
 					if err != nil {
 						return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 					}
@@ -263,7 +264,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
 		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
 			var thinking dto.Thinking // Claude标准Thinking格式
-			if err := common.Unmarshal(request.THINKING, &thinking); err != nil {
+			if err := jsonx.Unmarshal(request.THINKING, &thinking); err != nil {
 				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
 			}
 
@@ -279,14 +280,14 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 					MaxTokens: *thinking.BudgetTokens,
 				}
 
-				marshal, err := common.Marshal(reasoning)
+				marshal, err := jsonx.Marshal(reasoning)
 				if err != nil {
 					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 				}
 
 				request.Reasoning = marshal
 			case "adaptive":
-				marshal, err := common.Marshal(openrouter.RequestReasoning{Enabled: true})
+				marshal, err := jsonx.Marshal(openrouter.RequestReasoning{Enabled: true})
 				if err != nil {
 					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 				}
@@ -390,7 +391,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 			}
 		}
 
-		jsonData, err := common.Marshal(request)
+		jsonData, err := jsonx.Marshal(request)
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling object: %w", err)
 		}

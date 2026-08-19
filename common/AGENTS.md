@@ -4,7 +4,8 @@
 
 ## 规则
 
-- JSON 序列化/反序列化调用必须走 `common/json.go` 的包装函数。
+- JSON 序列化/反序列化调用必须走 `pkg/jsonx` 的包装函数（原 `common/json.go` 与
+  `common.StringToByteSlice` 已迁至 `pkg/jsonx`，`common` 包内部同样调用 `jsonx.*`）。
 - 可以引用 `encoding/json` 的类型，例如 `json.RawMessage`，但不要直接调用 `json.Marshal`、
   `json.Unmarshal`、`json.NewDecoder` 等业务序列化函数。
 - `EmbedFolder` 是前端静态资源服务的基础，改动后必须检查 `router/web_router.go` 和 `web/dist`。

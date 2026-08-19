@@ -23,6 +23,7 @@ import (
 	"github.com/NookMux/NookMux/i18n"
 	"github.com/NookMux/NookMux/middleware"
 	"github.com/NookMux/NookMux/model"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/NookMux/NookMux/relay"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	relayconstant "github.com/NookMux/NookMux/relay/constant"
@@ -647,7 +648,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 	if strings.TrimSpace(userPrompt) == "" {
 		userPrompt = "hi"
 	}
-	responsesInput, _ := common.Marshal([]map[string]any{
+	responsesInput, _ := jsonx.Marshal([]map[string]any{
 		{
 			"role":    "user",
 			"content": userPrompt,
@@ -1068,7 +1069,7 @@ func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest
 	if request == nil || !testPrompt.isTool {
 		return
 	}
-	toolsJSON, err := common.Marshal([]map[string]any{
+	toolsJSON, err := jsonx.Marshal([]map[string]any{
 		{
 			"type":        "function",
 			"name":        channelTestToolName,
@@ -1090,7 +1091,7 @@ func applyChannelTestToolsToResponsesRequest(request *dto.OpenAIResponsesRequest
 	}
 	// OpenAI Responses 同样接受字符串 tool_choice,在只有一个工具时与命名工具等价。
 	// Claude 走 Responses->Chat->Claude 转换时也能正确处理字符串 tool_choice。
-	toolChoiceJSON, err := common.Marshal("required")
+	toolChoiceJSON, err := jsonx.Marshal("required")
 	if err != nil {
 		return
 	}

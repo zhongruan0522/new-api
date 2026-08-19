@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/common"
 	"github.com/NookMux/NookMux/dto"
 	"github.com/NookMux/NookMux/logger"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	relaycommon "github.com/NookMux/NookMux/relay/common"
 	"github.com/NookMux/NookMux/service"
 	"github.com/NookMux/NookMux/types"
@@ -53,7 +54,7 @@ func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	}
 
 	var zhipuResp zhipuImageResponse
-	if err := common.Unmarshal(responseBody, &zhipuResp); err != nil {
+	if err := jsonx.Unmarshal(responseBody, &zhipuResp); err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
@@ -107,7 +108,7 @@ func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 		payload.Data = append(payload.Data, imageData)
 	}
 
-	jsonResp, err := common.Marshal(payload)
+	jsonResp, err := jsonx.Marshal(payload)
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
