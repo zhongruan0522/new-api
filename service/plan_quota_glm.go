@@ -20,7 +20,7 @@ import (
 const (
 	glmSubscriptionPath        = "/api/biz/subscription/list?pageSize=10&pageNum=1"
 	glmQuotaLimitPath          = "/api/monitor/usage/quota/limit"
-	glmCreditUsageActivityPath = "/api/monitor/usage/credit-usage/activity"
+	glmCreditUsageActivityPath = "/api/monitor/credit-usage/activity"
 	glmActivityAccountPersonal = "1" // 个人套餐
 
 	// GlmActivityAccountPersonal 是导出别名，供 controller 按业务语义引用，
