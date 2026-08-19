@@ -46,7 +46,7 @@ PORT=3000
 
 ### 构建前端资源
 
-后端 `main.go` 通过 Go `embed` 引入 `web/dist/index.html`，因此直接运行或编译后端前，需要至少构建一次前端：
+后端入口位于 `cmd/server/`，`web/embed.go` 通过 Go `embed` 引入 `web/dist/index.html`，因此直接运行或编译后端前，需要至少构建一次前端：
 
 ```bash
 cd web
@@ -58,13 +58,13 @@ cd ..
 ### 运行后端
 
 ```bash
-go run main.go
+go run ./cmd/server
 ```
 
 或编译后运行：
 
 ```bash
-go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux
+go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server
 ./NookMux --port 3000 --log-dir ./logs
 ```
 
@@ -96,12 +96,12 @@ bun run build:check
 ### 只调后端 API
 
 1. 先执行一次 `cd web && bun install && bun run build`，确保 `web/dist` 存在。
-2. 回到项目根目录运行 `go run main.go`。
+2. 回到项目根目录运行 `go run ./cmd/server`。
 3. 访问 `http://localhost:3000` 或直接请求 `/api`、`/v1`。
 
 ### 前后端同时开发
 
-1. 终端 A：根目录运行 `go run main.go`。
+1. 终端 A：根目录运行 `go run ./cmd/server`。
 2. 终端 B：`cd web && bun run dev`。
 3. 浏览器打开前端开发服务地址，API 请求会代理到后端。
 
@@ -117,21 +117,23 @@ make test-backend
 
 ```text
 NookMux/
-├─ main.go                 # 后端入口，embed web/dist
+├─ cmd/server/             # 后端入口 main.go
+├─ internal/app/           # 启动装配、Gin 装配、webdist 门面
+├─ internal/router/        # API、relay、dashboard、web 静态路由
+├─ internal/controller/    # HTTP 边界、请求校验、响应组织
+├─ internal/middleware/    # 认证、限速、日志、分发
+├─ internal/model/         # GORM 模型、迁移、数据库访问
+├─ internal/service/       # 业务逻辑、外部请求、审计等
+├─ internal/relay/         # AI 协议转换与供应商适配
+├─ internal/config/        # 系统、运营、模型、倍率等配置（原 setting/）
+├─ internal/common/        # 全局工具、环境变量、缓存、静态资源服务
+├─ internal/i18n/          # 后端响应消息翻译
+├─ pkg/                    # 可独立复用的无业务依赖基础库（jsonx、cachex）
 ├─ Dockerfile              # 镜像构建，要求 web/dist/index.html 已存在
 ├─ docker-compose.yml      # 默认 SQLite + Redis 的部署配置
 ├─ nookmux.service         # systemd 示例服务
-├─ common/                 # 全局工具、环境变量、缓存、静态资源服务
-├─ router/                 # API、relay、dashboard、web 静态路由
-├─ controller/             # HTTP 边界、请求校验、响应组织
-├─ middleware/             # 认证、限速、日志、分发
-├─ model/                  # GORM 模型、迁移、数据库访问
-├─ service/                # 业务逻辑、外部请求、审计等
-├─ relay/                  # AI 协议转换与供应商适配
-├─ setting/                # 系统、运营、模型、倍率等配置
-├─ i18n/                   # 后端响应消息翻译
 ├─ docs/                   # 文档
-└─ web/                    # React 19 + TypeScript + Rsbuild 前端
+└─ web/                    # React 19 + TypeScript + Rsbuild 前端，embed 声明位于 web/embed.go
 ```
 
 ## 调试技巧
@@ -139,7 +141,7 @@ NookMux/
 ### 后端日志
 
 ```bash
-go run main.go --log-dir ./logs
+go run ./cmd/server --log-dir ./logs
 ```
 
 ### 前端类型检查
