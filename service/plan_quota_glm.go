@@ -16,9 +16,19 @@ import (
 
 // GLM 套餐查询的 API 端点
 const (
-	glmSubscriptionPath = "/api/biz/subscription/list?pageSize=10&pageNum=1"
-	glmQuotaLimitPath   = "/api/monitor/usage/quota/limit"
+	glmSubscriptionPath        = "/api/biz/subscription/list?pageSize=10&pageNum=1"
+	glmQuotaLimitPath          = "/api/monitor/usage/quota/limit"
+	glmCreditUsageActivityPath = "/api/monitor/usage/credit-usage/activity"
+	glmActivityAccountPersonal = "1" // 个人套餐
+
+	// GlmActivityAccountPersonal 是导出别名，供 controller 按业务语义引用，
+	// 其值仍以 glmActivityAccountPersonal 为单一来源，避免在调用处写字面量。
+	GlmActivityAccountPersonal = glmActivityAccountPersonal
 )
+
+// glmActivityLookbackDays 智谱 GLM 个人套餐活跃数据展示窗口：当前日期往前推 365 天。
+// 智谱活动接口在更长时间窗下响应体可能显著增大，保持 365 天与智谱官方前端一致。
+const glmActivityLookbackDays = 365
 
 // 智谱套餐额度类型。TOKENS_LIMIT/TIME_LIMIT 为按 Tokens 计费的 V1/V2 套餐条目，
 // CREDIT_LIMIT 为 V3 积分套餐特有的按积分计费条目（参考智谱官网前端 CREDIT_LIMIT 常量）。
@@ -329,7 +339,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string, proxyURL string) (*Glm
 	errCh := make(chan error, 2)
 
 	go func() {
-		resp, err := fetchGlmAPI(apiBase, glmSubscriptionPath, apiKey, proxyURL)
+		resp, err := fetchGlmAPI(apiBase, glmSubscriptionPath, apiKey, proxyURL, nil)
 		if err != nil {
 			errCh <- fmt.Errorf("获取订阅信息失败: %w", err)
 			return
@@ -343,7 +353,7 @@ func FetchGlmPlanQuota(apiKey string, planBaseURL string, proxyURL string) (*Glm
 	}()
 
 	go func() {
-		resp, err := fetchGlmAPI(apiBase, glmQuotaLimitPath, apiKey, proxyURL)
+		resp, err := fetchGlmAPI(apiBase, glmQuotaLimitPath, apiKey, proxyURL, nil)
 		if err != nil {
 			errCh <- fmt.Errorf("获取限额信息失败: %w", err)
 			return
@@ -384,8 +394,10 @@ func getGlmApiBase(planBaseURL string) string {
 }
 
 // fetchGlmAPI 向智谱后端发送请求，Key 由后端注入，不会暴露给客户端；
-// proxyURL 非空时请求经渠道代理发出。
-func fetchGlmAPI(baseURL, path, apiKey, proxyURL string) ([]byte, error) {
+// proxyURL 非空时请求经渠道代理发出。extraHeaders 为 nil 时使用默认头，
+// 与历史 fetchGlmAPI 行为一致；调用方若需要补充请求头（如 UsageActivity）
+// 可通过该参数传入。
+func fetchGlmAPI(baseURL, path, apiKey, proxyURL string, extraHeaders http.Header) ([]byte, error) {
 	url := strings.TrimRight(baseURL, "/") + path
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -393,10 +405,23 @@ func fetchGlmAPI(baseURL, path, apiKey, proxyURL string) ([]byte, error) {
 		return nil, err
 	}
 
-	// 模拟浏览器从智谱官网发起的请求
 	req.Header.Set("Authorization", strings.TrimSpace(apiKey))
-	req.Header.Set("Referer", "https://bigmodel.cn/")
-	req.Header.Set("Origin", "https://bigmodel.cn")
+	if extraHeaders == nil {
+		// 模拟浏览器从智谱官网发起的请求
+		req.Header.Set("Referer", "https://bigmodel.cn/")
+		req.Header.Set("Origin", "https://bigmodel.cn")
+	} else {
+		for key, values := range extraHeaders {
+			if len(values) == 0 {
+				continue
+			}
+			// Authorization 始终以参数 apiKey 为准，避免被 extraHeaders 覆盖泄露到上游
+			if strings.EqualFold(key, "Authorization") {
+				continue
+			}
+			req.Header[key] = append([]string(nil), values...)
+		}
+	}
 
 	client, err := newGlmHttpClient(proxyURL)
 	if err != nil {
@@ -424,6 +449,21 @@ func fetchGlmAPI(baseURL, path, apiKey, proxyURL string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+// createBigModelUsageHeaders 构建访问 BigModel / Z.ai 个人套餐活跃接口所需的请求头。
+// Authorization 由上游 OAuth + zcode 服务换取的 Coding Plan API Key 注入；
+// Referer/Origin 模拟智谱/BigModel 官网控制台，确保与智谱官方前端请求一致。
+// func 形式方便后续在不修改 fetchGlmAPI 调用的前提下扩展头字段。
+func createBigModelUsageHeaders(apiKey string) http.Header {
+	h := http.Header{}
+	if trimmed := strings.TrimSpace(apiKey); trimmed != "" {
+		h.Set("Authorization", trimmed)
+	}
+	h.Set("Referer", "https://bigmodel.cn/")
+	h.Set("Origin", "https://bigmodel.cn")
+	h.Set("Accept", "application/json")
+	return h
 }
 
 // buildGlmPlanQuotaData 将原始 API 返回组装为前端展示结构
@@ -570,10 +610,136 @@ func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, start
 		path += fmt.Sprintf("?startTime=%s&endTime=%s", url.QueryEscape(startTime), url.QueryEscape(endTime))
 	}
 
-	body, err := fetchGlmAPI(apiBase, path, apiKey, proxyURL)
+	body, err := fetchGlmAPI(apiBase, path, apiKey, proxyURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return json.RawMessage(body), nil
+}
+
+// glmActivityResp 智谱 credit-usage/activity 接口响应结构。
+// 智谱在 success 字段缺失或为 true 且 code 为 0/200/null 时视为成功；
+// 与 glmBizResp 不同之处在于该接口的成功判定更宽松，因此单独建模。
+type glmActivityResp struct {
+	Code    *int               `json:"code"`
+	Msg     string             `json:"msg"`
+	Success *bool              `json:"success"`
+	Data    *GlmActivityPayload `json:"data"`
+}
+
+// GlmActivityPayload 智谱 credit-usage/activity 接口 data 字段结构。
+type GlmActivityPayload struct {
+	Summary *GlmActivitySummary `json:"summary"`
+	Series  []GlmActivityDay    `json:"series"`
+}
+
+// GlmActivitySummary 智谱活跃数据汇总：累计 Token、峰值、累计使用时长与连续天数。
+type GlmActivitySummary struct {
+	TotalTokens          int64   `json:"totalTokens"`
+	PeakDailyTokens      int64   `json:"peakDailyTokens"`
+	PeakDailyTokensDate  string  `json:"peakDailyTokensDate"`
+	TotalUsageDurationMs float64 `json:"totalUsageDurationMs"`
+	CurrentStreakDays    int     `json:"currentStreakDays"`
+	LongestStreakDays    int     `json:"longestStreakDays"`
+}
+
+// GlmActivityDay 单日 Token 活动条目，供前端日历热力图直接消费。
+type GlmActivityDay struct {
+	Date           string `json:"date"`
+	TotalTokens    int64  `json:"totalTokens"`
+	ModelCallCount int64  `json:"modelCallCount"`
+	MCPCalls       int64  `json:"mcpCalls"`
+}
+
+// GlmPlanActivityData 智谱个人套餐活跃数据展示结构，与 GlmPlanQuotaData 风格保持一致。
+// Series 缺失时（账号无活跃活动）保留为 nil，前端按空数据渲染。
+type GlmPlanActivityData struct {
+	Summary *GlmActivitySummary `json:"summary,omitempty"`
+	Series  []GlmActivityDay    `json:"series,omitempty"`
+}
+
+// isGlmActivitySuccess 按用户提供的判定规则判断 credit-usage/activity 响应是否成功：
+// code 为 0/200/null 且 success !== false。缺失的指针字段视为未给出，不参与否定。
+func isGlmActivitySuccess(resp *glmActivityResp) bool {
+	if resp == nil {
+		return false
+	}
+	if resp.Success != nil && !*resp.Success {
+		return false
+	}
+	if resp.Code == nil {
+		return true
+	}
+	switch *resp.Code {
+	case 0, 200:
+		return true
+	default:
+		return false
+	}
+}
+
+// ComputeGlmActivityTimeRange 按服务器时区计算个人套餐活跃接口的查询时间窗：
+// startTime = 今天 00:00:00 往前推 glmActivityLookbackDays 天，
+// endTime   = 服务器当天 23:59:59。
+// 输出格式与智谱官方前端保持一致（YYYY-MM-DD HH:MM:SS），由 controller 在请求时按需生成。
+func ComputeGlmActivityTimeRange() (startTime, endTime string) {
+	now := time.Now()
+	end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
+	start := end.AddDate(0, 0, -glmActivityLookbackDays)
+	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+	return start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05")
+}
+
+// FetchGlmCreditUsageActivity 调用智谱 credit-usage/activity 接口拉取个人套餐活跃数据。
+// startTime/endTime 由 controller 按服务器时区计算后传入，避免被前端改值绕开 365 天语义。
+// proxyURL 非空时请求经渠道代理发出。
+func FetchGlmCreditUsageActivity(apiKey string, planBaseURL string, accountType string, startTime string, endTime string, proxyURL string) (*GlmPlanActivityData, error) {
+	apiBase := getGlmApiBase(planBaseURL)
+	if apiBase == "" {
+		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
+	}
+	if accountType == "" {
+		accountType = glmActivityAccountPersonal
+	}
+
+	path := fmt.Sprintf("%s?type=%s&startTime=%s&endTime=%s",
+		glmCreditUsageActivityPath,
+		url.QueryEscape(accountType),
+		url.QueryEscape(startTime),
+		url.QueryEscape(endTime),
+	)
+
+	body, err := fetchGlmAPI(apiBase, path, apiKey, proxyURL, createBigModelUsageHeaders(apiKey))
+	if err != nil {
+		return nil, err
+	}
+
+	// 与 other glm 接口一致，智谱在 Key 无效时仍可能返回 200 + 业务 code=1000，
+	// fetchGlmAPI 已把该情况升级为 ErrGlmKeyInvalid，这里在解析前再次兜底。
+	if isGlmAuthFailure(body) {
+		return nil, ErrGlmKeyInvalid
+	}
+
+	var resp glmActivityResp
+	if err := common.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("解析活跃数据响应失败: %w", err)
+	}
+	if !isGlmActivitySuccess(&resp) {
+		msg := strings.TrimSpace(resp.Msg)
+		if msg == "" {
+			msg = "智谱返回非成功状态"
+		}
+		return nil, fmt.Errorf("%s (code=%v)", msg, resp.Code)
+	}
+
+	data := &GlmPlanActivityData{}
+	if resp.Data != nil {
+		data.Summary = resp.Data.Summary
+		data.Series = resp.Data.Series
+	}
+	if data.Series == nil {
+		data.Series = []GlmActivityDay{}
+	}
+	return data, nil
 }

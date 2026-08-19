@@ -294,6 +294,33 @@ export interface GlmRiskResponse {
   }
 }
 
+export interface GlmActivityDay {
+  date?: string
+  totalTokens?: number
+  modelCallCount?: number
+  mcpCalls?: number
+}
+
+export interface GlmActivitySummary {
+  totalTokens?: number
+  peakDailyTokens?: number
+  peakDailyTokensDate?: string
+  totalUsageDurationMs?: number
+  currentStreakDays?: number
+  longestStreakDays?: number
+}
+
+export interface GlmPlanActivityData {
+  summary?: GlmActivitySummary
+  series?: GlmActivityDay[]
+}
+
+export interface GlmPlanActivityResponse {
+  success: boolean
+  message?: string
+  data?: GlmPlanActivityData
+}
+
 // ============================================================================
 // API Request Parameters
 // ============================================================================

@@ -221,6 +221,8 @@ const (
 	MsgChannelRiskUnsupported                  = "channel.risk_unsupported"
 	MsgChannelRiskCheckFailed                  = "channel.risk_check_failed"
 	MsgChannelKeyInvalid                       = "channel.key_invalid"
+	MsgChannelActivityUnsupported              = "channel.activity_unsupported"
+	MsgChannelActivityQueryFailed              = "channel.activity_query_failed"
 	MsgChannelOllamaGetModelsFailed            = "channel.ollama_get_models_failed"
 	MsgChannelGeminiGetModelsFailed            = "channel.gemini_get_models_failed"
 	MsgChannelOllamaVersionFailed              = "channel.ollama_version_failed"

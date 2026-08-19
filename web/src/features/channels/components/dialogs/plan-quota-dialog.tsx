@@ -36,9 +36,16 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { StatusBadge, type StatusVariant } from '@/components/status-badge'
-import { getGlmPlanUsage, getPlanQuota } from '../../api'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { getGlmPlanActivity, getGlmPlanUsage, getPlanQuota } from '../../api'
 import type {
   Channel,
+  GlmActivityDay,
+  GlmPlanActivityData,
   GlmUsageType,
   PlanLimitInfo,
   PlanMcpLimitInfo,
@@ -903,6 +910,337 @@ function PerformanceChart({
   )
 }
 
+// ============================================================================
+// GLM Plan Activity (summary + 365-day heatmap)
+// ============================================================================
+
+type ActivityHeatmapCell = {
+  date: string
+  tokens: number
+  modelCalls: number
+  mcpCalls: number
+}
+
+// 热力图强度色阶：L0 无活动用 muted，L1-L4 按 --chart-1 混合透明度递增，
+// 与主题 preset 自动联动（浅色/深色/自定义主题均生效）。
+const ACTIVITY_HEAT_COLORS = [
+  'color-mix(in oklab, var(--muted) 60%, transparent)',
+  'color-mix(in oklab, var(--chart-1) 30%, transparent)',
+  'color-mix(in oklab, var(--chart-1) 55%, transparent)',
+  'color-mix(in oklab, var(--chart-1) 78%, transparent)',
+  'var(--chart-1)',
+] as const
+
+function activityHeatLevel(tokens: number, maxTokens: number): number {
+  if (tokens <= 0 || maxTokens <= 0) return 0
+  const ratio = tokens / maxTokens
+  if (ratio <= 0.25) return 1
+  if (ratio <= 0.5) return 2
+  if (ratio <= 0.75) return 3
+  return 4
+}
+
+function formatActivityDateKey(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function formatActivityDuration(ms?: number): string {
+  const totalMs = Number(ms) || 0
+  if (totalMs <= 0) return '0'
+  const totalMinutes = Math.floor(totalMs / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0 && minutes > 0) {
+    return i18next.t('channels.placeholders.planActivityDurationHm', { hours, minutes })
+  }
+  if (hours > 0) {
+    return i18next.t('channels.placeholders.planActivityDurationH', { hours })
+  }
+  return i18next.t('channels.placeholders.planActivityDurationM', { minutes })
+}
+
+// buildActivityHeatmap 把后端返回的 365 天 series 排布成 GitHub 风格周历：
+// 每列为一个自然周（周一起始），缺失的日期按 0 Token 补齐，
+// 同时生成月份标签（每月首周）和周一/三/五的星期标签。
+function buildActivityHeatmap(series: GlmActivityDay[]): {
+  weeks: ActivityHeatmapCell[][]
+  monthLabels: string[]
+  weekdayLabels: string[]
+  maxTokens: number
+} {
+  const byDate = new Map<string, GlmActivityDay>()
+  series.forEach((item) => {
+    if (item?.date) byDate.set(item.date, item)
+  })
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const rangeStart = new Date(today)
+  rangeStart.setDate(rangeStart.getDate() - 364)
+  // 对齐到周一，保证每列恰好是一个自然周
+  const startPad = (rangeStart.getDay() + 6) % 7
+  const gridStart = new Date(rangeStart)
+  gridStart.setDate(gridStart.getDate() - startPad)
+
+  const weeks: ActivityHeatmapCell[][] = []
+  let week: ActivityHeatmapCell[] = []
+  let maxTokens = 0
+  const cursor = new Date(gridStart)
+  while (cursor <= today) {
+    const key = formatActivityDateKey(cursor)
+    const entry = byDate.get(key)
+    const tokens = Number(entry?.totalTokens) || 0
+    if (tokens > maxTokens) maxTokens = tokens
+    week.push({
+      date: key,
+      tokens,
+      modelCalls: Number(entry?.modelCallCount) || 0,
+      mcpCalls: Number(entry?.mcpCalls) || 0,
+    })
+    if (week.length === 7) {
+      weeks.push(week)
+      week = []
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  if (week.length > 0) weeks.push(week)
+
+  const monthFormatter = new Intl.DateTimeFormat(i18next.language, { month: 'short' })
+  const weekdayFormatter = new Intl.DateTimeFormat(i18next.language, { weekday: 'narrow' })
+  // 2024-01-01 恰为周一，用它推导周一到周日的窄缩写
+  const weekdayLabels = Array.from({ length: 7 }, (_, index) =>
+    weekdayFormatter.format(new Date(2024, 0, 1 + index))
+  )
+
+  let lastMonth = ''
+  const monthLabels = weeks.map((cells) => {
+    const firstDate = new Date(`${cells[0].date}T00:00:00`)
+    const name = monthFormatter.format(firstDate)
+    if (name !== lastMonth) {
+      lastMonth = name
+      return name
+    }
+    return ''
+  })
+
+  return { weeks, monthLabels, weekdayLabels, maxTokens }
+}
+
+function activityCellTitle(cell: ActivityHeatmapCell): string {
+  return [
+    i18next.t('channels.tips.planActivityTokenCountOn', {
+      date: cell.date,
+      count: cell.tokens.toLocaleString(),
+    }),
+    `${i18next.t('channels.fields.planActivityModelCalls')}: ${cell.modelCalls.toLocaleString()}`,
+    `${i18next.t('channels.fields.planActivityMcpCalls')}: ${cell.mcpCalls.toLocaleString()}`,
+  ].join('\n')
+}
+
+function ActivityStat({
+  label,
+  value,
+  hint,
+}: {
+  label: string
+  value: string
+  hint?: string
+}) {
+  const stat = (
+    <div className='rounded-lg border p-3'>
+      <div className='text-muted-foreground text-xs'>{label}</div>
+      <div className='mt-1 text-xl font-semibold tabular-nums'>{value}</div>
+    </div>
+  )
+  if (!hint) return stat
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<div />}>{stat}</TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function ActivitySection({ channelId }: { channelId: number }) {
+  const { t } = useTranslation()
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [activity, setActivity] = useState<GlmPlanActivityData | null>(null)
+
+  const fetchActivity = useCallback(async () => {
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const response = await getGlmPlanActivity(channelId)
+      if (!response.success) {
+        throw new Error(response.message || t('channels.tips.planActivityLoadFailed'))
+      }
+      setActivity(response.data ?? null)
+    } catch {
+      setActivity(null)
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [channelId, t])
+
+  useEffect(() => {
+    fetchActivity()
+  }, [fetchActivity])
+
+  const summary = activity?.summary
+  const series = useMemo(
+    () => (Array.isArray(activity?.series) ? activity.series : []),
+    [activity]
+  )
+  const hasData = Boolean(summary) || series.length > 0
+  const { weeks, monthLabels, weekdayLabels, maxTokens } = useMemo(
+    () => buildActivityHeatmap(series),
+    [series]
+  )
+
+  return (
+    <section className='space-y-3 rounded-lg border p-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <div className='text-sm font-semibold'>
+          {t('channels.titles.planActivity')}
+        </div>
+        {loadError && (
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={fetchActivity}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <RefreshCw className='mr-1.5 h-3.5 w-3.5' />
+            )}
+            {t('channels.actions.refresh')}
+          </Button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className='flex h-32 items-center justify-center'>
+          <Loader2 className='text-muted-foreground h-5 w-5 animate-spin' />
+        </div>
+      ) : loadError ? (
+        <div className='text-muted-foreground flex h-24 items-center justify-center text-sm'>
+          {t('channels.tips.planActivityLoadFailed')}
+        </div>
+      ) : !hasData ? (
+        <div className='text-muted-foreground flex h-24 items-center justify-center text-sm'>
+          {t('channels.fields.planActivityNoData')}
+        </div>
+      ) : (
+        <>
+          <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
+            <ActivityStat
+              label={t('channels.fields.planTotalTokens')}
+              value={formatCompactNumber(summary?.totalTokens)}
+            />
+            <ActivityStat
+              label={t('channels.fields.planPeakTokens')}
+              value={formatCompactNumber(summary?.peakDailyTokens)}
+              hint={
+                summary?.peakDailyTokensDate
+                  ? `${t('channels.fields.planPeakTokensDate')}: ${summary.peakDailyTokensDate}`
+                  : undefined
+              }
+            />
+            <ActivityStat
+              label={t('channels.fields.planTotalUsageDuration')}
+              value={formatActivityDuration(summary?.totalUsageDurationMs)}
+            />
+            <ActivityStat
+              label={t('channels.fields.planCurrentStreakDays')}
+              value={String(summary?.currentStreakDays ?? 0)}
+            />
+            <ActivityStat
+              label={t('channels.fields.planLongestStreakDays')}
+              value={String(summary?.longestStreakDays ?? 0)}
+            />
+          </div>
+
+          <div className='space-y-1.5'>
+            <div className='flex items-center justify-between gap-2'>
+              <div className='text-muted-foreground text-xs font-medium'>
+                {t('channels.fields.planActivityHeatmapTitle')}
+              </div>
+              <div className='text-muted-foreground flex items-center gap-1 text-xs'>
+                {t('channels.fields.planActivityHeatmapLegendLess')}
+                {ACTIVITY_HEAT_COLORS.map((color, index) => (
+                  <span
+                    key={index}
+                    className='size-2.5 rounded-[3px]'
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+                {t('channels.fields.planActivityHeatmapLegendMore')}
+              </div>
+            </div>
+            <div className='overflow-x-auto pb-1'>
+              <div className='flex gap-1'>
+                <div className='flex flex-col gap-[2px] pt-[18px]'>
+                  {weekdayLabels.map((label, index) => (
+                    <div
+                      key={index}
+                      className='text-muted-foreground flex h-2.5 items-center justify-end pr-1 text-[9px] leading-none'
+                    >
+                      {index % 2 === 0 ? label : ''}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className='mb-1 flex h-3.5 items-end gap-[2px]'>
+                    {monthLabels.map((label, index) => (
+                      <div
+                        key={index}
+                        className='text-muted-foreground w-2.5 text-[9px] leading-none whitespace-nowrap'
+                      >
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                  <div className='flex gap-[2px]'>
+                    {weeks.map((week, weekIndex) => (
+                      <div key={weekIndex} className='flex flex-col gap-[2px]'>
+                        {week.map((cell) => (
+                          <div
+                            key={cell.date}
+                            className='size-2.5 rounded-[3px]'
+                            style={{
+                              backgroundColor:
+                                ACTIVITY_HEAT_COLORS[
+                                  activityHeatLevel(cell.tokens, maxTokens)
+                                ],
+                            }}
+                            title={activityCellTitle(cell)}
+                            role='img'
+                            aria-label={activityCellTitle(cell)}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className='text-muted-foreground text-right text-xs'>
+            {t('channels.tips.planDataDelay')}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
 function GlmPlanContent({
   channel,
   quotaData,
@@ -987,6 +1325,7 @@ function GlmPlanContent({
         channelId={channel.id}
         productLevel={quotaData.product_level}
       />
+      <ActivitySection channelId={channel.id} />
     </div>
   )
 }

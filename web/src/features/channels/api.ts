@@ -35,6 +35,7 @@ import type {
   MultiKeyManageParams,
   MultiKeyStatusResponse,
   ProxyTestResponse,
+  GlmPlanActivityResponse,
   GlmRiskResponse,
   GlmUsageParams,
   PlanQuotaResponse,
@@ -361,6 +362,20 @@ export async function getGlmRiskStatus(
     disableDuplicate: true,
   }
   const res = await api.get(`/api/channel/plan/glm/risk/${channelId}`, config)
+  return res.data
+}
+
+export async function getGlmPlanActivity(
+  channelId: number
+): Promise<GlmPlanActivityResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/plan/glm/activity/${channelId}`,
+    config
+  )
   return res.data
 }
 

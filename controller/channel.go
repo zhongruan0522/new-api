@@ -2420,6 +2420,52 @@ func QueryGlmUsage(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", rawData)
 }
 
+// QueryGlmPlanActivity 查询智谱 GLM 个人套餐活跃数据（累计 / 峰值 / 连续天数 / 日历热力图）。
+// 时间窗固定为服务器时区「今天 23:59:59 → 往前 365 天 00:00:00」，由 service 端计算并注入，
+// 避免前端参数破坏 365 天语义。
+func QueryGlmPlanActivity(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		common.ApiErrorI18n(c, i18n.MsgChannelNotPlan)
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		common.ApiErrorI18n(c, i18n.MsgChannelActivityUnsupported)
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	startTime, endTime := service.ComputeGlmActivityTimeRange()
+
+	data, err := service.FetchGlmCreditUsageActivity(key, planName, service.GlmActivityAccountPersonal, startTime, endTime, channel.GetSetting().Proxy)
+	if err != nil {
+		if errors.Is(err, service.ErrGlmKeyInvalid) {
+			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
+		common.ApiErrorI18n(c, i18n.MsgChannelActivityQueryFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}
+
 // QueryRiskStatus 查询智谱 GLM 套餐渠道的风控状态
 func QueryRiskStatus(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))

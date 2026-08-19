@@ -1,7 +1,9 @@
 package service
 
 import (
+	"strings"
 	"testing"
+	"time"
 )
 
 // buildGlmPlanQuotaData 的套餐代次判定必须与智谱官方前端一致：
@@ -137,3 +139,69 @@ func TestBuildGlmPlanQuotaData_EmptyLimits(t *testing.T) {
 		t.Fatal("IsCreditPlan should be false when no limits")
 	}
 }
+
+// TestComputeGlmActivityTimeRange 验证时间窗始终是 365 天且 endTime 是当天 23:59:59。
+// 把起点锁定为本地时区的整数天，避免在跨时区环境下被解析为 next day / previous day。
+func TestComputeGlmActivityTimeRange(t *testing.T) {
+	start, end := ComputeGlmActivityTimeRange()
+	const layout = "2006-01-02 15:04:05"
+	tStart, err := time.Parse(layout, start)
+	if err != nil {
+		t.Fatalf("parse startTime: %v", err)
+	}
+	tEnd, err := time.Parse(layout, end)
+	if err != nil {
+		t.Fatalf("parse endTime: %v", err)
+	}
+	if tStart.Hour() != 0 || tStart.Minute() != 0 || tStart.Second() != 0 {
+		t.Fatalf("startTime = %q, want 00:00:00", start)
+	}
+	if tEnd.Hour() != 23 || tEnd.Minute() != 59 || tEnd.Second() != 59 {
+		t.Fatalf("endTime = %q, want 23:59:59", end)
+	}
+	if got := int(tEnd.Sub(tStart).Hours() / 24); got != glmActivityLookbackDays {
+		t.Fatalf("range days = %d, want %d", got, glmActivityLookbackDays)
+	}
+}
+
+// TestIsGlmActivitySuccess 覆盖用户给出的成功判定：
+// - code 为 0/200/null 且 success !== false → 成功
+// - success 显式为 false → 失败
+// - code 为其它业务码 → 失败
+func TestIsGlmActivitySuccess(t *testing.T) {
+	cases := []struct {
+		name string
+		resp *glmActivityResp
+		want bool
+	}{
+		{"code=0", &glmActivityResp{Code: intPtr(0)}, true},
+		{"code=200", &glmActivityResp{Code: intPtr(200)}, true},
+		{"code=nil success=nil", &glmActivityResp{}, true},
+		{"success=false overrides", &glmActivityResp{Code: intPtr(0), Success: boolPtr(false)}, false},
+		{"success=true with code=0", &glmActivityResp{Code: intPtr(0), Success: boolPtr(true)}, true},
+		{"code=500", &glmActivityResp{Code: intPtr(500)}, false},
+		{"nil response", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isGlmActivitySuccess(tc.resp); got != tc.want {
+				t.Fatalf("isGlmActivitySuccess = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestCreateBigModelUsageHeaders_Authorization 校验 helper 输出的头至少包含
+// Authorization，且不会因为前后空格污染智谱上游校验逻辑。
+func TestCreateBigModelUsageHeaders_Authorization(t *testing.T) {
+	h := createBigModelUsageHeaders("  my-key-123  ")
+	if got := strings.TrimSpace(h.Get("Authorization")); got != "my-key-123" {
+		t.Fatalf("Authorization = %q, want %q", h.Get("Authorization"), "my-key-123")
+	}
+	if h.Get("Referer") == "" || h.Get("Origin") == "" {
+		t.Fatal("Referer/Origin must be present to mimic BigModel console origin")
+	}
+}
+
+func intPtr(v int) *int    { return &v }
+func boolPtr(v bool) *bool { return &v }
