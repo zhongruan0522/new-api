@@ -1031,7 +1031,7 @@ function activityCellTitle(cell: ActivityHeatmapCell): string {
   return [
     i18next.t('channels.tips.planActivityTokenCountOn', {
       date: cell.date,
-      count: cell.tokens.toLocaleString(),
+      count: formatCompactNumber(cell.tokens),
     }),
     `${i18next.t('channels.fields.planActivityModelCalls')}: ${cell.modelCalls.toLocaleString()}`,
     `${i18next.t('channels.fields.planActivityMcpCalls')}: ${cell.mcpCalls.toLocaleString()}`,
@@ -1154,18 +1154,18 @@ function ActivitySection({ channelId }: { channelId: number }) {
             {weekdayLabels.map((label, index) => (
               <div
                 key={index}
-                className='text-muted-foreground flex h-2.5 items-center justify-end pr-1 text-[9px] leading-none'
+                className='text-muted-foreground flex flex-1 items-center justify-end pr-1 text-[9px] leading-none'
               >
                 {index % 2 === 0 ? label : ''}
               </div>
             ))}
           </div>
-          <div>
+          <div className='flex-1'>
             <div className='mb-1 flex h-3.5 items-end gap-[2px]'>
               {monthLabels.map((label, index) => (
                 <div
                   key={index}
-                  className='text-muted-foreground w-2.5 text-[9px] leading-none whitespace-nowrap'
+                  className='text-muted-foreground min-w-0 flex-1 text-[9px] leading-none whitespace-nowrap'
                 >
                   {label}
                 </div>
@@ -1173,11 +1173,11 @@ function ActivitySection({ channelId }: { channelId: number }) {
             </div>
             <div className='flex gap-[2px]'>
               {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className='flex flex-col gap-[2px]'>
+                <div key={weekIndex} className='flex flex-1 flex-col gap-[2px]'>
                   {week.map((cell) => (
                     <div
                       key={cell.date}
-                      className='size-2.5 rounded-[3px]'
+                      className='aspect-square w-full min-w-[10px] rounded-[3px]'
                       style={{
                         backgroundColor:
                           ACTIVITY_HEAT_COLORS[
