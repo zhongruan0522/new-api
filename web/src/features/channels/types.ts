@@ -297,7 +297,6 @@ export interface GlmRiskResponse {
 export interface GlmActivityDay {
   date?: string
   totalTokens?: number
-  modelCallCount?: number
   mcpCalls?: number
 }
 

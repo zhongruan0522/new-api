@@ -980,7 +980,6 @@ function PerformanceChart({
 type ActivityHeatmapCell = {
   date: string
   tokens: number
-  modelCalls: number
   mcpCalls: number
 }
 
@@ -1061,7 +1060,6 @@ function buildActivityHeatmap(series: GlmActivityDay[]): {
     week.push({
       date: key,
       tokens,
-      modelCalls: Number(entry?.modelCallCount) || 0,
       mcpCalls: Number(entry?.mcpCalls) || 0,
     })
     if (week.length === 7) {
@@ -1099,12 +1097,13 @@ function buildActivityHeatmap(series: GlmActivityDay[]): {
 
 function activityCellTitle(cell: ActivityHeatmapCell): string {
   return [
-    i18next.t('channels.tips.planActivityTokenCountOn', {
-      date: cell.date,
+    cell.date,
+    i18next.t('channels.tips.planActivityModelUsage', {
       count: formatCompactNumber(cell.tokens),
     }),
-    `${i18next.t('channels.fields.planActivityModelCalls')}: ${cell.modelCalls.toLocaleString()}`,
-    `${i18next.t('channels.fields.planActivityMcpCalls')}: ${cell.mcpCalls.toLocaleString()}`,
+    i18next.t('channels.tips.planActivityToolCalls', {
+      count: cell.mcpCalls.toLocaleString(),
+    }),
   ].join('\n')
 }
 

@@ -649,10 +649,9 @@ type GlmActivitySummary struct {
 
 // GlmActivityDay 单日 Token 活动条目，供前端日历热力图直接消费。
 type GlmActivityDay struct {
-	Date           string `json:"date"`
-	TotalTokens    int64  `json:"totalTokens"`
-	ModelCallCount int64  `json:"modelCallCount"`
-	MCPCalls       int64  `json:"mcpCalls"`
+	Date        string `json:"date"`
+	TotalTokens int64  `json:"totalTokens"`
+	MCPCalls    int64  `json:"mcpCalls"`
 }
 
 // GlmPlanActivityData 智谱个人套餐活跃数据展示结构，与 GlmPlanQuotaData 风格保持一致。
