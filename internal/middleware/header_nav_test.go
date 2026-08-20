@@ -2,17 +2,17 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 func withHeaderNavModules(t *testing.T, raw string) {
@@ -43,7 +43,7 @@ func withHeaderNavModules(t *testing.T, raw string) {
 func setupHeaderNavTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
+	oldDB := dbstore.DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 
@@ -51,14 +51,14 @@ func setupHeaderNavTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}); err != nil {
+	if err := db.AutoMigrate(&userstore.User{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
+	dbstore.DB = db
 	common.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
-	if err := model.DB.Create(&model.User{
+	if err := dbstore.DB.Create(&userstore.User{
 		Id:       1,
 		Username: "tester",
 		Password: "password123",
@@ -74,7 +74,7 @@ func setupHeaderNavTestDB(t *testing.T) {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
+		dbstore.DB = oldDB
 		common.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})

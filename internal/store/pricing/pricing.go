@@ -1,0 +1,383 @@
+package pricingstore
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/vendor_meta"
+	"strings"
+	"sync"
+	"time"
+)
+
+type Pricing struct {
+	ModelName            string                        `json:"model_name"`
+	Description          string                        `json:"description,omitempty" gorm:"type:text"`
+	Icon                 string                        `json:"icon,omitempty"`
+	Tags                 string                        `json:"tags,omitempty"`
+	VendorID             int                           `json:"vendor_id,omitempty"`
+	ContextLength        int                           `json:"context_length,omitempty"`
+	MaxOutputTokens      int                           `json:"max_output_tokens,omitempty"`
+	InputModalities      []string                      `json:"input_modalities,omitempty"`
+	OutputModalities     []string                      `json:"output_modalities,omitempty"`
+	Capabilities         []string                      `json:"capabilities,omitempty"`
+	KnowledgeCutoff      string                        `json:"knowledge_cutoff,omitempty"`
+	ReleaseDate          string                        `json:"release_date,omitempty"`
+	ParameterCount       string                        `json:"parameter_count,omitempty"`
+	QuotaType            int                           `json:"quota_type"`
+	Available            bool                          `json:"available"`
+	ModelRatio           float64                       `json:"model_ratio"`
+	ModelPrice           float64                       `json:"model_price"`
+	OwnerBy              string                        `json:"owner_by"`
+	CompletionRatio      float64                       `json:"completion_ratio"`
+	CacheRatio           *float64                      `json:"cache_ratio,omitempty"`
+	CreateCacheRatio     *float64                      `json:"create_cache_ratio,omitempty"`
+	AudioRatio           *float64                      `json:"audio_ratio,omitempty"`
+	AudioCompletionRatio *float64                      `json:"audio_completion_ratio,omitempty"`
+	ContextPricing       *billing.ContextPricingConfig `json:"context_pricing,omitempty"`
+	// omitempty：匿名 pricing 响应置 nil 时整个字段不出现在 JSON 中，
+	// 避免输出 "enable_groups": null。
+	EnableGroup            []string                `json:"enable_groups,omitempty"`
+	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
+}
+
+type PricingVendor struct {
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	Description       string `json:"description,omitempty" gorm:"type:text"`
+	Icon              string `json:"icon,omitempty"`
+	DataRetentionDays *int   `json:"data_retention_days,omitempty"`
+	TrainingOptOut    *bool  `json:"training_opt_out,omitempty"`
+}
+
+var (
+	pricingMap           []Pricing
+	vendorsList          []PricingVendor
+	supportedEndpointMap map[string]common.EndpointInfo
+	lastGetPricingTime   time.Time
+	updatePricingLock    sync.Mutex
+
+	// 缓存映射：模型名 -> 启用分组 / 计费类型
+	modelEnableGroups     = make(map[string][]string)
+	modelQuotaTypeMap     = make(map[string]int)
+	modelEnableGroupsLock = sync.RWMutex{}
+)
+
+var (
+	modelSupportEndpointTypes = make(map[string][]constant.EndpointType)
+	modelSupportEndpointsLock = sync.RWMutex{}
+)
+
+func GetPricing() []Pricing {
+	if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
+		updatePricingLock.Lock()
+		defer updatePricingLock.Unlock()
+		// Double check after acquiring the lock
+		if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
+			modelSupportEndpointsLock.Lock()
+			defer modelSupportEndpointsLock.Unlock()
+			updatePricing()
+		}
+	}
+	return pricingMap
+}
+
+// GetVendors 返回当前定价接口使用到的供应商信息
+func GetVendors() []PricingVendor {
+	if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
+		// 保证先刷新一次
+		GetPricing()
+	}
+	return vendorsList
+}
+
+func GetModelSupportEndpointTypes(model string) []constant.EndpointType {
+	if model == "" {
+		return make([]constant.EndpointType, 0)
+	}
+	modelSupportEndpointsLock.RLock()
+	defer modelSupportEndpointsLock.RUnlock()
+	if endpoints, ok := modelSupportEndpointTypes[model]; ok {
+		return endpoints
+	}
+	return make([]constant.EndpointType, 0)
+}
+
+func updatePricing() {
+	//modelRatios := common.GetModelRatios()
+	enableAbilities, err := channelstore.GetAllEnableAbilityWithChannels()
+	if err != nil {
+		common.SysLog(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
+		return
+	}
+	// 预加载模型元数据与供应商一次，避免循环查询
+	var allMeta []vendormetastore.Model
+	_ = dbstore.DB.Find(&allMeta).Error
+	metaMap := make(map[string]*vendormetastore.Model)
+	prefixList := make([]*vendormetastore.Model, 0)
+	suffixList := make([]*vendormetastore.Model, 0)
+	containsList := make([]*vendormetastore.Model, 0)
+	for i := range allMeta {
+		m := &allMeta[i]
+		if m.NameRule == vendormetastore.NameRuleExact {
+			metaMap[m.ModelName] = m
+		} else {
+			switch m.NameRule {
+			case vendormetastore.NameRulePrefix:
+				prefixList = append(prefixList, m)
+			case vendormetastore.NameRuleSuffix:
+				suffixList = append(suffixList, m)
+			case vendormetastore.NameRuleContains:
+				containsList = append(containsList, m)
+			}
+		}
+	}
+
+	// 将非精确规则模型匹配到 metaMap
+	for _, m := range prefixList {
+		for _, pricingModel := range enableAbilities {
+			if strings.HasPrefix(pricingModel.Model, m.ModelName) {
+				if _, exists := metaMap[pricingModel.Model]; !exists {
+					metaMap[pricingModel.Model] = m
+				}
+			}
+		}
+	}
+	for _, m := range suffixList {
+		for _, pricingModel := range enableAbilities {
+			if strings.HasSuffix(pricingModel.Model, m.ModelName) {
+				if _, exists := metaMap[pricingModel.Model]; !exists {
+					metaMap[pricingModel.Model] = m
+				}
+			}
+		}
+	}
+	for _, m := range containsList {
+		for _, pricingModel := range enableAbilities {
+			if strings.Contains(pricingModel.Model, m.ModelName) {
+				if _, exists := metaMap[pricingModel.Model]; !exists {
+					metaMap[pricingModel.Model] = m
+				}
+			}
+		}
+	}
+
+	// 预加载供应商
+	var vendors []vendormetastore.Vendor
+	_ = dbstore.DB.Find(&vendors).Error
+	vendorMap := make(map[int]*vendormetastore.Vendor)
+	for i := range vendors {
+		vendorMap[vendors[i].Id] = &vendors[i]
+	}
+
+	// 初始化默认供应商映射
+	initDefaultVendorMapping(metaMap, vendorMap, enableAbilities)
+
+	// 构建对前端友好的供应商列表
+	vendorsList = make([]PricingVendor, 0, len(vendorMap))
+	for _, v := range vendorMap {
+		vendorsList = append(vendorsList, PricingVendor{
+			ID:                v.Id,
+			Name:              v.Name,
+			Description:       v.Description,
+			Icon:              v.Icon,
+			DataRetentionDays: v.DataRetentionDays,
+			TrainingOptOut:    v.TrainingOptOut,
+		})
+	}
+
+	modelGroupsMap := make(map[string]*shared.Set[string])
+
+	for _, ability := range enableAbilities {
+		groups, ok := modelGroupsMap[ability.Model]
+		if !ok {
+			groups = shared.NewSet[string]()
+			modelGroupsMap[ability.Model] = groups
+		}
+		groups.Add(ability.Group)
+	}
+
+	//这里使用切片而不是Set，因为一个模型可能支持多个端点类型，并且第一个端点是优先使用端点
+	modelSupportEndpointsStr := make(map[string][]string)
+
+	// 先根据已有能力填充原生端点
+	for _, ability := range enableAbilities {
+		endpoints := modelSupportEndpointsStr[ability.Model]
+		channelTypes := common.GetEndpointTypesByChannelType(ability.ChannelType, ability.Model)
+		for _, channelType := range channelTypes {
+			if !common.StringsContains(endpoints, string(channelType)) {
+				endpoints = append(endpoints, string(channelType))
+			}
+		}
+		modelSupportEndpointsStr[ability.Model] = endpoints
+	}
+
+	// 再补充模型自定义端点：若配置有效则替换默认端点，不做合并
+	for modelName, meta := range metaMap {
+		if strings.TrimSpace(meta.Endpoints) == "" {
+			continue
+		}
+		var raw map[string]interface{}
+		if err := json.Unmarshal([]byte(meta.Endpoints), &raw); err == nil {
+			endpoints := make([]string, 0, len(raw))
+			for k, v := range raw {
+				switch v.(type) {
+				case string, map[string]interface{}:
+					if !common.StringsContains(endpoints, k) {
+						endpoints = append(endpoints, k)
+					}
+				}
+			}
+			if len(endpoints) > 0 {
+				modelSupportEndpointsStr[modelName] = endpoints
+			}
+		}
+	}
+
+	modelSupportEndpointTypes = make(map[string][]constant.EndpointType)
+	for model, endpoints := range modelSupportEndpointsStr {
+		supportedEndpoints := make([]constant.EndpointType, 0)
+		for _, endpointStr := range endpoints {
+			endpointType := constant.EndpointType(endpointStr)
+			supportedEndpoints = append(supportedEndpoints, endpointType)
+		}
+		modelSupportEndpointTypes[model] = supportedEndpoints
+	}
+
+	// 构建全局 supportedEndpointMap（默认 + 自定义覆盖）
+	supportedEndpointMap = make(map[string]common.EndpointInfo)
+	// 1. 默认端点
+	for _, endpoints := range modelSupportEndpointTypes {
+		for _, et := range endpoints {
+			if info, ok := common.GetDefaultEndpointInfo(et); ok {
+				if _, exists := supportedEndpointMap[string(et)]; !exists {
+					supportedEndpointMap[string(et)] = info
+				}
+			}
+		}
+	}
+	// 2. 自定义端点（models 表）覆盖默认
+	for _, meta := range metaMap {
+		if strings.TrimSpace(meta.Endpoints) == "" {
+			continue
+		}
+		var raw map[string]interface{}
+		if err := json.Unmarshal([]byte(meta.Endpoints), &raw); err == nil {
+			for k, v := range raw {
+				switch val := v.(type) {
+				case string:
+					supportedEndpointMap[k] = common.EndpointInfo{Path: val, Method: "POST"}
+				case map[string]interface{}:
+					ep := common.EndpointInfo{Method: "POST"}
+					if p, ok := val["path"].(string); ok {
+						ep.Path = p
+					}
+					if m, ok := val["method"].(string); ok {
+						ep.Method = strings.ToUpper(m)
+					}
+					supportedEndpointMap[k] = ep
+				default:
+					// ignore unsupported types
+				}
+			}
+		}
+	}
+
+	pricingMap = make([]Pricing, 0)
+	for model, groups := range modelGroupsMap {
+		pricing := Pricing{
+			ModelName:              model,
+			EnableGroup:            groups.Items(),
+			SupportedEndpointTypes: modelSupportEndpointTypes[model],
+		}
+
+		// 补充模型元数据（描述、标签、供应商、状态）
+		if meta, ok := metaMap[model]; ok {
+			// 若模型被禁用(status!=1)，则直接跳过，不返回给前端
+			if meta.Status != 1 {
+				continue
+			}
+			pricing.Description = meta.Description
+			pricing.Icon = meta.Icon
+			pricing.Tags = meta.Tags
+			pricing.VendorID = meta.VendorID
+			pricing.ContextLength = meta.ContextLength
+			pricing.MaxOutputTokens = meta.MaxOutputTokens
+			pricing.InputModalities = meta.InputModalities
+			pricing.OutputModalities = meta.OutputModalities
+			pricing.Capabilities = meta.Capabilities
+			pricing.KnowledgeCutoff = meta.KnowledgeCutoff
+			pricing.ReleaseDate = meta.ReleaseDate
+			pricing.ParameterCount = meta.ParameterCount
+		}
+		modelPrice, findPrice := ratio.GetModelPrice(model, false)
+		if findPrice {
+			pricing.ModelPrice = modelPrice
+			pricing.QuotaType = 1
+			pricing.Available = true
+		} else {
+			modelRatio, success, _ := ratio.GetModelRatio(model)
+			pricing.ModelRatio = modelRatio
+			pricing.CompletionRatio = ratio.GetCompletionRatio(model)
+			pricing.QuotaType = 0
+			pricing.Available = success
+		}
+		// 额外倍率：仅在显式配置（含内置默认映射）时写入；避免把兜底默认值(如 1/1.25)暴露给前端
+		if v, ok := ratio.GetCacheRatio(model); ok {
+			pricing.CacheRatio = &v
+		}
+		if v, ok := ratio.GetCreateCacheRatio(model); ok {
+			pricing.CreateCacheRatio = &v
+		}
+		if ratio.ContainsAudioRatio(model) {
+			v := ratio.GetAudioRatio(model)
+			pricing.AudioRatio = &v
+		}
+		if ratio.ContainsAudioCompletionRatio(model) {
+			v := ratio.GetAudioCompletionRatio(model)
+			pricing.AudioCompletionRatio = &v
+		}
+		if cfg, ok := ratio.GetContextPricingConfig(model); ok && cfg.Enabled && len(cfg.Tiers) > 0 {
+			pricing.ContextPricing = &cfg
+			pricing.QuotaType = 0
+			pricing.Available = true
+			if result, _, err := ratio.MatchContextPricingTier(model, cfg.Tiers[0].MinTokens); err == nil && result != nil {
+				pricing.ModelPrice = 0
+				pricing.ModelRatio = result.Prices.ModelRatio
+				pricing.CompletionRatio = result.Prices.CompletionRatio
+				cacheRatio := result.Prices.CacheRatio
+				createCacheRatio := result.Prices.CacheCreationRatio
+				audioRatio := result.Prices.AudioRatio
+				audioCompletionRatio := result.Prices.AudioCompletionRatio
+				pricing.CacheRatio = &cacheRatio
+				pricing.CreateCacheRatio = &createCacheRatio
+				pricing.AudioRatio = &audioRatio
+				pricing.AudioCompletionRatio = &audioCompletionRatio
+			}
+		}
+		pricingMap = append(pricingMap, pricing)
+	}
+
+	// 刷新缓存映射，供高并发快速查询
+	modelEnableGroupsLock.Lock()
+	modelEnableGroups = make(map[string][]string)
+	modelQuotaTypeMap = make(map[string]int)
+	for _, p := range pricingMap {
+		modelEnableGroups[p.ModelName] = p.EnableGroup
+		modelQuotaTypeMap[p.ModelName] = p.QuotaType
+	}
+	modelEnableGroupsLock.Unlock()
+
+	lastGetPricingTime = time.Now()
+}
+
+// GetSupportedEndpointMap 返回全局端点到路径的映射
+func GetSupportedEndpointMap() map[string]common.EndpointInfo {
+	return supportedEndpointMap
+}

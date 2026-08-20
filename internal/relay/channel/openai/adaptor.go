@@ -5,32 +5,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	configmodel "github.com/NookMux/NookMux/internal/config/model"
+	"github.com/NookMux/NookMux/internal/config/reasoning"
+	"github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/relay/channel"
+	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
+	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	"github.com/NookMux/NookMux/internal/relay/common_handler"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/minimax_voice"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+	"github.com/gin-gonic/gin"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"path/filepath"
 	"strings"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/relay/channel"
-	"github.com/NookMux/NookMux/pkg/jsonx"
-
-	configmodel "github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/config/reasoning"
-	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
-	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/relay/common_handler"
-	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
-
-	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -355,7 +352,7 @@ func resolveMiniMaxVoiceOpenAI(c *gin.Context, voiceId string) (string, error) {
 	if voiceId == "" {
 		return "", nil
 	}
-	found, upstreamId, allowed, err := model.ResolveMiniMaxVoiceForTTS(voiceId)
+	found, upstreamId, allowed, err := minimaxvoicestore.ResolveMiniMaxVoiceForTTS(voiceId)
 	if err != nil {
 		if configmodel.IsMiniMaxVoiceWhitelistEnabled() {
 			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))

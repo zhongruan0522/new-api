@@ -3,17 +3,17 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"net/http/httptest"
-	"strings"
-	"testing"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"net/http/httptest"
+	"strings"
+	"testing"
 )
 
 // setupMultiKeyModeTestDB 为多密钥模式校验测试准备内存 SQLite，
@@ -21,7 +21,7 @@ import (
 func setupMultiKeyModeTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
+	oldDB := dbstore.DB
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 
 	common.MemoryCacheEnabled = false
@@ -30,16 +30,16 @@ func setupMultiKeyModeTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Channel{}, &model.Ability{}); err != nil {
+	if err := db.AutoMigrate(&channelstore.Channel{}, &channelstore.Ability{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
+	dbstore.DB = db
 
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
+		dbstore.DB = oldDB
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
 }
@@ -67,7 +67,7 @@ func performChannelJSONRequest(t *testing.T, handler gin.HandlerFunc, method str
 func seedMultiKeyChannel(t *testing.T) {
 	t.Helper()
 
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Id:     1,
 		Type:   constant.ChannelTypeOpenAI,
 		Name:   "multi-key",
@@ -75,13 +75,13 @@ func seedMultiKeyChannel(t *testing.T) {
 		Models: "gpt-4o-mini",
 		Group:  "default",
 		Status: common.ChannelStatusEnabled,
-		ChannelInfo: model.ChannelInfo{
+		ChannelInfo: channelstore.ChannelInfo{
 			IsMultiKey:   true,
 			MultiKeySize: 2,
 			MultiKeyMode: constant.MultiKeyModeRandom,
 		},
 	}
-	if err := model.DB.Create(channel).Error; err != nil {
+	if err := dbstore.DB.Create(channel).Error; err != nil {
 		t.Fatalf("seed multi-key channel: %v", err)
 	}
 }
@@ -99,7 +99,7 @@ func TestUpdateChannelRejectsInvalidMultiKeyMode(t *testing.T) {
 		t.Fatalf("expected error key %q, got %q", i18n.MsgChannelMultiKeyModeInvalid, message)
 	}
 
-	reloaded, err := model.GetChannelById(1, true)
+	reloaded, err := channelstore.GetChannelById(1, true)
 	if err != nil {
 		t.Fatalf("reload channel: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestUpdateChannelSwitchesMultiKeyMode(t *testing.T) {
 		t.Fatalf("expected valid mode switch to succeed, got message %q", message)
 	}
 
-	reloaded, err := model.GetChannelById(1, true)
+	reloaded, err := channelstore.GetChannelById(1, true)
 	if err != nil {
 		t.Fatalf("reload channel: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestAddChannelRejectsInvalidMultiKeyMode(t *testing.T) {
 	}
 
 	var count int64
-	if err := model.DB.Model(&model.Channel{}).Count(&count).Error; err != nil {
+	if err := dbstore.DB.Model(&channelstore.Channel{}).Count(&count).Error; err != nil {
 		t.Fatalf("count channels: %v", err)
 	}
 	if count != 0 {

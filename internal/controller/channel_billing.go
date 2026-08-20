@@ -4,22 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/operation"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-
-	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
-	"github.com/shopspring/decimal"
-
-	"github.com/gin-gonic/gin"
 )
 
 // https://github.com/songquanpeng/one-api/issues/79
@@ -99,7 +96,7 @@ func GetClaudeAuthHeader(token string) http.Header {
 	return h
 }
 
-func GetResponseBody(method, url string, channel *model.Channel, headers http.Header) ([]byte, error) {
+func GetResponseBody(method, url string, channel *channelstore.Channel, headers http.Header) ([]byte, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
@@ -129,7 +126,7 @@ func GetResponseBody(method, url string, channel *model.Channel, headers http.He
 	return body, nil
 }
 
-func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {
+func updateChannelSiliconFlowBalance(channel *channelstore.Channel) (float64, error) {
 	url := "https://api.siliconflow.cn/v1/user/info"
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
@@ -151,7 +148,7 @@ func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
-func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
+func updateChannelDeepSeekBalance(channel *channelstore.Channel) (float64, error) {
 	url := "https://api.deepseek.com/user/balance"
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
@@ -180,7 +177,7 @@ func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
-func updateChannelOpenRouterBalance(channel *model.Channel) (float64, error) {
+func updateChannelOpenRouterBalance(channel *channelstore.Channel) (float64, error) {
 	url := "https://openrouter.ai/api/v1/credits"
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
@@ -196,7 +193,7 @@ func updateChannelOpenRouterBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
-func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
+func updateChannelMoonshotBalance(channel *channelstore.Channel) (float64, error) {
 	url := "https://api.moonshot.cn/v1/users/me/balance"
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
@@ -230,7 +227,7 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 	return availableBalanceUsd, nil
 }
 
-func updateChannelBalance(c *gin.Context, channel *model.Channel) (float64, error) {
+func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float64, error) {
 	baseURL := constant.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
 		channel.BaseURL = &baseURL
@@ -293,7 +290,7 @@ func UpdateChannelBalance(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
-	channel, err := model.CacheGetChannel(id)
+	channel, err := channelstore.CacheGetChannel(id)
 	if err != nil {
 		common.SysError("failed to cache get channel: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -317,7 +314,7 @@ func UpdateChannelBalance(c *gin.Context) {
 }
 
 func updateAllChannelsBalance() error {
-	channels, err := model.GetAllChannels(0, 0, true, false)
+	channels, err := channelstore.GetAllChannels(0, 0, true, false)
 	if err != nil {
 		return err
 	}

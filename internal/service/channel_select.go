@@ -2,15 +2,13 @@ package service
 
 import (
 	"errors"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
-
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/gin-gonic/gin"
 )
 
@@ -80,8 +78,8 @@ func (p *RetryParam) ResetRetryNextTry() {
 //
 //   - Uses ContextKeyAutoGroupRetryIndex to track the global Retry count when current group started.
 //     使用 ContextKeyAutoGroupRetryIndex 跟踪当前分组开始时的全局重试次数。
-func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, error) {
-	var channel *model.Channel
+func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, string, error) {
+	var channel *channelstore.Channel
 	var err error
 	selectGroup := param.TokenGroup
 	userGroup := common.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
@@ -117,7 +115,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			priorityIndex := priorityRetry / 2
 			log.LogDebug(param.Ctx, "Auto selecting group: %s, priorityIndex: %d", autoGroup, priorityIndex)
 
-			channel, _ = model.GetRandomSatisfiedChannelWithRelayFormatForRetry(
+			channel, _ = channelstore.GetRandomSatisfiedChannelWithRelayFormatForRetry(
 				autoGroup,
 				param.ModelName,
 				priorityIndex,
@@ -148,7 +146,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			if crossGroupRetry {
 				// Get the number of priorities for this group/model
 				// 获取该分组/模型的优先级数量
-				numPriorities := model.GetPriorityCount(autoGroup, param.ModelName)
+				numPriorities := channelstore.GetPriorityCount(autoGroup, param.ModelName)
 				maxRetriesForGroup = numPriorities*2 - 1 // -1 because retry starts from 0
 			}
 
@@ -174,7 +172,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 		}
 	} else {
 		priorityIndex := param.GetRetry() / 2
-		channel, err = model.GetRandomSatisfiedChannelWithRelayFormatForRetry(
+		channel, err = channelstore.GetRandomSatisfiedChannelWithRelayFormatForRetry(
 			param.TokenGroup,
 			param.ModelName,
 			priorityIndex,

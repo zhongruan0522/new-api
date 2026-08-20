@@ -1,17 +1,16 @@
 package controller
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	"github.com/NookMux/NookMux/internal/config/manager"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 // GetDashboardConfig 获取仪表板配置
@@ -94,7 +93,7 @@ func UpdateDashboardConfig(c *gin.Context) {
 			valueStr = common.Interface2String(v)
 		}
 
-		err = model.UpdateOption(fullKey, valueStr)
+		err = optionstore.UpdateOption(fullKey, valueStr)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -113,8 +112,8 @@ func UpdateDashboardConfig(c *gin.Context) {
 	// 记录审计日志
 	service.RecordAudit(
 		c,
-		model.AuditModuleDashboardConfig,
-		model.AuditActionUpdate,
+		auditstore.AuditModuleDashboardConfig,
+		auditstore.AuditActionUpdate,
 		"更新仪表板配置",
 		beforeMap,
 		afterMap,
@@ -169,7 +168,7 @@ func ResetDashboardConfig(c *gin.Context) {
 
 	for key, value := range configMap {
 		fullKey := "dashboard_config." + key
-		err := model.UpdateOption(fullKey, value)
+		err := optionstore.UpdateOption(fullKey, value)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -186,8 +185,8 @@ func ResetDashboardConfig(c *gin.Context) {
 	// 记录审计日志
 	service.RecordAudit(
 		c,
-		model.AuditModuleDashboardConfig,
-		model.AuditActionUpdate,
+		auditstore.AuditModuleDashboardConfig,
+		auditstore.AuditActionUpdate,
 		"重置仪表板配置为默认值",
 		beforeMap,
 		afterMap,

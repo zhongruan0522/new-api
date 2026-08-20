@@ -6,6 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	configmodel "github.com/NookMux/NookMux/internal/config/model"
+	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/minimax_voice"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,14 +24,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	configmodel "github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/pkg/jsonx"
-	"github.com/gin-gonic/gin"
-	"github.com/shopspring/decimal"
 )
 
 // 定制音色流程的常量与校验规则。
@@ -78,7 +80,7 @@ type customVoiceConfirmContext struct {
 	voiceId      string
 	group        string
 	billingModel string
-	voice        *model.MiniMaxVoice
+	voice        *minimaxvoicestore.MiniMaxVoice
 }
 
 // customVoiceFileID preserves the upstream JSON type while exposing a safe
@@ -182,14 +184,14 @@ type minimaxUpstream struct {
 	baseURL string
 	apiKey  string
 	groupId string
-	channel *model.Channel
+	channel *channelstore.Channel
 }
 
 // resolveMiniMaxUpstream 解析定制音色分组的上游 MiniMax 渠道信息。
 // group 来自系统设置 CustomVoiceGroup；GroupId 从渠道 Other 字段读取（管理员填写）。
 func resolveMiniMaxUpstream(group string) (*minimaxUpstream, error) {
 	group = strings.TrimSpace(group)
-	ch, err := model.GetEnabledMiniMaxChannelForGroup(group)
+	ch, err := minimaxvoicestore.GetEnabledMiniMaxChannelForGroup(group)
 	if err != nil || ch == nil {
 		return nil, errors.New("未找到可用的渠道，请联系管理员")
 	}
@@ -330,7 +332,7 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 	}
 
 	// 预检用户余额，避免无效的上游调用与负数额度。
-	remain, err := model.GetUserQuota(userId, true)
+	remain, err := userstore.GetUserQuota(userId, true)
 	if err != nil {
 		return 0, errors.New("额度查询失败，请稍后重试")
 	}
@@ -338,17 +340,17 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 		return 0, errors.New("额度不足，请充值后再试")
 	}
 
-	if err := model.DecreaseUserQuota(userId, quota); err != nil {
+	if err := userstore.DecreaseUserQuota(userId, quota); err != nil {
 		return 0, errors.New("扣费失败，请稍后重试")
 	}
-	model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
+	userstore.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 	if channelId > 0 {
-		model.UpdateChannelUsedQuota(channelId, quota)
+		channelstore.UpdateChannelUsedQuota(channelId, quota)
 	}
 
 	// 记录消费日志（按 token 0 的方式记录一次调用）。
 	tokenName := c.GetString("token_name")
-	model.RecordConsumeLog(c, userId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(c, userId, logstore.RecordConsumeLogParams{
 		ChannelId:        channelId,
 		PromptTokens:     0,
 		CompletionTokens: 0,
@@ -421,7 +423,7 @@ func chargePreviewTTS(c *gin.Context, userId, channelId int, modelName, group, p
 		return 0, errors.New("试听计费模型价格无效，请联系管理员")
 	}
 
-	remain, err := model.GetUserQuota(userId, true)
+	remain, err := userstore.GetUserQuota(userId, true)
 	if err != nil {
 		return 0, errors.New("额度查询失败，请稍后重试")
 	}
@@ -429,12 +431,12 @@ func chargePreviewTTS(c *gin.Context, userId, channelId int, modelName, group, p
 		return 0, errors.New("额度不足，请充值后再试")
 	}
 
-	if err := model.DecreaseUserQuota(userId, quota); err != nil {
+	if err := userstore.DecreaseUserQuota(userId, quota); err != nil {
 		return 0, errors.New("扣费失败，请稍后重试")
 	}
-	model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
+	userstore.UpdateUserUsedQuotaAndRequestCount(userId, quota)
 	if channelId > 0 {
-		model.UpdateChannelUsedQuota(channelId, quota)
+		channelstore.UpdateChannelUsedQuota(channelId, quota)
 	}
 
 	tokenName := c.GetString("token_name")
@@ -442,7 +444,7 @@ func chargePreviewTTS(c *gin.Context, userId, channelId int, modelName, group, p
 	if usePrice {
 		logContent = fmt.Sprintf("定制音色试听，模型价格 %.4f，分组倍率 %.4f", price, groupRatio)
 	}
-	model.RecordConsumeLog(c, userId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(c, userId, logstore.RecordConsumeLogParams{
 		ChannelId:        channelId,
 		PromptTokens:     usageCharacters,
 		CompletionTokens: usageCharacters,
@@ -462,7 +464,7 @@ func chargePreviewTTS(c *gin.Context, userId, channelId int, modelName, group, p
 // 但定制音色走 UserAuth（无 token/用户分组上下文），因此只按 custom_voice_group 解析。
 func resolveCustomVoiceGroupRatio(group, modelName string) float64 {
 	groupRatio := ratio.GetGroupRatio(group)
-	if dynamicRatio := model.GetMatchedDynamicRatio(group, modelName); dynamicRatio > 0 {
+	if dynamicRatio := channelstore.GetMatchedDynamicRatio(group, modelName); dynamicRatio > 0 {
 		groupRatio *= dynamicRatio
 	}
 	return groupRatio
@@ -476,7 +478,7 @@ func refundQuota(userId, quota int) {
 	if quota <= 0 {
 		return
 	}
-	if err := model.IncreaseUserQuota(userId, quota, false); err != nil {
+	if err := userstore.IncreaseUserQuota(userId, quota, false); err != nil {
 		common.SysError(fmt.Sprintf("custom voice refund increase quota failed: userId=%d quota=%d err=%s", userId, quota, err.Error()))
 	}
 }
@@ -521,7 +523,7 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 	}
 
 	// 查重：已存在则提示不合规（不暴露“重复”）。
-	exists, err := model.IsMiniMaxVoiceIdExists(req.VoiceId)
+	exists, err := minimaxvoicestore.IsMiniMaxVoiceIdExists(req.VoiceId)
 	if err != nil {
 		return nil, errors.New("音色校验失败，请稍后重试")
 	}
@@ -548,14 +550,14 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 	}
 
 	// 写入“试听中”记录（用户创建，不审计）。
-	voice := &model.MiniMaxVoice{
-		Type:         model.MiniMaxVoiceTypePreview,
+	voice := &minimaxvoicestore.MiniMaxVoice{
+		Type:         minimaxvoicestore.MiniMaxVoiceTypePreview,
 		OperatorId:   userId,
 		OperatorKind: "user",
 		VoiceId:      req.VoiceId,
 		Allowed:      false,
 	}
-	if err := model.InsertMiniMaxVoice(voice); err != nil {
+	if err := minimaxvoicestore.InsertMiniMaxVoice(voice); err != nil {
 		// 唯一索引冲突也归一为“不合规”，避免暴露重复。
 		if isDuplicateKeyErr(err) {
 			// 记录写入失败时退还试听扣费，避免用户已付费却拿不到试听记录。
@@ -712,11 +714,11 @@ func prepareCustomVoiceConfirm(userId int, voiceId string) (*customVoiceConfirmC
 	}
 
 	// 必须命中本用户的试听中记录，防止越权报价或确认他人音色。
-	voice, err := model.GetMiniMaxVoiceByVoiceId(voiceId)
+	voice, err := minimaxvoicestore.GetMiniMaxVoiceByVoiceId(voiceId)
 	if err != nil || voice == nil {
 		return nil, errors.New("音色ID不合规")
 	}
-	if voice.Type != model.MiniMaxVoiceTypePreview {
+	if voice.Type != minimaxvoicestore.MiniMaxVoiceTypePreview {
 		return nil, errors.New("该音色无需确认或已处理")
 	}
 	if voice.OperatorId != userId {
@@ -770,7 +772,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 	}
 
 	// 原子地把 preview -> created 并写入扣费额度，杜绝状态回滚风险。
-	ok, err := model.ConfirmMiniMaxVoice(confirmContext.voice.Id, userId, quota)
+	ok, err := minimaxvoicestore.ConfirmMiniMaxVoice(confirmContext.voice.Id, userId, quota)
 	if err != nil {
 		// 状态更新失败：尽力退还额度，避免无音色却扣费。
 		refundQuota(userId, quota)
@@ -784,7 +786,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 
 	return &CustomVoiceConfirmResult{
 		VoiceId: confirmContext.voiceId,
-		Status:  model.MiniMaxVoiceTypeCreated,
+		Status:  minimaxvoicestore.MiniMaxVoiceTypeCreated,
 	}, nil
 }
 
@@ -800,7 +802,7 @@ func isCustomVoiceConfigReady() bool {
 // 清理失败时显式返回错误，避免后续查重/确认逻辑基于脏数据做出错误决策。
 func cleanupExpiredCustomVoicePreviews() error {
 	cutoff := time.Now().Add(-customVoicePreviewTTL).Unix()
-	if _, err := model.DeleteExpiredMiniMaxVoicePreviews(cutoff); err != nil {
+	if _, err := minimaxvoicestore.DeleteExpiredMiniMaxVoicePreviews(cutoff); err != nil {
 		return errors.New("音色校验失败，请稍后重试")
 	}
 	return nil

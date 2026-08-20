@@ -2,16 +2,16 @@ package controller
 
 import (
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
 )
 
 func TestEmailBindUsesPostJsonBody(t *testing.T) {
@@ -43,8 +43,8 @@ func TestEmailBindUsesPostJsonBody(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 
-	var updated model.User
-	if err := model.DB.First(&updated, user.Id).Error; err != nil {
+	var updated userstore.User
+	if err := dbstore.DB.First(&updated, user.Id).Error; err != nil {
 		t.Fatalf("query updated user: %v", err)
 	}
 	if updated.Email != email {

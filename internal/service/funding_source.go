@@ -1,6 +1,8 @@
 package service
 
-import "github.com/NookMux/NookMux/internal/model"
+import (
+	"github.com/NookMux/NookMux/internal/store/user"
+)
 
 // FundingSource abstracts a pre-consume / settle / refund lifecycle for a funding source.
 // Subscription billing is removed; currently only wallet funding is supported.
@@ -22,7 +24,7 @@ func (w *WalletFunding) PreConsume(amount int) error {
 	if amount <= 0 {
 		return nil
 	}
-	if err := model.DecreaseUserQuota(w.userId, amount); err != nil {
+	if err := userstore.DecreaseUserQuota(w.userId, amount); err != nil {
 		return err
 	}
 	w.consumed = amount
@@ -34,14 +36,14 @@ func (w *WalletFunding) Settle(delta int) error {
 		return nil
 	}
 	if delta > 0 {
-		return model.DecreaseUserQuota(w.userId, delta)
+		return userstore.DecreaseUserQuota(w.userId, delta)
 	}
-	return model.IncreaseUserQuota(w.userId, -delta, false)
+	return userstore.IncreaseUserQuota(w.userId, -delta, false)
 }
 
 func (w *WalletFunding) Refund() error {
 	if w.consumed <= 0 {
 		return nil
 	}
-	return model.IncreaseUserQuota(w.userId, w.consumed, false)
+	return userstore.IncreaseUserQuota(w.userId, w.consumed, false)
 }

@@ -1,11 +1,10 @@
 package controller
 
 import (
-	"testing"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"testing"
 )
 
 func TestBuildFetchModelsHeaders_SkipsPassthroughRulesAndClientHeader(t *testing.T) {
@@ -16,7 +15,7 @@ func TestBuildFetchModelsHeaders_SkipsPassthroughRulesAndClientHeader(t *testing
   "User-Agent": "TestUA",
   "Authorization": "Bearer {api_key}"
 }`
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type:           constant.ChannelTypeOpenAI,
 		HeaderOverride: &override,
 	}
@@ -49,7 +48,7 @@ func TestBuildFetchModelsHeaders_SkipsUnsafeOverrideHeaders(t *testing.T) {
   "Connection": "upgrade",
   "User-Agent": "SafeUA"
 }`
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type:           constant.ChannelTypeOpenAI,
 		HeaderOverride: &override,
 	}
@@ -70,7 +69,7 @@ func TestBuildFetchModelsHeaders_SkipsUnsafeOverrideHeaders(t *testing.T) {
 }
 
 func TestBuildFetchModelsHeaders_AppliesCherryStudioDefaultHeaders(t *testing.T) {
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type: constant.ChannelTypeOpenAI,
 	}
 
@@ -92,7 +91,7 @@ func TestBuildFetchModelsHeaders_AppliesCherryStudioDefaultHeaders(t *testing.T)
 
 func TestBuildFetchModelsGeminiHeaders_PrefersAuthorization(t *testing.T) {
 	override := `{"Authorization":"Bearer {api_key}"}`
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type:           constant.ChannelTypeGemini,
 		HeaderOverride: &override,
 	}
@@ -111,7 +110,7 @@ func TestBuildFetchModelsGeminiHeaders_PrefersAuthorization(t *testing.T) {
 }
 
 func TestBuildFetchModelsGeminiHeaders_DefaultsToXGoogAPIKey(t *testing.T) {
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type: constant.ChannelTypeGemini,
 	}
 
@@ -127,7 +126,7 @@ func TestBuildFetchModelsGeminiHeaders_DefaultsToXGoogAPIKey(t *testing.T) {
 
 func TestBuildFetchModelsHeaders_ReturnsErrorOnNonStringHeaderValue(t *testing.T) {
 	override := `{"User-Agent": true}`
-	channel := &model.Channel{
+	channel := &channelstore.Channel{
 		Type:           constant.ChannelTypeOpenAI,
 		HeaderOverride: &override,
 	}

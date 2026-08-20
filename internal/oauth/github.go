@@ -5,16 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -161,14 +160,14 @@ func (p *GitHubProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*O
 }
 
 func (p *GitHubProvider) IsUserIDTaken(providerUserID string) bool {
-	return model.IsGitHubIdAlreadyTaken(providerUserID)
+	return userstore.IsGitHubIdAlreadyTaken(providerUserID)
 }
 
-func (p *GitHubProvider) FillUserByProviderID(user *model.User, providerUserID string) error {
+func (p *GitHubProvider) FillUserByProviderID(user *userstore.User, providerUserID string) error {
 	user.GitHubId = providerUserID
 	return user.FillUserByGitHubId()
 }
 
-func (p *GitHubProvider) SetProviderUserID(user *model.User, providerUserID string) {
+func (p *GitHubProvider) SetProviderUserID(user *userstore.User, providerUserID string) {
 	user.GitHubId = providerUserID
 }

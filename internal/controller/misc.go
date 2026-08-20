@@ -3,9 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/console"
@@ -15,14 +12,16 @@ import (
 	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
 )
 
 func TestStatus(c *gin.Context) {
-	err := model.PingDB()
+	err := dbstore.PingDB()
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
@@ -300,7 +299,7 @@ func SendEmailVerification(c *gin.Context) {
 		}
 	}
 
-	if model.IsEmailAlreadyTaken(email) {
+	if userstore.IsEmailAlreadyTaken(email) {
 		common.ApiErrorI18n(c, i18n.MsgMiscEmailTaken)
 		return
 	}
@@ -328,7 +327,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if model.IsEmailAlreadyTaken(email) {
+	if userstore.IsEmailAlreadyTaken(email) {
 		code := common.GenerateVerificationCode(0)
 		common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
 		link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", system.ServerAddress, email, code)
@@ -364,7 +363,7 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 	password := common.GenerateVerificationCode(12)
-	err = model.ResetUserPasswordByEmail(req.Email, password)
+	err = userstore.ResetUserPasswordByEmail(req.Email, password)
 	if err != nil {
 		common.SysError("reset user password by email failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)

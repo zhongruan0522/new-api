@@ -20,7 +20,7 @@
 
 ### 只在 SQLite/MySQL 测试,忽略 PostgreSQL
 **后果**:布尔值(`true/false` vs `1/0`)、保留字列引用(`"col"` vs `` `col` ``)、JSON 存储、ALTER COLUMN 行为在三库不同,PG 上线即报错。
-**规则**:`internal/model/AGENTS.md` — 必须同时兼容 SQLite / MySQL >= 5.7.8 / PostgreSQL >= 9.6。用 `common.UsingPostgreSQL`/`UsingSQLite`/`UsingMySQL`(`internal/common/database.go`)分支处理差异,优先 GORM,原始 SQL 必须参数化。
+**规则**:`internal/store/AGENTS.md` — 必须同时兼容 SQLite / MySQL >= 5.7.8 / PostgreSQL >= 9.6。用 `common.UsingPostgreSQL`/`UsingSQLite`/`UsingMySQL`(`internal/common/database.go`)分支处理差异,优先 GORM,原始 SQL 必须参数化。
 **场景**:SQLite 不支持 `ALTER COLUMN`,迁移要走 add-column 兼容模式;JSON 存储用 TEXT 不要用 JSONB。
 
 ---

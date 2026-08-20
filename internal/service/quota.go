@@ -3,23 +3,24 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math"
-	"net/http"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-
-	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
+	"math"
+	"net/http"
+	"time"
 )
 
 type TokenDetails struct {
@@ -99,7 +100,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	if relayInfo.PriceData.UsePrice {
 		return nil
 	}
-	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
+	userQuota, err := userstore.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
 		return err
 	}
@@ -224,14 +225,14 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
-		logType = model.LogTypeError
+		logType = logstore.LogTypeError
 		quota = 0
 		logContent += "（可能是上游超时）"
 		log.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-		model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
 	logModel := modelName
@@ -246,7 +247,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		// group_ratio 记录原始分组倍率（不含动态倍率）
 		other["group_ratio"] = groupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 	}
-	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.InputTokens,
 		CompletionTokens: usage.OutputTokens,
@@ -349,14 +350,14 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
-		logType = model.LogTypeError
+		logType = logstore.LogTypeError
 		quota = 0
 		logContent += "（可能是上游出错）"
 		log.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-		model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
 	if err := SettleBilling(ctx, relayInfo, quota); err != nil {
@@ -376,7 +377,7 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 	}
 	// 共享流式日志指标，避免 Claude /v1/messages 丢失吐字速度展示。
 	AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
-	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
@@ -481,14 +482,14 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
-		logType = model.LogTypeError
+		logType = logstore.LogTypeError
 		quota = 0
 		logContent += "（可能是上游超时）"
 		log.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, relayInfo.OriginModelName, relayInfo.FinalPreConsumedQuota))
 	} else {
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-		model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
 	if err := SettleBilling(ctx, relayInfo, quota); err != nil {
@@ -506,7 +507,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		other["dynamic_ratio"] = relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 		other["group_ratio"] = groupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 	}
-	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.PromptTokens,
 		CompletionTokens: usage.CompletionTokens,
@@ -533,7 +534,7 @@ func PreConsumeTokenQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, qu
 
 	// 无限额度模式只记录已用额度，不扣减剩余额度
 	if quotaType == 0 {
-		return model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		return tokenstore.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 	}
 
 	// 永久限额模式：检查 TokenQuota（即 RemainQuota）
@@ -547,7 +548,7 @@ func PreConsumeTokenQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, qu
 		if relayInfo.TokenQuota < quota {
 			return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenWindowNotEnough, map[string]any{"TokenQuota": log.FormatQuota(relayInfo.TokenQuota), "NeedQuota": log.FormatQuota(quota)}))
 		}
-		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		err := tokenstore.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			return err
 		}
@@ -555,21 +556,21 @@ func PreConsumeTokenQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, qu
 		if relayInfo.TokenQuota < quota {
 			return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaTokenNotEnough, map[string]any{"TokenQuota": log.FormatQuota(relayInfo.TokenQuota), "NeedQuota": log.FormatQuota(quota)}))
 		}
-		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		err := tokenstore.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			return err
 		}
-		err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		err = tokenstore.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			// 回滚窗口扣减
-			if rollbackErr := model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
+			if rollbackErr := tokenstore.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
 				common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
 			}
 			return err
 		}
 	default:
 		// quotaType == 1 或其他：使用原有的 RemainQuota 扣减
-		err := model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		err := tokenstore.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			return err
 		}
@@ -584,9 +585,9 @@ func PostConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, quota 
 
 	// Wallet
 	if quota > 0 {
-		err = model.DecreaseUserQuota(relayInfo.UserId, quota)
+		err = userstore.DecreaseUserQuota(relayInfo.UserId, quota)
 	} else {
-		err = model.IncreaseUserQuota(relayInfo.UserId, -quota, false)
+		err = userstore.IncreaseUserQuota(relayInfo.UserId, -quota, false)
 	}
 	if err != nil {
 		return err
@@ -597,38 +598,38 @@ func PostConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, quota 
 	if quota > 0 {
 		switch quotaType {
 		case 0: // 无限额度，只记录已用额度
-			err = model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			err = tokenstore.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 2:
-			err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			err = tokenstore.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 3:
-			if err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); err == nil {
-				err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			if err = tokenstore.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); err == nil {
+				err = tokenstore.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 				if err != nil {
-					if rollbackErr := model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
+					if rollbackErr := tokenstore.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
 						common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
 					}
 				}
 			}
 		default: // 1 或其他
-			err = model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			err = tokenstore.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		}
 	} else {
 		switch quotaType {
 		case 0: // 无限额度，只回滚已用额度
-			err = model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			err = tokenstore.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 2:
-			err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+			err = tokenstore.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
 		case 3:
-			if err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); err == nil {
-				err = model.IncreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+			if err = tokenstore.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); err == nil {
+				err = tokenstore.IncreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
 				if err != nil {
-					if rollbackErr := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); rollbackErr != nil {
+					if rollbackErr := tokenstore.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); rollbackErr != nil {
 						common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
 					}
 				}
 			}
 		default: // 1 或其他
-			err = model.IncreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+			err = tokenstore.IncreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
 		}
 	}
 	if err != nil {

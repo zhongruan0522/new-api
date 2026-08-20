@@ -2,22 +2,21 @@ package controller
 
 import (
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
-	"github.com/gin-gonic/gin"
 )
 
-func createAdminResetPasskeyUser(t *testing.T, id int, role int) model.User {
+func createAdminResetPasskeyUser(t *testing.T, id int, role int) userstore.User {
 	t.Helper()
 
-	user := model.User{
+	user := userstore.User{
 		Id:       id,
 		Username: fmt.Sprintf("passkey-reset-user-%d", id),
 		Password: "password123",
@@ -25,7 +24,7 @@ func createAdminResetPasskeyUser(t *testing.T, id int, role int) model.User {
 		Status:   common.UserStatusEnabled,
 		Group:    "default",
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	return user

@@ -318,6 +318,17 @@ internal/store/
 
 **验证**：`go build ./... && go test ./internal/store/...`。
 
+> **执行记录（2026-08-20，阶段 5.2 落地）**：`internal/model/` 69 文件 + `internal/service/` 13 个 db 迁移文件全部迁入 `internal/store/`（git mv 保留历史），按 PRD 目录树建立 21 个子包；包名统一带 `store` 后缀（`channelstore`/`userstore`/…，`db/` 系为 `dbstore`/`dbmigrate`/`dbcleanup`），规避调用方局部变量 `user`/`token`/`log`/`channel`/`db` 的遮蔽冲突。执行中发现并处理六处 PRD 未预见的循环导入，偏离原映射（与 5.1 同类）：
+> 1. **`InitDB`/`InitLogDB`/`migrateDB` 编排落 `store/db/migrate/`**（原计划 `store/db/init.go`）：AutoMigrate 需引用全部资源包模型，放 `dbstore` 会与"资源包 → dbstore 取 DB 句柄"成环。`db/init.go` 只留纯基础设施（句柄、方言列名、连接配置、ping/close）。
+> 2. **`data_migration_marker.go` 落 `store/option/`**（原计划 `db/migrate/`）：marker 被 `dbcleanup` 五个清理与日志头回填共用，放 `dbmigrate` 会被其 cleanup 调用反向成环；optionstore（marker 直接读写 options 表）是唯一无环公共落点，导出 `IsDataMigrationDone`/`MarkDataMigrationDone`。
+> 3. **`log_client_header_migration.go`（含测试）落 `store/db/migrate/`**（原计划 `log/`）：该回填依赖 marker 与 `InitLogDB` 编排；若留 logstore 则 log→option(marker)→user(setup)→log 成环。其测试中 logstore 域用例（serializeLogOther/RecordErrorLog）拆回 `logstore`/`logstore_test`，回填用例随迁并本地化 setup helper。
+> 4. **`RecordLog`/`RecordLogWithAdminInfo` 落 `store/user/`**（原在 log.go）：user↔log 双向依赖（log 按 id 反查用户名+用户缓存；user 写管理日志）。全部 15 处外部调用均为"用户动作日志"语义，随用户域落位后 logstore 仅保留查询/消费/错误日志，单向依赖 user→log。
+> 5. **`model_extra.go` 并入 `store/pricing/`**（原计划独立 `model_extra/`）：该文件仅两个读函数且直接操作 pricing 未导出缓存（`modelEnableGroups` 等），独立成包必须暴露内部状态。
+> 6. **`CheckSetup` 落 `store/option/`（setup.go）、`cleanupEmptyAccessTokens` 落 `store/user/`**（均来自 model/main.go）：前者依赖 setup 记录+root 用户探测，后者按 User 表语义归用户域。
+>
+> 另有两项结构性反转（逻辑形状保持不变）：(a) **批量更新器注册反转**——stores/locks/定时 flush 留在 `dbstore`（导出 `AddNewRecord`/`ShouldUpdateRedis`/`BatchUpdate`/`ResetBatchUpdateStores`），user/token/channel 三包在 `init()` 经 `dbstore.RegisterBatchFlushers` 注册各自落库函数，消除 dbstore→资源包反向依赖；某类型批量条目只由注册该类型 flusher 的同包写入，flusher 缺失时按类型报错丢弃而非静默。(b) **`db_same_type_migrate_*` 与 `db_premigrate_*` 一并下沉 `dbmigrate`**（PRD 5.2 文字仅列 premigrate，顶部目标树含两者，从之），`db_identity.go` 按计划落 `db/identity.go`（导出 `GetDBIdentity`）。
+> 测试适配：跨包 fixture 的测试转外部测试包（`logstore_test`/`tokenstore_test`/`usedatastore_test`），`formatUserLogs` 因此导出为 `FormatUserLogs`。验证：`go build ./...` 全绿；`go test ./...` 41 包通过、0 失败；测试函数 717=717（与 5.1 基线一致，`^func Test` 口径）；`go list -deps ./internal/store/...` 无 service/controller/middleware 反向依赖；`gofmt -l` 干净。
+
 #### 5.3 `service/` → 按资源 / 能力拆
 
 ```

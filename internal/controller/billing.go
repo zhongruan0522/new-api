@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +11,7 @@ func GetSubscription(c *gin.Context) {
 	var remainQuota int
 	var usedQuota int
 	var err error
-	var token *model.Token
+	var token *tokenstore.Token
 	var expiredTime int64
 
 	token, err = getTokenForFeedback(c)
@@ -53,7 +53,7 @@ func GetSubscription(c *gin.Context) {
 func GetUsage(c *gin.Context) {
 	var quota int
 	var err error
-	var token *model.Token
+	var token *tokenstore.Token
 
 	token, err = getTokenForFeedback(c)
 	if err == nil {

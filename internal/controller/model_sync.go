@@ -5,6 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/missing_models"
+	"github.com/NookMux/NookMux/internal/store/vendor_meta"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"io"
 	"math/rand"
 	"net"
@@ -12,14 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func normalizeLocale(locale string) (string, bool) {
@@ -245,13 +246,13 @@ func ensureVendorID(vendorName string, vendorByName map[string]upstreamVendor, v
 	if id, ok := vendorIDCache[vendorName]; ok {
 		return id
 	}
-	var existing model.Vendor
-	if err := model.DB.Where("name = ?", vendorName).First(&existing).Error; err == nil {
+	var existing vendormetastore.Vendor
+	if err := dbstore.DB.Where("name = ?", vendorName).First(&existing).Error; err == nil {
 		vendorIDCache[vendorName] = existing.Id
 		return existing.Id
 	}
 	uv := vendorByName[vendorName]
-	v := &model.Vendor{
+	v := &vendormetastore.Vendor{
 		Name:        vendorName,
 		Description: uv.Description,
 		Icon:        coalesce(uv.Icon, ""),
@@ -274,7 +275,7 @@ func SyncUpstreamModels(c *gin.Context) {
 	// 允许空体
 	_ = c.ShouldBindJSON(&req)
 	// 1) 获取未配置模型列表
-	missing, err := model.GetMissingModels()
+	missing, err := missingmodelstore.GetMissingModels()
 	if err != nil {
 		common.SysError("failed to get missing models: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgModelSyncGetModelsFailed)
@@ -364,8 +365,8 @@ func SyncUpstreamModels(c *gin.Context) {
 		}
 
 		// 若本地已存在且设置为不同步，则跳过（极端情况：缺失列表与本地状态不同步时）
-		var existing model.Model
-		if err := model.DB.Where("model_name = ?", name).First(&existing).Error; err == nil {
+		var existing vendormetastore.Model
+		if err := dbstore.DB.Where("model_name = ?", name).First(&existing).Error; err == nil {
 			if existing.SyncOfficial == 0 {
 				skipped = append(skipped, name)
 				continue
@@ -376,7 +377,7 @@ func SyncUpstreamModels(c *gin.Context) {
 		vendorID := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &createdVendors)
 
 		// 创建模型
-		mi := &model.Model{
+		mi := &vendormetastore.Model{
 			ModelName:   name,
 			Description: up.Description,
 			Icon:        up.Icon,
@@ -401,8 +402,8 @@ func SyncUpstreamModels(c *gin.Context) {
 			if !ok {
 				continue
 			}
-			var local model.Model
-			if err := model.DB.Where("model_name = ?", ow.ModelName).First(&local).Error; err != nil {
+			var local vendormetastore.Model
+			if err := dbstore.DB.Where("model_name = ?", ow.ModelName).First(&local).Error; err != nil {
 				continue
 			}
 
@@ -415,7 +416,7 @@ func SyncUpstreamModels(c *gin.Context) {
 			newVendorID := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &createdVendors)
 
 			// 应用字段覆盖（事务）
-			_ = model.DB.Transaction(func(tx *gorm.DB) error {
+			_ = dbstore.DB.Transaction(func(tx *gorm.DB) error {
 				needUpdate := false
 				if containsField(ow.Fields, "icon") {
 					local.Icon = up.Icon
@@ -450,7 +451,7 @@ func SyncUpstreamModels(c *gin.Context) {
 		}
 	}
 
-	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "同步上游模型", nil, map[string]interface{}{"created": createdModels, "updated": updatedModels})
+	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "同步上游模型", nil, map[string]interface{}{"created": createdModels, "updated": updatedModels})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
@@ -543,9 +544,9 @@ func SyncUpstreamPreview(c *gin.Context) {
 	}
 
 	// 2) 本地已有模型
-	var locals []model.Model
+	var locals []vendormetastore.Model
 	if len(upstreamNames) > 0 {
-		_ = model.DB.Where("model_name IN ? AND sync_official <> 0", upstreamNames).Find(&locals).Error
+		_ = dbstore.DB.Where("model_name IN ? AND sync_official <> 0", upstreamNames).Find(&locals).Error
 	}
 
 	// 本地 vendor 名称映射
@@ -561,15 +562,15 @@ func SyncUpstreamPreview(c *gin.Context) {
 	}
 	idToVendorName := make(map[int]string)
 	if len(vendorIDs) > 0 {
-		var dbVendors []model.Vendor
-		_ = model.DB.Where("id IN ?", vendorIDs).Find(&dbVendors).Error
+		var dbVendors []vendormetastore.Vendor
+		_ = dbstore.DB.Where("id IN ?", vendorIDs).Find(&dbVendors).Error
 		for _, v := range dbVendors {
 			idToVendorName[v.Id] = v.Name
 		}
 	}
 
 	// 3) 缺失且上游存在的模型
-	missingList, _ := model.GetMissingModels()
+	missingList, _ := missingmodelstore.GetMissingModels()
 	var missing []string
 	for _, name := range missingList {
 		if _, ok := modelByName[name]; ok {

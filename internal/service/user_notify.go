@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 func NotifyRootUser(t string, subject string, content string) {
-	user := model.GetRootUser().ToBaseUser()
+	user := userstore.GetRootUser().ToBaseUser()
 	err := NotifyUser(user.Id, user.Email, user.GetSetting(), shared.NewNotify(t, subject, content, nil))
 	if err != nil {
 		common.SysLog(fmt.Sprintf("failed to notify root user: %s", err.Error()))

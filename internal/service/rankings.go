@@ -2,14 +2,15 @@ package service
 
 import (
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/dashboard"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/usedata"
+	"github.com/NookMux/NookMux/internal/store/vendor_meta"
 	"math"
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/dashboard"
-	"github.com/NookMux/NookMux/internal/model"
 )
 
 const (
@@ -272,19 +273,19 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 	}
 
 	startTime, endTime := rankingTimeRange(config, now)
-	currentTotals, err := model.GetRankingQuotaTotals(startTime, endTime)
+	currentTotals, err := usedatastore.GetRankingQuotaTotals(startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
-	currentBuckets, err := model.GetRankingQuotaBuckets(startTime, endTime, config.bucketSize, rankingDayOffset())
+	currentBuckets, err := usedatastore.GetRankingQuotaBuckets(startTime, endTime, config.bucketSize, rankingDayOffset())
 	if err != nil {
 		return nil, err
 	}
 
-	var previousTotals []model.RankingQuotaTotal
+	var previousTotals []usedatastore.RankingQuotaTotal
 	if config.hasPrevious {
 		previousStart, previousEnd := previousRankingTimeRange(config, startTime, now.Location())
-		previousTotals, err = model.GetRankingQuotaTotals(previousStart, previousEnd)
+		previousTotals, err = usedatastore.GetRankingQuotaTotals(previousStart, previousEnd)
 		if err != nil {
 			return nil, err
 		}
@@ -320,8 +321,8 @@ func buildRankingModelMeta(modelNames []string) (map[string]rankingModelMeta, er
 		return meta, nil
 	}
 
-	var models []model.Model
-	if err := model.DB.Where("status = ?", 1).Find(&models).Error; err != nil {
+	var models []vendormetastore.Model
+	if err := dbstore.DB.Where("status = ?", 1).Find(&models).Error; err != nil {
 		return nil, err
 	}
 
@@ -332,14 +333,14 @@ func buildRankingModelMeta(modelNames []string) (map[string]rankingModelMeta, er
 		}
 	}
 
-	vendorByID := make(map[int]model.Vendor)
+	vendorByID := make(map[int]vendormetastore.Vendor)
 	if len(vendorIDs) > 0 {
 		ids := make([]int, 0, len(vendorIDs))
 		for id := range vendorIDs {
 			ids = append(ids, id)
 		}
-		var vendors []model.Vendor
-		if err := model.DB.Where("id IN ?", ids).Find(&vendors).Error; err != nil {
+		var vendors []vendormetastore.Vendor
+		if err := dbstore.DB.Where("id IN ?", ids).Find(&vendors).Error; err != nil {
 			return nil, err
 		}
 		for _, vendor := range vendors {
@@ -349,7 +350,7 @@ func buildRankingModelMeta(modelNames []string) (map[string]rankingModelMeta, er
 
 	for _, modelName := range modelNames {
 		item := rankingModelMeta{vendor: rankingUnknownVendor}
-		matched := model.MatchModelMeta(modelName, models)
+		matched := vendormetastore.MatchModelMeta(modelName, models)
 		if matched != nil {
 			item.modelIcon = matched.Icon
 			if vendor, ok := vendorByID[matched.VendorID]; ok && vendor.Name != "" {
@@ -369,7 +370,7 @@ func modelMeta(modelName string, meta map[string]rankingModelMeta) rankingModelM
 	return rankingModelMeta{vendor: rankingUnknownVendor}
 }
 
-func rankingModelNames(totals []model.RankingQuotaTotal, previousTotals []model.RankingQuotaTotal, buckets []model.RankingQuotaBucket) []string {
+func rankingModelNames(totals []usedatastore.RankingQuotaTotal, previousTotals []usedatastore.RankingQuotaTotal, buckets []usedatastore.RankingQuotaBucket) []string {
 	seen := make(map[string]struct{})
 	for _, item := range totals {
 		if item.ModelName != "" {
@@ -393,7 +394,7 @@ func rankingModelNames(totals []model.RankingQuotaTotal, previousTotals []model.
 	return names
 }
 
-func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, previousRanks map[string]int, previousTokens map[string]int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedModel {
+func buildRankedModels(totals []usedatastore.RankingQuotaTotal, totalTokens int64, previousRanks map[string]int, previousTokens map[string]int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedModel {
 	rows := make([]RankedModel, 0, len(totals))
 	for idx, item := range totals {
 		modelMeta := modelMeta(item.ModelName, meta)
@@ -422,7 +423,7 @@ func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, prev
 	return rows
 }
 
-func buildRankedVendors(currentTotals []model.RankingQuotaTotal, previousTotals []model.RankingQuotaTotal, totalTokens int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedVendor {
+func buildRankedVendors(currentTotals []usedatastore.RankingQuotaTotal, previousTotals []usedatastore.RankingQuotaTotal, totalTokens int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedVendor {
 	aggregates := make(map[string]*vendorAggregate)
 	for _, item := range currentTotals {
 		modelMeta := modelMeta(item.ModelName, meta)
@@ -491,7 +492,7 @@ func ensureVendorAggregate(aggregates map[string]*vendorAggregate, meta rankingM
 	return agg
 }
 
-func buildModelHistory(buckets []model.RankingQuotaBucket, totals []model.RankingQuotaTotal, meta map[string]rankingModelMeta, config rankingPeriodConfig, modelLimit int) ModelHistorySeries {
+func buildModelHistory(buckets []usedatastore.RankingQuotaBucket, totals []usedatastore.RankingQuotaTotal, meta map[string]rankingModelMeta, config rankingPeriodConfig, modelLimit int) ModelHistorySeries {
 	topModels := make(map[string]struct{})
 	models := make([]ModelHistoryModel, 0, minInt(len(totals), modelLimit)+1)
 	otherTotal := int64(0)
@@ -547,7 +548,7 @@ func buildModelHistory(buckets []model.RankingQuotaBucket, totals []model.Rankin
 	}
 }
 
-func buildVendorShareHistory(buckets []model.RankingQuotaBucket, vendors []RankedVendor, totalTokens int64, meta map[string]rankingModelMeta, config rankingPeriodConfig, vendorLimit int) VendorShareSeries {
+func buildVendorShareHistory(buckets []usedatastore.RankingQuotaBucket, vendors []RankedVendor, totalTokens int64, meta map[string]rankingModelMeta, config rankingPeriodConfig, vendorLimit int) VendorShareSeries {
 	topVendors := make(map[string]struct{})
 	vendorRows := make([]VendorShareVendor, 0, minInt(len(vendors), vendorLimit)+1)
 	otherTotal := int64(0)
@@ -672,7 +673,7 @@ func rankingBucketLabel(bucket int64, config rankingPeriodConfig) string {
 	return time.Unix(bucket, 0).In(common.StartupLocation()).Format(config.labelLayout)
 }
 
-func rankingRankMap(totals []model.RankingQuotaTotal) map[string]int {
+func rankingRankMap(totals []usedatastore.RankingQuotaTotal) map[string]int {
 	ranks := make(map[string]int, len(totals))
 	for idx, item := range totals {
 		ranks[item.ModelName] = idx + 1
@@ -680,7 +681,7 @@ func rankingRankMap(totals []model.RankingQuotaTotal) map[string]int {
 	return ranks
 }
 
-func rankingTokenMap(totals []model.RankingQuotaTotal) map[string]int64 {
+func rankingTokenMap(totals []usedatastore.RankingQuotaTotal) map[string]int64 {
 	tokens := make(map[string]int64, len(totals))
 	for _, item := range totals {
 		tokens[item.ModelName] = item.TotalTokens
@@ -688,7 +689,7 @@ func rankingTokenMap(totals []model.RankingQuotaTotal) map[string]int64 {
 	return tokens
 }
 
-func sumRankingTokens(totals []model.RankingQuotaTotal) int64 {
+func sumRankingTokens(totals []usedatastore.RankingQuotaTotal) int64 {
 	total := int64(0)
 	for _, item := range totals {
 		total += item.TotalTokens

@@ -4,19 +4,18 @@ package controller
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // MigrateConsoleSetting 迁移旧的控制台相关配置到 console.*
 func MigrateConsoleSetting(c *gin.Context) {
 	// 读取全部 option
-	opts, err := model.AllOption()
+	opts, err := optionstore.AllOption()
 	if err != nil {
 		common.SysError("failed to get all options: " + err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": i18n.T(c, i18n.MsgConfigFetchFailed)})
@@ -36,14 +35,14 @@ func MigrateConsoleSetting(c *gin.Context) {
 				arr = arr[:50]
 			}
 			bytes, _ := json.Marshal(arr)
-			model.UpdateOption("console.api_info", string(bytes))
+			optionstore.UpdateOption("console.api_info", string(bytes))
 		}
-		model.UpdateOption("ApiInfo", "")
+		optionstore.UpdateOption("ApiInfo", "")
 	}
 	// Announcements 直接搬
 	if v := valMap["Announcements"]; v != "" {
-		model.UpdateOption("console.announcements", v)
-		model.UpdateOption("Announcements", "")
+		optionstore.UpdateOption("console.announcements", v)
+		optionstore.UpdateOption("Announcements", "")
 	}
 	// FAQ 转换
 	if v := valMap["FAQ"]; v != "" {
@@ -67,9 +66,9 @@ func MigrateConsoleSetting(c *gin.Context) {
 				out = out[:50]
 			}
 			bytes, _ := json.Marshal(out)
-			model.UpdateOption("console.faq", string(bytes))
+			optionstore.UpdateOption("console.faq", string(bytes))
 		}
-		model.UpdateOption("FAQ", "")
+		optionstore.UpdateOption("FAQ", "")
 	}
 	// Uptime Kuma 迁移到新的 groups 结构（console.uptime_kuma_groups）
 	url := valMap["UptimeKumaUrl"]
@@ -86,22 +85,22 @@ func MigrateConsoleSetting(c *gin.Context) {
 			},
 		}
 		bytes, _ := json.Marshal(groups)
-		model.UpdateOption("console.uptime_kuma_groups", string(bytes))
+		optionstore.UpdateOption("console.uptime_kuma_groups", string(bytes))
 	}
 	// 清空旧键内容
 	if url != "" {
-		model.UpdateOption("UptimeKumaUrl", "")
+		optionstore.UpdateOption("UptimeKumaUrl", "")
 	}
 	if slug != "" {
-		model.UpdateOption("UptimeKumaSlug", "")
+		optionstore.UpdateOption("UptimeKumaSlug", "")
 	}
 
 	// 删除旧键记录
 	oldKeys := []string{"ApiInfo", "Announcements", "FAQ", "UptimeKumaUrl", "UptimeKumaSlug"}
-	model.DB.Where("key IN ?", oldKeys).Delete(&model.Option{})
+	dbstore.DB.Where("key IN ?", oldKeys).Delete(&optionstore.Option{})
 
 	// 重新加载 OptionMap
-	model.InitOptionMap()
+	optionstore.InitOptionMap()
 	common.SysLog("console setting migrated")
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": i18n.T(c, i18n.MsgMiscMigrated)})
 }

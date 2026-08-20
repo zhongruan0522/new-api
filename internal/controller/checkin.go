@@ -2,15 +2,16 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/checkin"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"time"
 )
 
 // GetCheckinStatus 获取用户签到状态和历史记录
@@ -24,7 +25,7 @@ func GetCheckinStatus(c *gin.Context) {
 	// 获取月份参数，默认为当前月份
 	month := c.DefaultQuery("month", time.Now().Format("2006-01"))
 
-	stats, err := model.GetUserCheckinStats(userId, month)
+	stats, err := checkinstore.GetUserCheckinStats(userId, month)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -54,7 +55,7 @@ func DoCheckin(c *gin.Context) {
 
 	userId := c.GetInt("id")
 
-	checkin, err := model.UserCheckin(userId)
+	checkin, err := checkinstore.UserCheckin(userId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -62,7 +63,7 @@ func DoCheckin(c *gin.Context) {
 		})
 		return
 	}
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("用户签到，获得额度 %s", log.LogQuota(checkin.QuotaAwarded)))
+	userstore.RecordLog(userId, logstore.LogTypeSystem, fmt.Sprintf("用户签到，获得额度 %s", log.LogQuota(checkin.QuotaAwarded)))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": i18n.T(c, i18n.MsgCheckinSuccess),

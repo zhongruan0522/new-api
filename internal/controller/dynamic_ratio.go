@@ -1,20 +1,21 @@
 package controller
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/option"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
+	"strconv"
+	"strings"
 )
 
 // GetDynamicRatioRules 获取规则列表
 func GetDynamicRatioRules(c *gin.Context) {
-	rules, err := model.GetDynamicRatioRules()
+	rules, err := channelstore.GetDynamicRatioRules()
 	if err != nil {
 		common.SysError("failed to get dynamic ratio rules: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -25,7 +26,7 @@ func GetDynamicRatioRules(c *gin.Context) {
 
 // CreateDynamicRatioRule 创建规则
 func CreateDynamicRatioRule(c *gin.Context) {
-	var rule model.DynamicRatioRule
+	var rule channelstore.DynamicRatioRule
 	if err := c.ShouldBindJSON(&rule); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
@@ -34,19 +35,19 @@ func CreateDynamicRatioRule(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if err := model.CreateDynamicRatioRule(&rule); err != nil {
+	if err := channelstore.CreateDynamicRatioRule(&rule); err != nil {
 		common.SysError("failed to create dynamic ratio rule: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshDynamicRatioCache()
-	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionCreate, "新增动态倍率规则", nil, rule)
+	channelstore.RefreshDynamicRatioCache()
+	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionCreate, "新增动态倍率规则", nil, rule)
 	common.ApiSuccess(c, rule)
 }
 
 // UpdateDynamicRatioRule 更新规则
 func UpdateDynamicRatioRule(c *gin.Context) {
-	var rule model.DynamicRatioRule
+	var rule channelstore.DynamicRatioRule
 	if err := c.ShouldBindJSON(&rule); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
@@ -60,19 +61,19 @@ func UpdateDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	// 查询更新前的原始数据用于审计差异对比
-	origin, err := model.GetDynamicRatioRuleById(rule.Id)
+	origin, err := channelstore.GetDynamicRatioRuleById(rule.Id)
 	if err != nil {
 		common.SysError("failed to get dynamic ratio rule by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	if err := model.UpdateDynamicRatioRule(&rule); err != nil {
+	if err := channelstore.UpdateDynamicRatioRule(&rule); err != nil {
 		common.SysError("failed to update dynamic ratio rule: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshDynamicRatioCache()
-	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "修改动态倍率规则", origin, rule)
+	channelstore.RefreshDynamicRatioCache()
+	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "修改动态倍率规则", origin, rule)
 	common.ApiSuccess(c, rule)
 }
 
@@ -84,13 +85,13 @@ func DeleteDynamicRatioRule(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDynamicRatioInvalidRuleID)
 		return
 	}
-	if err := model.DeleteDynamicRatioRule(id); err != nil {
+	if err := channelstore.DeleteDynamicRatioRule(id); err != nil {
 		common.SysError("failed to delete dynamic ratio rule: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshDynamicRatioCache()
-	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionDelete, "删除动态倍率规则 #"+strconv.FormatInt(id, 10), nil, map[string]interface{}{"id": id})
+	channelstore.RefreshDynamicRatioCache()
+	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionDelete, "删除动态倍率规则 #"+strconv.FormatInt(id, 10), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 
@@ -107,13 +108,13 @@ func ReorderDynamicRatioRules(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDynamicRatioIDListRequired)
 		return
 	}
-	if err := model.ReorderDynamicRatioRules(req.Ids); err != nil {
+	if err := channelstore.ReorderDynamicRatioRules(req.Ids); err != nil {
 		common.SysError("failed to reorder dynamic ratio rules: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshDynamicRatioCache()
-	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "重排动态倍率规则", nil, map[string]interface{}{"ids": req.Ids})
+	channelstore.RefreshDynamicRatioCache()
+	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "重排动态倍率规则", nil, map[string]interface{}{"ids": req.Ids})
 	common.ApiSuccess(c, nil)
 }
 
@@ -126,12 +127,12 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
-	if err := model.UpdateOption("DynamicRatioEnabled", strconv.FormatBool(req.Enabled)); err != nil {
+	if err := optionstore.UpdateOption("DynamicRatioEnabled", strconv.FormatBool(req.Enabled)); err != nil {
 		common.SysError("failed to update DynamicRatioEnabled option: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
+	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
 	common.ApiSuccess(c, nil)
 }
 
@@ -139,7 +140,7 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 func GetDynamicRatioStatus(c *gin.Context) {
 	group := strings.TrimSpace(c.Query("group"))
 	userId := c.GetInt("id")
-	user, err := model.GetUserById(userId, false)
+	user, err := userstore.GetUserById(userId, false)
 	if err != nil {
 		common.SysError("failed to get user by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -151,7 +152,7 @@ func GetDynamicRatioStatus(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgDynamicRatioGroupForbidden)
 			return
 		}
-		common.ApiSuccess(c, model.GetDynamicRatioStatus(group))
+		common.ApiSuccess(c, channelstore.GetDynamicRatioStatus(group))
 		return
 	}
 
@@ -164,6 +165,6 @@ func GetDynamicRatioStatus(c *gin.Context) {
 		groups = append(groups, user.Group)
 	}
 
-	status := model.GetDynamicRatioStatusForGroups(groups)
+	status := channelstore.GetDynamicRatioStatusForGroups(groups)
 	common.ApiSuccess(c, status)
 }

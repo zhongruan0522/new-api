@@ -3,22 +3,20 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
-	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
-
-	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/gin-gonic/gin"
 )
 
 type ModelRequest struct {
@@ -28,7 +26,7 @@ type ModelRequest struct {
 
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		var channel *model.Channel
+		var channel *channelstore.Channel
 		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
@@ -41,7 +39,7 @@ func Distribute() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusBadRequest, "无效的渠道 Id")
 				return
 			}
-			channel, err = model.GetChannelById(id, true)
+			channel, err = channelstore.GetChannelById(id, true)
 			if err != nil {
 				abortWithOpenAiMessage(c, http.StatusBadRequest, "无效的渠道 Id")
 				return
@@ -102,13 +100,13 @@ func Distribute() func(c *gin.Context) {
 
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					affinityUsable := false
-					preferred, err := model.CacheGetChannel(preferredChannelID)
+					preferred, err := channelstore.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := service.GetUserAutoGroup(userGroup)
 							for _, g := range autoGroups {
-								if model.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) {
+								if channelstore.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) {
 									selectGroup = g
 									common.SetContextKey(c, constant.ContextKeyAutoGroup, g)
 									channel = preferred
@@ -117,7 +115,7 @@ func Distribute() func(c *gin.Context) {
 									break
 								}
 							}
-						} else if model.IsChannelEnabledForGroupModel(usingGroup, modelRequest.Model, preferred.Id) {
+						} else if channelstore.IsChannelEnabledForGroupModel(usingGroup, modelRequest.Model, preferred.Id) {
 							channel = preferred
 							selectGroup = usingGroup
 							affinityUsable = true
@@ -262,7 +260,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	return &modelRequest, shouldSelectChannel, nil
 }
 
-func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *shared.NookMuxError {
+func SetupContextForSelectedChannel(c *gin.Context, channel *channelstore.Channel, modelName string) *shared.NookMuxError {
 	c.Set("original_model", modelName) // for retry
 	if channel == nil {
 		return shared.NewError(errors.New("channel is nil"), shared.ErrorCodeGetChannelFailed, shared.ErrOptionWithSkipRetry())

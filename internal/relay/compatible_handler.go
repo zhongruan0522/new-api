@@ -5,29 +5,28 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/stored_media"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
-	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/shopspring/decimal"
-
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shared.NookMuxError) {
@@ -122,7 +121,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 
 			if isImage {
 				// Cross-request dedupe: same user + same sha -> reuse existing asset URL.
-				if existing, err := model.GetStoredImageByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
+				if existing, err := storedmediastore.GetStoredImageByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
 					u := buildStoredImageURL(c, existing.Id)
 					storedURLBySHA[cacheKey] = u
 					return u, nil
@@ -130,18 +129,18 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 					return "", shared.NewError(fmt.Errorf("query stored image failed: %w", err), shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 				}
 
-				img := &model.StoredImage{
+				img := &storedmediastore.StoredImage{
 					UserId:    info.UserId,
 					ChannelId: info.ChannelId,
 					MimeType:  mimeType,
 					SizeBytes: len(data),
 					Sha256:    sha,
-					Data:      model.LargeBlob(data),
+					Data:      storedmediastore.LargeBlob(data),
 				}
 				if err := img.Insert(c.Request.Context()); err != nil {
 					return "", shared.NewError(fmt.Errorf("store image failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 				}
-				if _, err := model.EnsureStoredImagesPoolLimit(c.Request.Context(), imagePoolMaxBytes, 100); err != nil {
+				if _, err := storedmediastore.EnsureStoredImagesPoolLimit(c.Request.Context(), imagePoolMaxBytes, 100); err != nil {
 					return "", shared.NewError(fmt.Errorf("enforce stored image pool limit failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 				}
 
@@ -151,7 +150,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 				return u, nil
 			}
 
-			if existing, err := model.GetStoredVideoByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
+			if existing, err := storedmediastore.GetStoredVideoByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
 				u := buildStoredVideoURL(c, existing.Id)
 				storedURLBySHA[cacheKey] = u
 				return u, nil
@@ -159,18 +158,18 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 				return "", shared.NewError(fmt.Errorf("query stored video failed: %w", err), shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 			}
 
-			v := &model.StoredVideo{
+			v := &storedmediastore.StoredVideo{
 				UserId:    info.UserId,
 				ChannelId: info.ChannelId,
 				MimeType:  mimeType,
 				SizeBytes: len(data),
 				Sha256:    sha,
-				Data:      model.LargeBlob(data),
+				Data:      storedmediastore.LargeBlob(data),
 			}
 			if err := v.Insert(c.Request.Context()); err != nil {
 				return "", shared.NewError(fmt.Errorf("store video failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 			}
-			if _, err := model.EnsureStoredVideosPoolLimit(c.Request.Context(), videoPoolMaxBytes, 50); err != nil {
+			if _, err := storedmediastore.EnsureStoredVideosPoolLimit(c.Request.Context(), videoPoolMaxBytes, 50); err != nil {
 				return "", shared.NewError(fmt.Errorf("enforce stored video pool limit failed: %w", err), shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
 			}
 
@@ -191,7 +190,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 
 		// 异步更新用户的多模态适配转换计数
 		if newImageCount > 0 || newVideoCount > 0 {
-			go model.IncrementMediaConvertedCount(info.UserId, newImageCount, newVideoCount)
+			go userstore.IncrementMediaConvertedCount(info.UserId, newImageCount, newVideoCount)
 		}
 	}
 
@@ -574,8 +573,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		if toolQuota.GreaterThan(decimal.Zero) {
 			quota = int(toolQuota.Round(0).IntPart())
 			extraContent = append(extraContent, "上游没有返回计费信息，但工具调用费用仍需扣除")
-			model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-			model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+			userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+			channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 		} else {
 			quota = 0
 			extraContent = append(extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
@@ -586,8 +585,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		if !ratio.IsZero() && quota == 0 {
 			quota = 1
 		}
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-		model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
 	if err := service.SettleBilling(ctx, relayInfo, quota); err != nil {
@@ -662,7 +661,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 	// 共享流式日志指标，确保 OpenAI 兼容与 Claude 消费日志展示一致。
 	service.AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
-	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,

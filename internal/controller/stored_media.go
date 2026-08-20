@@ -3,19 +3,17 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/store/stored_media"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type storedMediaListRow struct {
@@ -52,7 +50,7 @@ func GetAllStoredMedia(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
-	items, total, err := model.GetAllStoredMedia(c.Request.Context(), startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	items, total, err := storedmediastore.GetAllStoredMedia(c.Request.Context(), startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get all stored media failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -82,7 +80,7 @@ func GetSelfStoredMedia(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
-	items, total, err := model.GetUserStoredMedia(c.Request.Context(), userId, startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	items, total, err := storedmediastore.GetUserStoredMedia(c.Request.Context(), userId, startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get user stored media failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -123,7 +121,7 @@ func GetStoredMediaDetail(c *gin.Context) {
 	isAdminUser := role >= common.RoleAdminUser
 
 	if mediaType == "image" {
-		meta, err := model.GetStoredImageMetaByID(c.Request.Context(), id)
+		meta, err := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
@@ -138,7 +136,7 @@ func GetStoredMediaDetail(c *gin.Context) {
 			return
 		}
 
-		img, err := model.GetStoredImageByID(c.Request.Context(), id)
+		img, err := storedmediastore.GetStoredImageByID(c.Request.Context(), id)
 		if err != nil {
 			common.SysError("get stored image failed: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -160,7 +158,7 @@ func GetStoredMediaDetail(c *gin.Context) {
 		return
 	}
 
-	meta, err := model.GetStoredVideoMetaByID(c.Request.Context(), id)
+	meta, err := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
@@ -175,7 +173,7 @@ func GetStoredMediaDetail(c *gin.Context) {
 		return
 	}
 
-	v, err := model.GetStoredVideoByID(c.Request.Context(), id)
+	v, err := storedmediastore.GetStoredVideoByID(c.Request.Context(), id)
 	if err != nil {
 		common.SysError("get stored video failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -215,7 +213,7 @@ func DeleteStoredMedia(c *gin.Context) {
 	var err error
 
 	if mediaType == "image" {
-		meta, metaErr := model.GetStoredImageMetaByID(c.Request.Context(), id)
+		meta, metaErr := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
@@ -230,12 +228,12 @@ func DeleteStoredMedia(c *gin.Context) {
 			return
 		}
 		if isAdminUser {
-			deleted, err = model.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, 0)
+			deleted, err = storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, 0)
 		} else {
-			deleted, err = model.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, userId)
+			deleted, err = storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, userId)
 		}
 	} else {
-		meta, metaErr := model.GetStoredVideoMetaByID(c.Request.Context(), id)
+		meta, metaErr := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
 				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
@@ -250,9 +248,9 @@ func DeleteStoredMedia(c *gin.Context) {
 			return
 		}
 		if isAdminUser {
-			deleted, err = model.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, 0)
+			deleted, err = storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, 0)
 		} else {
-			deleted, err = model.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, userId)
+			deleted, err = storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, userId)
 		}
 	}
 
@@ -314,7 +312,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 	}
 
 	if len(imageIDs) > 0 {
-		n, err := model.DeleteStoredImagesByIDs(c.Request.Context(), imageIDs, imgUser)
+		n, err := storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), imageIDs, imgUser)
 		if err != nil {
 			common.SysError("batch delete stored images failed: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -323,7 +321,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 		totalDeleted += n
 	}
 	if len(videoIDs) > 0 {
-		n, err := model.DeleteStoredVideosByIDs(c.Request.Context(), videoIDs, videoUser)
+		n, err := storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), videoIDs, videoUser)
 		if err != nil {
 			common.SysError("batch delete stored videos failed: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)

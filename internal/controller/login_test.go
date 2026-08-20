@@ -1,14 +1,13 @@
 package controller
 
 import (
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func TestLoginHidesDatabaseErrors(t *testing.T) {
@@ -18,7 +17,7 @@ func TestLoginHidesDatabaseErrors(t *testing.T) {
 		t.Fatalf("init i18n: %v", err)
 	}
 
-	sqlDB, err := model.DB.DB()
+	sqlDB, err := dbstore.DB.DB()
 	if err != nil {
 		t.Fatalf("get sql db: %v", err)
 	}

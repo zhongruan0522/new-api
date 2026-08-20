@@ -1,16 +1,15 @@
 package service
 
 import (
+	configmodel "github.com/NookMux/NookMux/internal/config/model"
+	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
-
-	configmodel "github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // withMiniMaxSettings 临时覆盖全局 MiniMax 设置，函数返回后恢复原值。
@@ -208,7 +207,7 @@ func TestCloneVoiceUpstreamEncodesGroupIdQuery(t *testing.T) {
 		baseURL: server.URL,
 		apiKey:  "test-key",
 		groupId: "a&b=c#d",
-		channel: &model.Channel{},
+		channel: &channelstore.Channel{},
 	}
 
 	demoAudio, err := cloneVoiceUpstream(up, customVoiceFileID{Display: "1"}, CustomVoicePreviewRequest{
@@ -245,7 +244,7 @@ func TestCloneVoiceUpstreamNoGroupIdNoQuery(t *testing.T) {
 		baseURL: server.URL,
 		apiKey:  "test-key",
 		groupId: "",
-		channel: &model.Channel{},
+		channel: &channelstore.Channel{},
 	}
 
 	if _, err := cloneVoiceUpstream(up, customVoiceFileID{Display: "1"}, CustomVoicePreviewRequest{

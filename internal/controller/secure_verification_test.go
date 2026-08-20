@@ -2,39 +2,42 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/passkey"
+	"github.com/NookMux/NookMux/internal/store/twofa"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
 )
 
 func setupSecureVerificationTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
-	oldLogDB := model.LOG_DB
+	oldDB := dbstore.DB
+	oldLogDB := dbstore.LOG_DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.PasskeyCredential{}, &model.TwoFA{}, &model.Log{}); err != nil {
+	if err := db.AutoMigrate(&userstore.User{}, &passkeystore.PasskeyCredential{}, &twofastore.TwoFA{}, &logstore.Log{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
-	model.LOG_DB = db
+	dbstore.DB = db
+	dbstore.LOG_DB = db
 	common.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
@@ -42,17 +45,17 @@ func setupSecureVerificationTestDB(t *testing.T) {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
-		model.LOG_DB = oldLogDB
+		dbstore.DB = oldDB
+		dbstore.LOG_DB = oldLogDB
 		common.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
 }
 
-func createSecureVerificationTestUser(t *testing.T, id int, accessToken string) model.User {
+func createSecureVerificationTestUser(t *testing.T, id int, accessToken string) userstore.User {
 	t.Helper()
 
-	user := model.User{
+	user := userstore.User{
 		Id:          id,
 		Username:    fmt.Sprintf("secure-user-%d", id),
 		Password:    "password123",
@@ -63,7 +66,7 @@ func createSecureVerificationTestUser(t *testing.T, id int, accessToken string) 
 		Group:       "default",
 		AffCode:     fmt.Sprintf("secure-aff-%d", id),
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	return user
@@ -72,13 +75,13 @@ func createSecureVerificationTestUser(t *testing.T, id int, accessToken string) 
 func createSecureVerificationTestPasskey(t *testing.T, userId int) {
 	t.Helper()
 
-	passkey := model.PasskeyCredential{
+	passkey := passkeystore.PasskeyCredential{
 		UserID:          userId,
 		CredentialID:    fmt.Sprintf("Y3JlZGVudGlhbC0%d", userId),
 		PublicKey:       "cHVibGljLWtleQ==",
 		AttestationType: "none",
 	}
-	if err := model.DB.Create(&passkey).Error; err != nil {
+	if err := dbstore.DB.Create(&passkey).Error; err != nil {
 		t.Fatalf("create passkey credential: %v", err)
 	}
 }
@@ -86,12 +89,12 @@ func createSecureVerificationTestPasskey(t *testing.T, userId int) {
 func createSecureVerificationTestTwoFA(t *testing.T, userId int) {
 	t.Helper()
 
-	twoFA := model.TwoFA{
+	twoFA := twofastore.TwoFA{
 		UserId:    userId,
 		Secret:    "secret",
 		IsEnabled: true,
 	}
-	if err := model.DB.Create(&twoFA).Error; err != nil {
+	if err := dbstore.DB.Create(&twoFA).Error; err != nil {
 		t.Fatalf("create twofa: %v", err)
 	}
 }
@@ -113,7 +116,7 @@ func TestUniversalVerifyPasskeyRequiresFinishedPasskeySession(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	accessToken := "root-management-token"
-	user := model.User{
+	user := userstore.User{
 		Id:          1,
 		Username:    "root",
 		Password:    "password123",
@@ -123,16 +126,16 @@ func TestUniversalVerifyPasskeyRequiresFinishedPasskeySession(t *testing.T) {
 		AccessToken: &accessToken,
 		Group:       "default",
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create root user: %v", err)
 	}
-	passkey := model.PasskeyCredential{
+	passkey := passkeystore.PasskeyCredential{
 		UserID:          user.Id,
 		CredentialID:    "Y3JlZGVudGlhbA==",
 		PublicKey:       "cHVibGljLWtleQ==",
 		AttestationType: "none",
 	}
-	if err := model.DB.Create(&passkey).Error; err != nil {
+	if err := dbstore.DB.Create(&passkey).Error; err != nil {
 		t.Fatalf("create passkey credential: %v", err)
 	}
 
@@ -212,7 +215,7 @@ func TestPasskeyDeleteRequiresTwoFAMethodWhenTwoFAEnabled(t *testing.T) {
 	if strings.Contains(body, `"success":true`) {
 		t.Fatalf("passkey delete succeeded with passkey verification despite enabled 2FA: %s", body)
 	}
-	if _, err := model.GetPasskeyByUserID(user.Id); err != nil {
+	if _, err := passkeystore.GetPasskeyByUserID(user.Id); err != nil {
 		t.Fatalf("passkey was deleted despite wrong verification method: %v", err)
 	}
 }
@@ -239,7 +242,7 @@ func TestPasskeyDeleteAllowsTwoFAMethodWhenTwoFAEnabled(t *testing.T) {
 	if !strings.Contains(body, `"success":true`) {
 		t.Fatalf("passkey delete did not accept 2FA verification: %s", body)
 	}
-	if _, err := model.GetPasskeyByUserID(user.Id); err == nil {
+	if _, err := passkeystore.GetPasskeyByUserID(user.Id); err == nil {
 		t.Fatalf("passkey still exists after verified delete")
 	}
 }

@@ -2,8 +2,7 @@ package oauth
 
 import (
 	"context"
-
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,8 +25,8 @@ type Provider interface {
 	IsUserIDTaken(providerUserID string) bool
 
 	// FillUserByProviderID fills the user model by provider user ID
-	FillUserByProviderID(user *model.User, providerUserID string) error
+	FillUserByProviderID(user *userstore.User, providerUserID string) error
 
 	// SetProviderUserID sets the provider user ID on the user model
-	SetProviderUserID(user *model.User, providerUserID string)
+	SetProviderUserID(user *userstore.User, providerUserID string)
 }

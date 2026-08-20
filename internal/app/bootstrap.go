@@ -1,17 +1,18 @@
 package app
 
 import (
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	_ "github.com/NookMux/NookMux/internal/config/performance"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/db/migrate"
+	"github.com/NookMux/NookMux/internal/store/option"
+	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/joho/godotenv"
+	"strings"
 )
 
 func Bootstrap() error {
@@ -37,16 +38,16 @@ func Bootstrap() error {
 	service.InitTokenEncoders()
 
 	// Initialize SQL Database
-	err = model.InitDB()
+	err = dbmigrate.InitDB()
 	if err != nil {
 		common.FatalLog("failed to initialize database: " + err.Error())
 		return err
 	}
 
-	model.CheckSetup()
+	optionstore.CheckSetup()
 
-	// Initialize options, should after model.InitDB()
-	model.InitOptionMap()
+	// Initialize options, should after dbmigrate.InitDB()
+	optionstore.InitOptionMap()
 
 	// 迁移 console_setting 面板开关到 dashboard_config（一次性，幂等）
 	// 失败仅记日志不阻断启动，console_setting 仍可作为 fallback 直到双源统一
@@ -58,10 +59,10 @@ func Bootstrap() error {
 	common.CleanupOldCacheFiles()
 
 	// 初始化模型
-	model.GetPricing()
+	pricingstore.GetPricing()
 
 	// Initialize SQL Database
-	err = model.InitLogDB()
+	err = dbmigrate.InitLogDB()
 	if err != nil {
 		return err
 	}

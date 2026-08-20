@@ -2,21 +2,21 @@ package controller
 
 import (
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func createManageQuotaTestUser(t *testing.T, id int, quota int) {
 	t.Helper()
 
 	accessToken := fmt.Sprintf("manage-quota-token-%d", id)
-	user := model.User{
+	user := userstore.User{
 		Id:          id,
 		Username:    fmt.Sprintf("mq-user-%d", id),
 		Password:    "password123",
@@ -28,7 +28,7 @@ func createManageQuotaTestUser(t *testing.T, id int, quota int) {
 		AffCode:     fmt.Sprintf("mq-aff-%d", id),
 		Quota:       quota,
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 }
@@ -49,8 +49,8 @@ func requestManageQuota(t *testing.T, body string) *httptest.ResponseRecorder {
 func getManageQuotaTestUserQuota(t *testing.T, id int) int {
 	t.Helper()
 
-	var user model.User
-	if err := model.DB.First(&user, id).Error; err != nil {
+	var user userstore.User
+	if err := dbstore.DB.First(&user, id).Error; err != nil {
 		t.Fatalf("get user: %v", err)
 	}
 	return user.Quota

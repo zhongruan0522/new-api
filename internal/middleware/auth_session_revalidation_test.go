@@ -1,22 +1,22 @@
 package middleware
 
 import (
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
 )
 
 // createSessionUser inserts a user with the given role/status into the test DB.
-func createSessionUser(t *testing.T, id int, username string, role, status int) model.User {
+func createSessionUser(t *testing.T, id int, username string, role, status int) userstore.User {
 	t.Helper()
-	user := model.User{
+	user := userstore.User{
 		Id:       id,
 		Username: username,
 		Password: "password123",
@@ -25,7 +25,7 @@ func createSessionUser(t *testing.T, id int, username string, role, status int) 
 		Group:    "default",
 		AffCode:  "session-aff-" + username,
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user %s: %v", username, err)
 	}
 	return user
@@ -35,7 +35,7 @@ func createSessionUser(t *testing.T, id int, username string, role, status int) 
 // the user's *original* role/status. This is what the cookie stores at login
 // time. Subsequent DB mutations should be reflected by authHelper's
 // re-validation.
-func loginViaSession(t *testing.T, router *gin.Engine, user model.User) []*http.Cookie {
+func loginViaSession(t *testing.T, router *gin.Engine, user userstore.User) []*http.Cookie {
 	t.Helper()
 	loginRecorder := httptest.NewRecorder()
 	loginReq := httptest.NewRequest(http.MethodGet, "/login", nil)
@@ -117,10 +117,10 @@ func TestSessionAuthRejectsDisabledUserWithStaleCookie(t *testing.T) {
 	createSessionUser(t, 1, "admin", common.RoleAdminUser, common.UserStatusEnabled)
 
 	router, _ := newSessionAuthRouter(t)
-	cookies := loginViaSession(t, router, model.User{})
+	cookies := loginViaSession(t, router, userstore.User{})
 
 	// Admin now disables the user.
-	if err := model.DB.Model(&model.User{}).Where("id = ?", 1).
+	if err := dbstore.DB.Model(&userstore.User{}).Where("id = ?", 1).
 		Update("status", common.UserStatusDisabled).Error; err != nil {
 		t.Fatalf("disable user: %v", err)
 	}
@@ -147,10 +147,10 @@ func TestSessionAuthRejectsDemotedUserWithStaleCookie(t *testing.T) {
 	createSessionUser(t, 1, "admin", common.RoleAdminUser, common.UserStatusEnabled)
 
 	router, _ := newSessionAuthRouter(t)
-	cookies := loginViaSession(t, router, model.User{})
+	cookies := loginViaSession(t, router, userstore.User{})
 
 	// Admin demotes the user.
-	if err := model.DB.Model(&model.User{}).Where("id = ?", 1).
+	if err := dbstore.DB.Model(&userstore.User{}).Where("id = ?", 1).
 		Update("role", common.RoleCommonUser).Error; err != nil {
 		t.Fatalf("demote user: %v", err)
 	}
@@ -176,10 +176,10 @@ func TestSessionAuthRejectsDeletedUserWithStaleCookie(t *testing.T) {
 	createSessionUser(t, 1, "admin", common.RoleAdminUser, common.UserStatusEnabled)
 
 	router, _ := newSessionAuthRouter(t)
-	cookies := loginViaSession(t, router, model.User{})
+	cookies := loginViaSession(t, router, userstore.User{})
 
 	// Hard delete the user.
-	if err := model.DB.Unscoped().Where("id = ?", 1).Delete(&model.User{}).Error; err != nil {
+	if err := dbstore.DB.Unscoped().Where("id = ?", 1).Delete(&userstore.User{}).Error; err != nil {
 		t.Fatalf("delete user: %v", err)
 	}
 	invalidateSecuritySensitiveUserCachesForTest(t, 1)
@@ -204,7 +204,7 @@ func TestSessionAuthAllowsValidUser(t *testing.T) {
 	createSessionUser(t, 1, "admin", common.RoleAdminUser, common.UserStatusEnabled)
 
 	router, _ := newSessionAuthRouter(t)
-	cookies := loginViaSession(t, router, model.User{})
+	cookies := loginViaSession(t, router, userstore.User{})
 
 	recorder := doProtectedRequest(router, cookies)
 	if recorder.Code != http.StatusOK {
@@ -217,7 +217,7 @@ func TestSessionAuthAllowsValidUser(t *testing.T) {
 
 func invalidateSecuritySensitiveUserCachesForTest(t *testing.T, userId int) {
 	t.Helper()
-	if err := model.InvalidateUserCache(userId); err != nil {
+	if err := userstore.InvalidateUserCache(userId); err != nil {
 		t.Fatalf("invalidate user cache: %v", err)
 	}
 }

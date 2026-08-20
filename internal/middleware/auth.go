@@ -3,22 +3,22 @@ package middleware
 import (
 	"errors"
 	"fmt"
-	"net"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 func validUserInfo(username string, role int) bool {
@@ -69,9 +69,9 @@ func authHelper(c *gin.Context, minRole int) {
 			c.Abort()
 			return
 		}
-		user, authErr := model.ValidateAccessToken(accessToken)
+		user, authErr := userstore.ValidateAccessToken(accessToken)
 		if authErr != nil {
-			if errors.Is(authErr, model.ErrDatabase) {
+			if errors.Is(authErr, dbstore.ErrDatabase) {
 				common.SysLog("ValidateAccessToken database error: " + authErr.Error())
 			}
 			c.JSON(http.StatusOK, gin.H{
@@ -119,7 +119,7 @@ func authHelper(c *gin.Context, minRole int) {
 			clearAndReject(c, session, http.StatusOK, "无权进行此操作，用户信息无效")
 			return
 		}
-		latestUser, dbErr := model.GetUserById(userId, false)
+		latestUser, dbErr := userstore.GetUserById(userId, false)
 		if dbErr != nil || latestUser == nil || latestUser.Id == 0 {
 			// User likely deleted, or DB unavailable. Fail closed: drop the
 			// stale session and force re-login.
@@ -289,7 +289,7 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 		parts := strings.Split(key, "-")
 		key = parts[0]
 
-		token, err := model.GetTokenByKey(key, false)
+		token, err := tokenstore.GetTokenByKey(key, false)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -299,7 +299,7 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 			return
 		}
 
-		userCache, err := model.GetUserCache(token.UserId)
+		userCache, err := userstore.GetUserCache(token.UserId)
 		if err != nil {
 			common.SysLog("TokenAuthReadOnly user cache error: " + err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -378,7 +378,7 @@ func TokenAuth() func(c *gin.Context) {
 		key = strings.TrimPrefix(key, "sk-")
 		parts := strings.Split(key, "-")
 		key = parts[0]
-		token, err := model.ValidateUserToken(key)
+		token, err := tokenstore.ValidateUserToken(key)
 		if token != nil {
 			id := c.GetInt("id")
 			if id == 0 {
@@ -386,7 +386,7 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		if err != nil {
-			if errors.Is(err, model.ErrDatabase) {
+			if errors.Is(err, dbstore.ErrDatabase) {
 				common.SysLog("ValidateUserToken database error: " + err.Error())
 				abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请稍后重试")
 			} else {
@@ -411,7 +411,7 @@ func TokenAuth() func(c *gin.Context) {
 			log.LogDebug(c, "Client IP %s passed the token IP restrictions check", clientIp)
 		}
 
-		userCache, err := model.GetUserCache(token.UserId)
+		userCache, err := userstore.GetUserCache(token.UserId)
 		if err != nil {
 			common.SysLog("TokenAuth user cache error: " + err.Error())
 			abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请稍后重试")
@@ -452,7 +452,7 @@ func TokenAuth() func(c *gin.Context) {
 	}
 }
 
-func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) error {
+func SetupContextForToken(c *gin.Context, token *tokenstore.Token, parts ...string) error {
 	if token == nil {
 		return fmt.Errorf("token is nil")
 	}
@@ -493,7 +493,7 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	common.SetContextKey(c, constant.ContextKeyTokenGroup, token.Group)
 	common.SetContextKey(c, constant.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)
 	if len(parts) > 1 {
-		if model.IsAdmin(token.UserId) {
+		if userstore.IsAdmin(token.UserId) {
 			c.Set("specific_channel_id", parts[1])
 		} else {
 			abortWithOpenAiMessage(c, http.StatusForbidden, "普通用户不支持指定渠道")

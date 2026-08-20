@@ -2,25 +2,26 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
 )
 
 func setupAuthAccessTokenTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
+	oldDB := dbstore.DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 
@@ -28,10 +29,10 @@ func setupAuthAccessTokenTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.Token{}); err != nil {
+	if err := db.AutoMigrate(&userstore.User{}, &tokenstore.Token{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
+	dbstore.DB = db
 	common.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
@@ -39,7 +40,7 @@ func setupAuthAccessTokenTestDB(t *testing.T) {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
+		dbstore.DB = oldDB
 		common.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
@@ -50,7 +51,7 @@ func TestUserAuthRejectsEmptyBearerMatchingEmptyAccessToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	emptyAccessToken := ""
-	rootUser := model.User{
+	rootUser := userstore.User{
 		Id:          1,
 		Username:    "root",
 		Password:    "password123",
@@ -61,7 +62,7 @@ func TestUserAuthRejectsEmptyBearerMatchingEmptyAccessToken(t *testing.T) {
 		Group:       "default",
 		AffCode:     "auth-aff-root-empty",
 	}
-	if err := model.DB.Create(&rootUser).Error; err != nil {
+	if err := dbstore.DB.Create(&rootUser).Error; err != nil {
 		t.Fatalf("create root user: %v", err)
 	}
 
@@ -93,7 +94,7 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 	setupAuthAccessTokenTestDB(t)
 	gin.SetMode(gin.TestMode)
 
-	rootUser := model.User{
+	rootUser := userstore.User{
 		Id:          1,
 		Username:    "root",
 		Password:    "password123",
@@ -104,7 +105,7 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 		AffCode:     "auth-aff-root",
 	}
 	emptyAccessToken := ""
-	commonUser := model.User{
+	commonUser := userstore.User{
 		Id:          2,
 		Username:    "common",
 		Password:    "password123",
@@ -115,10 +116,10 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 		Group:       "default",
 		AffCode:     "auth-aff-common",
 	}
-	if err := model.DB.Create(&rootUser).Error; err != nil {
+	if err := dbstore.DB.Create(&rootUser).Error; err != nil {
 		t.Fatalf("create root user: %v", err)
 	}
-	if err := model.DB.Create(&commonUser).Error; err != nil {
+	if err := dbstore.DB.Create(&commonUser).Error; err != nil {
 		t.Fatalf("create common user: %v", err)
 	}
 
@@ -149,7 +150,7 @@ func TestUserAuthHidesAccessTokenDatabaseErrors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	accessToken := "management-token-db-error"
-	user := model.User{
+	user := userstore.User{
 		Id:          1,
 		Username:    "root",
 		Password:    "password123",
@@ -160,10 +161,10 @@ func TestUserAuthHidesAccessTokenDatabaseErrors(t *testing.T) {
 		Group:       "default",
 		AffCode:     "auth-aff-root-db-error",
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create root user: %v", err)
 	}
-	sqlDB, err := model.DB.DB()
+	sqlDB, err := dbstore.DB.DB()
 	if err != nil {
 		t.Fatalf("get sql db: %v", err)
 	}
@@ -200,7 +201,7 @@ func TestTokenAuthHidesUserCacheErrors(t *testing.T) {
 	setupAuthAccessTokenTestDB(t)
 	gin.SetMode(gin.TestMode)
 
-	token := model.Token{
+	token := tokenstore.Token{
 		UserId:         404,
 		Key:            "tokenauthhiddenusererror",
 		Name:           "hidden-error",
@@ -209,7 +210,7 @@ func TestTokenAuthHidesUserCacheErrors(t *testing.T) {
 		RemainQuota:    100,
 		UnlimitedQuota: true,
 	}
-	if err := model.DB.Create(&token).Error; err != nil {
+	if err := dbstore.DB.Create(&token).Error; err != nil {
 		t.Fatalf("create token: %v", err)
 	}
 
@@ -240,7 +241,7 @@ func TestTokenAuthReadOnlyHidesUserCacheErrors(t *testing.T) {
 	setupAuthAccessTokenTestDB(t)
 	gin.SetMode(gin.TestMode)
 
-	token := model.Token{
+	token := tokenstore.Token{
 		UserId:         405,
 		Key:            "readonlyhiddenusererror",
 		Name:           "readonly-hidden-error",
@@ -249,7 +250,7 @@ func TestTokenAuthReadOnlyHidesUserCacheErrors(t *testing.T) {
 		RemainQuota:    100,
 		UnlimitedQuota: true,
 	}
-	if err := model.DB.Create(&token).Error; err != nil {
+	if err := dbstore.DB.Create(&token).Error; err != nil {
 		t.Fatalf("create token: %v", err)
 	}
 

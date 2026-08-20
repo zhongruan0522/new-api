@@ -3,25 +3,24 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config"
+	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/store/topup"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
+	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/checkout/session"
+	"github.com/stripe/stripe-go/v81/webhook"
+	"github.com/thanhpk/randstr"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
-	"github.com/gin-gonic/gin"
-	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/checkout/session"
-	"github.com/stripe/stripe-go/v81/webhook"
-	"github.com/thanhpk/randstr"
 )
 
 const (
@@ -53,7 +52,7 @@ func (*StripeAdaptor) RequestAmount(c *gin.Context, req *StripePayRequest) {
 		return
 	}
 	id := c.GetInt("id")
-	group, err := model.GetUserGroup(id, true)
+	group, err := userstore.GetUserGroup(id, true)
 	if err != nil {
 		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
@@ -91,7 +90,7 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	}
 
 	id := c.GetInt("id")
-	user, _ := model.GetUserById(id, false)
+	user, _ := userstore.GetUserById(id, false)
 	chargedMoney := GetChargedAmount(float64(req.Amount), *user)
 
 	reference := fmt.Sprintf("nookmux-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
@@ -104,13 +103,13 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 		return
 	}
 
-	topUp := &model.TopUp{
+	topUp := &topupstore.TopUp{
 		UserId:          id,
 		Amount:          req.Amount,
 		Money:           chargedMoney,
 		TradeNo:         referenceId,
-		PaymentMethod:   model.PaymentMethodStripe,
-		PaymentProvider: model.PaymentProviderStripe,
+		PaymentMethod:   topupstore.PaymentMethodStripe,
+		PaymentProvider: topupstore.PaymentProviderStripe,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -233,9 +232,9 @@ func sessionAsyncPaymentFailed(event stripe.Event) error {
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
 
-	if err := model.UpdatePendingTopUpStatus(referenceId, model.PaymentProviderStripe, common.TopUpStatusFailed); err != nil {
+	if err := topupstore.UpdatePendingTopUpStatus(referenceId, topupstore.PaymentProviderStripe, common.TopUpStatusFailed); err != nil {
 		// 订单已非 pending（重复投递且此前已处理），视为已处理返回 nil。
-		if errors.Is(err, model.ErrTopUpStatusInvalid) {
+		if errors.Is(err, topupstore.ErrTopUpStatusInvalid) {
 			log.Println("充值订单已处理，跳过失败标记:", referenceId)
 			return nil
 		}
@@ -258,15 +257,15 @@ func fulfillOrder(event stripe.Event, referenceId string, customerId string) err
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
 
-	err := model.Recharge(referenceId, customerId)
+	err := topupstore.Recharge(referenceId, customerId)
 	if err != nil {
-		if errors.Is(err, model.ErrTopUpStatusInvalid) {
+		if errors.Is(err, topupstore.ErrTopUpStatusInvalid) {
 			log.Println("充值订单已处理，跳过重复入账:", referenceId)
 			return nil
 		}
 		// 订单本地不存在是终态：重投也无法入账，返回 nil 让 webhook 回 2xx，
 		// 避免 Stripe 无限重投；其余错误（数据库故障等）保持 5xx 触发重试。
-		if errors.Is(err, model.ErrTopUpNotFound) {
+		if errors.Is(err, topupstore.ErrTopUpNotFound) {
 			log.Println("充值订单不存在，视为终态跳过入账:", referenceId)
 			return nil
 		}
@@ -296,9 +295,9 @@ func sessionExpired(event stripe.Event) error {
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
 
-	if err := model.UpdatePendingTopUpStatus(referenceId, model.PaymentProviderStripe, common.TopUpStatusExpired); err != nil {
+	if err := topupstore.UpdatePendingTopUpStatus(referenceId, topupstore.PaymentProviderStripe, common.TopUpStatusExpired); err != nil {
 		// 订单已非 pending（重复投递且此前已处理），视为已处理返回 nil。
-		if errors.Is(err, model.ErrTopUpStatusInvalid) {
+		if errors.Is(err, topupstore.ErrTopUpStatusInvalid) {
 			log.Println("充值订单已处理，跳过过期标记:", referenceId)
 			return nil
 		}
@@ -369,7 +368,7 @@ func genStripeLink(c *gin.Context, referenceId string, customerId string, email 
 	return result.URL, nil
 }
 
-func GetChargedAmount(count float64, user model.User) float64 {
+func GetChargedAmount(count float64, user userstore.User) float64 {
 	topUpGroupRatio := common.GetTopupGroupRatio(user.Group)
 	if topUpGroupRatio == 0 {
 		topUpGroupRatio = 1

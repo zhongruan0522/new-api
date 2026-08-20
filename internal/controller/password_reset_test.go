@@ -2,13 +2,13 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func TestSendPasswordResetEmailHidesUnknownEmail(t *testing.T) {
@@ -46,7 +46,7 @@ func TestSendPasswordResetEmailReturnsSuccessWhenDeliveryFails(t *testing.T) {
 	setupSecureVerificationTestDB(t)
 	gin.SetMode(gin.TestMode)
 
-	user := model.User{
+	user := userstore.User{
 		Id:          1,
 		Username:    "reset-user",
 		Password:    "password123",
@@ -57,7 +57,7 @@ func TestSendPasswordResetEmailReturnsSuccessWhenDeliveryFails(t *testing.T) {
 		Group:       "default",
 		AffCode:     "reset-aff-1",
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 

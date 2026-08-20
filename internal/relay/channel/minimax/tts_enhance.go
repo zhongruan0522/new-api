@@ -2,13 +2,11 @@ package minimax
 
 import (
 	"errors"
-	"strings"
-
 	configmodel "github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
+	"github.com/NookMux/NookMux/internal/store/minimax_voice"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 // applyModelRedirect 按 TTS 模型重定向表查找。
@@ -47,7 +45,7 @@ func ResolveVoiceForTTSUpstream(c *gin.Context, voiceId string) (string, error) 
 	if voiceId == "" {
 		return "", nil
 	}
-	found, upstreamId, allowed, err := model.ResolveMiniMaxVoiceForTTS(voiceId)
+	found, upstreamId, allowed, err := minimaxvoicestore.ResolveMiniMaxVoiceForTTS(voiceId)
 	if err != nil {
 		// DB 查询失败时，若白名单开启则 fail-closed，否则放行原 ID。
 		if configmodel.IsMiniMaxVoiceWhitelistEnabled() {

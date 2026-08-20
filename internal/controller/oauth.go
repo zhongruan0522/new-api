@@ -2,16 +2,16 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/oauth"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
+	"strings"
 )
 
 // providerParams returns map with Provider key for i18n templates
@@ -167,7 +167,7 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	// Get current user from session
 	session := sessions.Default(c)
 	id := session.Get("id")
-	user := model.User{Id: id.(int)}
+	user := userstore.User{Id: id.(int)}
 	err = user.FillUserById()
 	if err != nil {
 		common.SysError("failed to fill user by id during oauth bind: " + err.Error())
@@ -197,8 +197,8 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 }
 
 // findOrCreateOAuthUser finds existing user or creates new user
-func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *oauth.OAuthUser, session sessions.Session) (*model.User, error) {
-	user := &model.User{}
+func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *oauth.OAuthUser, session sessions.Session) (*userstore.User, error) {
+	user := &userstore.User{}
 
 	// Check if user already exists with new ID
 	if provider.IsUserIDTaken(oauthUser.ProviderUserID) {
@@ -241,13 +241,13 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	// If provider returned an email, try to find exactly one existing user with that email
 	// and merge by binding the OAuth provider ID to the existing account.
 	// We only merge when the email is unique in the system to avoid binding to the wrong account.
-	if oauthUser.Email != "" && model.IsEmailAlreadyTaken(oauthUser.Email) {
-		existingUser := &model.User{}
+	if oauthUser.Email != "" && userstore.IsEmailAlreadyTaken(oauthUser.Email) {
+		existingUser := &userstore.User{}
 		existingUser.Email = oauthUser.Email
 		if err := existingUser.FillUserByEmail(); err == nil && existingUser.Id != 0 {
 			// Verify this email belongs to exactly one active user
 			var count int64
-			model.DB.Unscoped().Model(&model.User{}).Where("email = ?", oauthUser.Email).Count(&count)
+			dbstore.DB.Unscoped().Model(&userstore.User{}).Where("email = ?", oauthUser.Email).Count(&count)
 			if count != 1 {
 				// Multiple users share this email — skip merge, create new user instead
 				common.SysLog(fmt.Sprintf("[OAuth] Skipping email merge for %s: %d users share this email",
@@ -263,7 +263,7 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 				} else {
 					// Bind OAuth to the existing account
 					provider.SetProviderUserID(existingUser, oauthUser.ProviderUserID)
-					if err := model.DB.Model(existingUser).Updates(map[string]interface{}{
+					if err := dbstore.DB.Model(existingUser).Updates(map[string]interface{}{
 						"github_id":   existingUser.GitHubId,
 						"linux_do_id": existingUser.LinuxDOId,
 					}).Error; err != nil {
@@ -296,10 +296,10 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	affCode := session.Get("aff")
 	inviterId := 0
 	if affCode != nil {
-		inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
+		inviterId, _ = userstore.GetUserIdByAffCode(affCode.(string))
 	}
 
-	err := model.DB.Transaction(func(tx *gorm.DB) error {
+	err := dbstore.DB.Transaction(func(tx *gorm.DB) error {
 		if err := user.InsertWithTx(tx, inviterId); err != nil {
 			return err
 		}

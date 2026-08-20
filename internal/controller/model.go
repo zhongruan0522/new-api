@@ -2,24 +2,24 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/relay"
 	"github.com/NookMux/NookMux/internal/relay/channel/minimax"
 	"github.com/NookMux/NookMux/internal/relay/channel/moonshot"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/service"
-
-	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/pricing"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
+	"net/http"
+	"time"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -115,7 +115,7 @@ func ListModels(c *gin.Context, modelType int) {
 				continue
 			}
 			if oaiModel, ok := openAIModelsMap[allowModel]; ok {
-				oaiModel.SupportedEndpointTypes = model.GetModelSupportEndpointTypes(allowModel)
+				oaiModel.SupportedEndpointTypes = pricingstore.GetModelSupportEndpointTypes(allowModel)
 				userOpenAiModels = append(userOpenAiModels, oaiModel)
 			} else {
 				userOpenAiModels = append(userOpenAiModels, shared.OpenAIModels{
@@ -123,13 +123,13 @@ func ListModels(c *gin.Context, modelType int) {
 					Object:                 "model",
 					Created:                1626777600,
 					OwnedBy:                "custom",
-					SupportedEndpointTypes: model.GetModelSupportEndpointTypes(allowModel),
+					SupportedEndpointTypes: pricingstore.GetModelSupportEndpointTypes(allowModel),
 				})
 			}
 		}
 	} else {
 		userId := c.GetInt("id")
-		userGroup, err := model.GetUserGroup(userId, false)
+		userGroup, err := userstore.GetUserGroup(userId, false)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -145,7 +145,7 @@ func ListModels(c *gin.Context, modelType int) {
 		var models []string
 		if tokenGroup == "auto" {
 			for _, autoGroup := range service.GetUserAutoGroup(userGroup) {
-				groupModels := model.GetGroupEnabledModels(autoGroup)
+				groupModels := channelstore.GetGroupEnabledModels(autoGroup)
 				for _, g := range groupModels {
 					if !common.StringsContains(models, g) {
 						models = append(models, g)
@@ -153,7 +153,7 @@ func ListModels(c *gin.Context, modelType int) {
 				}
 			}
 		} else {
-			models = model.GetGroupEnabledModels(group)
+			models = channelstore.GetGroupEnabledModels(group)
 		}
 		for _, modelName := range models {
 			_, _, exist := ratio.GetModelRatioOrPrice(modelName)
@@ -161,7 +161,7 @@ func ListModels(c *gin.Context, modelType int) {
 				continue
 			}
 			if oaiModel, ok := openAIModelsMap[modelName]; ok {
-				oaiModel.SupportedEndpointTypes = model.GetModelSupportEndpointTypes(modelName)
+				oaiModel.SupportedEndpointTypes = pricingstore.GetModelSupportEndpointTypes(modelName)
 				userOpenAiModels = append(userOpenAiModels, oaiModel)
 			} else {
 				userOpenAiModels = append(userOpenAiModels, shared.OpenAIModels{
@@ -169,7 +169,7 @@ func ListModels(c *gin.Context, modelType int) {
 					Object:                 "model",
 					Created:                1626777600,
 					OwnedBy:                "custom",
-					SupportedEndpointTypes: model.GetModelSupportEndpointTypes(modelName),
+					SupportedEndpointTypes: pricingstore.GetModelSupportEndpointTypes(modelName),
 				})
 			}
 		}
@@ -230,7 +230,7 @@ func DashboardListModels(c *gin.Context) {
 func EnabledListModels(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"success": true,
-		"data":    model.GetEnabledModels(),
+		"data":    channelstore.GetEnabledModels(),
 	})
 }
 

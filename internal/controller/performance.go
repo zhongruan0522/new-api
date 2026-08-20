@@ -1,17 +1,15 @@
 package controller
 
 import (
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-
-	"github.com/gin-gonic/gin"
 )
 
 // PerformanceStats 性能统计信息
@@ -138,7 +136,7 @@ func ClearDiskCache(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionDelete, "清理磁盘缓存", nil, nil)
+	service.RecordAudit(c, auditstore.AuditModulePerformance, auditstore.AuditActionDelete, "清理磁盘缓存", nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -150,7 +148,7 @@ func ClearDiskCache(c *gin.Context) {
 func ResetPerformanceStats(c *gin.Context) {
 	common.ResetDiskCacheStats()
 
-	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionUpdate, "重置性能统计", nil, nil)
+	service.RecordAudit(c, auditstore.AuditModulePerformance, auditstore.AuditActionUpdate, "重置性能统计", nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -162,7 +160,7 @@ func ResetPerformanceStats(c *gin.Context) {
 func ForceGC(c *gin.Context) {
 	runtime.GC()
 
-	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionUpdate, "强制垃圾回收", nil, nil)
+	service.RecordAudit(c, auditstore.AuditModulePerformance, auditstore.AuditActionUpdate, "强制垃圾回收", nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

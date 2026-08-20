@@ -5,17 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -168,15 +167,15 @@ func (p *LinuxDOProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*
 }
 
 func (p *LinuxDOProvider) IsUserIDTaken(providerUserID string) bool {
-	return model.IsLinuxDOIdAlreadyTaken(providerUserID)
+	return userstore.IsLinuxDOIdAlreadyTaken(providerUserID)
 }
 
-func (p *LinuxDOProvider) FillUserByProviderID(user *model.User, providerUserID string) error {
+func (p *LinuxDOProvider) FillUserByProviderID(user *userstore.User, providerUserID string) error {
 	user.LinuxDOId = providerUserID
 	return user.FillUserByLinuxDOId()
 }
 
-func (p *LinuxDOProvider) SetProviderUserID(user *model.User, providerUserID string) {
+func (p *LinuxDOProvider) SetProviderUserID(user *userstore.User, providerUserID string) {
 	user.LinuxDOId = providerUserID
 }
 

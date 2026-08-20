@@ -1,13 +1,11 @@
 package controller
 
 import (
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-
-	"github.com/gin-gonic/gin"
 )
 
 // GetAuditLogs 分页查询审计日志。
@@ -35,7 +33,7 @@ func GetAuditLogs(c *gin.Context) {
 		endTime, _ = strconv.ParseInt(e, 10, 64)
 	}
 
-	logs, total, err := model.GetAllAuditLogs(username, module, actionType, startTime, endTime, page, pageSize)
+	logs, total, err := auditstore.GetAllAuditLogs(username, module, actionType, startTime, endTime, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -61,6 +59,6 @@ func GetAuditModules(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    model.AuditModuleList,
+		"data":    auditstore.AuditModuleList,
 	})
 }

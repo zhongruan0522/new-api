@@ -3,13 +3,11 @@ package relay
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"strings"
-
-	"github.com/NookMux/NookMux/internal/model"
-
+	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
+	"strings"
 )
 
 // RelayStoredImage serves images persisted for "multimodal auto convert to URL".
@@ -29,7 +27,7 @@ func RelayStoredImage(c *gin.Context) {
 		return
 	}
 
-	img, err := model.GetStoredImageByID(c.Request.Context(), id)
+	img, err := storedmediastore.GetStoredImageByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{

@@ -2,12 +2,12 @@ package service
 
 import (
 	"errors"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/ticket"
+	"gorm.io/gorm"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
-	"gorm.io/gorm"
 )
 
 const (
@@ -68,7 +68,7 @@ func ListUserTickets(userId int, page, pageSize int, status string, keyword stri
 	if err != nil {
 		return nil, 0, err
 	}
-	tickets, total, err := model.ListUserTickets(filter)
+	tickets, total, err := ticketstore.ListUserTickets(filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -83,7 +83,7 @@ func ListAdminTickets(role int, page, pageSize int, status string, keyword strin
 	if err != nil {
 		return nil, 0, err
 	}
-	tickets, total, err := model.ListAdminTickets(filter)
+	tickets, total, err := ticketstore.ListAdminTickets(filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -99,14 +99,14 @@ func CreateTicket(input CreateTicketInput) (*TicketDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	ticketType, err := model.ParseTicketType(input.Type)
+	ticketType, err := ticketstore.ParseTicketType(input.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	ticket := model.NewTicket(title, input.UserId, ticketType)
-	entry := &model.TicketEntry{
-		EntryType:    model.TicketEntryTypeMessage,
+	ticket := ticketstore.NewTicket(title, input.UserId, ticketType)
+	entry := &ticketstore.TicketEntry{
+		EntryType:    ticketstore.TicketEntryTypeMessage,
 		SenderUserId: input.UserId,
 		SenderName:   input.Username,
 		SenderRole:   input.Role,
@@ -114,12 +114,12 @@ func CreateTicket(input CreateTicketInput) (*TicketDetail, error) {
 		CreatedAt:    ticket.CreatedAt,
 	}
 
-	err = model.DB.Transaction(func(tx *gorm.DB) error {
-		if err := model.CreateTicketTx(tx, ticket); err != nil {
+	err = dbstore.DB.Transaction(func(tx *gorm.DB) error {
+		if err := ticketstore.CreateTicketTx(tx, ticket); err != nil {
 			return err
 		}
 		entry.TicketId = ticket.Id
-		if err := model.CreateTicketEntryTx(tx, entry); err != nil {
+		if err := ticketstore.CreateTicketEntryTx(tx, entry); err != nil {
 			return err
 		}
 		return nil
@@ -128,18 +128,18 @@ func CreateTicket(input CreateTicketInput) (*TicketDetail, error) {
 		return nil, errors.New("创建工单失败")
 	}
 
-	return buildTicketDetail(ticket, []*model.TicketEntry{entry}), nil
+	return buildTicketDetail(ticket, []*ticketstore.TicketEntry{entry}), nil
 }
 
 func GetTicketDetail(ticketId int, userId int, role int) (*TicketDetail, error) {
-	ticket, err := model.GetTicketByID(ticketId)
+	ticket, err := ticketstore.GetTicketByID(ticketId)
 	if err != nil {
 		return nil, err
 	}
 	if err := ensureTicketAccess(ticket, userId, role); err != nil {
 		return nil, err
 	}
-	entries, err := model.GetTicketEntries(ticketId)
+	entries, err := ticketstore.GetTicketEntries(ticketId)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +152,8 @@ func ReplyTicket(input ReplyTicketInput) error {
 		return err
 	}
 
-	return model.DB.Transaction(func(tx *gorm.DB) error {
-		ticket, err := model.GetTicketByIDForUpdate(tx, input.TicketId)
+	return dbstore.DB.Transaction(func(tx *gorm.DB) error {
+		ticket, err := ticketstore.GetTicketByIDForUpdate(tx, input.TicketId)
 		if err != nil {
 			return err
 		}
@@ -162,19 +162,19 @@ func ReplyTicket(input ReplyTicketInput) error {
 		}
 
 		now := common.GetTimestamp()
-		entry := &model.TicketEntry{
+		entry := &ticketstore.TicketEntry{
 			TicketId:     ticket.Id,
-			EntryType:    model.TicketEntryTypeMessage,
+			EntryType:    ticketstore.TicketEntryTypeMessage,
 			SenderUserId: input.UserId,
 			SenderName:   input.Username,
 			SenderRole:   input.Role,
 			Content:      content,
 			CreatedAt:    now,
 		}
-		if err := model.CreateTicketEntryTx(tx, entry); err != nil {
+		if err := ticketstore.CreateTicketEntryTx(tx, entry); err != nil {
 			return errors.New("发送回复失败")
 		}
-		if err := model.UpdateTicketFieldsTx(tx, ticket.Id, map[string]any{"updated_at": now}); err != nil {
+		if err := ticketstore.UpdateTicketFieldsTx(tx, ticket.Id, map[string]any{"updated_at": now}); err != nil {
 			return errors.New("发送回复失败")
 		}
 		return nil
@@ -182,14 +182,14 @@ func ReplyTicket(input ReplyTicketInput) error {
 }
 
 func CloseTicket(ticketId int, userId int, role int, username string) error {
-	return changeTicketStatus(ticketId, userId, role, username, model.TicketStatusCompleted)
+	return changeTicketStatus(ticketId, userId, role, username, ticketstore.TicketStatusCompleted)
 }
 
 func UpdateTicketStatus(ticketId int, userId int, role int, username string, status string) error {
 	if !canManageAllTickets(role) {
 		return errors.New("无权进行此操作")
 	}
-	targetStatus, err := model.ParseTicketStatus(status)
+	targetStatus, err := ticketstore.ParseTicketStatus(status)
 	if err != nil {
 		return err
 	}
@@ -197,8 +197,8 @@ func UpdateTicketStatus(ticketId int, userId int, role int, username string, sta
 }
 
 func changeTicketStatus(ticketId int, userId int, role int, username string, targetStatus int) error {
-	return model.DB.Transaction(func(tx *gorm.DB) error {
-		ticket, err := model.GetTicketByIDForUpdate(tx, ticketId)
+	return dbstore.DB.Transaction(func(tx *gorm.DB) error {
+		ticket, err := ticketstore.GetTicketByIDForUpdate(tx, ticketId)
 		if err != nil {
 			return err
 		}
@@ -215,10 +215,10 @@ func changeTicketStatus(ticketId int, userId int, role int, username string, tar
 			"updated_at": now,
 			"closed_at":  int64(0),
 		}
-		if targetStatus == model.TicketStatusCompleted {
+		if targetStatus == ticketstore.TicketStatusCompleted {
 			values["closed_at"] = now
 		}
-		updated, err := model.UpdateTicketStatusTx(tx, ticket.Id, ticket.Status, values)
+		updated, err := ticketstore.UpdateTicketStatusTx(tx, ticket.Id, ticket.Status, values)
 		if err != nil {
 			return errors.New("更新工单状态失败")
 		}
@@ -226,9 +226,9 @@ func changeTicketStatus(ticketId int, userId int, role int, username string, tar
 			return errors.New("工单状态已变更，请刷新后重试")
 		}
 
-		entry := &model.TicketEntry{
+		entry := &ticketstore.TicketEntry{
 			TicketId:     ticket.Id,
-			EntryType:    model.TicketEntryTypeStatusChange,
+			EntryType:    ticketstore.TicketEntryTypeStatusChange,
 			SenderUserId: userId,
 			SenderName:   username,
 			SenderRole:   role,
@@ -236,14 +236,14 @@ func changeTicketStatus(ticketId int, userId int, role int, username string, tar
 			ToStatus:     targetStatus,
 			CreatedAt:    now,
 		}
-		if err := model.CreateTicketEntryTx(tx, entry); err != nil {
+		if err := ticketstore.CreateTicketEntryTx(tx, entry); err != nil {
 			return errors.New("更新工单状态失败")
 		}
 		return nil
 	})
 }
 
-func buildTicketListFilter(userId int, page int, pageSize int, status string, keyword string) (model.TicketListFilter, error) {
+func buildTicketListFilter(userId int, page int, pageSize int, status string, keyword string) (ticketstore.TicketListFilter, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -254,7 +254,7 @@ func buildTicketListFilter(userId int, page int, pageSize int, status string, ke
 		pageSize = 100
 	}
 
-	filter := model.TicketListFilter{
+	filter := ticketstore.TicketListFilter{
 		UserId:  userId,
 		Keyword: strings.TrimSpace(keyword),
 		Offset:  (page - 1) * pageSize,
@@ -263,22 +263,22 @@ func buildTicketListFilter(userId int, page int, pageSize int, status string, ke
 	if status == "" || status == "all" {
 		return filter, nil
 	}
-	parsedStatus, err := model.ParseTicketStatus(status)
+	parsedStatus, err := ticketstore.ParseTicketStatus(status)
 	if err != nil {
-		return model.TicketListFilter{}, err
+		return ticketstore.TicketListFilter{}, err
 	}
 	filter.Status = parsedStatus
 	return filter, nil
 }
 
-func buildTicketSummaries(tickets []*model.Ticket) []TicketSummary {
+func buildTicketSummaries(tickets []*ticketstore.Ticket) []TicketSummary {
 	items := make([]TicketSummary, 0, len(tickets))
 	for _, ticket := range tickets {
 		items = append(items, TicketSummary{
 			Id:        ticket.Id,
 			Title:     ticket.Title,
-			Type:      model.TicketTypeName(ticket.Type),
-			Status:    model.TicketStatusName(ticket.Status),
+			Type:      ticketstore.TicketTypeName(ticket.Type),
+			Status:    ticketstore.TicketStatusName(ticket.Status),
 			CreatedAt: ticket.CreatedAt,
 			UpdatedAt: ticket.UpdatedAt,
 		})
@@ -286,7 +286,7 @@ func buildTicketSummaries(tickets []*model.Ticket) []TicketSummary {
 	return items
 }
 
-func buildTicketDetail(ticket *model.Ticket, entries []*model.TicketEntry) *TicketDetail {
+func buildTicketDetail(ticket *ticketstore.Ticket, entries []*ticketstore.TicketEntry) *TicketDetail {
 	messages := make([]TicketMessage, 0, len(entries))
 	for _, entry := range entries {
 		message := TicketMessage{
@@ -295,9 +295,9 @@ func buildTicketDetail(ticket *model.Ticket, entries []*model.TicketEntry) *Tick
 			Role:     buildMessageRole(entry.SenderRole),
 			Time:     entry.CreatedAt,
 		}
-		if entry.EntryType == model.TicketEntryTypeStatusChange {
+		if entry.EntryType == ticketstore.TicketEntryTypeStatusChange {
 			message.Type = "status"
-			message.Value = model.TicketStatusName(entry.ToStatus)
+			message.Value = ticketstore.TicketStatusName(entry.ToStatus)
 		} else {
 			message.Type = "message"
 			message.Content = entry.Content
@@ -308,8 +308,8 @@ func buildTicketDetail(ticket *model.Ticket, entries []*model.TicketEntry) *Tick
 	return &TicketDetail{
 		Id:        ticket.Id,
 		Title:     ticket.Title,
-		Type:      model.TicketTypeName(ticket.Type),
-		Status:    model.TicketStatusName(ticket.Status),
+		Type:      ticketstore.TicketTypeName(ticket.Type),
+		Status:    ticketstore.TicketStatusName(ticket.Status),
 		CreatedAt: ticket.CreatedAt,
 		UpdatedAt: ticket.UpdatedAt,
 		ClosedAt:  ticket.ClosedAt,
@@ -324,7 +324,7 @@ func buildMessageRole(role int) string {
 	return "user"
 }
 
-func ensureTicketAccess(ticket *model.Ticket, userId int, role int) error {
+func ensureTicketAccess(ticket *ticketstore.Ticket, userId int, role int) error {
 	if canManageAllTickets(role) {
 		return nil
 	}

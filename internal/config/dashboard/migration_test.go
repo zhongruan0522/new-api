@@ -2,39 +2,39 @@ package dashboard
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/console"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"testing"
 )
 
 // setupMigrationTestDB 初始化 sqlite 内存数据库并迁移 Option 表，
-// 保存并恢复 model.DB 和 common.OptionMap 以保证测试隔离。
+// 保存并恢复 dbstore.DB 和 common.OptionMap 以保证测试隔离。
 func setupMigrationTestDB(t *testing.T) func() {
 	t.Helper()
 
-	oldDB := model.DB
+	oldDB := dbstore.DB
 	oldOptionMap := common.OptionMap
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Option{}); err != nil {
+	if err := db.AutoMigrate(&optionstore.Option{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
 
-	model.DB = db
+	dbstore.DB = db
 	common.OptionMap = make(map[string]string)
 
 	return func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
+		dbstore.DB = oldDB
 		common.OptionMap = oldOptionMap
 	}
 }

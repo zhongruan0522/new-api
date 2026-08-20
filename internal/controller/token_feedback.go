@@ -3,12 +3,12 @@ package controller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/gin-gonic/gin"
 )
 
-func getTokenForFeedback(c *gin.Context) (*model.Token, error) {
-	token, err := model.GetTokenByKey(common.GetContextKeyString(c, constant.ContextKeyTokenKey), false)
+func getTokenForFeedback(c *gin.Context) (*tokenstore.Token, error) {
+	token, err := tokenstore.GetTokenByKey(common.GetContextKeyString(c, constant.ContextKeyTokenKey), false)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func getTokenForFeedback(c *gin.Context) (*model.Token, error) {
 		}
 	}
 	if quotaType == 2 || quotaType == 3 {
-		return model.GetTokenById(common.GetContextKeyInt(c, constant.ContextKeyTokenId))
+		return tokenstore.GetTokenById(common.GetContextKeyInt(c, constant.ContextKeyTokenId))
 	}
 	return token, nil
 }

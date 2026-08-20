@@ -2,16 +2,14 @@ package service
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
-
-	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"net/http"
+	"strings"
 )
 
 func formatNotifyType(channelId int, status int) string {
@@ -29,7 +27,7 @@ func DisableChannel(channelError domainchannel.ChannelError, reason string) {
 		return
 	}
 
-	success := model.UpdateChannelStatus(channelError.ChannelId, channelError.UsingKey, common.ChannelStatusAutoDisabled, reasonPreview)
+	success := channelstore.UpdateChannelStatus(channelError.ChannelId, channelError.UsingKey, common.ChannelStatusAutoDisabled, reasonPreview)
 	if success {
 		subject := fmt.Sprintf("通道「%s」（#%d）已被禁用", channelError.ChannelName, channelError.ChannelId)
 		content := fmt.Sprintf("通道「%s」（#%d）已被禁用，原因：%s", channelError.ChannelName, channelError.ChannelId, reasonPreview)
@@ -38,7 +36,7 @@ func DisableChannel(channelError domainchannel.ChannelError, reason string) {
 }
 
 func EnableChannel(channelId int, usingKey string, channelName string) {
-	success := model.UpdateChannelStatus(channelId, usingKey, common.ChannelStatusEnabled, "")
+	success := channelstore.UpdateChannelStatus(channelId, usingKey, common.ChannelStatusEnabled, "")
 	if success {
 		subject := fmt.Sprintf("通道「%s」（#%d）已被启用", channelName, channelId)
 		content := fmt.Sprintf("通道「%s」（#%d）已被启用", channelName, channelId)

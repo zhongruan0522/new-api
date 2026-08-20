@@ -5,7 +5,7 @@
 ## 规则
 
 - 控制器输入已校验也不能假设内部状态可信；跨系统边界继续校验。
-- 数据库写入通过 `internal/model/` 或 GORM 约定处理，不要在 service 中散落数据库专有 SQL。
+- 数据库写入通过 `internal/store/` 各资源子包或 GORM 约定处理，不要在 service 中散落数据库专有 SQL。
 - 计费、quota、usage、渠道选择、动态倍率、违规费用等逻辑必须保持可追踪和可测试。
 - 外部 HTTP 调用复用现有客户端和超时配置；不要无超时请求或吞掉上游错误。
 - 文件下载、解析、存储要校验大小、类型、来源和错误路径。
@@ -21,8 +21,8 @@
 func RecordAudit(c *gin.Context, module, actionType, description string, before, after interface{}, forceRecord ...bool)
 ```
 
-- `module`：`model.AuditModule*` 常量（如 `model.AuditModuleChannel`）。
-- `actionType`：`model.AuditActionCreate` / `model.AuditActionUpdate` / `model.AuditActionDelete`。
+- `module`：`auditstore.AuditModule*` 常量（如 `auditstore.AuditModuleChannel`，包路径 `internal/store/audit`）。
+- `actionType`：`auditstore.AuditActionCreate` / `auditstore.AuditActionUpdate` / `auditstore.AuditActionDelete`。
 - `before`/`after`：操作前后的数据，传 struct、map 或 nil 均可。service 层会：
   - 自动归一化为 map 并计算字段级 diff，只保留变化字段。
   - 自动递归脱敏敏感字段（字段名包含 `key`/`password`/`token`/`secret`/`credential`/`authorization`/`private_key` 的值替换为 `[REDACTED]`）。
@@ -40,5 +40,5 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 ## 验证
 
 - 改计费、quota、倍率、渠道选择或迁移逻辑后执行对应 service/model 测试。
-- 影响跨包行为时执行 `go test ./internal/service/... ./internal/model/... ./internal/relay/...`。
+- 影响跨包行为时执行 `go test ./internal/service/... ./internal/store/... ./internal/relay/...`。
 - 改审计服务（`internal/service/audit.go`）后执行 `go build .` 和 `go vet ./internal/service/...`。

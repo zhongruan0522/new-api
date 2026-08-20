@@ -2,15 +2,14 @@ package helper
 
 import (
 	"fmt"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,7 +44,7 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) billin
 
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
-	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup, relayInfo.OriginModelName)
+	dynamicRatio := channelstore.GetMatchedDynamicRatio(relayInfo.UsingGroup, relayInfo.OriginModelName)
 	if dynamicRatio > 0 {
 		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
 		groupRatioInfo.DynamicRatio = dynamicRatio

@@ -3,24 +3,23 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"log"
-	"net/url"
-	"strconv"
-	"sync"
-	"time"
-
+	"github.com/Calcium-Ion/go-epay/epay"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
-	"github.com/Calcium-Ion/go-epay/epay"
+	"github.com/NookMux/NookMux/internal/store/topup"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"log"
+	"net/url"
+	"strconv"
+	"sync"
+	"time"
 )
 
 func GetTopUpInfo(c *gin.Context) {
@@ -138,7 +137,7 @@ func RequestEpay(c *gin.Context) {
 	}
 
 	id := c.GetInt("id")
-	group, err := model.GetUserGroup(id, true)
+	group, err := userstore.GetUserGroup(id, true)
 	if err != nil {
 		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
@@ -178,13 +177,13 @@ func RequestEpay(c *gin.Context) {
 		return
 	}
 	amount := req.Amount
-	topUp := &model.TopUp{
+	topUp := &topupstore.TopUp{
 		UserId:          id,
 		Amount:          amount,
 		Money:           payMoney,
 		TradeNo:         tradeNo,
 		PaymentMethod:   req.PaymentMethod,
-		PaymentProvider: model.PaymentProviderEpay,
+		PaymentProvider: topupstore.PaymentProviderEpay,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -273,11 +272,11 @@ func EpayNotify(c *gin.Context) {
 		log.Println(verifyInfo)
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
-		if err := model.CompleteEpayTopUp(verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money); err != nil {
+		if err := topupstore.CompleteEpayTopUp(verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money); err != nil {
 			log.Printf("易支付回调完成订单失败: trade_no=%s type=%s money=%s err=%v", verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money, err)
 			// 订单已非 pending（通常是重复回调且此前已入账），确认 success
 			// 避免平台无限重试；其余入账失败写 fail 让平台重试。
-			if errors.Is(err, model.ErrTopUpStatusInvalid) {
+			if errors.Is(err, topupstore.ErrTopUpStatusInvalid) {
 				_, _ = c.Writer.Write([]byte("success"))
 			} else {
 				_, _ = c.Writer.Write([]byte("fail"))
@@ -311,7 +310,7 @@ func RequestAmount(c *gin.Context) {
 		return
 	}
 	id := c.GetInt("id")
-	group, err := model.GetUserGroup(id, true)
+	group, err := userstore.GetUserGroup(id, true)
 	if err != nil {
 		respondTopupError(c, i18n.MsgTopupGetGroupFailed)
 		return
@@ -330,14 +329,14 @@ func GetUserTopUps(c *gin.Context) {
 	keyword := c.Query("keyword")
 
 	var (
-		topups []*model.TopUp
+		topups []*topupstore.TopUp
 		total  int64
 		err    error
 	)
 	if keyword != "" {
-		topups, total, err = model.SearchUserTopUps(userId, keyword, pageInfo)
+		topups, total, err = topupstore.SearchUserTopUps(userId, keyword, pageInfo)
 	} else {
-		topups, total, err = model.GetUserTopUps(userId, pageInfo)
+		topups, total, err = topupstore.GetUserTopUps(userId, pageInfo)
 	}
 	if err != nil {
 		common.SysError("get user topups failed: " + err.Error())
@@ -356,14 +355,14 @@ func GetAllTopUps(c *gin.Context) {
 	keyword := c.Query("keyword")
 
 	var (
-		topups []*model.TopUp
+		topups []*topupstore.TopUp
 		total  int64
 		err    error
 	)
 	if keyword != "" {
-		topups, total, err = model.SearchAllTopUps(keyword, pageInfo)
+		topups, total, err = topupstore.SearchAllTopUps(keyword, pageInfo)
 	} else {
-		topups, total, err = model.GetAllTopUps(pageInfo)
+		topups, total, err = topupstore.GetAllTopUps(pageInfo)
 	}
 	if err != nil {
 		common.SysError("get all topups failed: " + err.Error())
@@ -392,7 +391,7 @@ func AdminCompleteTopUp(c *gin.Context) {
 	LockOrder(req.TradeNo)
 	defer UnlockOrder(req.TradeNo)
 
-	if err := model.ManualCompleteTopUp(req.TradeNo); err != nil {
+	if err := topupstore.ManualCompleteTopUp(req.TradeNo); err != nil {
 		common.SysError("manual complete topup failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return

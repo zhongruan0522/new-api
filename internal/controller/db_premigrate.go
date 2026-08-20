@@ -1,16 +1,15 @@
 package controller
 
 import (
-	"net/http"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/db/migrate"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
 )
 
 type dbPreMigrateStartRequest struct {
@@ -21,7 +20,7 @@ type dbPreMigrateStartRequest struct {
 }
 
 func GetDBPreMigrateInfo(c *gin.Context) {
-	info, err := service.GetDBPreMigrateInfo()
+	info, err := dbmigrate.GetDBPreMigrateInfo()
 	if err != nil {
 		common.SysError("failed to get db pre migrate info: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -40,7 +39,7 @@ func StartDBPreMigrate(c *gin.Context) {
 		return
 	}
 
-	jobID, err := service.StartDBPreMigrate(service.DBPreMigrateStartParams{
+	jobID, err := dbmigrate.StartDBPreMigrate(dbmigrate.DBPreMigrateStartParams{
 		TargetDSN:    strings.TrimSpace(req.TargetDSN),
 		TargetLogDSN: strings.TrimSpace(req.TargetLogDSN),
 		IncludeLogs:  req.IncludeLogs,
@@ -51,7 +50,7 @@ func StartDBPreMigrate(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleDB, model.AuditActionUpdate, "启动数据库预迁移", nil, req)
+	service.RecordAudit(c, auditstore.AuditModuleDB, auditstore.AuditActionUpdate, "启动数据库预迁移", nil, req)
 	common.ApiSuccess(c, gin.H{"job_id": jobID})
 }
 
@@ -65,7 +64,7 @@ func GetDBPreMigrateJob(c *gin.Context) {
 		return
 	}
 
-	job, ok := service.GetDBPreMigrateJob(id)
+	job, ok := dbmigrate.GetDBPreMigrateJob(id)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,

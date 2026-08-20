@@ -4,7 +4,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/console"
 	"github.com/NookMux/NookMux/internal/config/manager"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/option"
 )
 
 // MigrateFromConsoleSetting 从 console_setting 迁移面板开关到 dashboard_config
@@ -37,7 +37,7 @@ func MigrateFromConsoleSetting() error {
 
 	for key, value := range configMap {
 		fullKey := "dashboard_config." + key
-		err := model.UpdateOption(fullKey, value)
+		err := optionstore.UpdateOption(fullKey, value)
 		if err != nil {
 			common.SysError("更新配置失败 " + fullKey + ": " + err.Error())
 			return err
@@ -45,7 +45,7 @@ func MigrateFromConsoleSetting() error {
 	}
 
 	// 标记已迁移
-	err = model.UpdateOption("dashboard_config.migrated", "true")
+	err = optionstore.UpdateOption("dashboard_config.migrated", "true")
 	if err != nil {
 		common.SysError("标记迁移状态失败: " + err.Error())
 		return err

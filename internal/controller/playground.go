@@ -3,13 +3,13 @@ package controller
 import (
 	"errors"
 	"fmt"
-
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,14 +39,14 @@ func Playground(c *gin.Context) {
 	userId := c.GetInt("id")
 
 	// Write user context to ensure acceptUnsetRatio is available
-	userCache, err := model.GetUserCache(userId)
+	userCache, err := userstore.GetUserCache(userId)
 	if err != nil {
 		newAPIError = shared.NewError(err, shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 		return
 	}
 	userCache.WriteContext(c)
 
-	tempToken := &model.Token{
+	tempToken := &tokenstore.Token{
 		UserId:         userId,
 		Name:           fmt.Sprintf("playground-%s", relayInfo.UsingGroup),
 		Group:          relayInfo.UsingGroup,

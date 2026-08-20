@@ -2,14 +2,13 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/gin-gonic/gin"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/gin-gonic/gin"
 )
 
 func newChannelTestValidateContext() *gin.Context {
@@ -218,7 +217,7 @@ func TestSupportsChannelTestToolForChannel(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			channel := &model.Channel{Type: tc.channelType}
+			channel := &channelstore.Channel{Type: tc.channelType}
 			got := supportsChannelTestToolForChannel(channel, tc.endpointType, tc.modelName)
 			if got != tc.want {
 				t.Fatalf("supportsChannelTestToolForChannel(%d, %q, %q) = %v, want %v",

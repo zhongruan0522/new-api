@@ -2,22 +2,24 @@ package controller
 
 import (
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/redemption"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // maskRedemptionKeys 兑换码是可兑换凭证：列表/搜索/详情默认不返回完整 key，
 // 需要完整 key 时走专门的查看接口（GetRedemptionKey）并记录操作日志。
-func maskRedemptionKeys(redemptions []*model.Redemption) {
+func maskRedemptionKeys(redemptions []*redemptionstore.Redemption) {
 	for _, r := range redemptions {
 		r.Key = ""
 	}
@@ -25,7 +27,7 @@ func maskRedemptionKeys(redemptions []*model.Redemption) {
 
 func GetAllRedemptions(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	redemptions, total, err := model.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	redemptions, total, err := redemptionstore.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to get all redemptions: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -40,7 +42,7 @@ func GetAllRedemptions(c *gin.Context) {
 func SearchRedemptions(c *gin.Context) {
 	keyword := c.Query("keyword")
 	pageInfo := common.GetPageQuery(c)
-	redemptions, total, err := model.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	redemptions, total, err := redemptionstore.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to search redemptions: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -58,7 +60,7 @@ func GetRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	redemption, err := model.GetRedemptionById(id)
+	redemption, err := redemptionstore.GetRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -81,13 +83,13 @@ func GetRedemptionKey(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	redemption, err := model.GetRedemptionById(id)
+	redemption, err := redemptionstore.GetRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看兑换码密钥 (兑换码ID: %d)", id))
+	userstore.RecordLog(userId, logstore.LogTypeSystem, fmt.Sprintf("查看兑换码密钥 (兑换码ID: %d)", id))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -98,7 +100,7 @@ func GetRedemptionKey(c *gin.Context) {
 }
 
 func AddRedemption(c *gin.Context) {
-	redemption := model.Redemption{}
+	redemption := redemptionstore.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
@@ -124,10 +126,10 @@ func AddRedemption(c *gin.Context) {
 	}
 	var keys []string
 	// 使用事务保证原子性：整批成功或整批回滚，避免部分写入导致数据不一致
-	err = model.DB.Transaction(func(tx *gorm.DB) error {
+	err = dbstore.DB.Transaction(func(tx *gorm.DB) error {
 		for i := 0; i < redemption.Count; i++ {
 			key := common.GetUUID()
-			cleanRedemption := model.Redemption{
+			cleanRedemption := redemptionstore.Redemption{
 				UserId:      c.GetInt("id"),
 				Name:        redemption.Name,
 				Key:         key,
@@ -151,7 +153,7 @@ func AddRedemption(c *gin.Context) {
 		})
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionCreate, "新增兑换码", nil, map[string]interface{}{"name": redemption.Name, "count": redemption.Count})
+	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionCreate, "新增兑换码", nil, map[string]interface{}{"name": redemption.Name, "count": redemption.Count})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -161,13 +163,13 @@ func AddRedemption(c *gin.Context) {
 
 func DeleteRedemption(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	err := model.DeleteRedemptionById(id)
+	err := redemptionstore.DeleteRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to delete redemption: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
+	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -176,13 +178,13 @@ func DeleteRedemption(c *gin.Context) {
 
 func UpdateRedemption(c *gin.Context) {
 	statusOnly := c.Query("status_only")
-	redemption := model.Redemption{}
+	redemption := redemptionstore.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
-	cleanRedemption, err := model.GetRedemptionById(redemption.Id)
+	cleanRedemption, err := redemptionstore.GetRedemptionById(redemption.Id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -209,7 +211,7 @@ func UpdateRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
+	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
 	// 与列表/详情口径一致：更新响应不回传完整 key，完整 key 只能通过
 	// GetRedemptionKey 按需查看（留痕）获取。
 	cleanRedemption.Key = ""
@@ -221,13 +223,13 @@ func UpdateRedemption(c *gin.Context) {
 }
 
 func DeleteInvalidRedemption(c *gin.Context) {
-	rows, err := model.DeleteInvalidRedemptions()
+	rows, err := redemptionstore.DeleteInvalidRedemptions()
 	if err != nil {
 		common.SysError("failed to delete invalid redemptions: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除无效兑换码", nil, nil)
+	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除无效兑换码", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

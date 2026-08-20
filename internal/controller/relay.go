@@ -4,30 +4,29 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/constant"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/relay"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/service"
-
-	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
@@ -302,14 +301,14 @@ func fastTokenCountMetaForPricing(request shared.Request) *shared.TokenCountMeta
 	return meta
 }
 
-func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *shared.NookMuxError) {
+func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*channelstore.Channel, *shared.NookMuxError) {
 	if info.ChannelMeta == nil {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
 		if !autoBan {
 			autoBanInt = 0
 		}
-		return &model.Channel{
+		return &channelstore.Channel{
 			Id:      c.GetInt("channel_id"),
 			Type:    c.GetInt("channel_type"),
 			Name:    c.GetString("channel_name"),
@@ -442,7 +441,7 @@ func processChannelError(c *gin.Context, channelError domainchannel.ChannelError
 		}
 		useTimeMs := int(time.Since(startTime).Milliseconds())
 		err.SetExemptStrings(modelName, userGroup)
-		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
+		logstore.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
 	}
 
 	return channelWillBeDisabled

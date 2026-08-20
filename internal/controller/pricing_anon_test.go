@@ -3,40 +3,40 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/vendor_meta"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/model"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 func setupPricingTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
-	oldLogDB := model.LOG_DB
+	oldDB := dbstore.DB
+	oldLogDB := dbstore.LOG_DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Ability{}, &model.Channel{}, &model.Model{}); err != nil {
+	if err := db.AutoMigrate(&channelstore.Ability{}, &channelstore.Channel{}, &vendormetastore.Model{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
-	model.LOG_DB = db
+	dbstore.DB = db
+	dbstore.LOG_DB = db
 	common.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
 	t.Cleanup(func() {
-		model.DB = oldDB
-		model.LOG_DB = oldLogDB
+		dbstore.DB = oldDB
+		dbstore.LOG_DB = oldLogDB
 		common.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
@@ -48,22 +48,22 @@ func TestGetPricingAnonymousStripsEnableGroups(t *testing.T) {
 	setupPricingTestDB(t)
 	gin.SetMode(gin.TestMode)
 
-	ch := model.Channel{
+	ch := channelstore.Channel{
 		Id:     1,
 		Status: common.ChannelStatusEnabled,
 		Group:  "default",
 		Models: "galo-test",
 	}
-	if err := model.DB.Create(&ch).Error; err != nil {
+	if err := dbstore.DB.Create(&ch).Error; err != nil {
 		t.Fatalf("create channel: %v", err)
 	}
-	ability := model.Ability{
+	ability := channelstore.Ability{
 		Group:     "default",
 		Model:     "galo-test",
 		ChannelId: 1,
 		Enabled:   true,
 	}
-	if err := model.DB.Create(&ability).Error; err != nil {
+	if err := dbstore.DB.Create(&ability).Error; err != nil {
 		t.Fatalf("create ability: %v", err)
 	}
 

@@ -34,7 +34,7 @@ service 的逻辑时，同时阅读 `internal/controller/AGENTS.md` 和 `interna
 - [internal/controller/AGENTS.md](internal/controller/AGENTS.md)
 - [internal/middleware/AGENTS.md](internal/middleware/AGENTS.md)
 - [internal/service/AGENTS.md](internal/service/AGENTS.md)
-- [internal/model/AGENTS.md](internal/model/AGENTS.md)
+- [internal/store/AGENTS.md](internal/store/AGENTS.md)
 - [internal/config/AGENTS.md](internal/config/AGENTS.md)
 - [internal/relay/AGENTS.md](internal/relay/AGENTS.md)
 - [internal/i18n/AGENTS.md](internal/i18n/AGENTS.md)
@@ -59,7 +59,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `internal/controller/`: HTTP 边界、请求校验、响应组织。
 - `internal/middleware/`: 认证、限速、日志、分发、安全校验。
 - `internal/service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
-- `internal/model/`: GORM 模型、迁移、缓存、数据库访问。
+- `internal/store/`: 持久层（原 `model/`，阶段 5.2 按资源拆）：GORM 模型、迁移、缓存、数据库访问；子包按资源垂直拆分（`db/`、`channel/`、`user/`、`token/`、`log/` 等，包名带 `store` 后缀）。
 - `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
 - `internal/common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
 - `internal/relay/`: AI 请求中继、协议转换、供应商适配。

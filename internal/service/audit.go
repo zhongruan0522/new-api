@@ -2,13 +2,12 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 // sensitiveFieldSuffixes 字段名包含这些子串（小写匹配）时需要脱敏。
@@ -66,7 +65,7 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 	recordDiff := force || operation.IsAuditRecordDiff()
 	beforeStr, afterStr := serializeAuditDiff(before, after, recordDiff)
 
-	auditLog := &model.AuditLog{
+	auditLog := &auditstore.AuditLog{
 		CreatedAt:   common.GetTimestamp(),
 		Username:    username,
 		Ip:          ip,
@@ -78,7 +77,7 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 	}
 
 	common.RelayGo(func() {
-		if err := model.CreateAuditLog(auditLog); err != nil {
+		if err := auditstore.CreateAuditLog(auditLog); err != nil {
 			common.SysError(fmt.Sprintf("failed to record audit log (module=%s, action=%s): %s", module, actionType, err.Error()))
 		}
 	})

@@ -2,24 +2,25 @@ package controller
 
 import (
 	"encoding/json"
-	"sort"
-	"strconv"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/pricing"
+	"github.com/NookMux/NookMux/internal/store/vendor_meta"
 	"github.com/gin-gonic/gin"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 // GetAllModelsMeta 获取模型列表（分页）
 func GetAllModelsMeta(c *gin.Context) {
 
 	pageInfo := common.GetPageQuery(c)
-	modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	modelsMeta, err := vendormetastore.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to get all models: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -28,10 +29,10 @@ func GetAllModelsMeta(c *gin.Context) {
 	// 批量填充附加字段，提升列表接口性能
 	enrichModels(modelsMeta)
 	var total int64
-	model.DB.Model(&model.Model{}).Count(&total)
+	dbstore.DB.Model(&vendormetastore.Model{}).Count(&total)
 
 	// 统计供应商计数（全部数据，不受分页影响）
-	vendorCounts, _ := model.GetVendorModelCounts()
+	vendorCounts, _ := vendormetastore.GetVendorModelCounts()
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(modelsMeta)
@@ -51,7 +52,7 @@ func SearchModelsMeta(c *gin.Context) {
 	vendor := c.Query("vendor")
 	pageInfo := common.GetPageQuery(c)
 
-	modelsMeta, total, err := model.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	modelsMeta, total, err := vendormetastore.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to search models: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -72,19 +73,19 @@ func GetModelMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	var m model.Model
-	if err := model.DB.First(&m, id).Error; err != nil {
+	var m vendormetastore.Model
+	if err := dbstore.DB.First(&m, id).Error; err != nil {
 		common.SysError("failed to get model by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	enrichModels([]*model.Model{&m})
+	enrichModels([]*vendormetastore.Model{&m})
 	common.ApiSuccess(c, &m)
 }
 
 // CreateModelMeta 新建模型
 func CreateModelMeta(c *gin.Context) {
-	var m model.Model
+	var m vendormetastore.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
@@ -94,7 +95,7 @@ func CreateModelMeta(c *gin.Context) {
 		return
 	}
 	// 名称冲突检查
-	if dup, err := model.IsModelNameDuplicated(0, m.ModelName); err != nil {
+	if dup, err := vendormetastore.IsModelNameDuplicated(0, m.ModelName); err != nil {
 		common.SysError("failed to check model name duplication: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
@@ -108,8 +109,8 @@ func CreateModelMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshPricing()
-	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
+	pricingstore.RefreshPricing()
+	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
 	common.ApiSuccess(c, &m)
 }
 
@@ -117,7 +118,7 @@ func CreateModelMeta(c *gin.Context) {
 func UpdateModelMeta(c *gin.Context) {
 	statusOnly := c.Query("status_only") == "true"
 
-	var m model.Model
+	var m vendormetastore.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
@@ -128,8 +129,8 @@ func UpdateModelMeta(c *gin.Context) {
 	}
 
 	// 查询更新前的原始数据用于审计差异对比
-	var origin model.Model
-	if err := model.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
+	var origin vendormetastore.Model
+	if err := dbstore.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
 		common.SysError("failed to get model origin: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
@@ -137,7 +138,7 @@ func UpdateModelMeta(c *gin.Context) {
 
 	if statusOnly {
 		// 只更新状态，防止误清空其他字段
-		if err := model.DB.Model(&model.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
+		if err := dbstore.DB.Model(&vendormetastore.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
 			common.SysError("failed to update model status: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
@@ -145,10 +146,10 @@ func UpdateModelMeta(c *gin.Context) {
 		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
 		afterModel := origin
 		afterModel.Status = m.Status
-		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+origin.ModelName, origin, afterModel)
+		service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+origin.ModelName, origin, afterModel)
 	} else {
 		// 名称冲突检查
-		if dup, err := model.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
+		if dup, err := vendormetastore.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
 			common.SysError("failed to check model name duplication: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
@@ -162,9 +163,9 @@ func UpdateModelMeta(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
-		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
+		service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
 	}
-	model.RefreshPricing()
+	pricingstore.RefreshPricing()
 	common.ApiSuccess(c, &m)
 }
 
@@ -176,18 +177,18 @@ func DeleteModelMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if err := model.DB.Delete(&model.Model{}, id).Error; err != nil {
+	if err := dbstore.DB.Delete(&vendormetastore.Model{}, id).Error; err != nil {
 		common.SysError("failed to delete model: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.RefreshPricing()
-	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	pricingstore.RefreshPricing()
+	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 
 // enrichModels 批量填充附加信息：端点、渠道、分组、计费类型，避免 N+1 查询
-func enrichModels(models []*model.Model) {
+func enrichModels(models []*vendormetastore.Model) {
 	if len(models) == 0 {
 		return
 	}
@@ -200,7 +201,7 @@ func enrichModels(models []*model.Model) {
 		if m == nil {
 			continue
 		}
-		if m.NameRule == model.NameRuleExact {
+		if m.NameRule == vendormetastore.NameRuleExact {
 			exactNames = append(exactNames, m.ModelName)
 			exactIdx[m.ModelName] = append(exactIdx[m.ModelName], i)
 		} else {
@@ -209,7 +210,7 @@ func enrichModels(models []*model.Model) {
 	}
 
 	// 2) 批量查询精确模型的绑定渠道
-	channelsByModel, _ := model.GetBoundChannelsByModelsMap(exactNames)
+	channelsByModel, _ := vendormetastore.GetBoundChannelsByModelsMap(exactNames)
 
 	// 3) 精确模型：端点从缓存、渠道批量映射、分组/计费类型从缓存
 	for name, indices := range exactIdx {
@@ -217,14 +218,14 @@ func enrichModels(models []*model.Model) {
 		for _, idx := range indices {
 			mm := models[idx]
 			if mm.Endpoints == "" {
-				eps := model.GetModelSupportEndpointTypes(mm.ModelName)
+				eps := pricingstore.GetModelSupportEndpointTypes(mm.ModelName)
 				if b, err := json.Marshal(eps); err == nil {
 					mm.Endpoints = string(b)
 				}
 			}
 			mm.BoundChannels = chs
-			mm.EnableGroups = model.GetModelEnableGroups(mm.ModelName)
-			mm.QuotaTypes = model.GetModelQuotaTypes(mm.ModelName)
+			mm.EnableGroups = pricingstore.GetModelEnableGroups(mm.ModelName)
+			mm.QuotaTypes = pricingstore.GetModelQuotaTypes(mm.ModelName)
 		}
 	}
 
@@ -233,7 +234,7 @@ func enrichModels(models []*model.Model) {
 	}
 
 	// 4) 一次性读取定价缓存，内存匹配所有规则模型
-	pricings := model.GetPricing()
+	pricings := pricingstore.GetPricing()
 
 	// 为全部规则模型收集匹配名集合、端点并集、分组并集、配额集合
 	matchedNamesByIdx := make(map[int][]string)
@@ -246,11 +247,11 @@ func enrichModels(models []*model.Model) {
 			mm := models[idx]
 			var matched bool
 			switch mm.NameRule {
-			case model.NameRulePrefix:
+			case vendormetastore.NameRulePrefix:
 				matched = strings.HasPrefix(p.ModelName, mm.ModelName)
-			case model.NameRuleSuffix:
+			case vendormetastore.NameRuleSuffix:
 				matched = strings.HasSuffix(p.ModelName, mm.ModelName)
-			case model.NameRuleContains:
+			case vendormetastore.NameRuleContains:
 				matched = strings.Contains(p.ModelName, mm.ModelName)
 			}
 			if !matched {
@@ -296,7 +297,7 @@ func enrichModels(models []*model.Model) {
 	for n := range allMatchedSet {
 		allMatched = append(allMatched, n)
 	}
-	matchedChannelsByModel, _ := model.GetBoundChannelsByModelsMap(allMatched)
+	matchedChannelsByModel, _ := vendormetastore.GetBoundChannelsByModelsMap(allMatched)
 
 	// 6) 回填每个规则模型的并集信息
 	for _, idx := range ruleIndices {
@@ -334,7 +335,7 @@ func enrichModels(models []*model.Model) {
 
 		// 渠道并集
 		names := matchedNamesByIdx[idx]
-		channelSet := make(map[string]model.BoundChannel)
+		channelSet := make(map[string]vendormetastore.BoundChannel)
 		for _, n := range names {
 			for _, ch := range matchedChannelsByModel[n] {
 				key := ch.Name + "_" + strconv.Itoa(ch.Type)
@@ -342,7 +343,7 @@ func enrichModels(models []*model.Model) {
 			}
 		}
 		if len(channelSet) > 0 {
-			chs := make([]model.BoundChannel, 0, len(channelSet))
+			chs := make([]vendormetastore.BoundChannel, 0, len(channelSet))
 			for _, ch := range channelSet {
 				chs = append(chs, ch)
 			}

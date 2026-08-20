@@ -3,15 +3,14 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/oauth"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type oauthBindTestProvider struct{}
@@ -34,11 +33,11 @@ func (p *oauthBindTestProvider) GetUserInfo(ctx context.Context, token *oauth.OA
 
 func (p *oauthBindTestProvider) IsUserIDTaken(providerUserID string) bool { return false }
 
-func (p *oauthBindTestProvider) FillUserByProviderID(user *model.User, providerUserID string) error {
+func (p *oauthBindTestProvider) FillUserByProviderID(user *userstore.User, providerUserID string) error {
 	return nil
 }
 
-func (p *oauthBindTestProvider) SetProviderUserID(user *model.User, providerUserID string) {
+func (p *oauthBindTestProvider) SetProviderUserID(user *userstore.User, providerUserID string) {
 	user.GitHubId = providerUserID
 }
 
@@ -91,7 +90,7 @@ func TestHandleOAuthBindReturnsStructuredBindAction(t *testing.T) {
 		t.Fatalf("data.action = %q, want %q", body.Data.Action, "bind")
 	}
 
-	updatedUser, err := model.GetUserById(user.Id, true)
+	updatedUser, err := userstore.GetUserById(user.Id, true)
 	if err != nil {
 		t.Fatalf("get updated user: %v", err)
 	}

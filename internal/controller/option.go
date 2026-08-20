@@ -2,11 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"net/http"
-	"sort"
-	"strconv"
-	"strings"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/console"
@@ -14,15 +9,19 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 func GetOptions(c *gin.Context) {
-	var options []*model.Option
+	var options []*optionstore.Option
 	excludeLargeOptions := c.Query("exclude_large_options") == "true"
 	common.OptionMapRWMutex.Lock()
 	for k, v := range common.OptionMap {
@@ -35,7 +34,7 @@ func GetOptions(c *gin.Context) {
 		if excludeLargeOptions && configmodel.IsMiniMaxLegacyRemovedOption(k) {
 			value = "{}"
 		}
-		options = append(options, &model.Option{
+		options = append(options, &optionstore.Option{
 			Key:   k,
 			Value: value,
 		})
@@ -449,15 +448,15 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		}
 	}
 
-	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+	if err := optionstore.UpdateOption(req.Key, nextValue); err != nil {
 		common.SysError("failed to update option: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(
 		c,
-		model.AuditModuleOption,
-		model.AuditActionUpdate,
+		auditstore.AuditModuleOption,
+		auditstore.AuditActionUpdate,
 		"删除 JSON 映射配置项 "+req.Key+"."+req.MapKey,
 		map[string]interface{}{"option": req.Key, "value": beforeValue},
 		map[string]interface{}{"option": req.Key, "value": nextValue},
@@ -556,15 +555,15 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		}
 	}
 
-	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+	if err := optionstore.UpdateOption(req.Key, nextValue); err != nil {
 		common.SysError("failed to update option: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(
 		c,
-		model.AuditModuleOption,
-		model.AuditActionUpdate,
+		auditstore.AuditModuleOption,
+		auditstore.AuditActionUpdate,
 		"修改 JSON 映射配置项 "+req.Key+"."+mapKey,
 		map[string]interface{}{"option": req.Key, "value": beforeValue},
 		map[string]interface{}{"option": req.Key, "value": nextValue},
@@ -824,7 +823,7 @@ func UpdateOption(c *gin.Context) {
 	oldValue, hasOld := common.OptionMap[option.Key]
 	common.OptionMapRWMutex.RUnlock()
 
-	err = model.UpdateOption(option.Key, option.Value.(string))
+	err = optionstore.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {
 		common.SysError("failed to update option: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -856,11 +855,11 @@ func UpdateOption(c *gin.Context) {
 		beforeMap = map[string]interface{}{"key": option.Key, "value": oldAuditValue}
 	}
 	// P1-3: 审计配置本身的变更必须被记录。
-	// model.UpdateOption 已在上面执行，此时 audit_setting 已是最新值。
+	// optionstore.UpdateOption 已在上面执行，此时 audit_setting 已是最新值。
 	// 如果管理员关闭了审计总开关或 option 模块，RecordAudit 会按新配置跳过。
 	// 因此对 audit_setting.* 的任何变更都强制记录。
 	forceRecord := strings.HasPrefix(option.Key, "audit_setting.")
-	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "修改系统设置 "+option.Key, beforeMap, map[string]interface{}{"key": option.Key, "value": auditValue}, forceRecord)
+	service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "修改系统设置 "+option.Key, beforeMap, map[string]interface{}{"key": option.Key, "value": auditValue}, forceRecord)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

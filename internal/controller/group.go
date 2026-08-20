@@ -1,14 +1,12 @@
 package controller
 
 import (
-	"net/http"
-
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func GetGroups(c *gin.Context) {
@@ -27,7 +25,7 @@ func GetUserGroups(c *gin.Context) {
 	usableGroups := make(map[string]map[string]interface{})
 	userGroup := ""
 	userId := c.GetInt("id")
-	userGroup, _ = model.GetUserGroup(userId, false)
+	userGroup, _ = userstore.GetUserGroup(userId, false)
 	userUsableGroups := service.GetUserUsableGroups(userGroup)
 	for groupName := range ratio.GetGroupRatioCopy() {
 		// UserUsableGroups contains the groups that the user can use

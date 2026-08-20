@@ -2,16 +2,16 @@ package service
 
 import (
 	"fmt"
-	"net/http"
-	"sync"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"sync"
 )
 
 type BillingSession struct {
@@ -185,24 +185,24 @@ func (s *BillingSession) decreaseTokenQuota(quota int) error {
 
 	switch quotaType {
 	case 0: // 无限额度，只记录已用额度，不扣减剩余额度
-		return model.UpdateTokenUsedQuota(tokenId, tokenKey, quota)
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, quota)
 	case 1: // 永久限额
-		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.DecreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2: // 时段限额
-		return model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+		return tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota)
 	case 3: // 时段+周期限额
-		if err := model.DecreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+		if err := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		if err := model.DecreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			if rollbackErr := model.IncreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+		if err := tokenstore.DecreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
 				common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
 			}
 			return err
 		}
 		return nil
 	default:
-		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.DecreaseTokenQuota(tokenId, tokenKey, quota)
 	}
 }
 
@@ -214,24 +214,24 @@ func (s *BillingSession) increaseTokenQuota(quota int) error {
 
 	switch quotaType {
 	case 0: // 无限额度，只回滚已用额度，不恢复剩余额度
-		return model.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
 	case 1: // 永久限额
-		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2: // 时段限额
-		return model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota)
 	case 3: // 时段+周期限额
-		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+		if err := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			if rollbackErr := model.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+		if err := tokenstore.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
 				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
 			}
 			return err
 		}
 		return nil
 	default:
-		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	}
 }
 
@@ -241,24 +241,24 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 
 	switch quotaType {
 	case 0:
-		return model.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
 	case 1:
-		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2:
-		return model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota)
 	case 3:
-		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+		if err := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			if rollbackErr := model.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+		if err := tokenstore.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
 				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
 			}
 			return err
 		}
 		return nil
 	default:
-		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	}
 }
 
@@ -271,7 +271,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		)
 	}
 
-	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
+	userQuota, err := userstore.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
 		return nil, shared.NewError(err, shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
 	}

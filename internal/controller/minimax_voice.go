@@ -2,34 +2,33 @@ package controller
 
 import (
 	"errors"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/minimax_voice"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // 音色类型校验：只允许 preview / created。
 func isValidVoiceType(t string) bool {
-	return t == model.MiniMaxVoiceTypePreview || t == model.MiniMaxVoiceTypeCreated
+	return t == minimaxvoicestore.MiniMaxVoiceTypePreview || t == minimaxvoicestore.MiniMaxVoiceTypeCreated
 }
 
 // voiceListQuery 将查询参数解析为列表查询参数。
-func voiceListQuery(c *gin.Context) model.MiniMaxVoiceListParams {
+func voiceListQuery(c *gin.Context) minimaxvoicestore.MiniMaxVoiceListParams {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	operatorId, _ := strconv.Atoi(c.Query("operator_id"))
 	startTime, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTime, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	return model.MiniMaxVoiceListParams{
+	return minimaxvoicestore.MiniMaxVoiceListParams{
 		Type:       c.Query("type"),
 		OperatorId: operatorId,
 		VoiceId:    c.Query("voice_id"),
@@ -43,7 +42,7 @@ func voiceListQuery(c *gin.Context) model.MiniMaxVoiceListParams {
 // GetMiniMaxVoices 管理员：分页查询音色记录。
 func GetMiniMaxVoices(c *gin.Context) {
 	params := voiceListQuery(c)
-	result, err := model.ListMiniMaxVoices(params)
+	result, err := minimaxvoicestore.ListMiniMaxVoices(params)
 	if err != nil {
 		common.SysError("list minimax voices failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -79,7 +78,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 	if req.Type == "" {
-		req.Type = model.MiniMaxVoiceTypeCreated
+		req.Type = minimaxvoicestore.MiniMaxVoiceTypeCreated
 	}
 	if !isValidVoiceType(req.Type) {
 		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
@@ -87,7 +86,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	}
 
 	// 查重：已存在则提示不合规（不暴露“重复”）。
-	exists, err := model.IsMiniMaxVoiceIdExists(req.VoiceId)
+	exists, err := minimaxvoicestore.IsMiniMaxVoiceIdExists(req.VoiceId)
 	if err != nil {
 		common.SysError("check minimax voice id exists failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -99,7 +98,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	}
 
 	adminId := c.GetInt("id")
-	voice := &model.MiniMaxVoice{
+	voice := &minimaxvoicestore.MiniMaxVoice{
 		Type:         req.Type,
 		OperatorId:   adminId,
 		OperatorKind: "admin",
@@ -108,7 +107,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 		Allowed:      req.Allowed,
 		Remark:       req.Remark,
 	}
-	if err := model.InsertMiniMaxVoice(voice); err != nil {
+	if err := minimaxvoicestore.InsertMiniMaxVoice(voice); err != nil {
 		// 唯一约束冲突也归一为不合规。
 		if isVoiceDupErr(err) {
 			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
@@ -121,8 +120,8 @@ func CreateMiniMaxVoice(c *gin.Context) {
 
 	service.RecordAudit(
 		c,
-		model.AuditModuleVoice,
-		model.AuditActionCreate,
+		auditstore.AuditModuleVoice,
+		auditstore.AuditActionCreate,
 		"创建音色 "+voice.VoiceId,
 		nil,
 		voiceAuditMap(voice),
@@ -152,7 +151,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 
-	before, err := model.GetMiniMaxVoiceById(id)
+	before, err := minimaxvoicestore.GetMiniMaxVoiceById(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
@@ -166,7 +165,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 	// 修改音色 ID 时需查重。
 	newVoiceId := strings.TrimSpace(req.VoiceId)
 	if newVoiceId != "" && newVoiceId != before.VoiceId {
-		exists, derr := model.IsMiniMaxVoiceIdExists(newVoiceId)
+		exists, derr := minimaxvoicestore.IsMiniMaxVoiceIdExists(newVoiceId)
 		if derr != nil {
 			common.SysError("check minimax voice id exists failed: " + derr.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -187,7 +186,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		before.Remark = req.Remark
 	}
 	before.UpdatedAt = time.Now().Unix()
-	if err := model.UpdateMiniMaxVoice(before); err != nil {
+	if err := minimaxvoicestore.UpdateMiniMaxVoice(before); err != nil {
 		if isVoiceDupErr(err) {
 			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
@@ -199,8 +198,8 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 
 	service.RecordAudit(
 		c,
-		model.AuditModuleVoice,
-		model.AuditActionUpdate,
+		auditstore.AuditModuleVoice,
+		auditstore.AuditActionUpdate,
 		"修改音色 "+before.VoiceId,
 		nil,
 		voiceAuditMap(before),
@@ -220,7 +219,7 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceInvalidID)})
 		return
 	}
-	before, err := model.GetMiniMaxVoiceById(id)
+	before, err := minimaxvoicestore.GetMiniMaxVoiceById(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": i18n.T(c, i18n.MsgMiniMaxVoiceNotFound)})
@@ -230,15 +229,15 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	if err := model.DeleteMiniMaxVoiceById(id); err != nil {
+	if err := minimaxvoicestore.DeleteMiniMaxVoiceById(id); err != nil {
 		common.SysError("delete minimax voice by id failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.RecordAudit(
 		c,
-		model.AuditModuleVoice,
-		model.AuditActionDelete,
+		auditstore.AuditModuleVoice,
+		auditstore.AuditActionDelete,
 		"删除音色 "+before.VoiceId,
 		voiceAuditMap(before),
 		nil,
@@ -246,7 +245,7 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 }
 
-func voiceAuditMap(v *model.MiniMaxVoice) map[string]interface{} {
+func voiceAuditMap(v *minimaxvoicestore.MiniMaxVoice) map[string]interface{} {
 	return map[string]interface{}{
 		"id":            v.Id,
 		"voice_id":      v.VoiceId,

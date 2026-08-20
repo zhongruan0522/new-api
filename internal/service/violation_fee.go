@@ -2,18 +2,18 @@ package service
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	configmodel "github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/model"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/shopspring/decimal"
-
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
+	"strings"
+	"time"
 )
 
 const (
@@ -123,8 +123,8 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 		return false
 	}
 
-	model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, feeQuota)
-	model.UpdateChannelUsedQuota(relayInfo.ChannelId, feeQuota)
+	userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, feeQuota)
+	channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, feeQuota)
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	tokenName := ctx.GetString("token_name")
@@ -142,7 +142,7 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 		"violation_fee_marker": CSAMViolationMarker,
 	}
 
-	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId: relayInfo.ChannelId,
 		ModelName: relayInfo.OriginModelName,
 		TokenName: tokenName,

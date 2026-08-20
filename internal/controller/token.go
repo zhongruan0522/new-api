@@ -1,23 +1,22 @@
 package controller
 
 import (
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/service"
-
-	"github.com/gin-gonic/gin"
 )
 
 // maxUserTokens 每用户最大令牌数量（硬编码）
 const maxUserTokens = 1000
 
 // buildMaskedTokenResponse 返回 key 已脱敏的 token 副本，避免列表/详情接口泄露真实密钥。
-func buildMaskedTokenResponse(token *model.Token) *model.Token {
+func buildMaskedTokenResponse(token *tokenstore.Token) *tokenstore.Token {
 	if token == nil {
 		return nil
 	}
@@ -26,8 +25,8 @@ func buildMaskedTokenResponse(token *model.Token) *model.Token {
 	return &maskedToken
 }
 
-func buildMaskedTokenResponses(tokens []*model.Token) []*model.Token {
-	maskedTokens := make([]*model.Token, 0, len(tokens))
+func buildMaskedTokenResponses(tokens []*tokenstore.Token) []*tokenstore.Token {
+	maskedTokens := make([]*tokenstore.Token, 0, len(tokens))
 	for _, token := range tokens {
 		maskedTokens = append(maskedTokens, buildMaskedTokenResponse(token))
 	}
@@ -37,13 +36,13 @@ func buildMaskedTokenResponses(tokens []*model.Token) []*model.Token {
 func GetAllTokens(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
-	tokens, err := model.GetAllUserTokens(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, err := tokenstore.GetAllUserTokens(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get all user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	total, _ := model.CountUserTokens(userId)
+	total, _ := tokenstore.CountUserTokens(userId)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
 	common.ApiSuccess(c, pageInfo)
@@ -57,7 +56,7 @@ func SearchTokens(c *gin.Context) {
 	all := c.Query("all") == "true" || c.Query("all") == "1"
 
 	// status: 0 或缺省表示不过滤；1=启用 2=禁用 3=过期 4=额度耗尽。
-	// 与 model.SearchUserTokens 约定一致，> 0 时走后端等值过滤。
+	// 与 tokenstore.SearchUserTokens 约定一致，> 0 时走后端等值过滤。
 	status := 0
 	if statusStr := c.Query("status"); statusStr != "" {
 		if parsed, err := strconv.Atoi(statusStr); err == nil {
@@ -67,7 +66,7 @@ func SearchTokens(c *gin.Context) {
 
 	pageInfo := common.GetPageQuery(c)
 
-	tokens, total, err := model.SearchUserTokens(userId, keyword, token, group, status, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, total, err := tokenstore.SearchUserTokens(userId, keyword, token, group, status, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("search user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -85,7 +84,7 @@ func GetToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	token, err := model.GetTokenByIds(id, userId)
+	token, err := tokenstore.GetTokenByIds(id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -105,7 +104,7 @@ func GetTokenKey(c *gin.Context) {
 		return
 	}
 	userId := c.GetInt("id")
-	token, err := model.GetTokenByIds(id, userId)
+	token, err := tokenstore.GetTokenByIds(id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -123,7 +122,7 @@ func GetTokenKey(c *gin.Context) {
 func GetTokenStatus(c *gin.Context) {
 	tokenId := c.GetInt("token_id")
 	userId := c.GetInt("id")
-	token, err := model.GetTokenByIds(tokenId, userId)
+	token, err := tokenstore.GetTokenByIds(tokenId, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -229,7 +228,7 @@ func GetTokenUsage(c *gin.Context) {
 }
 
 func AddToken(c *gin.Context) {
-	token := model.Token{}
+	token := tokenstore.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
@@ -303,7 +302,7 @@ func AddToken(c *gin.Context) {
 	}
 
 	// 检查用户令牌数量是否已达上限
-	count, err := model.CountUserTokens(c.GetInt("id"))
+	count, err := tokenstore.CountUserTokens(c.GetInt("id"))
 	if err != nil {
 		common.SysError("count user tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -324,7 +323,7 @@ func AddToken(c *gin.Context) {
 	}
 
 	now := common.GetTimestamp()
-	cleanToken := model.Token{
+	cleanToken := tokenstore.Token{
 		UserId:             c.GetInt("id"),
 		Name:               token.Name,
 		Key:                key,
@@ -355,7 +354,7 @@ func AddToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
+	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -368,13 +367,13 @@ func AddToken(c *gin.Context) {
 func DeleteToken(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
-	err := model.DeleteTokenById(id, userId)
+	err := tokenstore.DeleteTokenById(id, userId)
 	if err != nil {
 		common.SysError("delete token by id failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
+	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -384,7 +383,7 @@ func DeleteToken(c *gin.Context) {
 func UpdateToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	statusOnly := c.Query("status_only")
-	token := model.Token{}
+	token := tokenstore.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
@@ -454,7 +453,7 @@ func UpdateToken(c *gin.Context) {
 		}
 	}
 
-	cleanToken, err := model.GetTokenByIds(token.Id, userId)
+	cleanToken, err := tokenstore.GetTokenByIds(token.Id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -516,7 +515,7 @@ func UpdateToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
+	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -535,13 +534,13 @@ func DeleteTokenBatch(c *gin.Context) {
 		return
 	}
 	userId := c.GetInt("id")
-	count, err := model.BatchDeleteTokens(tokenBatch.Ids, userId)
+	count, err := tokenstore.BatchDeleteTokens(tokenBatch.Ids, userId)
 	if err != nil {
 		common.SysError("batch delete tokens failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
+	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -558,7 +557,7 @@ func GetTokenKeysBatch(c *gin.Context) {
 	userId := c.GetInt("id")
 	keys := make(map[int]string, len(tokenBatch.Ids))
 	for _, id := range tokenBatch.Ids {
-		token, err := model.GetTokenByIds(id, userId)
+		token, err := tokenstore.GetTokenByIds(id, userId)
 		if err != nil {
 			common.SysError("get token by ids failed: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -582,13 +581,13 @@ func ResetTokenKey(c *gin.Context) {
 		return
 	}
 	userId := c.GetInt("id")
-	newKey, err := model.ResetTokenKey(id, userId)
+	newKey, err := tokenstore.ResetTokenKey(id, userId)
 	if err != nil {
 		common.SysError("reset token key failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
+	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

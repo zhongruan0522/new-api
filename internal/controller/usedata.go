@@ -1,16 +1,15 @@
 package controller
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/stored_media"
+	"github.com/NookMux/NookMux/internal/store/usedata"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
@@ -41,7 +40,7 @@ func GetAllQuotaDates(c *gin.Context) {
 		return
 	}
 	username := c.Query("username")
-	dates, err := model.GetAllQuotaDates(startTimestamp, endTimestamp, username)
+	dates, err := usedatastore.GetAllQuotaDates(startTimestamp, endTimestamp, username)
 	if err != nil {
 		common.SysError("failed to get all quota dates: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -67,7 +66,7 @@ func GetQuotaDataGroupByUser(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
-	dates, err := model.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
+	dates, err := usedatastore.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get quota data group by user: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -94,7 +93,7 @@ func GetUserQuotaDates(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
-	dates, err := model.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
+	dates, err := usedatastore.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get quota data by user id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -118,7 +117,7 @@ func GetAllMediaConvertStats(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
-	stats, err := model.GetAllMediaConvertStats(startTimestamp, endTimestamp)
+	stats, err := storedmediastore.GetAllMediaConvertStats(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get all media convert stats: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -141,7 +140,7 @@ func RecalculateQuotaData(c *gin.Context) {
 		return
 	}
 
-	err := model.RecalculateQuotaData(startTimestamp, endTimestamp)
+	err := usedatastore.RecalculateQuotaData(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to recalculate quota data: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -163,7 +162,7 @@ func GetUserMediaConvertStats(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
-	stats, err := model.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
+	stats, err := storedmediastore.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get media convert stats by user id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)

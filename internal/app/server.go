@@ -2,20 +2,22 @@ package app
 
 import (
 	"fmt"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/app/webdist"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/controller"
 	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/router"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/option"
+	"github.com/NookMux/NookMux/internal/store/usedata"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 )
 
 func Run() int {
@@ -36,7 +38,7 @@ func Run() int {
 	}
 
 	defer func() {
-		err := model.CloseDB()
+		err := dbstore.CloseDB()
 		if err != nil {
 			common.FatalLog("failed to close database: " + err.Error())
 		}
@@ -56,31 +58,31 @@ func Run() int {
 				if r := recover(); r != nil {
 					common.SysLog(fmt.Sprintf("InitChannelCache panic: %v, retrying once", r))
 					// Retry once
-					_, _, fixErr := model.FixAbility()
+					_, _, fixErr := channelstore.FixAbility()
 					if fixErr != nil {
 						common.FatalLog(fmt.Sprintf("InitChannelCache failed: %s", fixErr.Error()))
 					}
 				}
 			}()
-			model.InitChannelCache()
+			channelstore.InitChannelCache()
 		}()
 
-		go model.SyncChannelCache(common.SyncFrequency)
+		go channelstore.SyncChannelCache(common.SyncFrequency)
 	}
 
-	model.InitDynamicRatioCache()
+	channelstore.InitDynamicRatioCache()
 
 	// 动态倍率缓存同步
-	go model.SyncDynamicRatioCache(common.SyncFrequency)
+	go channelstore.SyncDynamicRatioCache(common.SyncFrequency)
 
 	// 设置获取 relay 并发数的函数指针
 	common.GetActiveConnectionsFunc = middleware.GetActiveConnectionCount
 
 	// 热更新配置
-	go model.SyncOptions(common.SyncFrequency)
+	go optionstore.SyncOptions(common.SyncFrequency)
 
 	// 数据看板
-	go model.UpdateQuotaData()
+	go usedatastore.UpdateQuotaData()
 
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))
@@ -95,7 +97,7 @@ func Run() int {
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true
 		common.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")
-		model.InitBatchUpdater()
+		dbstore.InitBatchUpdater()
 	}
 
 	if os.Getenv("ENABLE_PPROF") == "true" {

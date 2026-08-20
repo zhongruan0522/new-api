@@ -1,12 +1,11 @@
 package service
 
 import (
-	"testing"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/usedata"
+	"testing"
+	"time"
 )
 
 // TestLimitRankedModelsRespectsLimit 验证 limitRankedModels 在数据量超过 limit 时正确截断。
@@ -48,9 +47,9 @@ func TestLimitRankedVendorsRespectsLimit(t *testing.T) {
 // 而非硬编码常量（修复 issue #111 的核心断言）。
 func TestBuildModelHistoryRespectsConfigLimit(t *testing.T) {
 	// 准备 8 条 totals 数据
-	totals := make([]model.RankingQuotaTotal, 8)
+	totals := make([]usedatastore.RankingQuotaTotal, 8)
 	for i := range totals {
-		totals[i] = model.RankingQuotaTotal{
+		totals[i] = usedatastore.RankingQuotaTotal{
 			ModelName:   "model-" + string(rune('a'+i)),
 			TotalTokens: int64(100 - i),
 		}

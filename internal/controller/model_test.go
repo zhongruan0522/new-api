@@ -2,34 +2,35 @@ package controller
 
 import (
 	"fmt"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/model"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"net/http/httptest"
+	"testing"
 )
 
 func setupListModelsTestDB(t *testing.T) {
 	t.Helper()
 
-	oldDB := model.DB
+	oldDB := dbstore.DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.Ability{}); err != nil {
+	if err := db.AutoMigrate(&userstore.User{}, &channelstore.Ability{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
-	model.DB = db
+	dbstore.DB = db
 	common.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
@@ -37,7 +38,7 @@ func setupListModelsTestDB(t *testing.T) {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
-		model.DB = oldDB
+		dbstore.DB = oldDB
 		common.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
@@ -61,7 +62,7 @@ func TestListModelsIncludesContextPricingOnlyModel(t *testing.T) {
 		_ = ratio.UpdateContextPricingByJSONString("{}")
 	})
 
-	user := model.User{
+	user := userstore.User{
 		Id:          1,
 		Username:    "list-models-user",
 		Password:    "password123",
@@ -71,18 +72,18 @@ func TestListModelsIncludesContextPricingOnlyModel(t *testing.T) {
 		Group:       "paid-group",
 		AffCode:     "list-models-aff",
 	}
-	if err := model.DB.Create(&user).Error; err != nil {
+	if err := dbstore.DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	priority := int64(0)
-	ability := model.Ability{
+	ability := channelstore.Ability{
 		Group:     "paid-group",
 		Model:     "context-priced-model",
 		ChannelId: 1,
 		Enabled:   true,
 		Priority:  &priority,
 	}
-	if err := model.DB.Create(&ability).Error; err != nil {
+	if err := dbstore.DB.Create(&ability).Error; err != nil {
 		t.Fatalf("create ability: %v", err)
 	}
 

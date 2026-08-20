@@ -3,13 +3,11 @@ package relay
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"strings"
-
-	"github.com/NookMux/NookMux/internal/model"
-
+	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
+	"strings"
 )
 
 // RelayStoredVideo serves videos persisted for "multimodal auto convert to URL".
@@ -28,7 +26,7 @@ func RelayStoredVideo(c *gin.Context) {
 		return
 	}
 
-	v, err := model.GetStoredVideoByID(c.Request.Context(), id)
+	v, err := storedmediastore.GetStoredVideoByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{

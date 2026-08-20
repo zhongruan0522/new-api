@@ -5,6 +5,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/config/ratio"
+	"github.com/NookMux/NookMux/internal/constant"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/middleware"
+	"github.com/NookMux/NookMux/internal/relay"
+	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/relay/helper"
+	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
+	"github.com/tidwall/gjson"
 	"io"
 	"math"
 	"math/rand"
@@ -16,28 +38,6 @@ import (
 	"sync"
 	"time"
 	"unicode"
-
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
-	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/model"
-	"github.com/NookMux/NookMux/internal/relay"
-	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
-
-	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
-	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/pkg/jsonx"
-	"github.com/samber/lo"
-	"github.com/tidwall/gjson"
-
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -63,7 +63,7 @@ type channelTestPrompt struct {
 	requiresTextAnswer bool
 }
 
-func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointType string) string {
+func normalizeChannelTestEndpoint(channel *channelstore.Channel, modelName, endpointType string) string {
 	normalized := strings.TrimSpace(endpointType)
 	if normalized != "" {
 		return normalized
@@ -81,8 +81,8 @@ func resolveChannelTestUserID(c *gin.Context) (int, error) {
 		}
 	}
 
-	var rootUser model.User
-	if err := model.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
+	var rootUser userstore.User
+	if err := dbstore.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
 		return 0, fmt.Errorf("failed to resolve channel test user: %w", err)
 	}
 	if rootUser.Id == 0 {
@@ -91,7 +91,7 @@ func resolveChannelTestUserID(c *gin.Context) (int, error) {
 	return rootUser.Id, nil
 }
 
-func testChannel(channel *model.Channel, testUserID int, testModel string, endpointType string, isStream bool, isTool bool) testResult {
+func testChannel(channel *channelstore.Channel, testUserID int, testModel string, endpointType string, isStream bool, isTool bool) testResult {
 	tik := time.Now()
 	var unsupportedTestChannelTypes = []int{
 		channelconstant.ChannelTypeMidjourney,
@@ -166,7 +166,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		Header: make(http.Header),
 	}
 
-	cache, err := model.GetUserCache(testUserID)
+	cache, err := userstore.GetUserCache(testUserID)
 	if err != nil {
 		return testResult{
 			localErr:    err,
@@ -180,7 +180,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
-	group, _ := model.GetUserGroup(testUserID, false)
+	group, _ := userstore.GetUserGroup(testUserID, false)
 	c.Set("group", group)
 
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, testModel)
@@ -530,7 +530,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio, priceData.GroupRatioInfo.DynamicRatio)
 	// 复用正式消费日志的流式指标，保证模型测试日志与线上展示一致。
 	service.AppendStreamMetrics(other, info, milliseconds, usage.CompletionTokens)
-	model.RecordConsumeLog(c, testUserID, model.RecordConsumeLogParams{
+	logstore.RecordConsumeLog(c, testUserID, logstore.RecordConsumeLogParams{
 		ChannelId:        channel.Id,
 		PromptTokens:     usage.PromptTokens,
 		CompletionTokens: usage.CompletionTokens,
@@ -645,7 +645,7 @@ func detectErrorMessageFromJSONBytes(jsonBytes []byte) string {
 	return message
 }
 
-func buildTestRequest(model string, endpointType string, channel *model.Channel, isStream bool, testPrompt channelTestPrompt) shared.Request {
+func buildTestRequest(model string, endpointType string, channel *channelstore.Channel, isStream bool, testPrompt channelTestPrompt) shared.Request {
 	userPrompt := testPrompt.prompt
 	if strings.TrimSpace(userPrompt) == "" {
 		userPrompt = "hi"
@@ -797,7 +797,7 @@ func supportsChannelTestTool(endpointType string, modelName string) bool {
 // 用于避免对未实现 Responses 工具语义转换、或会丢弃 tools 配置的上游发送工具测试请求。
 // 例如 Gemini/Vertex/AWS 当前没有实现 ConvertOpenAIResponsesRequest,AWS Nova 的 Chat 转换会丢弃
 // tools/tool_choice,这些路径如果走工具测试会直接触发上游"输入不合规"类错误,应在本地拒绝。
-func supportsChannelTestToolForChannel(channel *model.Channel, endpointType string, modelName string) bool {
+func supportsChannelTestToolForChannel(channel *channelstore.Channel, endpointType string, modelName string) bool {
 	if !supportsChannelTestTool(endpointType, modelName) {
 		return false
 	}
@@ -1493,9 +1493,9 @@ func TestChannel(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
-	channel, err := model.CacheGetChannel(channelId)
+	channel, err := channelstore.CacheGetChannel(channelId)
 	if err != nil {
-		channel, err = model.GetChannelById(channelId, true)
+		channel, err = channelstore.GetChannelById(channelId, true)
 		if err != nil {
 			common.SysError("failed to get channel by id: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -1549,7 +1549,7 @@ func testAllChannels(c *gin.Context, notify bool) error {
 	}
 	testAllChannelsRunning = true
 	testAllChannelsLock.Unlock()
-	channels, getChannelErr := model.GetAllChannels(0, 0, true, false)
+	channels, getChannelErr := channelstore.GetAllChannels(0, 0, true, false)
 	if getChannelErr != nil {
 		return getChannelErr
 	}

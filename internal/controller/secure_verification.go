@@ -2,17 +2,18 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	passkeysvc "github.com/NookMux/NookMux/internal/service/passkey"
-
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/passkey"
+	"github.com/NookMux/NookMux/internal/store/twofa"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"time"
 )
 
 const (
@@ -60,7 +61,7 @@ func UniversalVerify(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user := &model.User{Id: userId}
+	user := &userstore.User{Id: userId}
 	if err := user.FillUserById(); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
 		return
@@ -72,10 +73,10 @@ func UniversalVerify(c *gin.Context) {
 	}
 
 	// 检查用户的验证方式
-	twoFA, _ := model.GetTwoFAByUserId(userId)
+	twoFA, _ := twofastore.GetTwoFAByUserId(userId)
 	has2FA := twoFA != nil && twoFA.IsEnabled
 
-	passkey, passkeyErr := model.GetPasskeyByUserID(userId)
+	passkey, passkeyErr := passkeystore.GetPasskeyByUserID(userId)
 	hasPasskey := passkeyErr == nil && passkey != nil
 
 	if !has2FA && !hasPasskey {
@@ -135,7 +136,7 @@ func UniversalVerify(c *gin.Context) {
 	}
 
 	// 记录日志
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("通用安全验证成功 (验证方式: %s)", verifyMethod))
+	userstore.RecordLog(userId, logstore.LogTypeSystem, fmt.Sprintf("通用安全验证成功 (验证方式: %s)", verifyMethod))
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -255,7 +256,7 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 		return
 	}
 
-	user := &model.User{Id: userId}
+	user := &userstore.User{Id: userId}
 	if err := user.FillUserById(); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
 		return
@@ -266,7 +267,7 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 		return
 	}
 
-	credential, err := model.GetPasskeyByUserID(userId)
+	credential, err := passkeystore.GetPasskeyByUserID(userId)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 		return
@@ -294,7 +295,7 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 	// 更新凭证的最后使用时间
 	usedAt := time.Now()
 	credential.LastUsedAt = &usedAt
-	if err := model.UpsertPasskeyCredential(credential); err != nil {
+	if err := passkeystore.UpsertPasskeyCredential(credential); err != nil {
 		common.SysError("upsert passkey credential failed: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
@@ -308,7 +309,7 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 	}
 
 	// 记录日志
-	model.RecordLog(userId, model.LogTypeSystem, "Passkey 安全验证成功")
+	userstore.RecordLog(userId, logstore.LogTypeSystem, "Passkey 安全验证成功")
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

@@ -5,7 +5,7 @@
 ## 规则
 
 - 外部输入必须在这里或更近边界校验：path/query/body/form/file/header。
-- 控制器不要沉淀复杂业务逻辑；可复用业务放 `internal/service/`，持久化放 `internal/model/`。
+- 控制器不要沉淀复杂业务逻辑；可复用业务放 `internal/service/`，持久化放 `internal/store/` 各资源子包。
 - 响应结构保持现有 `{ success, message, data }` 风格，避免为单个前端新增不兼容格式。
 - 不要为了前端改后端业务 API。字段不匹配时优先改前端适配本项目接口。
 - 安全相关控制器要保留二次验证、角色校验、限速和审计日志。
@@ -69,14 +69,14 @@
 
 ### 审计配置变更的特殊处理
 
-修改 `audit_setting.*` 配置时，由于 `model.UpdateOption` 先于 `RecordAudit` 执行，
+修改 `audit_setting.*` 配置时，由于 `optionstore.UpdateOption` 先于 `RecordAudit` 执行，
 新配置会立即生效。如果管理员关闭了审计总开关或 option 模块，后续的 `RecordAudit`
 会被跳过。因此 `UpdateOption` 中对 `audit_setting.*` 的变更必须传 `forceRecord=true`。
 
 ### 新增资源类型时的检查清单
 
 新增一个需要审计的资源类型时，确认：
-1. 定义 `model.AuditModule*` 常量，加入 `model.AuditModuleList`。
+1. 定义 `auditstore.AuditModule*` 常量，加入 `auditstore.AuditModuleList`。
 2. 在 `internal/config/operation/audit_setting.go` 的 `defaultAuditModules()` 中注册。
 3. 在 `web/src/features/audit-logs/constants.ts` 的 `AUDIT_MODULES` 中注册。
 4. 在 `web/src/i18n/static-keys.ts` 中注册模块标签 key。

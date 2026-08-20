@@ -1,16 +1,17 @@
 package controller
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/console"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/service"
-
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/stored_media"
+	"github.com/NookMux/NookMux/internal/store/usedata"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 func GetAllLogs(c *gin.Context) {
@@ -29,7 +30,7 @@ func GetAllLogs(c *gin.Context) {
 	ua := c.Query("ua")
 	xTitle := c.Query("x_title")
 	httpReferer := c.Query("http_referer")
-	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
+	logs, total, err := logstore.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.SysError("failed to get all logs: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -58,7 +59,7 @@ func GetUserLogs(c *gin.Context) {
 
 	// 普通用户列表接口同样禁止使用不可见字段做过滤条件，
 	// 避免通过 total/items 变化做侧信道探测（与 GetLogsSelfStat 一致）。
-	filter := model.LogStatFilter{
+	filter := logstore.LogStatFilter{
 		Username:          c.GetString("username"),
 		TokenName:         tokenName,
 		ModelName:         modelName,
@@ -78,7 +79,7 @@ func GetUserLogs(c *gin.Context) {
 		return
 	}
 
-	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
+	logs, total, err := logstore.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.SysError("failed to get user logs: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -101,10 +102,10 @@ func GetUserLogs(c *gin.Context) {
 //   - 这些字段的产品语义是"表格列字段"，返回值不裁剪，过滤条件不校验。
 //   - 详见根 AGENTS.md "使用日志字段可见性" 章节。
 //
-// admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 model.formatUserLogs 删除。
+// admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 logstore.formatUserLogs 删除。
 // stream_status/billing_source/request_conversion 等独立 other 字段在 stripHiddenOtherFields 中过滤。
 // 如果配置解析失败，IsUsageLogFieldVisible 会回退到默认值，此处按默认值过滤。
-func filterHiddenUsageLogFields(logs []*model.Log) {
+func filterHiddenUsageLogFields(logs []*logstore.Log) {
 	// 构建需要过滤的字段集合（普通用户不可见的详情弹窗独有字段）
 	hiddenFields := make(map[string]bool)
 	for _, d := range console.UsageLogFieldsDefaults() {
@@ -151,7 +152,7 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 
 // stripHiddenOtherFields 从 other JSON 中移除被隐藏字段对应的数据。
 // 如果 hiddenFields 为 nil，表示清空所有详情弹窗独有的 other 字段。
-func stripHiddenOtherFields(log *model.Log, hiddenFields map[string]bool) {
+func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 	if log.Other == "" {
 		return
 	}
@@ -265,7 +266,7 @@ func GetLogByKey(c *gin.Context) {
 	usePagination := rawPage != "" || rawPageSize != ""
 
 	if !usePagination {
-		logs, err := model.GetLogByTokenId(tokenId)
+		logs, err := logstore.GetLogByTokenId(tokenId)
 		if err != nil {
 			common.SysError("failed to get log by token id: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -289,7 +290,7 @@ func GetLogByKey(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	modelName := c.Query("model_name")
 
-	logs, total, err := model.GetLogsByTokenId(model.GetLogsByTokenIdParams{
+	logs, total, err := logstore.GetLogsByTokenId(logstore.GetLogsByTokenIdParams{
 		TokenId:        tokenId,
 		StartTimestamp: startTimestamp,
 		EndTimestamp:   endTimestamp,
@@ -314,7 +315,7 @@ func GetLogsStat(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	channel, _ := strconv.Atoi(c.Query("channel"))
-	filter := model.LogStatFilter{
+	filter := logstore.LogStatFilter{
 		Username:          c.Query("username"),
 		TokenName:         c.Query("token_name"),
 		ModelName:         c.Query("model_name"),
@@ -328,14 +329,14 @@ func GetLogsStat(c *gin.Context) {
 		HttpReferer:       c.Query("http_referer"),
 	}
 
-	var statData model.Stat
+	var statData logstore.Stat
 	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
-		var qStat model.QuotaStat
+		var qStat usedatastore.QuotaStat
 		var err error
 		if filter.Username != "" {
-			qStat, err = model.GetQuotaStatByUsername(filter.Username, startTimestamp, endTimestamp)
+			qStat, err = usedatastore.GetQuotaStatByUsername(filter.Username, startTimestamp, endTimestamp)
 		} else {
-			qStat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
+			qStat, err = usedatastore.GetAllQuotaStat(startTimestamp, endTimestamp)
 		}
 		if err != nil {
 			common.SysError("failed to get quota stat: " + err.Error())
@@ -343,13 +344,13 @@ func GetLogsStat(c *gin.Context) {
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
-		rpm, tpm, err := model.QueryRpmTpm(filter)
+		rpm, tpm, err := logstore.QueryRpmTpm(filter)
 		if err != nil {
 			common.SysError("failed to query rpm tpm: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
-		statData = model.Stat{
+		statData = logstore.Stat{
 			Quota:        qStat.Quota,
 			Rpm:          rpm,
 			Tpm:          tpm,
@@ -357,7 +358,7 @@ func GetLogsStat(c *gin.Context) {
 			FailCount:    qStat.FailCount,
 		}
 	} else {
-		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
+		stat, err := logstore.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.SysError("failed to sum used quota: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -379,7 +380,7 @@ func GetLogsSelfStat(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	channel, _ := strconv.Atoi(c.Query("channel"))
-	filter := model.LogStatFilter{
+	filter := logstore.LogStatFilter{
 		Username:          c.GetString("username"),
 		TokenName:         c.Query("token_name"),
 		ModelName:         c.Query("model_name"),
@@ -402,22 +403,22 @@ func GetLogsSelfStat(c *gin.Context) {
 		return
 	}
 
-	var statData model.Stat
+	var statData logstore.Stat
 	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
-		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
+		qStat, err := usedatastore.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
 			common.SysError("failed to get quota stat by user id: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒）
-		rpm, tpm, err := model.QueryRpmTpm(filter)
+		rpm, tpm, err := logstore.QueryRpmTpm(filter)
 		if err != nil {
 			common.SysError("failed to query rpm tpm: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
-		statData = model.Stat{
+		statData = logstore.Stat{
 			Quota:        qStat.Quota,
 			Rpm:          rpm,
 			Tpm:          tpm,
@@ -425,7 +426,7 @@ func GetLogsSelfStat(c *gin.Context) {
 			FailCount:    qStat.FailCount,
 		}
 	} else {
-		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
+		stat, err := logstore.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.SysError("failed to sum used quota: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -452,7 +453,7 @@ func GetLogsSelfStat(c *gin.Context) {
 //     不依赖配置（channel 已从 Defaults 移除，IsUsageLogFieldVisible 回退到 return false）。
 //   - 详情弹窗独有字段（request_id/upstream_request_id/ip/ua/x_title/http_referer）
 //     受总开关和单字段可见性双重控制。
-func validateUserLogFilters(filter model.LogStatFilter) string {
+func validateUserLogFilters(filter logstore.LogStatFilter) string {
 	// 详情弹窗独有字段受总开关和单字段可见性双重控制。
 	// 总开关关闭时，详情弹窗独有字段都不可作为过滤条件。
 	// 但表格列字段（token_name/group/model_name 等）不受此限制，始终可过滤。
@@ -518,7 +519,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 	var firstErr error
 
 	if cleanLogs {
-		count, err := model.DeleteLogsInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		count, err := logstore.DeleteLogsInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -526,7 +527,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 		detail["clean_logs"] = count
 	}
 	if cleanStoredImages {
-		count, err := model.DeleteStoredImagesInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		count, err := storedmediastore.DeleteStoredImagesInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -534,7 +535,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 		detail["clean_stored_images"] = count
 	}
 	if cleanStoredVideos {
-		count, err := model.DeleteStoredVideosInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		count, err := storedmediastore.DeleteStoredVideosInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -542,7 +543,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 		detail["clean_stored_videos"] = count
 	}
 	if cleanAuditLogs {
-		count, err := model.DeleteAuditLogsInRange(startTimestamp, endTimestamp)
+		count, err := auditstore.DeleteAuditLogsInRange(startTimestamp, endTimestamp)
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -555,7 +556,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 	if firstErr != nil {
 		detail["error"] = firstErr.Error()
 	}
-	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, detail, true)
+	service.RecordAudit(c, auditstore.AuditModuleLog, auditstore.AuditActionDelete, "清理历史日志", nil, detail, true)
 
 	if firstErr != nil {
 		common.SysError("failed to delete history logs: " + firstErr.Error())

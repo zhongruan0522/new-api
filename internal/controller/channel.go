@@ -4,24 +4,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/model"
 	"github.com/NookMux/NookMux/internal/relay/channel/gemini"
 	"github.com/NookMux/NookMux/internal/relay/channel/ollama"
 	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/store/audit"
+	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/NookMux/NookMux/internal/store/twofa"
+	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type OpenAIModel struct {
@@ -95,7 +98,7 @@ func normalizeModelID(raw any) string {
 	}
 }
 
-func clearChannelInfo(channel *model.Channel) {
+func clearChannelInfo(channel *channelstore.Channel) {
 	if channel.ChannelInfo.IsMultiKey {
 		channel.ChannelInfo.MultiKeyDisabledReason = nil
 		channel.ChannelInfo.MultiKeyDisabledTime = nil
@@ -114,8 +117,8 @@ func applyChannelStatusFilter(query *gorm.DB, statusFilter int) *gorm.DB {
 }
 
 func buildChannelListQuery(group string, statusFilter int, typeFilter int) *gorm.DB {
-	query := model.DB.Model(&model.Channel{})
-	query = model.ApplyChannelGroupFilter(query, group)
+	query := dbstore.DB.Model(&channelstore.Channel{})
+	query = channelstore.ApplyChannelGroupFilter(query, group)
 	query = applyChannelStatusFilter(query, statusFilter)
 	if typeFilter >= 0 {
 		query = query.Where("type = ?", typeFilter)
@@ -125,10 +128,10 @@ func buildChannelListQuery(group string, statusFilter int, typeFilter int) *gorm
 
 func GetAllChannels(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	channelData := make([]*model.Channel, 0)
+	channelData := make([]*channelstore.Channel, 0)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
-	groupFilter := model.NormalizeChannelGroupFilter(c.Query("group"))
+	groupFilter := channelstore.NormalizeChannelGroupFilter(c.Query("group"))
 	statusParam := c.Query("status")
 	// statusFilter: -1 all, 1 enabled, 0 disabled (include auto & manual)
 	statusFilter := parseStatusFilter(statusParam)
@@ -144,13 +147,13 @@ func GetAllChannels(c *gin.Context) {
 	var total int64
 
 	if enableTagMode {
-		tags, err := model.GetPaginatedChannelTags(buildChannelListQuery(groupFilter, statusFilter, typeFilter), pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+		tags, err := channelstore.GetPaginatedChannelTags(buildChannelListQuery(groupFilter, statusFilter, typeFilter), pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 		if err != nil {
 			common.SysError("failed to get paginated tags: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgChannelGetTagsFailed)
 			return
 		}
-		total, err = model.CountChannelTags(buildChannelListQuery(groupFilter, statusFilter, typeFilter))
+		total, err = channelstore.CountChannelTags(buildChannelListQuery(groupFilter, statusFilter, typeFilter))
 		if err != nil {
 			common.SysError("failed to count tags: " + err.Error())
 			common.ApiErrorI18n(c, i18n.MsgChannelCountTagsFailed)
@@ -160,7 +163,7 @@ func GetAllChannels(c *gin.Context) {
 			if tag == nil || *tag == "" {
 				continue
 			}
-			var tagChannels []*model.Channel
+			var tagChannels []*channelstore.Channel
 			err := buildChannelListQuery(groupFilter, statusFilter, typeFilter).
 				Where("tag = ?", *tag).
 				Order("priority desc, weight desc").
@@ -231,7 +234,7 @@ const (
 	fetchModelsDefaultUserAgent   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) CherryStudio/1.7.18 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36"
 )
 
-func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, error) {
+func buildFetchModelsHeaders(channel *channelstore.Channel, key string) (http.Header, error) {
 	var headers http.Header
 	switch channel.Type {
 	case constant.ChannelTypeAnthropic:
@@ -249,7 +252,7 @@ func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, e
 	return headers, nil
 }
 
-func buildFetchModelsGeminiHeaders(channel *model.Channel, key string) (http.Header, error) {
+func buildFetchModelsGeminiHeaders(channel *channelstore.Channel, key string) (http.Header, error) {
 	headers := http.Header{}
 	applyFetchModelsDefaultHeaders(headers)
 	if err := applyFetchModelsHeaderOverride(headers, channel, key); err != nil {
@@ -276,7 +279,7 @@ func applyFetchModelsDefaultHeaders(headers http.Header) {
 	}
 }
 
-func applyFetchModelsHeaderOverride(headers http.Header, channel *model.Channel, key string) error {
+func applyFetchModelsHeaderOverride(headers http.Header, channel *channelstore.Channel, key string) error {
 	headerOverride := channel.GetHeaderOverride()
 	for rawKey, rawValue := range headerOverride {
 		trimmedKey := strings.TrimSpace(rawKey)
@@ -360,7 +363,7 @@ func FetchUpstreamModels(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.SysError("failed to get channel by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -506,7 +509,7 @@ func FetchUpstreamModels(c *gin.Context) {
 }
 
 func FixChannelsAbilities(c *gin.Context) {
-	success, fails, err := model.FixAbility()
+	success, fails, err := channelstore.FixAbility()
 	if err != nil {
 		common.SysError("failed to fix channel abilities: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -553,16 +556,16 @@ func SearchChannels(c *gin.Context) {
 	// offset 必须基于与 SQL LIMIT 相同的有效 page size 计算，
 	// 否则 page_size 超上限时（如 501）LIMIT 截断到 500 而 offset 按原始值
 	// 跳过，导致条目丢失。
-	pageSize = model.NormalizeChannelSearchLimit(pageSize)
+	pageSize = channelstore.NormalizeChannelSearchLimit(pageSize)
 
-	channelData := make([]*model.Channel, 0)
+	channelData := make([]*channelstore.Channel, 0)
 	// 非 tag_mode 分支的 type_counts 聚合与 status/type 过滤均下推到 SQL，
-	// 由 model.SearchChannelsWithMeta 一并返回，避免全量加载到内存。
+	// 由 channelstore.SearchChannelsWithMeta 一并返回，避免全量加载到内存。
 	var typeCounts map[int64]int64
 	var total int64
 
 	if enableTagMode {
-		tags, err := model.SearchTags(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
+		tags, err := channelstore.SearchTags(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -572,7 +575,7 @@ func SearchChannels(c *gin.Context) {
 		}
 		for _, tag := range tags {
 			if tag != nil && *tag != "" {
-				tagChannel, err := model.GetChannelsByTagWithGroup(*tag, group, idSort, false)
+				tagChannel, err := channelstore.GetChannelsByTagWithGroup(*tag, group, idSort, false)
 				if err == nil {
 					channelData = append(channelData, tagChannel...)
 				}
@@ -587,7 +590,7 @@ func SearchChannels(c *gin.Context) {
 			}
 		}
 
-		channels, cnt, counts, err := model.SearchChannelsWithMeta(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter, statusFilter, typeFilter, (page-1)*pageSize, pageSize)
+		channels, cnt, counts, err := channelstore.SearchChannelsWithMeta(keyword, group, modelKeyword, idSort, idFilter, nameFilter, tagFilter, statusFilter, typeFilter, (page-1)*pageSize, pageSize)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -605,7 +608,7 @@ func SearchChannels(c *gin.Context) {
 		// 语义与非 tag_mode 分支一致：status 过滤 → type_counts 统计 →
 		// type 过滤 → 分页。
 		if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
-			filtered := make([]*model.Channel, 0, len(channelData))
+			filtered := make([]*channelstore.Channel, 0, len(channelData))
 			for _, ch := range channelData {
 				if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
 					continue
@@ -633,7 +636,7 @@ func SearchChannels(c *gin.Context) {
 		}
 
 		if typeFilter >= 0 {
-			filtered := make([]*model.Channel, 0, len(channelData))
+			filtered := make([]*channelstore.Channel, 0, len(channelData))
 			for _, ch := range channelData {
 				if ch.Type == typeFilter {
 					filtered = append(filtered, ch)
@@ -680,7 +683,7 @@ func GetChannel(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
-	channel, err := model.GetChannelById(id, false)
+	channel, err := channelstore.GetChannelById(id, false)
 	if err != nil {
 		common.SysError("failed to get channel by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -707,7 +710,7 @@ func GetChannelKey(c *gin.Context) {
 	}
 
 	// 获取渠道信息（包含密钥）
-	channel, err := model.GetChannelById(channelId, true)
+	channel, err := channelstore.GetChannelById(channelId, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelGetInfoFailed, map[string]any{"Error": err.Error()})
 		return
@@ -719,7 +722,7 @@ func GetChannelKey(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看渠道密钥信息 (渠道ID: %d)", channelId))
+	userstore.RecordLog(userId, logstore.LogTypeSystem, fmt.Sprintf("查看渠道密钥信息 (渠道ID: %d)", channelId))
 
 	// 返回渠道密钥
 	c.JSON(http.StatusOK, gin.H{
@@ -732,7 +735,7 @@ func GetChannelKey(c *gin.Context) {
 }
 
 // validateTwoFactorAuth 统一的2FA验证函数
-func validateTwoFactorAuth(twoFA *model.TwoFA, code string) bool {
+func validateTwoFactorAuth(twoFA *twofastore.TwoFA, code string) bool {
 	// 尝试验证TOTP
 	if cleanCode, err := common.ValidateNumericCode(code); err == nil {
 		if isValid, _ := twoFA.ValidateTOTPAndUpdateUsage(cleanCode); isValid {
@@ -749,7 +752,7 @@ func validateTwoFactorAuth(twoFA *model.TwoFA, code string) bool {
 }
 
 // validateChannel 通用的渠道校验函数
-func validateChannel(c *gin.Context, channel *model.Channel, isAdd bool) error {
+func validateChannel(c *gin.Context, channel *channelstore.Channel, isAdd bool) error {
 	if channel == nil {
 		return fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelEmpty))
 	}
@@ -799,7 +802,7 @@ type AddChannelRequest struct {
 	Mode                      string                `json:"mode"`
 	MultiKeyMode              constant.MultiKeyMode `json:"multi_key_mode"`
 	BatchAddSetKeyPrefix2Name bool                  `json:"batch_add_set_key_prefix_2_name"`
-	Channel                   *model.Channel        `json:"channel"`
+	Channel                   *channelstore.Channel `json:"channel"`
 }
 
 func getVertexArrayKeys(c *gin.Context, keys string) ([]string, error) {
@@ -908,7 +911,7 @@ func AddChannel(c *gin.Context) {
 		return
 	}
 
-	channels := make([]model.Channel, 0, len(keys))
+	channels := make([]channelstore.Channel, 0, len(keys))
 	for _, key := range keys {
 		localChannel := addChannelRequest.Channel
 		localChannel.Key = key
@@ -921,14 +924,14 @@ func AddChannel(c *gin.Context) {
 		}
 		channels = append(channels, *localChannel)
 	}
-	err = model.BatchInsertChannels(channels)
+	err = channelstore.BatchInsertChannels(channels)
 	if err != nil {
 		common.SysError("failed to batch insert channels: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	service.ResetProxyClientCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionCreate, "新增渠道: "+addChannelRequest.Channel.Name, nil, map[string]interface{}{"name": addChannelRequest.Channel.Name, "type": addChannelRequest.Channel.Type, "models": addChannelRequest.Channel.Models})
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "新增渠道: "+addChannelRequest.Channel.Name, nil, map[string]interface{}{"name": addChannelRequest.Channel.Name, "type": addChannelRequest.Channel.Type, "models": addChannelRequest.Channel.Models})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -937,15 +940,15 @@ func AddChannel(c *gin.Context) {
 
 func DeleteChannel(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	channel := model.Channel{Id: id}
+	channel := channelstore.Channel{Id: id}
 	err := channel.Delete()
 	if err != nil {
 		common.SysError("failed to delete channel: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除渠道 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除渠道 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -953,14 +956,14 @@ func DeleteChannel(c *gin.Context) {
 }
 
 func DeleteDisabledChannel(c *gin.Context) {
-	rows, err := model.DeleteDisabledChannel()
+	rows, err := channelstore.DeleteDisabledChannel()
 	if err != nil {
 		common.SysError("failed to delete disabled channels: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除所有已禁用渠道", nil, nil)
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除所有已禁用渠道", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -985,14 +988,14 @@ func DisableTagChannels(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
 		return
 	}
-	err = model.DisableChannelByTag(channelTag.Tag)
+	err = channelstore.DisableChannelByTag(channelTag.Tag)
 	if err != nil {
 		common.SysError("failed to disable channels by tag: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签禁用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签禁用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1006,14 +1009,14 @@ func EnableTagChannels(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
 		return
 	}
-	err = model.EnableChannelByTag(channelTag.Tag)
+	err = channelstore.EnableChannelByTag(channelTag.Tag)
 	if err != nil {
 		common.SysError("failed to enable channels by tag: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签启用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签启用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1047,14 +1050,14 @@ func EditTagChannels(c *gin.Context) {
 		}
 		channelTag.HeaderOverride = common.GetPointer[string](trimmed)
 	}
-	err = model.EditChannelByTag(channelTag.Tag, channelTag.NewTag, channelTag.ModelMapping, channelTag.Models, channelTag.Groups, channelTag.ParamOverride, channelTag.HeaderOverride)
+	err = channelstore.EditChannelByTag(channelTag.Tag, channelTag.NewTag, channelTag.ModelMapping, channelTag.Models, channelTag.Groups, channelTag.ParamOverride, channelTag.HeaderOverride)
 	if err != nil {
 		common.SysError("failed to edit channels by tag: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签编辑渠道: "+channelTag.Tag, nil, channelTag)
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签编辑渠道: "+channelTag.Tag, nil, channelTag)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1073,14 +1076,14 @@ func DeleteChannelBatch(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
 		return
 	}
-	err = model.BatchDeleteChannels(channelBatch.Ids)
+	err = channelstore.BatchDeleteChannels(channelBatch.Ids)
 	if err != nil {
 		common.SysError("failed to batch delete channels: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "批量删除渠道", nil, map[string]interface{}{"ids": channelBatch.Ids})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "批量删除渠道", nil, map[string]interface{}{"ids": channelBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1089,7 +1092,7 @@ func DeleteChannelBatch(c *gin.Context) {
 }
 
 type PatchChannel struct {
-	model.Channel
+	channelstore.Channel
 	MultiKeyMode *string `json:"multi_key_mode"`
 	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
 }
@@ -1108,7 +1111,7 @@ func UpdateChannel(c *gin.Context) {
 	}
 
 	// Preserve existing ChannelInfo to ensure multi-key channels keep correct state even if the client does not send ChannelInfo in the request.
-	originChannel, err := model.GetChannelById(channel.Id, true)
+	originChannel, err := channelstore.GetChannelById(channel.Id, true)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -1243,9 +1246,9 @@ func UpdateChannel(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
+	channelstore.InitChannelCache()
 	service.ResetProxyClientCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "修改渠道: "+channel.Name, originChannel, channel)
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "修改渠道: "+channel.Name, originChannel, channel)
 	channel.Key = ""
 	clearChannelInfo(&channel.Channel)
 	c.JSON(http.StatusOK, gin.H{
@@ -1443,14 +1446,14 @@ func BatchSetChannelTag(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
 		return
 	}
-	err = model.BatchSetChannelTag(channelBatch.Ids, channelBatch.Tag)
+	err = channelstore.BatchSetChannelTag(channelBatch.Ids, channelBatch.Tag)
 	if err != nil {
 		common.SysError("failed to batch set channel tag: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "批量设置渠道标签", nil, map[string]interface{}{"ids": channelBatch.Ids, "tag": channelBatch.Tag})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "批量设置渠道标签", nil, map[string]interface{}{"ids": channelBatch.Ids, "tag": channelBatch.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1468,7 +1471,7 @@ func GetTagModels(c *gin.Context) {
 		return
 	}
 
-	channels, err := model.GetChannelsByTag(tag, false, false) // idSort=false, selectAll=false
+	channels, err := channelstore.GetChannelsByTag(tag, false, false) // idSort=false, selectAll=false
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -1520,7 +1523,7 @@ func CopyChannel(c *gin.Context) {
 	}
 
 	// fetch original channel with key
-	origin, err := model.GetChannelById(id, true)
+	origin, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.SysError("failed to get channel by id: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgChannelCopyInfoFailed)
@@ -1540,13 +1543,13 @@ func CopyChannel(c *gin.Context) {
 	}
 
 	// insert
-	if err := model.BatchInsertChannels([]model.Channel{clone}); err != nil {
+	if err := channelstore.BatchInsertChannels([]channelstore.Channel{clone}); err != nil {
 		common.SysError("failed to clone channel: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgChannelCopyFailed)
 		return
 	}
-	model.InitChannelCache()
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionCreate, "复制渠道: "+clone.Name, map[string]interface{}{"source_id": id}, map[string]interface{}{"name": clone.Name, "type": clone.Type})
+	channelstore.InitChannelCache()
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "复制渠道: "+clone.Name, map[string]interface{}{"source_id": id}, map[string]interface{}{"name": clone.Name, "type": clone.Type})
 	// success
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"id": clone.Id}})
 }
@@ -1591,7 +1594,7 @@ func ManageMultiKeys(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(request.ChannelId, true)
+	channel, err := channelstore.GetChannelById(request.ChannelId, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -1602,7 +1605,7 @@ func ManageMultiKeys(c *gin.Context) {
 		return
 	}
 
-	lock := model.GetChannelPollingLock(channel.Id)
+	lock := channelstore.GetChannelPollingLock(channel.Id)
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -1766,8 +1769,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyDisabled),
@@ -1804,8 +1807,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyEnabled),
@@ -1830,8 +1833,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeysEnabled, map[string]any{"Count": enabledCount}),
@@ -1876,8 +1879,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeysDisabled, map[string]any{"Count": disabledCount}),
@@ -1949,8 +1952,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyDeleted),
@@ -2016,8 +2019,8 @@ func ManageMultiKeys(c *gin.Context) {
 			return
 		}
 
-		model.InitChannelCache()
-		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		channelstore.InitChannelCache()
+		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelAutoDisabledKeysDeleted, map[string]any{"Count": deletedCount}),
@@ -2055,7 +2058,7 @@ func OllamaPullModel(c *gin.Context) {
 	}
 
 	// 获取渠道信息
-	channel, err := model.GetChannelById(req.ChannelID, true)
+	channel, err := channelstore.GetChannelById(req.ChannelID, true)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -2118,7 +2121,7 @@ func OllamaPullModelStream(c *gin.Context) {
 	}
 
 	// 获取渠道信息
-	channel, err := model.GetChannelById(req.ChannelID, true)
+	channel, err := channelstore.GetChannelById(req.ChannelID, true)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -2200,7 +2203,7 @@ func OllamaDeleteModel(c *gin.Context) {
 	}
 
 	// 获取渠道信息
-	channel, err := model.GetChannelById(req.ChannelID, true)
+	channel, err := channelstore.GetChannelById(req.ChannelID, true)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -2233,7 +2236,7 @@ func OllamaDeleteModel(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
+	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": i18n.T(c, i18n.MsgChannelDeleteModelSuccess, map[string]any{"Model": req.ModelName}),
@@ -2251,7 +2254,7 @@ func OllamaVersion(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -2299,7 +2302,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -2376,7 +2379,7 @@ func QueryGlmUsage(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -2440,7 +2443,7 @@ func QueryGlmPlanActivity(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -2484,7 +2487,7 @@ func QueryRiskStatus(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -2527,7 +2530,7 @@ func QueryGlmResetCards(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
@@ -2570,7 +2573,7 @@ func UseGlmResetCard(c *gin.Context) {
 		return
 	}
 
-	channel, err := model.GetChannelById(id, true)
+	channel, err := channelstore.GetChannelById(id, true)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgChannelNotFound)
 		return
