@@ -3,13 +3,165 @@
 ## 项目概况
 
 - **仓库**: https://github.com/futureppo/new-api
-- **分析时间段**: 2026年4月25日 - 2026年8月7日
-- **总提交数**: 119个提交
-- **提交者**: futureppo
+- **分析时间段**: 2026年4月25日 - 2026年8月20日
+- **总提交数**: 151个提交（首批 119 个 + 增量批次 32 个）
+- **提交者**: futureppo（增量批次中 `08323b1b` 由外部贡献者 Venlacy 提交，经 PR #1 合入）
+
+## 编号说明
+
+- 首批 119 个提交沿用原编号 **#1～#117**（越新编号越小，#1 = 2026年8月7日）。
+- 2026年8月8日～8月20日的 32 个增量提交使用 **增#1～增#32**（同样越新编号越小，增#1 = 2026年8月20日），
+  以保持原编号稳定、便于与《futureppo-commits-by-feature.md》交叉核对。
+
+## 更新记录
+
+- 2026-08-20：拉取上游至 `ef5e329d`，新增 8月8日～8月20日 共 32 个提交（d18964df..ef5e329d）。
 
 ## 详细提交分析
 
 ### 2026年8月
+
+#### 8月20日
+1. **feat: 所有分组的描述均可编辑** (ef5e329d) — 增#1
+    - 后端 `setting/user_usable_group.go` 支持分组描述存储与校验（含测试），`option` 存取链路同步扩展
+    - 前端 `GroupRatioSettings` / `GroupTable` 支持编辑所有分组的描述
+    - 多语言同步更新
+
+2. **feat: 优化用户模型加载逻辑，增加文件消息处理功能** (4ec5fa1e) — 增#2
+    - `controller/user.go` 用户可用模型加载逻辑优化（含测试）
+    - Claude 渠道新增消息文件处理：URL / base64 文件转为 Claude file source
+    - 流式扫描器 `stream_scanner.go` 细节调整
+
+3. **feat: 增加IP封禁背景请求处理和渲染封禁页面功能** (ba188ec0) — 增#3
+    - IP 封禁中间件补充对后台请求与封禁页面渲染路径的处理
+
+4. **fix: 修复令牌多分组编辑 403 和加载卡死** (39c9e527) — 增#4
+    - 修复多分组令牌编辑时权限 403 与加载卡死问题
+    - `EditTokenModal` 大幅重构（约 600 行变更），多语言同步
+
+#### 8月19日
+5. **feat: add channel error detail protection** (f1a91440) — 增#5
+    - **渠道信息保护**：模型映射脱敏能力扩展到任务（task）与 Midjourney 链路
+    - 渠道级"错误详情保护"设置项，控制是否向客户端暴露上游错误细节
+    - 覆盖 relay 任务处理、mjproxy、middleware 等 22 个文件（+711 行）
+
+6. **feat: Implement full model mapping feature with sanitization and logging improvements** (e1101cc9) — 增#6
+    - **全量模型映射（完整重定向）**：新增 `relay/common/model_mapping_response.go`（650+ 行）
+    - `ShouldExposeModelMapping` 控制映射细节暴露时机；日志与响应中的真实模型名脱敏
+    - 渠道设置新增"全量模型映射"开关，前端编辑弹窗支持
+    - 覆盖文本、任务、realtime、会话捕获、计费等 40 个文件（+870 行），测试齐全
+
+7. **fix: 默认封禁全部邀请关联账号** (f5064163) — 增#7
+    - 用户禁用弹窗默认勾选"连锁封禁全部邀请关联账号"
+    - `service/user_invite_disable.go` 默认行为调整（含测试），前端弹窗与数据钩子同步
+
+8. **feat: 支持邀请连坐多层查询** (f63c509a) — 增#8
+    - 邀请关系连坐封禁支持**多层（递归）查询**
+    - `service/user_invite_disable.go` 大幅扩展（+598/-69 行，含大量测试）
+    - 前端展示与多语言支持
+
+#### 8月18日
+9. **fix: apply param override to image edits** (e0f7b44f) — 增#9
+    - 参数覆盖（param override）应用到图片编辑接口
+    - 新增 `relay/image_multipart_override.go` 处理 multipart 表单参数覆盖
+    - 图片处理器新增 314 行测试
+
+#### 8月16日
+10. **feat: 修复 Hermes 以及DeepSeek Harness 422错误** (f1ea18a2) — 增#10
+    - mistral-console 渠道新增 `function_names.go`，修复 Hermes 与 DeepSeek Harness 的 422 错误
+    - 含完整测试（function_names_test.go）
+
+11. **feat: 添加对 Bora 请求参数的归一化处理，更新最大令牌限制，并增强响应时间记录** (fe73dba0) — 增#11
+    - 继续完善 Bora 请求参数归一化
+    - 更新最大令牌限制、增强响应时间记录
+
+#### 8月14日
+12. **feat: 添加对 Bora 请求参数的归一化处理和支持尾随助手预填充** (87816198) — 增#12
+    - mistral-console 渠道 Bora 请求参数归一化
+    - 支持尾随 assistant 消息预填充（trailing assistant prefill）
+
+13. **feat(mistral-console): 添加 Mistral 相关内置工具设置** (7fe87206) — 增#13
+    - mistral-console 渠道设置新增 Mistral 内置工具配置（含 dto/channel_settings 测试）
+    - 前端渠道编辑弹窗支持
+
+14. **refactor: improve relay compatibility** (44e2fc44) — 增#14
+    - **实际主体为新增 mistral_console 渠道**（约 1900 行）：adaptor、dto、response、constants 与注册测试
+    - 注册新渠道类型常量与 relay adaptor 工厂
+    - 前端渠道常量与编辑弹窗同步支持
+
+#### 8月12日
+15. **feat(invite-code): 添加禁用邀请码用户的处理逻辑** (4c73bcde) — 增#15
+    - `GetUserIdByAffCode` 仅匹配启用状态的用户，被禁用邀请人的 aff code 不再生效
+
+16. **fix: preserve Mistral reasoning content** (1481a52e) — 增#16
+    - 修复 Mistral 渠道丢失 reasoning 内容的问题
+    - 涉及 `relay/channel/mistral/text.go` 与 `relay/channel/openai/relay-openai.go`（含测试）
+
+17. **Merge pull request #1 from mazhichen111/feat/ip-ban-batch-operations** (43fe3614) — 增#17
+    - 合并仓库首个外部 PR：IP 封禁批量操作与被封账号追溯
+
+18. **feat(ip-ban): 支持批量操作与被封账号追溯** (08323b1b) — 增#18
+    - 新增 `IPBanUserBan` 关联表，记录 IP 封禁规则与被封账号的关系
+    - 新增批量删除 / 批量更新接口（POST `/api/ip_ban/batch_delete`、`/api/ip_ban/batch_update`）
+    - 新增按规则查询关联被封账号接口（GET `/api/ip_ban/:id/banned_users`）
+    - 前端表格支持批量选择、批量删除、批量更新
+    - IP 封禁自动封号时记录关联关系，删除规则时级联清理
+    - 外部贡献者 Venlacy 提交，Co-Authored-By: Claude Opus 4.6
+
+#### 8月11日
+19. **feat: 自动更新openrouter免费测试模型列表** (1dee80c7) — 增#19
+    - `controller/channel_upstream_update.go` 大幅扩展（+521 行，测试 +490 行）
+    - 自动拉取并维护 OpenRouter 免费 / alpha 模型列表，含别名冲突处理与模型名简化
+    - 渠道设置新增免费 / alpha 模型自动管理与名称简化开关
+    - 前端设置项与多语言支持
+
+20. **feat: 修复IP封禁背景请求处理冲突** (47cae272) — 增#20
+    - 修复 IP 封禁页面中间件与后台（背景）请求处理的冲突（含测试）
+
+21. **feat: 优化IP封禁页面** (0d548b07) — 增#21
+    - 新增独立 IP 封禁提示页：`middleware/ip_ban_page.go` + 460 行 HTML 模板
+    - 命中封禁规则时渲染专门页面而非 JSON 错误
+    - 后端 i18n（en/zh-CN/zh-TW）与中间件测试
+
+#### 8月8日
+22. **feat: 液态玻璃模式下，底部渐变不再使用不透明白色** (be3fa3b2) — 增#22
+    - 液态玻璃主题视觉细节修复
+
+23. **feat: 更新页脚信息** (3c63331d) — 增#23
+    - `Footer.jsx` 页脚信息更新（含多语言）
+
+24. **feat: 修改输出令牌速度和多键索引的标签颜色** (77bddcfb) — 增#24
+    - 使用日志列定义（`UsageLogsColumnDefs`）标签颜色调整
+
+25. **移除使用日志表头中的问号，同时清理了不再使用的图标引用** (d79d58a2) — 增#25
+    - 使用日志表头提示问号移除，清理无用图标引用
+
+26. **feat: 修复使用日志图表部分液态玻璃组件异常** (3b38aa7c) — 增#26
+    - 液态玻璃样式与使用日志图表的兼容修复
+
+27. **feat: 修复液态玻璃组件异常** (5222f4d6) — 增#27
+    - 液态玻璃背景组件渲染异常修复
+
+28. **feat: 添加启用状态和权重属性到站点背景源** (28a168cb) — 增#28
+    - 站点背景源支持启用状态与权重属性（按权重选取展示）
+    - 服务层 `siteBackground.js` 与 CSS 同步扩展
+
+29. **feat: 添加液态玻璃背景** (16e372dd) — 增#29
+    - 液态玻璃（liquid glass）背景效果，`index.css` 新增 109 行样式
+    - 背景服务与多语言支持
+
+30. **feat: 添加GIF过滤功能以支持Gemini通道，移除不支持的image/gif输入** (c2f14f51) — 增#30
+    - 新增 `relay/channel/gemini/gif_filter.go`，过滤 Gemini 不支持的 image/gif 输入
+    - 含 209 行完整测试，多语言错误提示
+
+31. **feat: 添加自定义背景图** (c3332c73) — 增#31
+    - **全栈新功能：站点自定义背景图**
+    - 后端 `setting/system_setting/site_background.go` 配置与校验（含测试）
+    - 前端 `SiteBackgroundSetting` 管理组件、`SiteBackground` 渲染组件、`siteBackground.js` 服务
+    - 背景图层与预览 CSS 样式
+
+32. **feat: 对组选项进行排序，以提高可读性** (42bea8a2) — 增#32
+    - 渠道编辑弹窗中分组选项按字母序排序
 
 #### 8月7日
 1. **feat: 添加OpenCode Go渠道** (d18964df)
