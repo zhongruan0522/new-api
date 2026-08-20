@@ -101,7 +101,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 
 管理员对系统资源（渠道、用户、令牌、系统设置等）的增删改操作必须接入审计日志。
 通过 `service.RecordAudit(...)` 记录，详见 `internal/controller/AGENTS.md` 和 `internal/service/AGENTS.md`。
-新增需要审计的资源类型时，按 `internal/controller/AGENTS.md` 中的检查清单同步更新 model、
+新增需要审计的资源类型时，按 `internal/controller/AGENTS.md` 中的检查清单同步更新 store（audit 常量）、
 config、前端常量和 i18n。
 
 常用验证:

@@ -1,6 +1,6 @@
 # internal/controller/AGENTS.md
 
-`internal/controller/` 是 HTTP 边界层，负责输入校验、权限检查、调用 service/model、组织响应。
+`internal/controller/` 是 HTTP 边界层，负责输入校验、权限检查、调用 service/store、组织响应。
 
 ## 规则
 

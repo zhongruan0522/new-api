@@ -39,6 +39,6 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 
 ## 验证
 
-- 改计费、quota、倍率、渠道选择或迁移逻辑后执行对应 service/model 测试。
+- 改计费、quota、倍率、渠道选择或迁移逻辑后执行对应 service/store 测试。
 - 影响跨包行为时执行 `go test ./internal/service/... ./internal/store/... ./internal/relay/...`。
-- 改审计服务（`internal/service/audit.go`）后执行 `go build .` 和 `go vet ./internal/service/...`。
+- 改审计服务（`internal/service/audit.go`）后执行 `go build ./...` 和 `go vet ./internal/service/...`。
