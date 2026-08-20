@@ -121,7 +121,9 @@ export function AmountDiscountVisualEditor({
     <div className='space-y-4'>
       <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <p className='text-muted-foreground text-sm'>
-          {t('systemSettings.tips.configureDiscountRatesBasedOnRechargeAmounts')}
+          {t(
+            'systemSettings.tips.configureDiscountRatesBasedOnRechargeAmounts'
+          )}
         </p>
         <Button
           type='button'
@@ -134,15 +136,15 @@ export function AmountDiscountVisualEditor({
           className='w-full sm:w-auto'
         >
           <Plus className='h-4 w-4 sm:mr-2' />
-          <span className='sm:inline'>{t('systemSettings.actions.addDiscountTier')}</span>
+          <span className='sm:inline'>
+            {t('systemSettings.actions.addDiscountTier')}
+          </span>
         </Button>
       </div>
 
       {discounts.length === 0 ? (
         <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
-          {t(
-            'common.tips.noDiscountTiersConfiguredClickAddDiscountTierTo'
-          )}
+          {t('common.tips.noDiscountTiersConfiguredClickAddDiscountTierTo')}
         </div>
       ) : (
         <div className='rounded-md border'>
@@ -151,10 +153,16 @@ export function AmountDiscountVisualEditor({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('systemSettings.fields.rechargeAmount')}</TableHead>
-                  <TableHead>{t('systemSettings.fields.discountRate')}</TableHead>
+                  <TableHead>
+                    {t('systemSettings.fields.rechargeAmount')}
+                  </TableHead>
+                  <TableHead>
+                    {t('systemSettings.fields.discountRate')}
+                  </TableHead>
                   <TableHead>{t('systemSettings.fields.discount')}</TableHead>
-                  <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
+                  <TableHead className='text-right'>
+                    {t('channels.fields.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -176,7 +184,8 @@ export function AmountDiscountVisualEditor({
                         className='font-mono'
                         copyable={false}
                       >
-                        {formatPercentage(discount.discountRate)} {t('systemSettings.fields.offda7a68')}
+                        {formatPercentage(discount.discountRate)}{' '}
+                        {t('systemSettings.fields.offda7a68')}
                       </StatusBadge>
                     </TableCell>
                     <TableCell className='text-right'>
@@ -227,7 +236,8 @@ export function AmountDiscountVisualEditor({
                       className='font-mono'
                       copyable={false}
                     >
-                      {formatPercentage(discount.discountRate)} {t('systemSettings.fields.offda7a68')}
+                      {formatPercentage(discount.discountRate)}{' '}
+                      {t('systemSettings.fields.offda7a68')}
                     </StatusBadge>
                   </div>
                   <div className='flex gap-1'>
@@ -259,7 +269,9 @@ export function AmountDiscountVisualEditor({
                 </div>
                 <div className='text-sm'>
                   <span className='text-muted-foreground'>
-                    {t('channels.fields.labelWithColon', { label: t('systemSettings.fields.discountRate') })}{' '}
+                    {t('channels.fields.labelWithColon', {
+                      label: t('systemSettings.fields.discountRate'),
+                    })}{' '}
                   </span>
                   <code className='bg-muted rounded px-1.5 py-0.5 text-xs'>
                     {discount.discountRate.toFixed(2)}

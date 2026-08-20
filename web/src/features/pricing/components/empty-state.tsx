@@ -40,10 +40,9 @@ export function EmptyState(props: EmptyStateProps) {
 
       <p className='text-muted-foreground mb-5 max-w-xs text-sm'>
         {hasSearch
-          ? t(
-              'common.tips.noResultsForQueryTryAdjustingYourSearchOr',
-              { query: props.searchQuery }
-            )
+          ? t('common.tips.noResultsForQueryTryAdjustingYourSearchOr', {
+              query: props.searchQuery,
+            })
           : t('pricing.tips.noModelsMatchYourCurrentFilters')}
       </p>
 

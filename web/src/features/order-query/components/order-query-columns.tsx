@@ -21,9 +21,9 @@ import { Check, Copy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrencyFromUSD } from '@/lib/currency'
 import { formatNumber } from '@/lib/format'
-import { StatusBadge } from '@/components/status-badge'
-import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/status-badge'
 import {
   formatTimestamp,
   getPaymentMethodName,
@@ -43,7 +43,9 @@ export function useOrderQueryColumns(
   const { t } = useTranslation()
 
   function OrderNumberCell({ record }: { record: TopupRecord }) {
-    const { copyToClipboard, copiedText } = useCopyToClipboard({ notify: false })
+    const { copyToClipboard, copiedText } = useCopyToClipboard({
+      notify: false,
+    })
 
     return (
       <div className='flex min-w-0 items-center gap-2'>
@@ -85,8 +87,7 @@ export function useOrderQueryColumns(
     {
       accessorKey: 'payment_method',
       header: t('orderQuery.fields.paymentMethod'),
-      cell: ({ row }) =>
-        getPaymentMethodName(row.original.payment_method, t),
+      cell: ({ row }) => getPaymentMethodName(row.original.payment_method, t),
       size: 144,
     },
     {

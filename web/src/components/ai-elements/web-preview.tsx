@@ -269,7 +269,9 @@ export const WebPreviewConsole = ({
       >
         <div className='max-h-48 space-y-1 overflow-y-auto'>
           {logs.length === 0 ? (
-            <p className='text-muted-foreground'>{t('common.titles.noConsoleOutput')}</p>
+            <p className='text-muted-foreground'>
+              {t('common.titles.noConsoleOutput')}
+            </p>
           ) : (
             logs.map((log, index) => (
               <div

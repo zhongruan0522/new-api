@@ -98,7 +98,8 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
     props.advancedFilterCount ?? (props.hasAdvancedActiveFilters ? 1 : 0)
   const activeClientCount =
     props.clientFilterCount ?? (props.hasClientActiveFilters ? 1 : 0)
-  const activeMobileFilterCount = props.mobileFilterCount ?? activeAdvancedCount + activeClientCount
+  const activeMobileFilterCount =
+    props.mobileFilterCount ?? activeAdvancedCount + activeClientCount
 
   const handleMobileReset = () => {
     props.onReset()
@@ -230,7 +231,9 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                   'text-primary hover:text-primary'
               )}
             >
-              {advancedOpen ? t('common.fields.collapse') : t('common.fields.expand')}
+              {advancedOpen
+                ? t('common.fields.collapse')
+                : t('common.fields.expand')}
               {activeAdvancedCount > 0 && (
                 <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                   {activeAdvancedCount}
@@ -257,7 +260,9 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                   'text-primary hover:text-primary'
               )}
             >
-              {clientOpen ? t('common.fields.collapse') : t('usageLogs.fields.clientInfo')}
+              {clientOpen
+                ? t('common.fields.collapse')
+                : t('usageLogs.fields.clientInfo')}
               {activeClientCount > 0 && (
                 <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
                   {activeClientCount}

@@ -31,12 +31,10 @@ export function ForgotPassword() {
             {t('auth.fields.forgotPassword')}
           </h2>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t(
-              'auth.placeholders.enterYourRegisteredEmailAndWeWillSendYou'
-            )}
+            {t('auth.placeholders.enterYourRegisteredEmailAndWeWillSendYou')}
           </p>
           <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t("common.tips.donTHaveAnAccount")}{' '}
+            {t('common.tips.donTHaveAnAccount')}{' '}
             <Link
               to='/sign-up'
               className='hover:text-primary font-medium underline underline-offset-4'

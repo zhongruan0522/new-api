@@ -471,12 +471,14 @@ export function SubscriptionPlansCard({
                               render={<span className='cursor-help' />}
                             >
                               {formatQuota(usedAmount)}/
-                              {formatQuota(totalAmount)} · {t('channels.fields.remaining')}{' '}
+                              {formatQuota(totalAmount)} ·{' '}
+                              {t('channels.fields.remaining')}{' '}
                               {formatQuota(remainAmount)}
                             </TooltipTrigger>
                             <TooltipContent>
-                              {t('wallet.fields.rawQuota')}: {usedAmount}/{totalAmount} ·{' '}
-                              {t('channels.fields.remaining')} {remainAmount}
+                              {t('wallet.fields.rawQuota')}: {usedAmount}/
+                              {totalAmount} · {t('channels.fields.remaining')}{' '}
+                              {remainAmount}
                             </TooltipContent>
                           </Tooltip>
                         ) : (
@@ -526,7 +528,9 @@ export function SubscriptionPlansCard({
                 totalAmount > 0
                   ? `${t('dashboard.fields.totalQuota')}: ${formatQuota(totalAmount)}`
                   : `${t('dashboard.fields.totalQuota')}: ${t('keyQuery.fields.unlimited')}`,
-                limit > 0 ? `${t('subscriptions.fields.purchaseLimit')}: ${limit}` : null,
+                limit > 0
+                  ? `${t('subscriptions.fields.purchaseLimit')}: ${limit}`
+                  : null,
                 plan.upgrade_group
                   ? `${t('subscriptions.fields.upgradeGroup')}: ${plan.upgrade_group}`
                   : null,
@@ -592,7 +596,8 @@ export function SubscriptionPlansCard({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {t('subscriptions.fields.purchaseLimitReached')} ({count}/{limit})
+                          {t('subscriptions.fields.purchaseLimitReached')} (
+                          {count}/{limit})
                         </TooltipContent>
                       </Tooltip>
                     ) : (

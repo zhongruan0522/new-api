@@ -80,12 +80,18 @@ const createUptimeKumaSchema = (t: (key: string) => string) =>
     categoryName: z
       .string()
       .min(1, { error: t('systemSettings.errors.categoryNameIsRequired') })
-      .max(50, { error: t('systemSettings.errors.categoryNameMustBeLessThan50Characters') }),
+      .max(50, {
+        error: t(
+          'systemSettings.errors.categoryNameMustBeLessThan50Characters'
+        ),
+      }),
     url: z.string().url({ error: t('systemSettings.errors.mustBeAValidUrl') }),
     slug: z
       .string()
       .min(1, { error: t('systemSettings.errors.slugIsRequired') })
-      .max(100, { error: t('systemSettings.errors.slugMustBeLessThan100Characters') })
+      .max(100, {
+        error: t('systemSettings.errors.slugMustBeLessThan100Characters'),
+      })
       .regex(/^[a-zA-Z0-9_-]+$/, {
         error: t(
           'systemSettings.tips.slugCanOnlyContainLettersNumbersHyphensAndUnderscores'
@@ -210,7 +216,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
         value: JSON.stringify(groups),
       })
       setHasChanges(false)
-      toast.success(t('systemSettings.status.uptimeKumaGroupsSavedSuccessfully'))
+      toast.success(
+        t('systemSettings.status.uptimeKumaGroupsSavedSuccessfully')
+      )
     } catch {
       toast.error(t('systemSettings.errors.failedToSaveUptimeKumaGroups'))
     }
@@ -252,7 +260,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+              {updateOption.isPending
+                ? t('channels.tips.saving')
+                : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -270,18 +280,22 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                   />
                 </TableHead>
                 <TableHead>{t('systemSettings.fields.categoryName')}</TableHead>
-                <TableHead>{t('systemSettings.fields.uptimeKumaUrl')}</TableHead>
-                <TableHead>{t('systemSettings.fields.statusPageSlug')}</TableHead>
-                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
+                <TableHead>
+                  {t('systemSettings.fields.uptimeKumaUrl')}
+                </TableHead>
+                <TableHead>
+                  {t('systemSettings.fields.statusPageSlug')}
+                </TableHead>
+                <TableHead className='w-32'>
+                  {t('channels.fields.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {groups.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className='h-24 text-center'>
-                    {t(
-                      'common.tips.noUptimeKumaGroupsYetClickAddGroupTo'
-                    )}
+                    {t('common.tips.noUptimeKumaGroupsYetClickAddGroupTo')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -342,7 +356,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 : t('systemSettings.actions.addUptimeKumaGroup')}
             </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.tips.configureMonitoringStatusPageGroupsForTheDashboard')}
+              {t(
+                'systemSettings.tips.configureMonitoringStatusPageGroupsForTheDashboard'
+              )}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -355,10 +371,14 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='categoryName'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.categoryName')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.categoryName')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.eGCoreApisOpenAiClaude')}
+                        placeholder={t(
+                          'systemSettings.placeholders.eGCoreApisOpenAiClaude'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -376,10 +396,14 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='url'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.uptimeKumaUrl')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.uptimeKumaUrl')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlStatusExampleCom')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlStatusExampleCom'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -395,12 +419,18 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                 name='slug'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.statusPageSlug')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.statusPageSlug')}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder={t('systemSettings.fields.myStatus')} {...field} />
+                      <Input
+                        placeholder={t('systemSettings.fields.myStatus')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.slugIsAppendedToTheUrl')} {'{url}'}
+                      {t('systemSettings.tips.slugIsAppendedToTheUrl')}{' '}
+                      {'{url}'}
                       {t('systemSettings.placeholders.status')}
                       {'{slug}'}
                     </FormDescription>
@@ -417,7 +447,9 @@ export function UptimeKumaSection({ data }: UptimeKumaSectionProps) {
                   {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingGroup ? t('channels.fields.update') : t('channels.actions.add')}
+                  {editingGroup
+                    ? t('channels.fields.update')
+                    : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>

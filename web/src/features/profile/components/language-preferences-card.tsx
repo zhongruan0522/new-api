@@ -72,7 +72,9 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
     try {
       const response = await updateUserLanguage(nextLanguage)
       if (!response.success) {
-        throw new Error(response.message || t('profile.errors.failedToUpdateSettings'))
+        throw new Error(
+          response.message || t('profile.errors.failedToUpdateSettings')
+        )
       }
 
       if (auth.user) {
@@ -108,7 +110,9 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
     >
       <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
         <div className='space-y-1'>
-          <div className='text-sm font-medium'>{t('profile.fields.interfaceLanguage')}</div>
+          <div className='text-sm font-medium'>
+            {t('profile.fields.interfaceLanguage')}
+          </div>
           <p className='text-muted-foreground line-clamp-2 text-xs sm:text-sm'>
             {t(
               'profile.tips.languagePreferencesSyncAcrossYourSignedInDevicesAnd'
@@ -128,7 +132,9 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
             disabled={saving}
           >
             <SelectTrigger className='w-full sm:w-48'>
-              <SelectValue placeholder={t('models.placeholders.selectLanguage')} />
+              <SelectValue
+                placeholder={t('models.placeholders.selectLanguage')}
+              />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               <SelectGroup>

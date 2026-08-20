@@ -194,7 +194,10 @@ export function UsersMutateDrawer({
         >
           <SheetHeader className={sideDrawerHeaderClassName()}>
             <SheetTitle>
-              {isUpdate ? t('channels.fields.update') : t('channels.actions.create')} {t('systemSettings.fields.user')}
+              {isUpdate
+                ? t('channels.fields.update')
+                : t('channels.actions.create')}{' '}
+              {t('systemSettings.fields.user')}
             </SheetTitle>
             <SheetDescription>
               {isUpdate
@@ -242,7 +245,10 @@ export function UsersMutateDrawer({
                         <Select
                           items={[
                             { value: '1', label: t('users.fields.commonUser') },
-                            { value: '10', label: t('systemSettings.fields.admin') },
+                            {
+                              value: '10',
+                              label: t('systemSettings.fields.admin'),
+                            },
                           ]}
                           onValueChange={(value) =>
                             value !== null && field.onChange(parseInt(value))
@@ -251,7 +257,11 @@ export function UsersMutateDrawer({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t('users.placeholders.selectARole')} />
+                              <SelectValue
+                                placeholder={t(
+                                  'users.placeholders.selectARole'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent alignItemWithTrigger={false}>
@@ -259,12 +269,14 @@ export function UsersMutateDrawer({
                               <SelectItem value='1'>
                                 {t('users.fields.commonUser')}
                               </SelectItem>
-                              <SelectItem value='10'>{t('systemSettings.fields.admin')}</SelectItem>
+                              <SelectItem value='10'>
+                                {t('systemSettings.fields.admin')}
+                              </SelectItem>
                             </SelectGroup>
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          {t("common.tips.setTheUserSRoleCannotBeRoot")}
+                          {t('common.tips.setTheUserSRoleCannotBeRoot')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -305,7 +317,9 @@ export function UsersMutateDrawer({
                           placeholder={
                             isUpdate
                               ? t('users.fields.leaveEmptyToKeepUnchanged')
-                              : t('users.placeholders.enterPasswordMin8Characters')
+                              : t(
+                                  'users.placeholders.enterPasswordMin8Characters'
+                                )
                           }
                         />
                       </FormControl>
@@ -318,7 +332,9 @@ export function UsersMutateDrawer({
               {/* Group & Quota Settings (Update only) */}
               {isUpdate && (
                 <SideDrawerSection>
-                  <h3 className='text-sm font-medium'>{t('users.fields.groupQuota')}</h3>
+                  <h3 className='text-sm font-medium'>
+                    {t('users.fields.groupQuota')}
+                  </h3>
 
                   <FormField
                     control={form.control}
@@ -338,7 +354,11 @@ export function UsersMutateDrawer({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t('dynamicRatio.placeholders.selectAGroup')} />
+                              <SelectValue
+                                placeholder={t(
+                                  'dynamicRatio.placeholders.selectAGroup'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent alignItemWithTrigger={false}>
@@ -362,7 +382,8 @@ export function UsersMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('keyQuery.fields.remainingQuota')} ({t(currencyLabel)})
+                          {t('keyQuery.fields.remainingQuota')} (
+                          {t(currencyLabel)})
                         </FormLabel>
                         <div className='flex gap-2'>
                           <FormControl>
@@ -452,7 +473,9 @@ export function UsersMutateDrawer({
               {t('common.actions.close')}
             </SheetClose>
             <Button form='user-form' type='submit' disabled={isSubmitting}>
-              {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
+              {isSubmitting
+                ? t('channels.tips.saving')
+                : t('channels.actions.saveChanges')}
             </Button>
           </SheetFooter>
         </SheetContent>

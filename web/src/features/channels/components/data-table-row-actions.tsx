@@ -146,13 +146,17 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     try {
       const response = await getGlmRiskStatus(channel.id)
       if (!response.success) {
-        throw new Error(response.message || t('channels.status.riskQueryFailed'))
+        throw new Error(
+          response.message || t('channels.status.riskQueryFailed')
+        )
       }
       setRiskDetected(Boolean(response.data?.is_risk))
       setRiskDialogOpen(true)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.status.riskQueryFailed')
+        error instanceof Error
+          ? error.message
+          : t('channels.status.riskQueryFailed')
       )
     } finally {
       setIsCheckingRisk(false)
@@ -197,7 +201,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               size='icon-sm'
               onClick={handleToggleStatus}
               disabled={isTogglingStatus}
-              aria-label={isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
+              aria-label={
+                isEnabled
+                  ? t('channels.actions.disable')
+                  : t('channels.actions.enable')
+              }
               className={
                 isEnabled
                   ? 'text-destructive hover:text-destructive'
@@ -215,7 +223,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
+          {isEnabled
+            ? t('channels.actions.disable')
+            : t('channels.actions.enable')}
         </TooltipContent>
       </Tooltip>
 
@@ -300,7 +310,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               onClick={handleCheckRisk}
               disabled={isCheckingRisk}
             >
-              {isCheckingRisk ? t('channels.tips.querying') : t('channels.titles.riskQuery')}
+              {isCheckingRisk
+                ? t('channels.tips.querying')
+                : t('channels.titles.riskQuery')}
               <DropdownMenuShortcut>
                 {isCheckingRisk ? (
                   <Loader2 size={16} className='animate-spin' />
@@ -354,7 +366,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
         <AlertDialogContent className='sm:max-w-md'>
           <AlertDialogHeader className='text-start'>
-            <AlertDialogTitle>{t('channels.titles.riskQuery')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('channels.titles.riskQuery')}
+            </AlertDialogTitle>
             <AlertDialogDescription render={<div />}>
               {riskDetected ? (
                 <div className='space-y-2'>

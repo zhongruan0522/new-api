@@ -413,7 +413,9 @@ export function PublicHeader(props: PublicHeaderProps) {
                 onClick={() => setMobileOpen(false)}
                 className='bg-foreground text-background inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80'
               >
-                {isAuthenticated ? t('layout.titles.goToDashboard') : t('layout.actions.signIn')}
+                {isAuthenticated
+                  ? t('layout.titles.goToDashboard')
+                  : t('layout.actions.signIn')}
               </Link>
             )}
           </div>
@@ -446,7 +448,9 @@ export function PublicHeader(props: PublicHeaderProps) {
             <Button variant='outline' onClick={closeAuthPrompt}>
               {t('common.actions.cancel')}
             </Button>
-            <Button onClick={navigateToSignIn}>{t('layout.actions.signInNow')}</Button>
+            <Button onClick={navigateToSignIn}>
+              {t('layout.actions.signInNow')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

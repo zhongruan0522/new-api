@@ -889,30 +889,30 @@ export function ModelRatioVisualEditor({
               <div className='text-muted-foreground text-xs'>
                 {t('keys.titles.countModels', { count: filteredRows.length })}
               </div>
-             <div className='flex flex-wrap items-center gap-2'>
-               <span className='text-muted-foreground whitespace-nowrap text-xs'>
-                 {t('common.fields.rowsPerPage')}
-               </span>
-               <Select
-                 value={String(pageSize)}
-                 onValueChange={(value) => {
-                   setPageSize(Number(value))
-                   setPageIndex(0)
-                 }}
-               >
-                 <SelectTrigger className='h-8 w-[70px]'>
-                   <SelectValue />
-                 </SelectTrigger>
-                 <SelectContent alignItemWithTrigger={false}>
-                   <SelectGroup>
-                     {PAGE_SIZE_OPTIONS.map((size) => (
-                       <SelectItem key={size} value={String(size)}>
-                         {size}
-                       </SelectItem>
-                     ))}
-                   </SelectGroup>
-                 </SelectContent>
-               </Select>
+              <div className='flex flex-wrap items-center gap-2'>
+                <span className='text-muted-foreground text-xs whitespace-nowrap'>
+                  {t('common.fields.rowsPerPage')}
+                </span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value))
+                    setPageIndex(0)
+                  }}
+                >
+                  <SelectTrigger className='h-8 w-[70px]'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    <SelectGroup>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <Button
                   type='button'
                   variant='outline'
@@ -1025,9 +1025,7 @@ export function ModelRatioVisualEditor({
                   <div className='space-y-4'>
                     <div className='grid gap-3 sm:grid-cols-2'>
                       <PriceInput
-                        label={t(
-                          'systemSettings.fields.inputPricePer1MTokens'
-                        )}
+                        label={t('systemSettings.fields.inputPricePer1MTokens')}
                         value={toInputValue(selectedRow.inputPrice)}
                         placeholder='2'
                         onChange={(value) =>

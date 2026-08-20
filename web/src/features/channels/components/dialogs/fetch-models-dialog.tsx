@@ -145,7 +145,9 @@ export function FetchModelsDialog({
         const normalized = normalizeModelNameList(list)
         setFetchedModels(normalized)
         setSelectedModels(existingModels)
-        toast.success(t('channels.titles.fetchedCountModels', { count: normalized.length }))
+        toast.success(
+          t('channels.titles.fetchedCountModels', { count: normalized.length })
+        )
       } else {
         const response = await fetchUpstreamModels(activeChannel!.id)
         if (response.success) {
@@ -153,15 +155,23 @@ export function FetchModelsDialog({
           const normalized = normalizeModelNameList(list)
           setFetchedModels(normalized)
           setSelectedModels(existingModels)
-          toast.success(t('channels.titles.fetchedCountModels', { count: normalized.length }))
+          toast.success(
+            t('channels.titles.fetchedCountModels', {
+              count: normalized.length,
+            })
+          )
         } else {
-          toast.error(response.message || t('channels.errors.failedToFetchModels'))
+          toast.error(
+            response.message || t('channels.errors.failedToFetchModels')
+          )
           setFetchedModels([])
         }
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToFetchModels')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToFetchModels')
       )
       setFetchedModels([])
     } finally {
@@ -191,11 +201,15 @@ export function FetchModelsDialog({
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('channels.errors.failedToUpdateModels'))
+        toast.error(
+          response.message || t('channels.errors.failedToUpdateModels')
+        )
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToUpdateModels')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToUpdateModels')
       )
     } finally {
       setIsSaving(false)
@@ -356,7 +370,9 @@ export function FetchModelsDialog({
                         render={<Info className='h-3.5 w-3.5 text-amber-500' />}
                       ></TooltipTrigger>
                       <TooltipContent>
-                        {t('channels.tips.modelRedirectNotYetAddedToModelsList')}
+                        {t(
+                          'channels.tips.modelRedirectNotYetAddedToModelsList'
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -439,7 +455,9 @@ export function FetchModelsDialog({
                   className={`grid w-full ${removedModels.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}
                 >
                   <TabsTrigger value='new' disabled={newModels.length === 0}>
-                    {t('channels.titles.newModelsCount', { count: newModels.length })}
+                    {t('channels.titles.newModelsCount', {
+                      count: newModels.length,
+                    })}
                   </TabsTrigger>
                   <TabsTrigger
                     value='existing'
@@ -488,14 +506,19 @@ export function FetchModelsDialog({
                         'channels.tips.modelsAreStillInYourSelectionButWereNot'
                       )}
                     </p>
-                    {renderModelCategory(t('channels.status.removed'), removedModels)}
+                    {renderModelCategory(
+                      t('channels.status.removed'),
+                      removedModels
+                    )}
                   </TabsContent>
                 )}
               </Tabs>
 
               {/* Selection Summary */}
               <div className='bg-muted/50 rounded-lg border p-3 text-sm'>
-                {t('channels.fields.nModelSSelected', { n: selectedModels.length })}
+                {t('channels.fields.nModelSSelected', {
+                  n: selectedModels.length,
+                })}
               </div>
             </div>
 
@@ -509,7 +532,9 @@ export function FetchModelsDialog({
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('channels.tips.saving') : t('channels.actions.saveModels')}
+                {isSaving
+                  ? t('channels.tips.saving')
+                  : t('channels.actions.saveModels')}
               </Button>
             </DialogFooter>
           </>

@@ -17,17 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { createSectionRegistry } from '../utils/section-registry'
-import type { DashboardConfig } from './types'
+import { DashboardLimitsSection } from './components/dashboard-limits-section'
 import { DashboardMetricsSection } from './components/dashboard-metrics-section'
 import { DashboardPanelsSection } from './components/dashboard-panels-section'
 import { DashboardRefreshSection } from './components/dashboard-refresh-section'
-import { DashboardLimitsSection } from './components/dashboard-limits-section'
+import type { DashboardConfig } from './types'
 
-export type DashboardSectionId =
-  | 'metrics'
-  | 'panels'
-  | 'refresh'
-  | 'limits'
+export type DashboardSectionId = 'metrics' | 'panels' | 'refresh' | 'limits'
 
 const DASHBOARD_SECTIONS = [
   {

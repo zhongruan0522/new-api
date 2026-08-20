@@ -50,9 +50,7 @@ export function RankingsHero(props: RankingsHeroProps) {
           {t('rankings.titles.value')}
         </h1>
         <p className='text-muted-foreground/80 max-w-2xl text-sm'>
-          {t(
-            'rankings.status.discoverTheMostUsedModelsAndRisingVendorsOn'
-          )}
+          {t('rankings.status.discoverTheMostUsedModelsAndRisingVendorsOn')}
         </p>
       </div>
 

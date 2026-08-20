@@ -19,9 +19,9 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { clearSidebarModulesCaches } from '@/lib/nav-modules'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { logout } from '@/features/auth/api'
-import { clearSidebarModulesCaches } from '@/lib/nav-modules'
 
 interface SignOutDialogProps {
   open: boolean
@@ -61,9 +61,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       open={open}
       onOpenChange={onOpenChange}
       title={t('layout.actions.signOut')}
-      desc={t(
-        'common.tips.sureYouWantToSignOutYouWillNeed'
-      )}
+      desc={t('common.tips.sureYouWantToSignOutYouWillNeed')}
       confirmText={t('layout.actions.signOut')}
       handleConfirm={handleSignOut}
       className='sm:max-w-sm'

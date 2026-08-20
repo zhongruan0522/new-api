@@ -17,13 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
-import { SettingsSection } from '../../components/settings-section'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SettingsSwitchField } from '../../components/settings-form-layout'
+import { SettingsSection } from '../../components/settings-section'
 import {
   useDashboardConfig,
   useUpdateDashboardConfig,
 } from '../hooks/use-dashboard-config'
-import { Skeleton } from '@/components/ui/skeleton'
 
 export function DashboardPanelsSection() {
   const { t } = useTranslation()
@@ -33,11 +33,11 @@ export function DashboardPanelsSection() {
   if (isLoading) {
     return (
       <SettingsSection title={t('systemSettings.titles.dashboardPanels')}>
-        <div className="space-y-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <div className='space-y-4'>
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-16 w-full' />
         </div>
       </SettingsSection>
     )
@@ -51,12 +51,12 @@ export function DashboardPanelsSection() {
 
   return (
     <SettingsSection title={t('systemSettings.titles.dashboardPanels')}>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className='text-muted-foreground mb-4 text-sm'>
         {t(
           'systemSettings.tips.controlWhichPanelsAreDisplayedInTheOverviewSectionOf'
         )}
       </p>
-      <div className="space-y-4">
+      <div className='space-y-4'>
         <SettingsSwitchField
           checked={config.api_info_enabled}
           onCheckedChange={(checked) =>
@@ -85,7 +85,9 @@ export function DashboardPanelsSection() {
             handleToggle('announcements_enabled', checked)
           }
           label={t('systemSettings.fields.announcementsPanel')}
-          description={t('systemSettings.tips.displaySystemAnnouncementsToUsers')}
+          description={t(
+            'systemSettings.tips.displaySystemAnnouncementsToUsers'
+          )}
         />
 
         <SettingsSwitchField

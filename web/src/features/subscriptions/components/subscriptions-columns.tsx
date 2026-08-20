@@ -38,7 +38,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'id',
         meta: { label: t('channels.fields.id'), mobileHidden: true },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('channels.fields.id')}
+          />
         ),
         cell: ({ row }) => <TableId value={row.original.plan.id} />,
         size: 60,
@@ -48,7 +51,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'title',
         meta: { label: t('subscriptions.fields.plan'), mobileTitle: true },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.plan')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.plan')}
+          />
         ),
         cell: ({ row }) => {
           const plan = row.original.plan
@@ -70,7 +76,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'price',
         meta: { label: t('pricing.fields.price') },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('pricing.fields.price')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('pricing.fields.price')}
+          />
         ),
         cell: ({ row }) => (
           <span className='font-semibold text-emerald-600'>
@@ -83,7 +92,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'duration',
         meta: { label: t('subscriptions.fields.validityPeriod') },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.validityPeriod')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.validityPeriod')}
+          />
         ),
         cell: ({ row }) => (
           <span className='text-muted-foreground'>
@@ -94,9 +106,15 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
       },
       {
         id: 'reset',
-        meta: { label: t('subscriptions.fields.quotaReset'), mobileHidden: true },
+        meta: {
+          label: t('subscriptions.fields.quotaReset'),
+          mobileHidden: true,
+        },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.quotaReset')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.quotaReset')}
+          />
         ),
         cell: ({ row }) => (
           <span className='text-muted-foreground'>
@@ -110,7 +128,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'sort_order',
         meta: { label: t('channels.fields.priority'), mobileHidden: true },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('channels.fields.priority')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('channels.fields.priority')}
+          />
         ),
         cell: ({ row }) => (
           <span className='text-muted-foreground'>
@@ -124,7 +145,10 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         id: 'enabled',
         meta: { label: t('channels.fields.status'), mobileBadge: true },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('channels.fields.status')}
+          />
         ),
         cell: ({ row }) =>
           row.original.plan.enabled ? (
@@ -144,9 +168,15 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
       },
       {
         id: 'payment',
-        meta: { label: t('subscriptions.fields.paymentChannel'), mobileHidden: true },
+        meta: {
+          label: t('subscriptions.fields.paymentChannel'),
+          mobileHidden: true,
+        },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.paymentChannel')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.paymentChannel')}
+          />
         ),
         cell: ({ row }) => {
           const plan = row.original.plan
@@ -176,9 +206,15 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
       },
       {
         id: 'total_amount',
-        meta: { label: t('subscriptions.fields.receivedAmount'), mobileHidden: true },
+        meta: {
+          label: t('subscriptions.fields.receivedAmount'),
+          mobileHidden: true,
+        },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.receivedAmount')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.receivedAmount')}
+          />
         ),
         cell: ({ row }) => {
           const total = Number(row.original.plan.total_amount || 0)
@@ -192,15 +228,23 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
       },
       {
         id: 'upgrade_group',
-        meta: { label: t('subscriptions.fields.upgradeGroup'), mobileHidden: true },
+        meta: {
+          label: t('subscriptions.fields.upgradeGroup'),
+          mobileHidden: true,
+        },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('subscriptions.fields.upgradeGroup')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('subscriptions.fields.upgradeGroup')}
+          />
         ),
         cell: ({ row }) => {
           const group = row.original.plan.upgrade_group
           if (!group) {
             return (
-              <span className='text-muted-foreground'>{t('subscriptions.fields.noUpgrade')}</span>
+              <span className='text-muted-foreground'>
+                {t('subscriptions.fields.noUpgrade')}
+              </span>
             )
           }
           return <GroupBadge group={group} />

@@ -57,7 +57,9 @@ export function usePasskeyManagement(
         onStatusChange?.(res.data ?? null)
       } else {
         setStatus(null)
-        toast.error(res.message || i18next.t('auth.errors.failedToLoadPasskeyStatus'))
+        toast.error(
+          res.message || i18next.t('auth.errors.failedToLoadPasskeyStatus')
+        )
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -91,8 +93,12 @@ export function usePasskeyManagement(
 
     setRegistering(true)
     try {
-      const deviceName = window.prompt(i18next.t('auth.placeholders.enterANameForThisDeviceOptional'))
-      const beginResponse = await beginPasskeyRegistration(deviceName || undefined)
+      const deviceName = window.prompt(
+        i18next.t('auth.placeholders.enterANameForThisDeviceOptional')
+      )
+      const beginResponse = await beginPasskeyRegistration(
+        deviceName || undefined
+      )
       if (!beginResponse.success) {
         toast.error(
           beginResponse.message ||
@@ -122,7 +128,8 @@ export function usePasskeyManagement(
       const finishResponse = await finishPasskeyRegistration(attestation)
       if (!finishResponse.success) {
         toast.error(
-          finishResponse.message || i18next.t('auth.errors.failedToRegisterPasskey')
+          finishResponse.message ||
+            i18next.t('auth.errors.failedToRegisterPasskey')
         )
         return false
       }
@@ -148,27 +155,32 @@ export function usePasskeyManagement(
     }
   }, [supported, fetchStatus])
 
-  const remove = useCallback(async (id?: number) => {
-    setRemoving(true)
-    try {
-      const res = await deletePasskey(id)
-      if (!res.success) {
-        toast.error(res.message || i18next.t('auth.errors.failedToRemovePasskey'))
-        return false
-      }
+  const remove = useCallback(
+    async (id?: number) => {
+      setRemoving(true)
+      try {
+        const res = await deletePasskey(id)
+        if (!res.success) {
+          toast.error(
+            res.message || i18next.t('auth.errors.failedToRemovePasskey')
+          )
+          return false
+        }
 
-      toast.success(i18next.t('auth.status.passkeyRemovedSuccessfully'))
-      await fetchStatus()
-      return true
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[Passkey] Removal error', error)
-      toast.error(i18next.t('auth.errors.failedToRemovePasskey'))
-      return false
-    } finally {
-      setRemoving(false)
-    }
-  }, [fetchStatus])
+        toast.success(i18next.t('auth.status.passkeyRemovedSuccessfully'))
+        await fetchStatus()
+        return true
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('[Passkey] Removal error', error)
+        toast.error(i18next.t('auth.errors.failedToRemovePasskey'))
+        return false
+      } finally {
+        setRemoving(false)
+      }
+    },
+    [fetchStatus]
+  )
 
   const enabled = useMemo(() => Boolean(status?.enabled), [status])
   const lastUsed = useMemo(() => status?.last_used_at ?? null, [status])

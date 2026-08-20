@@ -62,7 +62,9 @@ export function AnnouncementDetailModal({
           <div className='space-y-4'>
             {announcement?.content && (
               <div>
-                <h4 className='mb-2 font-medium'>{t('dashboard.fields.content')}</h4>
+                <h4 className='mb-2 font-medium'>
+                  {t('dashboard.fields.content')}
+                </h4>
                 <Markdown>{announcement.content}</Markdown>
               </div>
             )}

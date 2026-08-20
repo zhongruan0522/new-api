@@ -69,7 +69,9 @@ export function TwoFABackupDialog({
         setBackupCodes(response.data.backup_codes)
         toast.success(t('profile.tips.backupCodesRegeneratedSuccessfully'))
       } else {
-        toast.error(response.message || t('profile.errors.failedToRegenerateBackupCodes'))
+        toast.error(
+          response.message || t('profile.errors.failedToRegenerateBackupCodes')
+        )
       }
     } catch (_error) {
       toast.error(t('profile.errors.failedToRegenerateBackupCodes'))
@@ -120,7 +122,9 @@ export function TwoFABackupDialog({
               </Alert>
 
               <div className='space-y-2'>
-                <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
+                <Label htmlFor='code'>
+                  {t('auth.fields.verificationCode')}
+                </Label>
                 <Input
                   id='code'
                   value={code}
@@ -135,9 +139,7 @@ export function TwoFABackupDialog({
             <>
               <Alert>
                 <AlertDescription>
-                  {t(
-                    'profile.actions.saveTheseCodesInASafePlaceEachCode'
-                  )}
+                  {t('profile.actions.saveTheseCodesInASafePlaceEachCode')}
                 </AlertDescription>
               </Alert>
 
@@ -181,7 +183,9 @@ export function TwoFABackupDialog({
               </Button>
               <Button onClick={handleRegenerate} disabled={loading || !code}>
                 {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {loading ? t('channels.tips.generating') : t('profile.fields.generateNewCodes')}
+                {loading
+                  ? t('channels.tips.generating')
+                  : t('profile.fields.generateNewCodes')}
               </Button>
             </>
           ) : (

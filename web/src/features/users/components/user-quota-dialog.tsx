@@ -98,7 +98,9 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
         toast.error(result.message || t('users.errors.failedToAdjustQuota'))
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : t('users.errors.failedToAdjustQuota'))
+      toast.error(
+        e instanceof Error ? e.message : t('users.errors.failedToAdjustQuota')
+      )
     } finally {
       setLoading(false)
     }
@@ -112,7 +114,9 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
 
   const placeholder = tokensOnly
     ? t('users.placeholders.enterAmountInTokens')
-    : t('users.placeholders.enterAmountInCurrency', { currency: t(currencyLabel) })
+    : t('users.placeholders.enterAmountInCurrency', {
+        currency: t(currencyLabel),
+      })
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -178,7 +182,9 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
             {t('common.actions.cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={loading}>
-            {loading ? t('users.status.processing') : t('common.actions.confirm')}
+            {loading
+              ? t('users.status.processing')
+              : t('common.actions.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

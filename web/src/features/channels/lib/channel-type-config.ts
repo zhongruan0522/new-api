@@ -149,8 +149,7 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
     icon: 'ByteDance',
     defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
     hints: {
-      baseUrl:
-        'Default: https://ark.cn-beijing.volces.com/api/v3',
+      baseUrl: 'Default: https://ark.cn-beijing.volces.com/api/v3',
       key: 'Volcengine Ark API Key',
       models: 'Model endpoints enabled in Ark, e.g. doubao-1-5-pro, ep-xxxx',
     },

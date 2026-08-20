@@ -79,7 +79,8 @@ export function CopyChannelDialog({
         <DialogHeader>
           <DialogTitle>{t('channels.actions.copyChannel')}</DialogTitle>
           <DialogDescription>
-            {t('channels.actions.createACopyOf')} <strong>{currentRow.name}</strong>
+            {t('channels.actions.createACopyOf')}{' '}
+            <strong>{currentRow.name}</strong>
           </DialogDescription>
         </DialogHeader>
 

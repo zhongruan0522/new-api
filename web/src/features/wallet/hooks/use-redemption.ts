@@ -51,7 +51,9 @@ export function useRedemption() {
         return true
       }
 
-      toast.error(response.message || i18next.t('wallet.status.redemptionFailed'))
+      toast.error(
+        response.message || i18next.t('wallet.status.redemptionFailed')
+      )
       return false
     } catch (_error) {
       toast.error(i18next.t('wallet.status.redemptionFailed'))

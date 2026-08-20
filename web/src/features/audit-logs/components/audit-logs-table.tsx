@@ -127,7 +127,9 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
       })
 
       if (!result?.success) {
-        toast.error(result?.message || t('auditLogs.errors.failedToLoadAuditLogs'))
+        toast.error(
+          result?.message || t('auditLogs.errors.failedToLoadAuditLogs')
+        )
         return DEFAULT_AUDIT_LOGS_DATA
       }
 

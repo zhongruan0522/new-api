@@ -16,21 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { SettingsSection } from '../../components/settings-section'
-import {
-  SettingsForm,
-  SettingsFormGrid,
-  SettingsFormGridItem,
-} from '../../components/settings-form-layout'
-import { SettingsPageFormActions } from '../../components/settings-page-context'
-import { useSettingsForm } from '../../hooks/use-settings-form'
-import {
-  useDashboardConfig,
-  useUpdateDashboardConfig,
-} from '../hooks/use-dashboard-config'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import {
   FormControl,
   FormField,
@@ -40,6 +28,18 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  SettingsForm,
+  SettingsFormGrid,
+  SettingsFormGridItem,
+} from '../../components/settings-form-layout'
+import { SettingsPageFormActions } from '../../components/settings-page-context'
+import { SettingsSection } from '../../components/settings-section'
+import { useSettingsForm } from '../../hooks/use-settings-form'
+import {
+  useDashboardConfig,
+  useUpdateDashboardConfig,
+} from '../hooks/use-dashboard-config'
 
 const refreshIntervalSchema = z.object({
   quota_data_refresh_interval: z.number().min(60).max(86400),
@@ -75,9 +75,9 @@ export function DashboardRefreshSection() {
   if (isLoading) {
     return (
       <SettingsSection title={t('systemSettings.actions.refreshIntervals')}>
-        <div className="space-y-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <div className='space-y-4'>
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-16 w-full' />
         </div>
       </SettingsSection>
     )
@@ -87,7 +87,7 @@ export function DashboardRefreshSection() {
 
   return (
     <SettingsSection title={t('systemSettings.actions.refreshIntervals')}>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className='text-muted-foreground mb-4 text-sm'>
         {t(
           'systemSettings.tips.configureHowOftenDashboardDataIsRefreshedLowerIntervals'
         )}
@@ -97,13 +97,15 @@ export function DashboardRefreshSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="quota_data_refresh_interval"
+              name='quota_data_refresh_interval'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.tips.quotaDataIntervalSeconds')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.tips.quotaDataIntervalSeconds')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={60}
                       max={86400}
                       {...field}
@@ -121,7 +123,7 @@ export function DashboardRefreshSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="user_analytics_refresh_interval"
+              name='user_analytics_refresh_interval'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
@@ -129,7 +131,7 @@ export function DashboardRefreshSection() {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={60}
                       max={86400}
                       {...field}
@@ -147,13 +149,15 @@ export function DashboardRefreshSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="rankings_refresh_interval"
+              name='rankings_refresh_interval'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.tips.rankingsIntervalSeconds')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.tips.rankingsIntervalSeconds')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={60}
                       max={86400}
                       {...field}
@@ -171,7 +175,7 @@ export function DashboardRefreshSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="uptime_kuma_refresh_interval"
+              name='uptime_kuma_refresh_interval'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
@@ -179,7 +183,7 @@ export function DashboardRefreshSection() {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={30}
                       max={3600}
                       {...field}

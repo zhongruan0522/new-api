@@ -688,7 +688,9 @@ export function ChannelTestDialog({
             <div className='space-y-3 max-sm:has-[div[role="toolbar"]]:pb-16'>
               <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
                 <div>
-                  <p className='text-sm font-medium'>{t('channels.titles.channelModels')}</p>
+                  <p className='text-sm font-medium'>
+                    {t('channels.titles.channelModels')}
+                  </p>
                   <p className='text-muted-foreground text-xs'>
                     {t('channels.placeholders.selectModelsToRunBatchTests')}
                   </p>
@@ -820,7 +822,11 @@ function TestStatusCell({
 
   if (!result || result.status === 'idle') {
     return (
-      <StatusBadge label={t('channels.fields.notTested')} variant='neutral' copyable={false} />
+      <StatusBadge
+        label={t('channels.fields.notTested')}
+        variant='neutral'
+        copyable={false}
+      />
     )
   }
 
@@ -836,7 +842,11 @@ function TestStatusCell({
   if (result.status === 'success') {
     return (
       <div className='flex min-w-0 flex-col gap-1 text-xs'>
-        <StatusBadge label={t('channels.status.success')} variant='success' copyable={false} />
+        <StatusBadge
+          label={t('channels.status.success')}
+          variant='success'
+          copyable={false}
+        />
         {typeof result.responseTime === 'number' && (
           <span className='text-muted-foreground truncate'>
             {formatResponseTime(result.responseTime, t)}
@@ -867,8 +877,7 @@ function FailureStatusContent({
   const { t } = useTranslation()
   const errorText = result.error?.trim()
   const isModelPriceError = result.errorCode === MODEL_PRICE_ERROR_CODE
-  const isToolNotSupported =
-    result.errorCode === TOOL_NOT_SUPPORTED_ERROR_CODE
+  const isToolNotSupported = result.errorCode === TOOL_NOT_SUPPORTED_ERROR_CODE
   const modelPriceSummary = t(
     'channels.tips.modelPriceIsNotConfiguredPleaseCompleteModelPricing'
   )
@@ -957,7 +966,9 @@ function FailureDetailsSheet({
         {details && (
           <>
             <SheetHeader className={sideDrawerHeaderClassName('sm:px-5')}>
-              <SheetTitle className='pr-10'>{t('auditLogs.titles.details')}</SheetTitle>
+              <SheetTitle className='pr-10'>
+                {t('auditLogs.titles.details')}
+              </SheetTitle>
               <SheetDescription className='pr-10 wrap-break-word'>
                 {details.model}
               </SheetDescription>

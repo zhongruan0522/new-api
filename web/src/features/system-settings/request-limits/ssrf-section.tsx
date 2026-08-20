@@ -217,9 +217,13 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableSsrfProtection')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableSsrfProtection')}
+                  </FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.preventServerSideRequestForgeryAttacks')}
+                    {t(
+                      'systemSettings.tips.preventServerSideRequestForgeryAttacks'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -238,7 +242,9 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.allowPrivateIps')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.allowPrivateIps')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.allowRequestsToPrivateIpRanges1000'
@@ -260,16 +266,22 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             name='fetch_setting.domain_filter_mode'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.domainFilterMode')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.domainFilterMode')}
+                </FormLabel>
                 <Select
                   items={[
                     {
                       value: 'false',
-                      label: t('systemSettings.tips.blacklistBlockListedDomains'),
+                      label: t(
+                        'systemSettings.tips.blacklistBlockListedDomains'
+                      ),
                     },
                     {
                       value: 'true',
-                      label: t('systemSettings.tips.whitelistOnlyAllowListedDomains'),
+                      label: t(
+                        'systemSettings.tips.whitelistOnlyAllowListedDomains'
+                      ),
                     },
                   ]}
                   onValueChange={(value) => field.onChange(value === 'true')}
@@ -286,7 +298,9 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
                         {t('systemSettings.tips.blacklistBlockListedDomains')}
                       </SelectItem>
                       <SelectItem value='true'>
-                        {t('systemSettings.tips.whitelistOnlyAllowListedDomains')}
+                        {t(
+                          'systemSettings.tips.whitelistOnlyAllowListedDomains'
+                        )}
                       </SelectItem>
                     </SelectGroup>
                   </SelectContent>
@@ -305,16 +319,22 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
               <FormItem>
                 <FormLabel>
                   {t('systemSettings.fields.domain')}{' '}
-                  {domainFilterMode ? t('minimax.fields.whitelist') : t('systemSettings.fields.blacklist')}
+                  {domainFilterMode
+                    ? t('minimax.fields.whitelist')
+                    : t('systemSettings.fields.blacklist')}
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('systemSettings.placeholders.exampleComBlockedSiteCom')}
+                    placeholder={t(
+                      'systemSettings.placeholders.exampleComBlockedSiteCom'
+                    )}
                     rows={4}
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>{t('systemSettings.placeholders.oneDomainPerLine')}</FormDescription>
+                <FormDescription>
+                  {t('systemSettings.placeholders.oneDomainPerLine')}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -334,7 +354,9 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
                     },
                     {
                       value: 'true',
-                      label: t('systemSettings.tips.whitelistOnlyAllowListedIps'),
+                      label: t(
+                        'systemSettings.tips.whitelistOnlyAllowListedIps'
+                      ),
                     },
                   ]}
                   onValueChange={(value) => field.onChange(value === 'true')}
@@ -357,7 +379,9 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  {t('systemSettings.placeholders.chooseHowToFilterIpAddresses')}
+                  {t(
+                    'systemSettings.placeholders.chooseHowToFilterIpAddresses'
+                  )}
                 </FormDescription>
               </FormItem>
             )}
@@ -369,11 +393,16 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {t('auditLogs.fields.ip')} {ipFilterMode ? t('minimax.fields.whitelist') : t('systemSettings.fields.blacklist')}
+                  {t('auditLogs.fields.ip')}{' '}
+                  {ipFilterMode
+                    ? t('minimax.fields.whitelist')
+                    : t('systemSettings.fields.blacklist')}
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('systemSettings.placeholders.value1921681110000')}
+                    placeholder={t(
+                      'systemSettings.placeholders.value1921681110000'
+                    )}
                     rows={4}
                     {...field}
                   />
@@ -393,7 +422,12 @@ export function SSRFSection({ defaultValues }: SSRFSectionProps) {
               <FormItem>
                 <FormLabel>{t('systemSettings.fields.allowedPorts')}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t('systemSettings.placeholders.value804438080')} {...field} />
+                  <Input
+                    placeholder={t(
+                      'systemSettings.placeholders.value804438080'
+                    )}
+                    {...field}
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(

@@ -429,16 +429,22 @@ export function UpstreamConflictDialog({
       })
 
       if (response.success) {
-        toast.success(t('models.placeholders.selectedConflictsWereOverwrittenSuccessfully'))
+        toast.success(
+          t('models.placeholders.selectedConflictsWereOverwrittenSuccessfully')
+        )
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         setUpstreamConflicts([])
         onOpenChange(false)
       } else {
-        toast.error(response.message || t('models.errors.failedToApplyOverwrite'))
+        toast.error(
+          response.message || t('models.errors.failedToApplyOverwrite')
+        )
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || t('models.errors.failedToApplyOverwrite'))
+      toast.error(
+        (error as Error)?.message || t('models.errors.failedToApplyOverwrite')
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -478,13 +484,16 @@ export function UpstreamConflictDialog({
                 <div className='space-y-1'>
                   <div className='text-sm font-medium'>
                     {visibleModelCount}{' '}
-                    {visibleModelCount === 1 ? t('common.fields.model') : t('channels.titles.models')}{' '}
+                    {visibleModelCount === 1
+                      ? t('common.fields.model')
+                      : t('channels.titles.models')}{' '}
                     {t('models.fields.conflicts')}
                   </div>
                   <div className='text-muted-foreground text-xs'>
                     {visibleFieldCount} {t('models.fields.field')}
-                    {visibleFieldCount === 1 ? '' : 's'} {t('models.fields.showingd03544')}{' '}
-                    {totalSelectedFields} {t('common.placeholders.selected')}
+                    {visibleFieldCount === 1 ? '' : 's'}{' '}
+                    {t('models.fields.showingd03544')} {totalSelectedFields}{' '}
+                    {t('common.placeholders.selected')}
                   </div>
                 </div>
                 <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
@@ -498,7 +507,9 @@ export function UpstreamConflictDialog({
                       }}
                       placeholder={t('models.actions.searchModelsOrFields')}
                       className='pl-9'
-                      aria-label={t('models.actions.searchConflictingModelsOrFields')}
+                      aria-label={t(
+                        'models.actions.searchConflictingModelsOrFields'
+                      )}
                     />
                   </div>
                   <Button
@@ -560,8 +571,9 @@ export function UpstreamConflictDialog({
 
                   <div className='bg-muted/40 flex flex-col gap-2 border-t px-2 py-1.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-3 sm:py-2'>
                     <div className='text-muted-foreground text-xs'>
-                      {t('models.fields.showing')} {displayStart}-{displayEnd} {t('common.fields.valuede04fa')}{' '}
-                      {visibleFieldCount} {t('models.fields.field')}
+                      {t('models.fields.showing')} {displayStart}-{displayEnd}{' '}
+                      {t('common.fields.valuede04fa')} {visibleFieldCount}{' '}
+                      {t('models.fields.field')}
                       {visibleFieldCount === 1 ? '' : 's'}
                     </div>
                     <div className='flex items-center justify-between gap-2 sm:flex-wrap sm:gap-3'>
@@ -569,32 +581,32 @@ export function UpstreamConflictDialog({
                         <span className='hidden sm:inline'>
                           {t('common.fields.rowsPerPage')}
                         </span>
-                       <Select
-                         items={[
+                        <Select
+                          items={[
                             ...[10, 20, 50, 100].map((size) => ({
-                             value: String(size),
-                             label: size,
-                           })),
-                         ]}
-                         value={String(pageSize)}
-                         onValueChange={(value) => {
-                           setPageSize(Number(value))
-                           setPageIndex(0)
-                         }}
-                       >
-                         <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
-                           <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent alignItemWithTrigger={false}>
-                           <SelectGroup>
+                              value: String(size),
+                              label: size,
+                            })),
+                          ]}
+                          value={String(pageSize)}
+                          onValueChange={(value) => {
+                            setPageSize(Number(value))
+                            setPageIndex(0)
+                          }}
+                        >
+                          <SelectTrigger className='h-8 w-[70px] text-xs sm:h-8 sm:w-[72px]'>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent alignItemWithTrigger={false}>
+                            <SelectGroup>
                               {[10, 20, 50, 100].map((size) => (
-                               <SelectItem key={size} value={String(size)}>
-                                 {size}
-                               </SelectItem>
-                             ))}
-                           </SelectGroup>
-                         </SelectContent>
-                       </Select>
+                                <SelectItem key={size} value={String(size)}>
+                                  {size}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className='flex items-center gap-1'>
                         <Button
@@ -645,9 +657,7 @@ export function UpstreamConflictDialog({
             <div className='text-muted-foreground flex flex-1 items-start gap-2 text-xs'>
               <Info className='h-4 w-4 shrink-0' />
               <span>
-                {t(
-                  'models.tips.onlySelectedFieldsWillBeOverwrittenYouCanRe'
-                )}
+                {t('models.tips.onlySelectedFieldsWillBeOverwrittenYouCanRe')}
               </span>
             </div>
             <div className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
@@ -664,7 +674,9 @@ export function UpstreamConflictDialog({
                 onClick={handleApplyOverwrite}
                 disabled={isSubmitting || !hasSelection}
               >
-                {isSubmitting ? t('models.tips.applying') : t('models.fields.applyOverwrite')}
+                {isSubmitting
+                  ? t('models.tips.applying')
+                  : t('models.fields.applyOverwrite')}
               </Button>
             </div>
           </div>

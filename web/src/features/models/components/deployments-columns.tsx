@@ -47,7 +47,10 @@ export function useDeploymentsColumns(opts: {
       accessorKey: 'id',
       meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.id')}
+        />
       ),
       cell: ({ row }) => {
         const id = row.original.id
@@ -61,7 +64,10 @@ export function useDeploymentsColumns(opts: {
         row.container_name || row.deployment_name || row.name || '',
       meta: { label: t('channels.fields.name'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.name')}
+        />
       ),
       cell: ({ getValue }) => {
         const name = String(getValue() || '-') || '-'
@@ -86,7 +92,9 @@ export function useDeploymentsColumns(opts: {
         const key = normalizeDeploymentStatus(raw)
         const config = STATUS[key] || {
           label:
-            typeof raw === 'string' && raw.trim() ? raw.trim() : t('channels.fields.unknown'),
+            typeof raw === 'string' && raw.trim()
+              ? raw.trim()
+              : t('channels.fields.unknown'),
           variant: 'neutral' as const,
         }
         return (
@@ -222,7 +230,10 @@ export function useDeploymentsColumns(opts: {
       accessorKey: 'created_at',
       meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('dynamicRatio.status.created')}
+        />
       ),
       cell: ({ row }) => {
         const ts =

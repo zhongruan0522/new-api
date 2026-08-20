@@ -85,7 +85,9 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                 </div>
                 <div className='space-y-1'>
                   <div className='flex items-center gap-2'>
-                    <p className='font-medium'>{t('profile.fields.twoFactorAuthentication')}</p>
+                    <p className='font-medium'>
+                      {t('profile.fields.twoFactorAuthentication')}
+                    </p>
                     {status.enabled ? (
                       <StatusBadge
                         label={t('channels.status.enabled')}
@@ -115,7 +117,9 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                       ? t('profile.tips.backupCodesRemainingCount', {
                           count: status.backup_codes_remaining,
                         })
-                      : t('profile.actions.addAnExtraLayerOfSecurityToYourAccount')}
+                      : t(
+                          'profile.actions.addAnExtraLayerOfSecurityToYourAccount'
+                        )}
                   </p>
                 </div>
               </div>

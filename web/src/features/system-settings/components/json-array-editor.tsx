@@ -162,7 +162,9 @@ export function JsonArrayEditor({
         value: entryValue,
       })
       if (!data.success) {
-        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
+        throw new Error(
+          data.message || t('channels.errors.failedToUpdateSetting')
+        )
       }
     },
     onSuccess: async () => {
@@ -195,7 +197,9 @@ export function JsonArrayEditor({
         old_value: row.isNew ? undefined : row.originalValue,
       })
       if (!data.success) {
-        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
+        throw new Error(
+          data.message || t('channels.errors.failedToUpdateSetting')
+        )
       }
     },
     onSuccess: async () => {
@@ -297,10 +301,7 @@ export function JsonArrayEditor({
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
   const pageRows = useMemo(
     () =>
-      rows.slice(
-        safePageIndex * pageSize,
-        safePageIndex * pageSize + pageSize
-      ),
+      rows.slice(safePageIndex * pageSize, safePageIndex * pageSize + pageSize),
     [pageSize, rows, safePageIndex]
   )
 
@@ -385,7 +386,9 @@ export function JsonArrayEditor({
       if (isServerPaginated) {
         const result = await fullJsonQuery.refetch()
         if (result.isError) {
-          toast.error(result.error.message || t('channels.errors.failedToLoadSettings'))
+          toast.error(
+            result.error.message || t('channels.errors.failedToLoadSettings')
+          )
           return
         }
         const fullValue = result.data ?? '[]'
@@ -465,7 +468,9 @@ export function JsonArrayEditor({
                 </div>
               ) : null}
               <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
-                <div>{itemLabel ? t(itemLabel) : t('systemSettings.fields.item')}</div>
+                <div>
+                  {itemLabel ? t(itemLabel) : t('systemSettings.fields.item')}
+                </div>
                 <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
               </div>
               {isLoadingRows ? (
@@ -515,7 +520,10 @@ export function JsonArrayEditor({
             </div>
           ) : (
             <div className='text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm'>
-              {t(emptyText ?? 'common.tips.noItemsConfiguredClickAddItemToGetStarted')}
+              {t(
+                emptyText ??
+                  'common.tips.noItemsConfiguredClickAddItemToGetStarted'
+              )}
             </div>
           )}
           {pageCount > 1 || totalRows > 0 ? (
@@ -523,35 +531,37 @@ export function JsonArrayEditor({
               <div className='text-muted-foreground'>
                 {t('dashboard.fields.total')}: {totalRows}
               </div>
-             <div className='flex items-center gap-2'>
-               <span className='text-muted-foreground whitespace-nowrap'>
-                 {t('common.fields.rowsPerPage')}
-               </span>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(value) => {
-                  setPageSize(Number(value))
-                  setPageIndex(0)
-                }}
-              >
-                 <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
-                  <SelectValue />
-                </SelectTrigger>
-                 <SelectContent alignItemWithTrigger={false}>
-                   <SelectGroup>
-                     {PAGE_SIZE_OPTIONS.map((size) => (
-                       <SelectItem key={size} value={String(size)}>
-                         {size}
-                       </SelectItem>
-                     ))}
-                   </SelectGroup>
-                 </SelectContent>
-               </Select>
+              <div className='flex items-center gap-2'>
+                <span className='text-muted-foreground whitespace-nowrap'>
+                  {t('common.fields.rowsPerPage')}
+                </span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value))
+                    setPageIndex(0)
+                  }}
+                >
+                  <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    <SelectGroup>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <Button
                   type='button'
                   variant='outline'
                   size='sm'
-                  onClick={() => setPageIndex((current) => Math.max(0, current - 1))}
+                  onClick={() =>
+                    setPageIndex((current) => Math.max(0, current - 1))
+                  }
                   disabled={disabled || safePageIndex === 0}
                 >
                   {t('common.fields.previous')}
@@ -564,7 +574,9 @@ export function JsonArrayEditor({
                   variant='outline'
                   size='sm'
                   onClick={() =>
-                    setPageIndex((current) => Math.min(pageCount - 1, current + 1))
+                    setPageIndex((current) =>
+                      Math.min(pageCount - 1, current + 1)
+                    )
                   }
                   disabled={disabled || safePageIndex >= pageCount - 1}
                 >

@@ -130,7 +130,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
             onClick={form.handleSubmit(onSave)}
             disabled={isSaving}
           >
-            {isSaving ? t('channels.tips.saving') : t('systemSettings.actions.saveGroupRatios')}
+            {isSaving
+              ? t('channels.tips.saving')
+              : t('systemSettings.actions.saveGroupRatios')}
           </Button>
         </SettingsPageActionsPortal>
         {editMode === 'visual' ? (
@@ -159,7 +161,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.defaultToAutoGroups')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.defaultToAutoGroups')}
+                    </FormLabel>
                     <FormDescription>
                       {t(
                         'systemSettings.status.enabledNewlyCreatedTokensStartInTheFirstAuto'
@@ -183,7 +187,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='GroupRatio'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.groupRatios')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.groupRatios')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={8} {...field} />
                   </FormControl>
@@ -202,7 +208,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='TopupGroupRatio'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.topUpGroupRatios')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.topUpGroupRatios')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={6} {...field} />
                   </FormControl>
@@ -222,7 +230,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='UserUsableGroups'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.placeholders.selectableGroups')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.placeholders.selectableGroups')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={6} {...field} />
                   </FormControl>
@@ -241,7 +251,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='GroupGroupRatio'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.interGroupOverrides')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.interGroupOverrides')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={8} {...field} />
                   </FormControl>
@@ -262,7 +274,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='AutoGroups'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.autoAssignmentOrder')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.autoAssignmentOrder')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={6} {...field} />
                   </FormControl>
@@ -281,7 +295,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               name='GroupSpecialUsableGroup'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.specialUsableGroupRules')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.specialUsableGroupRules')}
+                  </FormLabel>
                   <FormControl>
                     <Textarea rows={8} {...field} />
                   </FormControl>
@@ -301,7 +317,9 @@ export const GroupRatioForm = memo(function GroupRatioForm({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.defaultToAutoGroups')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.defaultToAutoGroups')}
+                    </FormLabel>
                     <FormDescription>
                       {t(
                         'systemSettings.status.enabledNewlyCreatedTokensStartInTheFirstAuto'
@@ -347,7 +365,9 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
         className={sideDrawerContentClassName('sm:max-w-2xl')}
       >
         <SheetHeader className={sideDrawerHeaderClassName()}>
-          <SheetTitle>{t('systemSettings.fields.groupPricingUsageGuide')}</SheetTitle>
+          <SheetTitle>
+            {t('systemSettings.fields.groupPricingUsageGuide')}
+          </SheetTitle>
           <SheetDescription>
             {t(
               'systemSettings.tips.understandHowUserGroupsTokenGroupsRatiosAndSpecial'
@@ -357,7 +377,9 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
 
         <div className={sideDrawerFormClassName('gap-5')}>
           <section className='space-y-2'>
-            <h3 className='text-sm font-semibold'>{t('systemSettings.fields.coreConcepts')}</h3>
+            <h3 className='text-sm font-semibold'>
+              {t('systemSettings.fields.coreConcepts')}
+            </h3>
             <div className='text-muted-foreground space-y-2 text-sm leading-6'>
               <p>
                 <span className='text-foreground font-medium'>
@@ -400,7 +422,9 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
 
           <Accordion className='rounded-lg border px-3'>
             <AccordionItem value='groups'>
-              <AccordionTrigger>{t('systemSettings.fields.pricingGroupExample')}</AccordionTrigger>
+              <AccordionTrigger>
+                {t('systemSettings.fields.pricingGroupExample')}
+              </AccordionTrigger>
               <AccordionContent className='space-y-3'>
                 <p className='text-muted-foreground text-sm leading-6'>
                   {t(
@@ -422,7 +446,9 @@ vip          0.5     ${t('systemSettings.actions.no')}                ${t('syste
             </AccordionItem>
 
             <AccordionItem value='auto'>
-              <AccordionTrigger>{t('systemSettings.fields.autoGroupBehavior')}</AccordionTrigger>
+              <AccordionTrigger>
+                {t('systemSettings.fields.autoGroupBehavior')}
+              </AccordionTrigger>
               <AccordionContent className='space-y-3'>
                 <p className='text-muted-foreground text-sm leading-6'>
                   {t(
@@ -439,7 +465,9 @@ vip          0.5     ${t('systemSettings.actions.no')}                ${t('syste
             </AccordionItem>
 
             <AccordionItem value='special-ratio'>
-              <AccordionTrigger>{t('systemSettings.fields.specialRatioRules')}</AccordionTrigger>
+              <AccordionTrigger>
+                {t('systemSettings.fields.specialRatioRules')}
+              </AccordionTrigger>
               <AccordionContent className='space-y-3'>
                 <p className='text-muted-foreground text-sm leading-6'>
                   {t(
@@ -478,9 +506,7 @@ vip          0.5     ${t('systemSettings.actions.no')}                ${t('syste
   }
 }`}</GuideCodeBlock>
                 <p className='text-muted-foreground text-sm leading-6'>
-                  {t(
-                    'systemSettings.actions.useToAddAGroupToRemoveADefault'
-                  )}
+                  {t('systemSettings.actions.useToAddAGroupToRemoveADefault')}
                 </p>
               </AccordionContent>
             </AccordionItem>

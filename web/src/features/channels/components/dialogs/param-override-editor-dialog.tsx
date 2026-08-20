@@ -594,7 +594,8 @@ const getModeTagTailwind = (mode: string): string => {
 }
 
 const getModePathLabel = (mode: string): string => {
-  if (mode === 'set_header' || mode === 'delete_header') return 'common.fields.headerName'
+  if (mode === 'set_header' || mode === 'delete_header')
+    return 'common.fields.headerName'
   if (mode === 'prune_objects') return 'common.fields.targetPathOptional'
   return 'common.fields.targetFieldPath'
 }
@@ -609,7 +610,8 @@ const getModePathPlaceholder = (mode: string): string => {
 const getModeFromLabel = (mode: string): string => {
   if (mode === 'replace') return 'common.fields.matchText'
   if (mode === 'regex_replace') return 'common.fields.regexPattern'
-  if (mode === 'copy_header' || mode === 'move_header') return 'common.fields.sourceHeader'
+  if (mode === 'copy_header' || mode === 'move_header')
+    return 'common.fields.sourceHeader'
   return 'common.fields.sourceField'
 }
 
@@ -621,8 +623,10 @@ const getModeFromPlaceholder = (mode: string): string => {
 }
 
 const getModeToLabel = (mode: string): string => {
-  if (mode === 'replace' || mode === 'regex_replace') return 'common.fields.replaceWith'
-  if (mode === 'copy_header' || mode === 'move_header') return 'common.fields.targetHeader'
+  if (mode === 'replace' || mode === 'regex_replace')
+    return 'common.fields.replaceWith'
+  if (mode === 'copy_header' || mode === 'move_header')
+    return 'common.fields.targetHeader'
   return 'common.fields.targetField'
 }
 
@@ -962,13 +966,17 @@ const validateOperations = (
     if (mode === 'prune_objects') {
       const raw = op.value_text.trim()
       if (!raw)
-        return t('channels.tips.ruleLinePruneObjectsIsMissingConditions', { line })
+        return t('channels.tips.ruleLinePruneObjectsIsMissingConditions', {
+          line,
+        })
     }
 
     if (mode === 'pass_headers') {
       const raw = op.value_text.trim()
       if (!raw)
-        return t('channels.tips.ruleLinePassHeadersIsMissingHeaderNames', { line })
+        return t('channels.tips.ruleLinePassHeadersIsMissingHeaderNames', {
+          line,
+        })
       const parsed = parseLooseValue(raw)
       const headers = parsePassHeaderNames(parsed)
       if (headers.length === 0)
@@ -1483,7 +1491,9 @@ export function ParamOverrideEditorDialog(
       const trimmed = legacyValue.trim()
       if (!trimmed) return ''
       if (!verifyJSON(trimmed))
-        throw new Error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
+        throw new Error(
+          t('channels.errors.parameterOverrideMustBeValidJsonFormat')
+        )
       const parsed = JSON.parse(trimmed) as unknown
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
         throw new Error(t('channels.errors.legacyFormatMustBeAJsonObject'))
@@ -1505,7 +1515,8 @@ export function ParamOverrideEditorDialog(
         setJsonText(buildOperationsJson(operations, { validate: false }, t))
       }
       setJsonError(
-        (error as Error).message || t('channels.titles.parameterConfigurationError')
+        (error as Error).message ||
+          t('channels.titles.parameterConfigurationError')
       )
     }
     setEditMode('json')
@@ -1577,7 +1588,9 @@ export function ParamOverrideEditorDialog(
           let parsedCurrent: Record<string, unknown> = {}
           if (trimmed) {
             if (!verifyJSON(trimmed)) {
-              toast.error(t('channels.errors.currentLegacyJsonIsInvalidCannotAppend'))
+              toast.error(
+                t('channels.errors.currentLegacyJsonIsInvalidCannotAppend')
+              )
               return
             }
             parsedCurrent = JSON.parse(trimmed) as Record<string, unknown>
@@ -1655,7 +1668,9 @@ export function ParamOverrideEditorDialog(
         setJsonError('')
         return
       }
-      setJsonError(verifyJSON(trimmed) ? '' : t('channels.fields.jsonFormatError'))
+      setJsonError(
+        verifyJSON(trimmed) ? '' : t('channels.fields.jsonFormatError')
+      )
     },
     [t]
   )
@@ -1677,7 +1692,10 @@ export function ParamOverrideEditorDialog(
       buildVisualJson()
       return ''
     } catch (error) {
-      return (error as Error)?.message || t('channels.titles.parameterConfigurationError')
+      return (
+        (error as Error)?.message ||
+        t('channels.titles.parameterConfigurationError')
+      )
     }
   }, [buildVisualJson, editMode, t])
 
@@ -1689,7 +1707,9 @@ export function ParamOverrideEditorDialog(
         const trimmed = jsonText.trim()
         if (trimmed) {
           if (!verifyJSON(trimmed))
-            throw new Error(t('channels.errors.parameterOverrideMustBeValidJsonFormat'))
+            throw new Error(
+              t('channels.errors.parameterOverrideMustBeValidJsonFormat')
+            )
           result = JSON.stringify(JSON.parse(trimmed), null, 2)
         }
       } else {
@@ -1840,7 +1860,9 @@ export function ParamOverrideEditorDialog(
                 <div className='flex w-[280px] shrink-0 flex-col border-r'>
                   <div className='flex items-center justify-between border-b px-3 py-2'>
                     <div className='flex items-center gap-2'>
-                      <span className='text-sm font-medium'>{t('channels.fields.rules')}</span>
+                      <span className='text-sm font-medium'>
+                        {t('channels.fields.rules')}
+                      </span>
                       <Badge variant='secondary'>
                         {operationCount}/{operations.length}
                       </Badge>
@@ -2186,7 +2208,9 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         {/* Operation type + path */}
         <div className='grid gap-3 sm:grid-cols-2'>
           <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>{t('channels.fields.operationType')}</label>
+            <label className='text-xs font-medium'>
+              {t('channels.fields.operationType')}
+            </label>
             <Select
               items={[
                 ...OPERATION_MODE_OPTIONS.map((o) => ({
@@ -2393,7 +2417,9 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
         <div className='rounded-lg border p-3'>
           <div className='mb-2 flex items-center justify-between'>
             <div className='flex items-center gap-2'>
-              <span className='text-sm font-medium'>{t('channels.fields.conditions')}</span>
+              <span className='text-sm font-medium'>
+                {t('channels.fields.conditions')}
+              </span>
               <Select
                 items={[
                   { value: 'OR', label: t('channels.fields.matchAnyOr') },
@@ -2412,8 +2438,12 @@ function RuleEditor(ruleEditorProps: RuleEditorProps) {
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
-                    <SelectItem value='OR'>{t('channels.fields.matchAnyOr')}</SelectItem>
-                    <SelectItem value='AND'>{t('channels.fields.matchAllAnd')}</SelectItem>
+                    <SelectItem value='OR'>
+                      {t('channels.fields.matchAnyOr')}
+                    </SelectItem>
+                    <SelectItem value='AND'>
+                      {t('channels.fields.matchAllAnd')}
+                    </SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -2684,7 +2714,9 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
           {t('channels.fields.customErrorResponse')}
         </span>
         <div className='flex items-center gap-1'>
-          <span className='text-muted-foreground text-xs'>{t('channels.fields.mode')}</span>
+          <span className='text-muted-foreground text-xs'>
+            {t('channels.fields.mode')}
+          </span>
           <Button
             type='button'
             variant={draft.simpleMode ? 'default' : 'outline'}
@@ -2728,7 +2760,9 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
               { message: e.target.value }
             )
           }
-          placeholder={t('channels.placeholders.eGThisRequestDoesNotMeetAccessPolicy')}
+          placeholder={t(
+            'channels.placeholders.eGThisRequestDoesNotMeetAccessPolicy'
+          )}
           rows={2}
           className='text-xs'
         />
@@ -2736,15 +2770,15 @@ function ReturnErrorEditor(returnErrorEditorProps: ReturnErrorEditorProps) {
 
       {draft.simpleMode ? (
         <p className='text-muted-foreground mt-2 text-xs'>
-          {t(
-            'channels.tips.simpleModeOnlyReturnsMessageStatusCodeAndError'
-          )}
+          {t('channels.tips.simpleModeOnlyReturnsMessageStatusCodeAndError')}
         </p>
       ) : (
         <>
           <div className='mt-3 grid gap-3 sm:grid-cols-3'>
             <div className='space-y-1'>
-              <label className='text-xs font-medium'>{t('channels.fields.statusCode')}</label>
+              <label className='text-xs font-medium'>
+                {t('channels.fields.statusCode')}
+              </label>
               <Input
                 value={String(draft.statusCode ?? '')}
                 onChange={(e) =>
@@ -2900,9 +2934,13 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
   return (
     <div className='rounded-lg border p-3'>
       <div className='mb-2 flex items-center justify-between'>
-        <span className='text-sm font-medium'>{t('channels.fields.objectPruneRules')}</span>
+        <span className='text-sm font-medium'>
+          {t('channels.fields.objectPruneRules')}
+        </span>
         <div className='flex items-center gap-1'>
-          <span className='text-muted-foreground text-xs'>{t('channels.fields.mode')}</span>
+          <span className='text-muted-foreground text-xs'>
+            {t('channels.fields.mode')}
+          </span>
           <Button
             type='button'
             variant={draft.simpleMode ? 'default' : 'outline'}
@@ -2935,7 +2973,9 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
       </div>
 
       <div className='space-y-1.5'>
-        <label className='text-xs font-medium'>{t('channels.fields.typeCommon')}</label>
+        <label className='text-xs font-medium'>
+          {t('channels.fields.typeCommon')}
+        </label>
         <Input
           value={draft.typeText}
           onChange={(e) =>
@@ -2957,7 +2997,9 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
         <>
           <div className='mt-3 grid gap-3 sm:grid-cols-2'>
             <div className='space-y-1'>
-              <label className='text-xs font-medium'>{t('channels.fields.logic')}</label>
+              <label className='text-xs font-medium'>
+                {t('channels.fields.logic')}
+              </label>
               <Select
                 items={[
                   { value: 'AND', label: t('channels.errors.allMustMatchAnd') },
@@ -2979,7 +3021,9 @@ function PruneObjectsEditor(pruneObjectsEditorProps: PruneObjectsEditorProps) {
                     <SelectItem value='AND'>
                       {t('channels.errors.allMustMatchAnd')}
                     </SelectItem>
-                    <SelectItem value='OR'>{t('channels.fields.anyMatchOr')}</SelectItem>
+                    <SelectItem value='OR'>
+                      {t('channels.fields.anyMatchOr')}
+                    </SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -3202,7 +3246,9 @@ function SyncFieldsEditor(syncFieldsEditorProps: SyncFieldsEditorProps) {
   const { t } = useTranslation()
   return (
     <div className='space-y-3'>
-      <label className='text-xs font-medium'>{t('channels.fields.syncEndpoints')}</label>
+      <label className='text-xs font-medium'>
+        {t('channels.fields.syncEndpoints')}
+      </label>
       <div className='grid gap-3 sm:grid-cols-2'>
         <div className='space-y-1.5'>
           <label className='text-[10px] font-medium'>

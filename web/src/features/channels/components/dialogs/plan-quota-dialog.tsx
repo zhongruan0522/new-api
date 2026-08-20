@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { VChart } from '@visactor/react-vchart'
-import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import i18next from 'i18next'
+import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useChartTheme } from '@/lib/use-chart-theme'
@@ -35,12 +35,12 @@ import {
 } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { getGlmPlanActivity, getGlmPlanUsage, getPlanQuota } from '../../api'
 import type {
   Channel,
@@ -56,10 +56,12 @@ import { useChannels } from '../channels-provider'
 
 const PLAN_DISPLAY_NAME_KEYS: Record<string, string> = {
   'glm-coding-plan': 'channels.fields.planGlmCodingPlan',
-  'glm-coding-plan-international': 'channels.fields.planGlmCodingPlanInternational',
+  'glm-coding-plan-international':
+    'channels.fields.planGlmCodingPlanInternational',
   'kimi-coding-plan': 'channels.fields.planKimiCodingPlan',
   'minimax-coding-plan': 'channels.fields.planMinimaxCodingPlan',
-  'minimax-coding-plan-international': 'channels.fields.planMinimaxCodingPlanInternational',
+  'minimax-coding-plan-international':
+    'channels.fields.planMinimaxCodingPlanInternational',
   'ollama-coding-plan': 'channels.fields.planOllamaCodingPlan',
 }
 
@@ -264,15 +266,25 @@ function formatResetTime(timeStr?: string): string {
   if (Number.isNaN(date.getTime())) return timeStr
   const month = String(date.getMonth() + 1)
   const day = String(date.getDate())
-  const time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0')
-  return i18next.t('channels.placeholders.planMonthDayReset', { month, day, time })
+  const time =
+    String(date.getHours()).padStart(2, '0') +
+    ':' +
+    String(date.getMinutes()).padStart(2, '0')
+  return i18next.t('channels.placeholders.planMonthDayReset', {
+    month,
+    day,
+    time,
+  })
 }
 
 function formatHourReset(timeStr?: string): string {
   if (!timeStr) return ''
   const date = new Date(timeStr)
   if (Number.isNaN(date.getTime())) return timeStr
-  const time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0')
+  const time =
+    String(date.getHours()).padStart(2, '0') +
+    ':' +
+    String(date.getMinutes()).padStart(2, '0')
   return i18next.t('channels.placeholders.planHourReset', { time })
 }
 
@@ -309,7 +321,11 @@ function flattenUsageData(
     ].filter(Boolean)
     const values: UsagePoint[] = []
     times.forEach((time, index) => {
-      values.push({ time, value: totalArr[index] || 0, type: i18next.t('channels.fields.planTotalUsage') })
+      values.push({
+        time,
+        value: totalArr[index] || 0,
+        type: i18next.t('channels.fields.planTotalUsage'),
+      })
       modelList.forEach((model) => {
         const usage = numberArray(model.tokensUsage)
         values.push({
@@ -332,15 +348,31 @@ function flattenUsageData(
     zread.reduce((sum, value) => sum + value, 0)
   const values: UsagePoint[] = []
   times.forEach((time, index) => {
-    values.push({ time, value: networkSearch[index] || 0, type: i18next.t('channels.fields.planNetworkSearch') })
-    values.push({ time, value: webRead[index] || 0, type: i18next.t('channels.fields.planWebRead') })
-    values.push({ time, value: zread[index] || 0, type: i18next.t('channels.fields.planOpenSourceRepo') })
+    values.push({
+      time,
+      value: networkSearch[index] || 0,
+      type: i18next.t('channels.fields.planNetworkSearch'),
+    })
+    values.push({
+      time,
+      value: webRead[index] || 0,
+      type: i18next.t('channels.fields.planWebRead'),
+    })
+    values.push({
+      time,
+      value: zread[index] || 0,
+      type: i18next.t('channels.fields.planOpenSourceRepo'),
+    })
   })
   return {
     values,
     total,
     summary: [],
-    fields: [i18next.t('channels.fields.planNetworkSearch'), i18next.t('channels.fields.planWebRead'), i18next.t('channels.fields.planOpenSourceRepo')],
+    fields: [
+      i18next.t('channels.fields.planNetworkSearch'),
+      i18next.t('channels.fields.planWebRead'),
+      i18next.t('channels.fields.planOpenSourceRepo'),
+    ],
     times,
   }
 }
@@ -356,8 +388,12 @@ function flattenPerformanceData(
   }
 
   const isLite = productLevel === 'Lite'
-  const speedLabel = isLite ? i18next.t('channels.fields.planLiteSpeed') : i18next.t('channels.fields.planProMaxSpeed')
-  const rateLabel = isLite ? i18next.t('channels.fields.planLiteSuccessRate') : i18next.t('channels.fields.planProMaxSuccessRate')
+  const speedLabel = isLite
+    ? i18next.t('channels.fields.planLiteSpeed')
+    : i18next.t('channels.fields.planProMaxSpeed')
+  const rateLabel = isLite
+    ? i18next.t('channels.fields.planLiteSuccessRate')
+    : i18next.t('channels.fields.planProMaxSuccessRate')
   const liteSpeed = numberArray(data.liteDecodeSpeed).map((v) =>
     Number(v.toFixed(2))
   )
@@ -428,7 +464,9 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
   return (
     <div className='rounded-lg border p-4'>
       <div className='flex items-center justify-between gap-2'>
-        <div className='text-sm font-medium'>{t('channels.titles.planMcpToolLimit')}</div>
+        <div className='text-sm font-medium'>
+          {t('channels.titles.planMcpToolLimit')}
+        </div>
         <StatusBadge
           label={data.status || `${percent}%`}
           variant={variant}
@@ -444,7 +482,9 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
         )}
       </div>
       <Progress value={percent} aria-label={`MCP: ${percent}%`} />
-      <div className='text-muted-foreground mt-2 text-xs'>{t('channels.tips.planMonthlyReset')}</div>
+      <div className='text-muted-foreground mt-2 text-xs'>
+        {t('channels.tips.planMonthlyReset')}
+      </div>
       {data.tools && data.tools.length > 0 && (
         <div className='mt-3 border-t pt-3'>
           {data.tools.map((tool, index) => (
@@ -468,7 +508,10 @@ function McpLimitCard({ data }: { data?: PlanMcpLimitInfo | null }) {
 
 function TierLimitCard({ tier }: { tier: PlanTierInfo }) {
   const { t } = useTranslation()
-  const title = tier.name === 'five_hour' ? t('channels.titles.planFiveHourLimit') : t('channels.titles.planWeeklyLimit')
+  const title =
+    tier.name === 'five_hour'
+      ? t('channels.titles.planFiveHourLimit')
+      : t('channels.titles.planWeeklyLimit')
   const percent = clampPercent(tier.percentage)
   const reset = tier.resets_at
     ? tier.name === 'five_hour'
@@ -490,9 +533,12 @@ function TierLimitCard({ tier }: { tier: PlanTierInfo }) {
         }
       />
       <div className='text-muted-foreground flex justify-between gap-3 px-1 text-xs'>
-        <span>{t('channels.fields.planUsed')} {formatCompactNumber(tier.used)}</span>
         <span>
-          {t('channels.fields.planRemaining')} {formatCompactNumber(tier.remaining)} /{' '}
+          {t('channels.fields.planUsed')} {formatCompactNumber(tier.used)}
+        </span>
+        <span>
+          {t('channels.fields.planRemaining')}{' '}
+          {formatCompactNumber(tier.remaining)} /{' '}
           {formatCompactNumber(tier.limit)}
         </span>
       </div>
@@ -634,7 +680,10 @@ function UsageChart({ channelId }: { channelId: number }) {
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='bg-muted inline-flex rounded-lg p-0.5'>
           {[
-            { key: 'model' as const, label: t('channels.actions.planModelView') },
+            {
+              key: 'model' as const,
+              label: t('channels.actions.planModelView'),
+            },
             { key: 'tool' as const, label: t('channels.actions.planToolView') },
           ].map((item) => (
             <Button
@@ -666,7 +715,9 @@ function UsageChart({ channelId }: { channelId: number }) {
       <div className='flex flex-wrap items-baseline gap-x-4 gap-y-2'>
         <div>
           <span className='text-muted-foreground text-xs'>
-            {usageType === 'model' ? t('channels.fields.planTokensTotal') : t('channels.fields.planToolCallCount')}
+            {usageType === 'model'
+              ? t('channels.fields.planTokensTotal')
+              : t('channels.fields.planToolCallCount')}
           </span>
           <span className='ml-2 text-xl font-semibold'>
             {formatCompactNumber(total)}
@@ -784,7 +835,12 @@ function PerformanceChart({
             style: {
               lineWidth: 2,
               lineDash: (datum: UsagePoint) =>
-                (String(datum?.type ?? '').toLowerCase().includes('success') || String(datum?.type ?? '').includes('成功率')) ? [4, 4] : [0],
+                String(datum?.type ?? '')
+                  .toLowerCase()
+                  .includes('success') ||
+                String(datum?.type ?? '').includes('成功率')
+                  ? [4, 4]
+                  : [0],
             },
           },
           point: { visible: false },
@@ -837,7 +893,8 @@ function PerformanceChart({
             {
               key: (datum: UsagePoint) => datum.type,
               value: (datum: UsagePoint) =>
-                (datum.type.toLowerCase().includes('success') || datum.type.includes('成功率'))
+                datum.type.toLowerCase().includes('success') ||
+                datum.type.includes('成功率')
                   ? `${Number(datum.value || 0).toFixed(1)}%`
                   : `${Number(datum.value || 0).toFixed(1)} tokens/s`,
             },
@@ -859,7 +916,9 @@ function PerformanceChart({
   return (
     <section className='space-y-3 rounded-lg border p-4'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
-        <div className='text-sm font-semibold'>{t('channels.titles.planSystemHealth')}</div>
+        <div className='text-sm font-semibold'>
+          {t('channels.titles.planSystemHealth')}
+        </div>
         <div className='flex flex-wrap gap-1'>
           {ranges.map((item) => (
             <Button
@@ -876,12 +935,16 @@ function PerformanceChart({
       </div>
       <div className='flex flex-wrap gap-6'>
         <div>
-          <span className='text-muted-foreground text-xs'>{t('channels.fields.planAvgSpeed')}</span>
+          <span className='text-muted-foreground text-xs'>
+            {t('channels.fields.planAvgSpeed')}
+          </span>
           <span className='ml-2 text-xl font-semibold'>{avgSpeed}</span>
           <span className='text-muted-foreground ml-1 text-xs'>tokens/s</span>
         </div>
         <div>
-          <span className='text-muted-foreground text-xs'>{t('channels.fields.planSuccessRate')}</span>
+          <span className='text-muted-foreground text-xs'>
+            {t('channels.fields.planSuccessRate')}
+          </span>
           <span className='ml-2 text-xl font-semibold'>{avgRate}%</span>
         </div>
       </div>
@@ -952,7 +1015,10 @@ function formatActivityDuration(ms?: number): string {
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
   if (hours > 0 && minutes > 0) {
-    return i18next.t('channels.placeholders.planActivityDurationHm', { hours, minutes })
+    return i18next.t('channels.placeholders.planActivityDurationHm', {
+      hours,
+      minutes,
+    })
   }
   if (hours > 0) {
     return i18next.t('channels.placeholders.planActivityDurationH', { hours })
@@ -1006,8 +1072,12 @@ function buildActivityHeatmap(series: GlmActivityDay[]): {
   }
   if (week.length > 0) weeks.push(week)
 
-  const monthFormatter = new Intl.DateTimeFormat(i18next.language, { month: 'short' })
-  const weekdayFormatter = new Intl.DateTimeFormat(i18next.language, { weekday: 'narrow' })
+  const monthFormatter = new Intl.DateTimeFormat(i18next.language, {
+    month: 'short',
+  })
+  const weekdayFormatter = new Intl.DateTimeFormat(i18next.language, {
+    weekday: 'narrow',
+  })
   // 2024-01-01 恰为周一，用它推导周一到周日的窄缩写
   const weekdayLabels = Array.from({ length: 7 }, (_, index) =>
     weekdayFormatter.format(new Date(2024, 0, 1 + index))
@@ -1074,7 +1144,9 @@ function ActivitySection({ channelId }: { channelId: number }) {
     try {
       const response = await getGlmPlanActivity(channelId)
       if (!response.success) {
-        throw new Error(response.message || t('channels.tips.planActivityLoadFailed'))
+        throw new Error(
+          response.message || t('channels.tips.planActivityLoadFailed')
+        )
       }
       setActivity(response.data ?? null)
     } catch {
@@ -1338,8 +1410,14 @@ function GlmPlanContent({
           </div>
         </div>
         <div className='text-muted-foreground mt-3 grid gap-2 text-xs sm:grid-cols-3'>
-          <div>{t('channels.fields.planEffectiveDate')}: {quotaData.effective_date || '-'}</div>
-          <div>{t('channels.fields.planExpiryDate')}: {quotaData.expiry_date || '-'}</div>
+          <div>
+            {t('channels.fields.planEffectiveDate')}:{' '}
+            {quotaData.effective_date || '-'}
+          </div>
+          <div>
+            {t('channels.fields.planExpiryDate')}:{' '}
+            {quotaData.expiry_date || '-'}
+          </div>
           <div>
             {quotaData.auto_renew ? (
               <span className='text-success inline-flex items-center gap-1'>
@@ -1407,7 +1485,11 @@ function TierPlanContent({ quotaData }: { quotaData: PlanQuotaData }) {
             {getPlanDisplayName(quotaData.plan_name)}
           </div>
           {quotaData.credential === 'valid' && (
-            <StatusBadge label={t('channels.actions.planValid')} variant='success' copyable={false} />
+            <StatusBadge
+              label={t('channels.actions.planValid')}
+              variant='success'
+              copyable={false}
+            />
           )}
         </div>
       </div>
@@ -1444,12 +1526,16 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
     try {
       const response = await getPlanQuota(currentRow.id)
       if (!response.success) {
-        throw new Error(response.message || t('channels.errors.failedToQueryPlanUsage'))
+        throw new Error(
+          response.message || t('channels.errors.failedToQueryPlanUsage')
+        )
       }
       setQuotaData(response.data ?? null)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToQueryPlanUsage')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToQueryPlanUsage')
       )
       setQuotaData(null)
     } finally {
@@ -1496,7 +1582,9 @@ export function PlanQuotaDialog({ open, onOpenChange }: PlanQuotaDialogProps) {
           ) : quotaData?.quota_supported === false ? (
             <div className='text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm'>
               {planDisplayName
-                ? t('channels.tips.planQuotaComingSoon', { name: planDisplayName })
+                ? t('channels.tips.planQuotaComingSoon', {
+                    name: planDisplayName,
+                  })
                 : t('channels.tips.planQuotaComingSoonGeneric')}
             </div>
           ) : (

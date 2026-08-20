@@ -44,7 +44,9 @@ function UsageLogsContent() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('dashboard.titles.usageLogs')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>
+          {t('dashboard.titles.usageLogs')}
+        </SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='space-y-4'>
             <UsageLogsTable logCategory='common' />

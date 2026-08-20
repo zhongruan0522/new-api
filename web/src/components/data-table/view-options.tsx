@@ -51,7 +51,9 @@ export function DataTableViewOptions<TData>({
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-[150px]'>
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{t('common.fields.toggleColumns')}</DropdownMenuLabel>
+          <DropdownMenuLabel>
+            {t('common.fields.toggleColumns')}
+          </DropdownMenuLabel>
           {table
             .getAllColumns()
             .filter(

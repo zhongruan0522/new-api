@@ -39,7 +39,9 @@ export function useUpdateOption() {
     mutationFn: async (request: UpdateOptionRequest) => {
       const data = await updateSystemOption(request)
       if (!data.success) {
-        throw new Error(data.message || i18next.t('channels.errors.failedToUpdateSetting'))
+        throw new Error(
+          data.message || i18next.t('channels.errors.failedToUpdateSetting')
+        )
       }
       return data
     },
@@ -48,7 +50,9 @@ export function useUpdateOption() {
       queryClient.invalidateQueries({ queryKey: ['system-options'] })
       if (variables.key.startsWith('minimax.')) {
         queryClient.invalidateQueries({ queryKey: ['system-option-json-map'] })
-        queryClient.invalidateQueries({ queryKey: ['system-option-json-array'] })
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-json-array'],
+        })
         queryClient.invalidateQueries({ queryKey: ['system-option-value'] })
       }
 
@@ -77,7 +81,9 @@ export function useUpdateOption() {
       toast.success(i18next.t('channels.status.settingsUpdatedSuccessfully'))
     },
     onError: (error: Error) => {
-      toast.error(error.message || i18next.t('channels.errors.failedToUpdateSetting'))
+      toast.error(
+        error.message || i18next.t('channels.errors.failedToUpdateSetting')
+      )
     },
   })
 }

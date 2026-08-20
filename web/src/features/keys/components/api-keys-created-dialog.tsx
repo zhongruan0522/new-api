@@ -52,9 +52,7 @@ export function ApiKeysCreatedDialog() {
             {t('keys.fields.newApiKey')}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'keys.tips.onlyTimeTheseApiKeysAreShownStoreThem'
-            )}
+            {t('keys.tips.onlyTimeTheseApiKeysAreShownStoreThem')}
           </DialogDescription>
         </DialogHeader>
 

@@ -42,8 +42,7 @@ const defaultModelSettings: ModelSettings = {
   'minimax.custom_voice_enabled': false,
   'minimax.custom_voice_group': '',
   'minimax.custom_voice_billing_model_id': '',
-  'minimax.emotion_pattern':
-    '<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>',
+  'minimax.emotion_pattern': '<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>',
   'minimax.emotion_redirect': '{}',
   'minimax.tone_word_pattern': '\\(([^()]+)\\)',
   'minimax.tone_word_redirect': '{}',

@@ -168,14 +168,12 @@ export const MULTI_KEY_FILTER_OPTIONS = [
 ] as const
 
 export const MULTI_KEY_CONFIRM_MESSAGES = {
-  DELETE:
-    'common.errors.sureYouWantToDeleteThisKeyThisAction',
+  DELETE: 'common.errors.sureYouWantToDeleteThisKeyThisAction',
   ENABLE: 'common.actions.enableThisKey',
   DISABLE: 'common.actions.disableThisKey',
   ENABLE_ALL: 'common.tips.sureYouWantToEnableAllKeys',
   DISABLE_ALL: 'common.status.sureYouWantToDisableAllEnabledKeys',
-  DELETE_DISABLED:
-    'common.errors.sureYouWantToDeleteAllAutoDisabledKeys',
+  DELETE_DISABLED: 'common.errors.sureYouWantToDeleteAllAutoDisabledKeys',
 } as const
 
 // ============================================================================
@@ -312,11 +310,9 @@ export const FIELD_DESCRIPTIONS = {
   TYPE: 'common.tips.providerTypeOpenAiAnthropicEtc',
   BASE_URL: 'common.tips.customApiBaseUrlLeaveEmptyToUseProvider',
   KEY: 'common.fields.apiKeyFromTheProvider',
-  MODELS:
-    'common.tips.listOfModelsSupportedByThisChannelUseComma',
+  MODELS: 'common.tips.listOfModelsSupportedByThisChannelUseComma',
   GROUP: 'common.tips.userGroupsThatCanAccessThisChannel',
-  MODEL_MAPPING:
-    'common.tips.mapRequestModelNamesToActualProviderModelNames',
+  MODEL_MAPPING: 'common.tips.mapRequestModelNamesToActualProviderModelNames',
   PRIORITY: 'common.tips.higherPriorityChannelsAreSelectedFirst',
   WEIGHT: 'common.status.usedForLoadBalancingHigherWeightMoreRequests',
   TEST_MODEL: 'common.tips.modelToUseWhenTestingChannelConnectivity',

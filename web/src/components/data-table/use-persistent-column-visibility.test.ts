@@ -41,7 +41,8 @@ class FakeStorage {
 }
 
 function withFakeWindow(testFn: () => void) {
-  const originalWindow = (globalThis as unknown as Record<string, unknown>).window
+  const originalWindow = (globalThis as unknown as Record<string, unknown>)
+    .window
   const fakeStorage = new FakeStorage()
   ;(globalThis as unknown as Record<string, unknown>).window = {
     localStorage: fakeStorage as unknown as Storage,

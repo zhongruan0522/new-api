@@ -40,11 +40,15 @@ export function useAccessToken() {
       if (response.success && response.data) {
         setToken(response.data)
         copyToClipboard(response.data)
-        toast.success(i18next.t('profile.status.tokenRegeneratedAndCopiedToClipboard'))
+        toast.success(
+          i18next.t('profile.status.tokenRegeneratedAndCopiedToClipboard')
+        )
         return true
       }
 
-      toast.error(response.message || i18next.t('profile.errors.failedToGenerateToken'))
+      toast.error(
+        response.message || i18next.t('profile.errors.failedToGenerateToken')
+      )
       return false
     } catch (error) {
       // eslint-disable-next-line no-console

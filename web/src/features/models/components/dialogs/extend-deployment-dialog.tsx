@@ -157,7 +157,9 @@ export function ExtendDeploymentDialog({
       }
       toast.error(res.message || t('models.status.extendFailed'))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('models.status.extendFailed'))
+      toast.error(
+        err instanceof Error ? err.message : t('models.status.extendFailed')
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -182,7 +184,9 @@ export function ExtendDeploymentDialog({
             </div>
 
             <div className='space-y-2'>
-              <div className='text-sm font-medium'>{t('models.fields.durationHours')}</div>
+              <div className='text-sm font-medium'>
+                {t('models.fields.durationHours')}
+              </div>
               <Input
                 type='number'
                 min={1}
@@ -197,7 +201,9 @@ export function ExtendDeploymentDialog({
             <Separator />
 
             <div className='space-y-1'>
-              <div className='text-sm font-medium'>{t('models.fields.estimatedCost')}</div>
+              <div className='text-sm font-medium'>
+                {t('models.fields.estimatedCost')}
+              </div>
               <div className='text-muted-foreground text-sm'>
                 {isLoadingPrice || isFetchingPrice ? (
                   <span className='inline-flex items-center gap-2'>

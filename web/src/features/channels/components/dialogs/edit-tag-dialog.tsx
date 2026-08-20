@@ -208,7 +208,9 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToUpdateTag')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToUpdateTag')
       )
     } finally {
       setIsSubmitting(false)
@@ -226,12 +228,13 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
       <DialogContent className='max-h-[90vh] max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
-            {t('channels.fields.labelWithColon', { label: t('channels.actions.editTag') })} {currentTag}
+            {t('channels.fields.labelWithColon', {
+              label: t('channels.actions.editTag'),
+            })}{' '}
+            {currentTag}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'channels.tips.batchEditAllChannelsWithThisTagLeaveFields'
-            )}
+            {t('channels.tips.batchEditAllChannelsWithThisTagLeaveFields')}
           </DialogDescription>
         </DialogHeader>
 
@@ -249,7 +252,9 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
                 id='new-tag'
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder={t('channels.placeholders.enterNewTagNameOrLeaveEmpty')}
+                placeholder={t(
+                  'channels.placeholders.enterNewTagNameOrLeaveEmpty'
+                )}
               />
             </div>
 
@@ -260,7 +265,7 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
               <Label>
                 {t('channels.titles.models')}
                 <span className='text-muted-foreground ml-2 text-xs'>
-                  {t("common.titles.overrideAllChannelsModels")}
+                  {t('common.titles.overrideAllChannelsModels')}
                 </span>
               </Label>
 
@@ -310,7 +315,9 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
                     >
                       <SelectTrigger className='flex-1'>
                         <SelectValue
-                          placeholder={t('channels.actions.addFromAvailableModels')}
+                          placeholder={t(
+                            'channels.actions.addFromAvailableModels'
+                          )}
                         />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
@@ -329,7 +336,9 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
 
                   <div className='flex gap-2'>
                     <Input
-                      placeholder={t('channels.fields.customModelCommaSeparated')}
+                      placeholder={t(
+                        'channels.fields.customModelCommaSeparated'
+                      )}
                       value={customModel}
                       onChange={(e) => setCustomModel(e.target.value)}
                       onKeyDown={(e) => {
@@ -412,7 +421,7 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
               <Label>
                 {t('channels.fields.groups')}
                 <span className='text-muted-foreground ml-2 text-xs'>
-                  {t("common.titles.overrideAllChannelsGroups")}
+                  {t('common.titles.overrideAllChannelsGroups')}
                 </span>
               </Label>
               <div className='flex min-h-[60px] flex-wrap gap-2 rounded-md border p-3'>

@@ -21,13 +21,13 @@ import { useTranslation } from 'react-i18next'
 import { getBgColorClass } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { CopyButton } from '@/components/copy-button'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { CopyButton } from '@/components/copy-button'
 import { StatusBadge } from '@/components/status-badge'
 import {
   getLatencyColorClass,

@@ -123,7 +123,9 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
       <Dialog open={props.open} onOpenChange={(v) => !v && props.onCancel()}>
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
-            <DialogTitle>{t('channels.fields.upstreamModelUpdates')}</DialogTitle>
+            <DialogTitle>
+              {t('channels.fields.upstreamModelUpdates')}
+            </DialogTitle>
           </DialogHeader>
 
           <p className='text-muted-foreground text-sm'>
@@ -292,9 +294,7 @@ export function UpstreamUpdateDialog(props: UpstreamUpdateDialogProps) {
         open={partialConfirmOpen}
         onOpenChange={setPartialConfirmOpen}
         title={t('channels.fields.partialSubmission')}
-        desc={t(
-          'channels.status.thereAreBothAddAndRemoveModelsPendingBut'
-        )}
+        desc={t('channels.status.thereAreBothAddAndRemoveModelsPendingBut')}
         handleConfirm={() => {
           setPartialConfirmOpen(false)
           props.onConfirm({

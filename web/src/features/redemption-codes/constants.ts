@@ -102,7 +102,8 @@ export const ERROR_MESSAGES = {
   STATUS_UPDATE_FAILED: 'common.errors.failedToUpdateRedemptionCodeStatus',
   NAME_LENGTH_INVALID: 'common.errors.nameMustBeBetweenMinAndMaxCharacters',
   COUNT_INVALID: 'common.errors.countMustBeBetweenMinAndMax',
-  EXPIRED_TIME_INVALID: 'common.errors.expiredTimeCannotBeEarlierThanCurrentTime',
+  EXPIRED_TIME_INVALID:
+    'common.errors.expiredTimeCannotBeEarlierThanCurrentTime',
 } as const
 
 /** For form schema only: returns translated messages with interpolation. */

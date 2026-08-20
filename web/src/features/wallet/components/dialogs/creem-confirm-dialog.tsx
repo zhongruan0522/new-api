@@ -62,17 +62,23 @@ export function CreemConfirmDialog({
 
         <div className='space-y-3 py-3 sm:space-y-4 sm:py-4'>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('wallet.fields.product')}</span>
+            <span className='text-muted-foreground'>
+              {t('wallet.fields.product')}
+            </span>
             <span className='font-medium'>{product.name}</span>
           </div>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('pricing.fields.price')}</span>
+            <span className='text-muted-foreground'>
+              {t('pricing.fields.price')}
+            </span>
             <span className='font-medium text-indigo-600'>
               {formatCreemPrice(product.price, product.currency)}
             </span>
           </div>
           <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>{t('keys.fields.quota')}</span>
+            <span className='text-muted-foreground'>
+              {t('keys.fields.quota')}
+            </span>
             <span className='font-medium'>{formatNumber(product.quota)}</span>
           </div>
         </div>

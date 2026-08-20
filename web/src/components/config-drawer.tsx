@@ -227,15 +227,29 @@ function ThemeConfig() {
         aria-describedby='theme-description'
       >
         {[
-          { value: 'system', label: t('common.titles.system'), icon: IconThemeSystem },
-          { value: 'light', label: t('common.fields.light'), icon: IconThemeLight },
-          { value: 'dark', label: t('common.fields.dark'), icon: IconThemeDark },
+          {
+            value: 'system',
+            label: t('common.titles.system'),
+            icon: IconThemeSystem,
+          },
+          {
+            value: 'light',
+            label: t('common.fields.light'),
+            icon: IconThemeLight,
+          },
+          {
+            value: 'dark',
+            label: t('common.fields.dark'),
+            icon: IconThemeDark,
+          },
         ].map((item) => (
           <RadioGroupItem key={item.value} item={item} isTheme />
         ))}
       </Radio>
       <div id='theme-description' className='sr-only'>
-        {t('common.placeholders.chooseBetweenSystemPreferenceLightModeOrDarkMode')}
+        {t(
+          'common.placeholders.chooseBetweenSystemPreferenceLightModeOrDarkMode'
+        )}
       </div>
     </div>
   )
@@ -340,7 +354,9 @@ function RadiusConfig() {
             value={option.value}
             className='group flex flex-col items-stretch outline-none'
             aria-label={
-              option.value === 'default' ? t('common.titles.systemDefault') : option.label
+              option.value === 'default'
+                ? t('common.titles.systemDefault')
+                : option.label
             }
           >
             <div
@@ -404,8 +420,18 @@ function ScaleConfig() {
     rowGap: string
   }[] = [
     { value: 'sm', label: t('common.fields.compact'), rows: 4, rowGap: '3px' },
-    { value: 'default', label: t('common.fields.default'), rows: 3, rowGap: '6px' },
-    { value: 'lg', label: t('common.fields.comfortable'), rows: 2, rowGap: '10px' },
+    {
+      value: 'default',
+      label: t('common.fields.default'),
+      rows: 3,
+      rowGap: '6px',
+    },
+    {
+      value: 'lg',
+      label: t('common.fields.comfortable'),
+      rows: 2,
+      rowGap: '10px',
+    },
   ]
   return (
     <div>
@@ -472,19 +498,29 @@ function SidebarConfig() {
         aria-describedby='sidebar-description'
       >
         {[
-          { value: 'inset', label: t('common.fields.inset'), icon: IconSidebarInset },
+          {
+            value: 'inset',
+            label: t('common.fields.inset'),
+            icon: IconSidebarInset,
+          },
           {
             value: 'floating',
             label: t('common.fields.floating'),
             icon: IconSidebarFloating,
           },
-          { value: 'sidebar', label: t('common.fields.sidebar'), icon: IconSidebarSidebar },
+          {
+            value: 'sidebar',
+            label: t('common.fields.sidebar'),
+            icon: IconSidebarSidebar,
+          },
         ].map((item) => (
           <RadioGroupItem key={item.value} item={item} />
         ))}
       </Radio>
       <div id='sidebar-description' className='sr-only'>
-        {t('common.placeholders.chooseBetweenInsetFloatingOrStandardSidebarLayout')}
+        {t(
+          'common.placeholders.chooseBetweenInsetFloatingOrStandardSidebarLayout'
+        )}
       </div>
     </div>
   )
@@ -522,8 +558,16 @@ function LayoutConfig() {
         aria-describedby='layout-description'
       >
         {[
-          { value: 'default', label: t('common.fields.default'), icon: IconLayoutDefault },
-          { value: 'icon', label: t('common.fields.compact'), icon: IconLayoutCompact },
+          {
+            value: 'default',
+            label: t('common.fields.default'),
+            icon: IconLayoutDefault,
+          },
+          {
+            value: 'icon',
+            label: t('common.fields.compact'),
+            icon: IconLayoutCompact,
+          },
           {
             value: 'offcanvas',
             label: t('common.fields.fullLayout'),

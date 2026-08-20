@@ -119,10 +119,13 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     values: MiniMaxFormInput
   ): FlatMiniMaxSettings => ({
     'minimax.enabled': values.minimax.enabled ?? false,
-    'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
+    'minimax.model_redirect': normalizeJsonString(
+      values.minimax.model_redirect
+    ),
     'minimax.voice_whitelist_enabled':
       values.minimax.voice_whitelist_enabled ?? false,
-    'minimax.custom_voice_enabled': values.minimax.custom_voice_enabled ?? false,
+    'minimax.custom_voice_enabled':
+      values.minimax.custom_voice_enabled ?? false,
     'minimax.custom_voice_group': values.minimax.custom_voice_group ?? '',
     'minimax.custom_voice_billing_model_id':
       values.minimax.custom_voice_billing_model_id ?? '',
@@ -224,7 +227,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableTtsEnhancement')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableTtsEnhancement')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.status.enabledModelRedirectEmotionTagAndToneWordTag'
@@ -246,7 +251,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.model_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.modelRedirect')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.modelRedirect')}
+                </FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -265,7 +272,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
+                    emptyText={t(
+                      'common.tips.noRedirectsConfiguredClickAddMappingToGetStarted'
+                    )}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.model_redirect',
                       'minimax.model_redirect'
@@ -273,9 +282,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   />
                 </FormControl>
                 <FormDescription>
-                  {t(
-                    'systemSettings.tips.jsonMapOfClientModelNameToMiniMax'
-                  )}{' '}
+                  {t('systemSettings.tips.jsonMapOfClientModelNameToMiniMax')}{' '}
                   {`{ "tts-1": "speech-01-turbo", "tts-1-hd": "speech-01-240228" }`}
                 </FormDescription>
                 <FormMessage />
@@ -288,7 +295,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.emotion_pattern'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.emotionPattern')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.emotionPattern')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -311,7 +320,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.emotion_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.emotionRedirect')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.emotionRedirect')}
+                </FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -327,7 +338,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
+                    emptyText={t(
+                      'common.tips.noRedirectsConfiguredClickAddMappingToGetStarted'
+                    )}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.emotion_redirect',
                       'minimax.emotion_redirect'
@@ -335,9 +348,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   />
                 </FormControl>
                 <FormDescription>
-                  {t(
-                    'systemSettings.tips.jsonMapOfEmotionTagValueToMiniMax'
-                  )}{' '}
+                  {t('systemSettings.tips.jsonMapOfEmotionTagValueToMiniMax')}{' '}
                   {`{ "happy": "happy", "sad": "sad" }`}
                 </FormDescription>
                 <FormMessage />
@@ -350,7 +361,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.tone_word_pattern'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.toneWordPattern')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.toneWordPattern')}
+                </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder={`\\(([^()]+)\\)`} />
                 </FormControl>
@@ -370,7 +383,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             name='minimax.tone_word_redirect'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.toneWordRedirect')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.toneWordRedirect')}
+                </FormLabel>
                 <FormControl>
                   <ModelMappingEditor
                     value={field.value}
@@ -386,7 +401,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       null,
                       2
                     )}
-                    emptyText={t('common.tips.noRedirectsConfiguredClickAddMappingToGetStarted')}
+                    emptyText={t(
+                      'common.tips.noRedirectsConfiguredClickAddMappingToGetStarted'
+                    )}
                     onFullValueLoaded={syncJsonMapBaseline(
                       'minimax.tone_word_redirect',
                       'minimax.tone_word_redirect'
@@ -440,12 +457,11 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 name='minimax.custom_voice_group'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.customVoiceGroup')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.customVoiceGroup')}
+                    </FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder='default'
-                      />
+                      <Input {...field} placeholder='default' />
                     </FormControl>
                     <FormDescription>
                       {t(
@@ -466,7 +482,12 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       {t('systemSettings.fields.customVoiceBillingModelId')}
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('systemSettings.placeholders.voiceCustomization')} />
+                      <Input
+                        {...field}
+                        placeholder={t(
+                          'systemSettings.placeholders.voiceCustomization'
+                        )}
+                      />
                     </FormControl>
                     <FormDescription>
                       {t(
@@ -484,7 +505,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 render={({ field }) => (
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
-                      <FormLabel>{t('systemSettings.actions.enableVoiceWhitelist')}</FormLabel>
+                      <FormLabel>
+                        {t('systemSettings.actions.enableVoiceWhitelist')}
+                      </FormLabel>
                       <FormDescription>
                         {t(
                           'systemSettings.status.enabledOnlyVoicesMarkedAsAllowedInVoiceManagement'

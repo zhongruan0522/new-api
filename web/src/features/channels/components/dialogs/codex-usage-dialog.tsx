@@ -120,8 +120,10 @@ function formatDurationSeconds(
   const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
 
-  if (hours > 0) return `${hours} ${t('channels.fields.hours')} ${minutes}${t('channels.fields.m')}`
-  if (minutes > 0) return `${minutes}${t('channels.fields.m')} ${secs}${t('channels.fields.s')}`
+  if (hours > 0)
+    return `${hours} ${t('channels.fields.hours')} ${minutes}${t('channels.fields.m')}`
+  if (minutes > 0)
+    return `${minutes}${t('channels.fields.m')} ${secs}${t('channels.fields.s')}`
   return `${secs}${t('channels.fields.s')}`
 }
 
@@ -245,7 +247,8 @@ function RateLimitWindow(props: RateLimitWindowProps) {
       {hasData ? (
         <div className='text-muted-foreground mt-2 space-y-1 text-xs'>
           <div>
-            {t('channels.actions.resetAt')} {formatUnixSeconds(props.window?.reset_at)}
+            {t('channels.actions.resetAt')}{' '}
+            {formatUnixSeconds(props.window?.reset_at)}
           </div>
           <div>
             {t('channels.fields.resetsIn')}{' '}
@@ -293,8 +296,14 @@ function RateLimitGroupSection(props: RateLimitGroupSectionProps) {
         )}
       </div>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        <RateLimitWindow title={t('channels.placeholders.value5HourWindow')} window={fiveHourWindow} />
-        <RateLimitWindow title={t('channels.fields.weeklyWindow')} window={weeklyWindow} />
+        <RateLimitWindow
+          title={t('channels.placeholders.value5HourWindow')}
+          window={fiveHourWindow}
+        />
+        <RateLimitWindow
+          title={t('channels.fields.weeklyWindow')}
+          window={weeklyWindow}
+        />
       </div>
     </section>
   )
@@ -313,9 +322,7 @@ function CopyableField(props: {
   return (
     <div className='flex items-center justify-between gap-2 py-1'>
       <div className='flex min-w-0 items-center gap-2'>
-        <span className='text-muted-foreground shrink-0'>
-          {props.icon}
-        </span>
+        <span className='text-muted-foreground shrink-0'>{props.icon}</span>
         <span className='text-muted-foreground shrink-0 text-xs'>
           {props.label}
         </span>
@@ -373,7 +380,11 @@ export function CodexUsageDialog({
   const statusBadge = (() => {
     if (!rateLimit || Object.keys(rateLimit).length === 0) {
       return (
-        <StatusBadge label={t('common.status.pending')} variant='neutral' copyable={false} />
+        <StatusBadge
+          label={t('common.status.pending')}
+          variant='neutral'
+          copyable={false}
+        />
       )
     }
     if (rateLimit.allowed && !rateLimit.limit_reached) {
@@ -386,7 +397,11 @@ export function CodexUsageDialog({
       )
     }
     return (
-      <StatusBadge label={t('channels.fields.limited')} variant='danger' copyable={false} />
+      <StatusBadge
+        label={t('channels.fields.limited')}
+        variant='danger'
+        copyable={false}
+      />
     )
   })()
 
@@ -421,7 +436,10 @@ export function CodexUsageDialog({
             {t('channels.fields.codexAccountUsage')}
           </DialogTitle>
           <DialogDescription>
-            {t('channels.fields.labelWithColon', { label: t('channels.fields.channel') })} <strong>{channelName || '-'}</strong>{' '}
+            {t('channels.fields.labelWithColon', {
+              label: t('channels.fields.channel'),
+            })}{' '}
+            <strong>{channelName || '-'}</strong>{' '}
             {channelId ? `(#${channelId})` : ''}
           </DialogDescription>
         </DialogHeader>
@@ -500,7 +518,9 @@ export function CodexUsageDialog({
               </p>
               <RateLimitGroupSection
                 title={t('channels.fields.baseLimits')}
-                description={t('channels.tips.baseRateLimitWindowsForThisAccount')}
+                description={t(
+                  'channels.tips.baseRateLimitWindowsForThisAccount'
+                )}
                 source={payload}
               />
             </div>
@@ -530,7 +550,9 @@ export function CodexUsageDialog({
                       >
                         <RateLimitGroupSection
                           title={limitName}
-                          description={t('channels.fields.additionalMeteredCapability')}
+                          description={t(
+                            'channels.fields.additionalMeteredCapability'
+                          )}
                           source={item}
                           meteredFeature={item.metered_feature}
                         />
@@ -549,7 +571,9 @@ export function CodexUsageDialog({
               className='hover:bg-muted/40 flex w-full items-center justify-between gap-2 p-3 transition-colors'
               onClick={() => setShowRawJson((v) => !v)}
             >
-              <div className='text-sm font-medium'>{t('channels.fields.rawJson')}</div>
+              <div className='text-sm font-medium'>
+                {t('channels.fields.rawJson')}
+              </div>
               {showRawJson ? (
                 <ChevronUp className='text-muted-foreground h-4 w-4' />
               ) : (

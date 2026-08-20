@@ -147,7 +147,11 @@ export function DataTableRowActions<TData>({
               size='icon-sm'
               onClick={handleToggleStatus}
               disabled={isTogglingStatus}
-              aria-label={isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
+              aria-label={
+                isEnabled
+                  ? t('channels.actions.disable')
+                  : t('channels.actions.enable')
+              }
               className={
                 isEnabled
                   ? 'text-destructive hover:text-destructive'
@@ -165,7 +169,9 @@ export function DataTableRowActions<TData>({
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {isEnabled ? t('channels.actions.disable') : t('channels.actions.enable')}
+          {isEnabled
+            ? t('channels.actions.disable')
+            : t('channels.actions.enable')}
         </TooltipContent>
       </Tooltip>
 

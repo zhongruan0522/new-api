@@ -58,9 +58,7 @@ export function CompleteStep({ status, values }: CompleteStepProps) {
           {t('setup.fields.readyToInitialize')}
         </h2>
         <p className='text-muted-foreground max-w-lg text-sm sm:text-base'>
-          {t(
-            'setup.tips.doubleCheckTheConfigurationBelowYourSystemWillBe'
-          )}
+          {t('setup.tips.doubleCheckTheConfigurationBelowYourSystemWillBe')}
         </p>
       </div>
 

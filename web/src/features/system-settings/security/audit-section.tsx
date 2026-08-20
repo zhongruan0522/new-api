@@ -216,7 +216,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableAuditLog')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableAuditLog')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.recordAdministratorOperationsOnSystemResourcesForTraceability'
@@ -235,9 +237,13 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
 
           <SettingsFormGridItem span='full'>
             <FormItem>
-              <FormLabel>{t('systemSettings.fields.recordedModules')}</FormLabel>
+              <FormLabel>
+                {t('systemSettings.fields.recordedModules')}
+              </FormLabel>
               <FormDescription>
-                {t('systemSettings.placeholders.selectWhichModulesToRecordInTheAuditLog')}
+                {t(
+                  'systemSettings.placeholders.selectWhichModulesToRecordInTheAuditLog'
+                )}
               </FormDescription>
               <SettingsFormGrid className='pt-2'>
                 {AUDIT_SETTING_MODULES.map((moduleKey) => (
@@ -274,7 +280,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
                 <SettingsSwitchContent>
                   <FormLabel>{t('systemSettings.fields.recordIp')}</FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.whetherToRecordTheOperatorIpAddress')}
+                    {t(
+                      'systemSettings.tips.whetherToRecordTheOperatorIpAddress'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -295,7 +303,9 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
                 <SettingsSwitchContent>
                   <FormLabel>{t('systemSettings.fields.recordDiff')}</FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.whetherToRecordBeforeAfterDataDiff')}
+                    {t(
+                      'systemSettings.tips.whetherToRecordBeforeAfterDataDiff'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>

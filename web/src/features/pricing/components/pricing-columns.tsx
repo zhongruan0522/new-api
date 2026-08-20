@@ -143,7 +143,10 @@ export function usePricingColumns(
       accessorKey: 'model_name',
       meta: { label: t('common.fields.model') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('common.fields.model')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('common.fields.model')}
+        />
       ),
       cell: ({ row }) => {
         const model = row.original
@@ -172,7 +175,11 @@ export function usePricingColumns(
         const isTokenBased = row.original.quota_type === QUOTA_TYPE_VALUES.TOKEN
         return (
           <StatusBadge
-            label={isTokenBased ? t('pricing.fields.token') : t('home.fields.request')}
+            label={
+              isTokenBased
+                ? t('pricing.fields.token')
+                : t('home.fields.request')
+            }
             variant={isTokenBased ? 'info' : 'neutral'}
             copyable={false}
           />
@@ -187,7 +194,10 @@ export function usePricingColumns(
       accessorKey: 'price',
       meta: { label: t('pricing.fields.price') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('pricing.fields.price')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('pricing.fields.price')}
+        />
       ),
       cell: ({ row }) => {
         const model = row.original

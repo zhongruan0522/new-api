@@ -50,16 +50,12 @@ import {
 } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
 import { getApiKeys, searchApiKeys } from '../api'
-import {
-  API_KEY_STATUS,
-  API_KEY_STATUSES,
-  ERROR_MESSAGES,
-} from '../constants'
+import { API_KEY_STATUS, API_KEY_STATUSES, ERROR_MESSAGES } from '../constants'
 import { type ApiKey } from '../types'
 import { ApiKeyCell, ApiKeyQuotaCell } from './api-keys-cells'
 import { useApiKeysColumns } from './api-keys-columns'
-import { useApiKeys } from './api-keys-provider'
 import { ApiKeysFilterBar } from './api-keys-filter-bar'
+import { useApiKeys } from './api-keys-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { DataTableRowActions } from './data-table-row-actions'
 
@@ -114,9 +110,7 @@ function ApiKeysMobileList({
             </EmptyMedia>
             <EmptyTitle>{t('keys.fields.noApiKeysFound')}</EmptyTitle>
             <EmptyDescription>
-              {t(
-                'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
-              )}
+              {t('keys.tips.noApiKeysAvailableCreateYourFirstApiKey')}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -317,9 +311,7 @@ export function ApiKeysTable() {
       isLoading={isLoading}
       isFetching={isFetching}
       emptyTitle={t('keys.fields.noApiKeysFound')}
-      emptyDescription={t(
-        'keys.tips.noApiKeysAvailableCreateYourFirstApiKey'
-      )}
+      emptyDescription={t('keys.tips.noApiKeysAvailableCreateYourFirstApiKey')}
       skeletonKeyPrefix='api-keys-skeleton'
       tableClassName='overflow-x-auto'
       tableHeaderClassName='bg-muted/30 sticky top-0 z-10'

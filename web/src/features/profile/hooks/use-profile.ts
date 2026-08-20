@@ -77,7 +77,9 @@ export function useProfile() {
           return true
         }
 
-        toast.error(response.message || i18next.t('profile.errors.failedToUpdateProfile'))
+        toast.error(
+          response.message || i18next.t('profile.errors.failedToUpdateProfile')
+        )
         return false
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -99,12 +101,16 @@ export function useProfile() {
         const response = await updateUserSettings(data)
 
         if (response.success) {
-          toast.success(i18next.t('channels.status.settingsUpdatedSuccessfully'))
+          toast.success(
+            i18next.t('channels.status.settingsUpdatedSuccessfully')
+          )
           await refreshProfile() // Refresh profile silently
           return true
         }
 
-        toast.error(response.message || i18next.t('profile.errors.failedToUpdateSettings'))
+        toast.error(
+          response.message || i18next.t('profile.errors.failedToUpdateSettings')
+        )
         return false
       } catch (error) {
         // eslint-disable-next-line no-console

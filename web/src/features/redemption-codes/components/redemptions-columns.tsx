@@ -64,7 +64,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'id',
       meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.id')}
+        />
       ),
       cell: ({ row }) => {
         return (
@@ -76,7 +79,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'name',
       meta: { label: t('channels.fields.name'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.name')}
+        />
       ),
       cell: ({ row }) => {
         return (
@@ -90,7 +96,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'status',
       meta: { label: t('channels.fields.status'), mobileBadge: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.status')}
+        />
       ),
       cell: ({ row }) => {
         const redemption = row.original
@@ -141,7 +150,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'key',
       meta: { label: t('redemptionCodes.fields.code') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('redemptionCodes.fields.code')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('redemptionCodes.fields.code')}
+        />
       ),
       cell: function CodeCell({ row }) {
         const redemption = row.original
@@ -170,7 +182,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'created_time',
       meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('dynamicRatio.status.created')}
+        />
       ),
       cell: ({ row }) => {
         return (
@@ -184,7 +199,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       accessorKey: 'expired_time',
       meta: { label: t('keys.fields.expires'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keys.fields.expires')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keys.fields.expires')}
+        />
       ),
       cell: ({ row }) => {
         const expiredTime = row.getValue('expired_time') as number
@@ -209,9 +227,15 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
     },
     {
       accessorKey: 'used_user_id',
-      meta: { label: t('redemptionCodes.fields.redeemedBy'), mobileHidden: true },
+      meta: {
+        label: t('redemptionCodes.fields.redeemedBy'),
+        mobileHidden: true,
+      },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('redemptionCodes.fields.redeemedBy')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('redemptionCodes.fields.redeemedBy')}
+        />
       ),
       cell: ({ row }) => {
         const userId = row.getValue('used_user_id') as number
@@ -236,7 +260,10 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
             <TooltipContent>
               <div className='space-y-1 text-xs'>
                 <div>
-                  {t('channels.fields.labelWithColon', { label: t('orderQuery.fields.userId') })} {userId}
+                  {t('channels.fields.labelWithColon', {
+                    label: t('orderQuery.fields.userId'),
+                  })}{' '}
+                  {userId}
                 </div>
                 {redemption.redeemed_time > 0 && (
                   <div>

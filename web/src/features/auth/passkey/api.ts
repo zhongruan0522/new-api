@@ -24,9 +24,9 @@ export async function getPasskeyStatus(): Promise<ApiResponse<PasskeyStatus>> {
   return res.data
 }
 
-export async function beginPasskeyRegistration(deviceName?: string): Promise<
-  ApiResponse<PasskeyOptionsPayload>
-> {
+export async function beginPasskeyRegistration(
+  deviceName?: string
+): Promise<ApiResponse<PasskeyOptionsPayload>> {
   const res = await api.post<ApiResponse<PasskeyOptionsPayload>>(
     '/api/user/passkey/register/begin',
     deviceName ? { device_name: deviceName } : undefined

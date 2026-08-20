@@ -28,7 +28,9 @@ export function UnauthorisedError() {
     <div className='h-svh'>
       <div className='m-auto flex h-full w-full flex-col items-center justify-center gap-2'>
         <h1 className='text-[7rem] leading-tight font-bold'>401</h1>
-        <span className='font-medium'>{t('common.fields.unauthorizedAccess')}</span>
+        <span className='font-medium'>
+          {t('common.fields.unauthorizedAccess')}
+        </span>
         <p className='text-muted-foreground text-center'>
           {t('common.tips.pleaseLogInWithTheAppropriateCredentials')} <br />{' '}
           {t('common.tips.accessThisResource')}

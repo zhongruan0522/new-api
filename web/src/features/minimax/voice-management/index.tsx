@@ -299,14 +299,13 @@ export function VoiceManagement() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('minimax.actions.deleteVoice')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('minimax.actions.deleteVoice')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t(
-                'minimax.errors.sureYouWantToDeleteVoiceVoiceIdThis',
-                {
-                  voiceId: deleteTarget?.voice_id ?? '-',
-                }
-              )}
+              {t('minimax.errors.sureYouWantToDeleteVoiceVoiceIdThis', {
+                voiceId: deleteTarget?.voice_id ?? '-',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -318,7 +317,9 @@ export function VoiceManagement() {
               onClick={handleDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
+              {isDeleting
+                ? t('keys.tips.deleting')
+                : t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

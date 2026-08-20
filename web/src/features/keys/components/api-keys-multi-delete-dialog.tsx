@@ -50,7 +50,9 @@ export function ApiKeysMultiDeleteDialog<TData>({
 
       if (result.success) {
         const count = result.data || ids.length
-        toast.success(t('keys.status.successfullyDeletedCountApiKeyS', { count }))
+        toast.success(
+          t('keys.status.successfullyDeletedCountApiKeyS', { count })
+        )
         table.resetRowSelection()
         triggerRefresh()
         onOpenChange(false)
@@ -72,7 +74,9 @@ export function ApiKeysMultiDeleteDialog<TData>({
       handleConfirm={handleConfirm}
       isLoading={isDeleting}
       className='max-w-md'
-      title={t('keys.actions.deleteCountApiKeyS', { count: selectedRows.length })}
+      title={t('keys.actions.deleteCountApiKeyS', {
+        count: selectedRows.length,
+      })}
       desc={
         <>
           {t('keys.tips.aboutToDeleteCountApiKeyS', {

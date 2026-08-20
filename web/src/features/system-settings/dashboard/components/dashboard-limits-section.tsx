@@ -16,21 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { SettingsSection } from '../../components/settings-section'
-import {
-  SettingsForm,
-  SettingsFormGrid,
-  SettingsFormGridItem,
-} from '../../components/settings-form-layout'
-import { SettingsPageFormActions } from '../../components/settings-page-context'
-import { useSettingsForm } from '../../hooks/use-settings-form'
-import {
-  useDashboardConfig,
-  useUpdateDashboardConfig,
-} from '../hooks/use-dashboard-config'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import {
   FormControl,
   FormField,
@@ -40,6 +28,18 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  SettingsForm,
+  SettingsFormGrid,
+  SettingsFormGridItem,
+} from '../../components/settings-form-layout'
+import { SettingsPageFormActions } from '../../components/settings-page-context'
+import { SettingsSection } from '../../components/settings-section'
+import { useSettingsForm } from '../../hooks/use-settings-form'
+import {
+  useDashboardConfig,
+  useUpdateDashboardConfig,
+} from '../hooks/use-dashboard-config'
 
 const limitsSchema = z
   .object({
@@ -81,9 +81,9 @@ export function DashboardLimitsSection() {
   if (isLoading) {
     return (
       <SettingsSection title={t('systemSettings.fields.dataLimits')}>
-        <div className="space-y-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <div className='space-y-4'>
+          <Skeleton className='h-16 w-full' />
+          <Skeleton className='h-16 w-full' />
         </div>
       </SettingsSection>
     )
@@ -93,7 +93,7 @@ export function DashboardLimitsSection() {
 
   return (
     <SettingsSection title={t('systemSettings.fields.dataLimits')}>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className='text-muted-foreground mb-4 text-sm'>
         {t(
           'systemSettings.tips.configureDataLimitsAndTimeRangeRestrictionsForDashboard'
         )}
@@ -103,13 +103,15 @@ export function DashboardLimitsSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="default_time_range_days"
+              name='default_time_range_days'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.tips.defaultTimeRangeDays')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.tips.defaultTimeRangeDays')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={365}
                       {...field}
@@ -127,13 +129,15 @@ export function DashboardLimitsSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="max_time_range_days"
+              name='max_time_range_days'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.tips.maximumTimeRangeDays')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.tips.maximumTimeRangeDays')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={365}
                       {...field}
@@ -151,13 +155,15 @@ export function DashboardLimitsSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="rankings_model_limit"
+              name='rankings_model_limit'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.rankingsModelLimit')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.rankingsModelLimit')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={100}
                       {...field}
@@ -175,13 +181,15 @@ export function DashboardLimitsSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="rankings_vendor_limit"
+              name='rankings_vendor_limit'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.rankingsVendorLimit')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.rankingsVendorLimit')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={50}
                       {...field}
@@ -199,13 +207,15 @@ export function DashboardLimitsSection() {
           <SettingsFormGridItem>
             <FormField
               control={form.control}
-              name="user_analytics_top_n"
+              name='user_analytics_top_n'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.userAnalyticsTopN')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.userAnalyticsTopN')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type='number'
                       min={1}
                       max={100}
                       {...field}

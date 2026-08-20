@@ -392,7 +392,10 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
           return searchableFields.includes(searchTerm) ? 1 : 0
         }}
       >
-        <CommandInput placeholder={t('common.actions.searchGroups')} className='h-9' />
+        <CommandInput
+          placeholder={t('common.actions.searchGroups')}
+          className='h-9'
+        />
         <CommandEmpty>{t('common.tips.noGroupFound')}</CommandEmpty>
         <CommandList
           className={isMobile ? '!max-h-full flex-1 p-2' : 'max-h-[240px]'}
@@ -424,7 +427,9 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
                         {group.ratio && (
                           <>
                             {' · '}
-                            {t('common.fields.ratioValue', { value: group.ratio })}
+                            {t('common.fields.ratioValue', {
+                              value: group.ratio,
+                            })}
                           </>
                         )}
                       </div>
@@ -458,7 +463,9 @@ export const GroupSelector: React.FC<GroupSelectorProps> = React.memo(
             </DrawerTrigger>
             <DrawerContent className='max-h-[80vh]'>
               <DrawerHeader className='pb-4 text-left'>
-                <DrawerTitle>{t('common.placeholders.chooseGroup')}</DrawerTitle>
+                <DrawerTitle>
+                  {t('common.placeholders.chooseGroup')}
+                </DrawerTitle>
               </DrawerHeader>
               <div className='max-h-[calc(80vh-100px)] overflow-y-auto px-4 pb-6'>
                 <div className='space-y-2'>

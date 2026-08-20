@@ -105,7 +105,10 @@ export function useDynamicRatioColumns(
       header: t('channels.titles.models'),
       cell: ({ row }) => (
         <span className='block max-w-48 truncate'>
-          {formatModels(row.original.models, t('dynamicRatio.titles.allModels'))}
+          {formatModels(
+            row.original.models,
+            t('dynamicRatio.titles.allModels')
+          )}
         </span>
       ),
     },
@@ -174,9 +177,7 @@ export function useDynamicRatioColumns(
             <Button
               size='icon-sm'
               variant='ghost'
-              disabled={
-                !actions.canEdit || index === actions.rulesCount - 1
-              }
+              disabled={!actions.canEdit || index === actions.rulesCount - 1}
               onClick={() => actions.onMoveDown(index)}
             >
               <ArrowDown />

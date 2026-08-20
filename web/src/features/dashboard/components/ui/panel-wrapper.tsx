@@ -64,7 +64,8 @@ function PanelHeader(props: {
 
 export function PanelWrapper(props: PanelWrapperProps) {
   const { t } = useTranslation()
-  const resolvedEmptyMessage = props.emptyMessage ?? t('common.fields.noDataAvailable')
+  const resolvedEmptyMessage =
+    props.emptyMessage ?? t('common.fields.noDataAvailable')
   const height = props.height ?? 'h-64'
   const frameClassName = cn(
     'overflow-hidden rounded-2xl border bg-card shadow-xs',

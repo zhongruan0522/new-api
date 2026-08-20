@@ -109,7 +109,9 @@ function renderLimitedItems(
  */
 function TagAggregateValue() {
   return (
-    <span className='text-muted-foreground font-mono text-sm tabular-nums'>-</span>
+    <span className='text-muted-foreground font-mono text-sm tabular-nums'>
+      -
+    </span>
   )
 }
 
@@ -219,7 +221,10 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {usedDisplay}
+              {t('channels.fields.labelWithColon', {
+                label: t('common.status.used'),
+              })}{' '}
+              {usedDisplay}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -240,7 +245,10 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('channels.fields.labelWithColon', { label: t('channels.fields.remaining') })} {remainingDisplay}
+              {t('channels.fields.labelWithColon', {
+                label: t('channels.fields.remaining'),
+              })}{' '}
+              {remainingDisplay}
             </p>
             <p>{t('channels.fields.clickToUpdateBalance')}</p>
           </TooltipContent>
@@ -293,7 +301,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'id',
       meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.id')}
+        />
       ),
       cell: ({ row }) => {
         const id = row.getValue('id') as number
@@ -307,7 +318,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'name',
       meta: { label: t('channels.fields.name'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.name')}
+        />
       ),
       cell: ({ row }) => {
         const isTagRow = isTagAggregateRow(row.original)
@@ -615,12 +629,18 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                     <div className='space-y-1 text-xs'>
                       {statusReason && (
                         <div>
-                          {t('channels.fields.labelWithColon', { label: t('channels.fields.reason') })} {statusReason}
+                          {t('channels.fields.labelWithColon', {
+                            label: t('channels.fields.reason'),
+                          })}{' '}
+                          {statusReason}
                         </div>
                       )}
                       {statusTime && (
                         <div>
-                          {t('channels.fields.labelWithColon', { label: t('auditLogs.fields.time') })} {statusTime}
+                          {t('channels.fields.labelWithColon', {
+                            label: t('auditLogs.fields.time'),
+                          })}{' '}
+                          {statusTime}
                         </div>
                       )}
                     </div>
@@ -758,7 +778,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'priority',
       meta: { label: t('channels.fields.priority'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.priority')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.priority')}
+        />
       ),
       cell: ({ row }) => <PriorityCell channel={row.original} />,
       size: 100,
@@ -779,7 +802,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'balance',
       meta: { label: t('channels.status.usedRemaining') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.status.usedRemaining')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.status.usedRemaining')}
+        />
       ),
       cell: ({ row }) => <BalanceCell channel={row.original} />,
       size: 180,
@@ -790,7 +816,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'response_time',
       meta: { label: t('channels.fields.response'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.response')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.response')}
+        />
       ),
       cell: ({ row }) => {
         const responseTime = row.getValue('response_time') as number
@@ -813,7 +842,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
       accessorKey: 'test_time',
       meta: { label: t('channels.fields.lastTested'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.lastTested')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.lastTested')}
+        />
       ),
       cell: ({ row }) => {
         const testTime = row.getValue('test_time') as number

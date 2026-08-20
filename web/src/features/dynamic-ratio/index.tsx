@@ -16,23 +16,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type ColumnDef,
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import { Plus, RefreshCw } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
 import { cn } from '@/lib/utils'
-import { getGroups } from '@/features/users/api'
-import { SectionPageLayout } from '@/components/layout'
-import { DataTablePage } from '@/components/data-table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +59,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { DataTablePage } from '@/components/data-table'
+import { SectionPageLayout } from '@/components/layout'
+import { getGroups } from '@/features/users/api'
 import {
   createDynamicRatioRule,
   deleteDynamicRatioRule,
@@ -72,8 +71,8 @@ import {
   setDynamicRatioEnabled,
   updateDynamicRatioRule,
 } from './api'
-import type { DynamicRatioRule, DynamicRatioRulePayload } from './types'
 import { useDynamicRatioColumns } from './components/dynamic-ratio-columns'
+import type { DynamicRatioRule, DynamicRatioRulePayload } from './types'
 
 type RuleFormState = {
   group: string
@@ -190,8 +189,7 @@ function buildPayload(form: RuleFormState): DynamicRatioRulePayload {
   }
 
   const priorityText = form.priority.trim()
-  const priority =
-    priorityText === '' ? 0 : Number.parseInt(priorityText, 10)
+  const priority = priorityText === '' ? 0 : Number.parseInt(priorityText, 10)
   if (!Number.isFinite(priority)) {
     throw new Error('Priority must be a number')
   }
@@ -271,7 +269,11 @@ export function DynamicRatio() {
         ? updateDynamicRatioRule({ ...payload, id: editingRule.id })
         : createDynamicRatioRule(payload),
     onSuccess: async () => {
-      toast.success(editingRule ? t('dynamicRatio.status.updatedSuccessfully') : t('dynamicRatio.status.created'))
+      toast.success(
+        editingRule
+          ? t('dynamicRatio.status.updatedSuccessfully')
+          : t('dynamicRatio.status.created')
+      )
       setDialogOpen(false)
       setEditingRule(null)
       setForm(DEFAULT_FORM)
@@ -320,7 +322,11 @@ export function DynamicRatio() {
       setForm(ruleToForm(rule))
       setDialogOpen(true)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('dynamicRatio.errors.invalidRule'))
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('dynamicRatio.errors.invalidRule')
+      )
     }
   }
 
@@ -328,7 +334,11 @@ export function DynamicRatio() {
     try {
       saveDialogRuleMutation.mutate(buildPayload(form))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('dynamicRatio.errors.invalidForm'))
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('dynamicRatio.errors.invalidForm')
+      )
     }
   }
 
@@ -372,7 +382,9 @@ export function DynamicRatio() {
     [canEdit, rules.length, updateRuleMutate, reorderMutate]
   )
 
-  const columns = useDynamicRatioColumns(columnActions) as ColumnDef<DynamicRatioRule>[]
+  const columns = useDynamicRatioColumns(
+    columnActions
+  ) as ColumnDef<DynamicRatioRule>[]
 
   const table = useReactTable({
     data: rules,
@@ -384,7 +396,9 @@ export function DynamicRatio() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('dynamicRatio.fields.ratio')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>
+          {t('dynamicRatio.fields.ratio')}
+        </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <div className='flex items-center gap-2 rounded-lg border px-2.5 py-1.5'>
             <span className='text-muted-foreground text-sm'>
@@ -427,7 +441,9 @@ export function DynamicRatio() {
                     {t('channels.fields.status')}
                   </div>
                   <div className='mt-1 text-sm font-medium'>
-                    {globalEnabled ? t('channels.status.enabled') : t('channels.status.disabled')}
+                    {globalEnabled
+                      ? t('channels.status.enabled')
+                      : t('channels.status.disabled')}
                   </div>
                 </div>
                 <div>
@@ -456,53 +472,63 @@ export function DynamicRatio() {
         <DialogContent className='sm:max-w-xl'>
           <DialogHeader>
             <DialogTitle>
-              {editingRule ? t('dynamicRatio.actions.editRule') : t('dynamicRatio.fields.newRule')}
+              {editingRule
+                ? t('dynamicRatio.actions.editRule')
+                : t('dynamicRatio.fields.newRule')}
             </DialogTitle>
           </DialogHeader>
           <div className='grid gap-4'>
             <div className='grid gap-1.5'>
-               <Label htmlFor='dynamic-ratio-group'>{t('common.fields.group')}</Label>
-               <Select
-                 value={form.group || null}
-                 onValueChange={(value) =>
-                   setForm((current) => ({
-                     ...current,
-                     group: value ?? '',
-                   }))
-                 }
-               >
-                 <SelectTrigger id='dynamic-ratio-group' className='w-full'>
-                   <SelectValue placeholder={t('dynamicRatio.placeholders.selectAGroup')} />
-                 </SelectTrigger>
-                 <SelectContent alignItemWithTrigger={false}>
-                   <SelectGroup>
-                     {groups.map((group) => (
-                       <SelectItem key={group} value={group}>
-                         {group}
-                       </SelectItem>
-                     ))}
-                   </SelectGroup>
-                 </SelectContent>
-               </Select>
-             </div>
+              <Label htmlFor='dynamic-ratio-group'>
+                {t('common.fields.group')}
+              </Label>
+              <Select
+                value={form.group || null}
+                onValueChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    group: value ?? '',
+                  }))
+                }
+              >
+                <SelectTrigger id='dynamic-ratio-group' className='w-full'>
+                  <SelectValue
+                    placeholder={t('dynamicRatio.placeholders.selectAGroup')}
+                  />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    {groups.map((group) => (
+                      <SelectItem key={group} value={group}>
+                        {group}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
 
-             <div className='grid gap-1.5'>
-               <Label htmlFor='dynamic-ratio-models'>{t('channels.titles.models')}</Label>
-               <Input
-                 id='dynamic-ratio-models'
-                 value={form.models}
-                 placeholder={t('dynamicRatio.tips.eGGpt4Claude3OpusEmptyAll')}
-                 onChange={(event) =>
-                   setForm((current) => ({
-                     ...current,
-                     models: event.target.value,
-                   }))
-                 }
-               />
-               <p className='text-muted-foreground text-xs'>
-                 {t('dynamicRatio.tips.commaSeparatedSupportsWildcardLeaveEmptyForAllModels')}
-               </p>
-             </div>
+            <div className='grid gap-1.5'>
+              <Label htmlFor='dynamic-ratio-models'>
+                {t('channels.titles.models')}
+              </Label>
+              <Input
+                id='dynamic-ratio-models'
+                value={form.models}
+                placeholder={t('dynamicRatio.tips.eGGpt4Claude3OpusEmptyAll')}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    models: event.target.value,
+                  }))
+                }
+              />
+              <p className='text-muted-foreground text-xs'>
+                {t(
+                  'dynamicRatio.tips.commaSeparatedSupportsWildcardLeaveEmptyForAllModels'
+                )}
+              </p>
+            </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>
@@ -524,7 +550,9 @@ export function DynamicRatio() {
                 />
               </div>
               <div className='grid gap-1.5'>
-                <Label htmlFor='dynamic-ratio-ratio'>{t('dynamicRatio.fields.ratio794f65')}</Label>
+                <Label htmlFor='dynamic-ratio-ratio'>
+                  {t('dynamicRatio.fields.ratio794f65')}
+                </Label>
                 <Input
                   id='dynamic-ratio-ratio'
                   type='number'
@@ -643,7 +671,9 @@ export function DynamicRatio() {
               onClick={handleSubmit}
               disabled={saveDialogRuleMutation.isPending}
             >
-              {editingRule ? t('channels.actions.saveChanges') : t('channels.actions.create')}
+              {editingRule
+                ? t('channels.actions.saveChanges')
+                : t('channels.actions.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -657,7 +687,9 @@ export function DynamicRatio() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('dynamicRatio.actions.deleteRule')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('dynamicRatio.actions.deleteRule')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t('dynamicRatio.status.ratioRuleWillBeDeleted')}
             </AlertDialogDescription>

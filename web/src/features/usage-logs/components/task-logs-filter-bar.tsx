@@ -181,7 +181,7 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
       <LogsFilterInput
         aria-label={t('systemSettings.fields.taskId')}
         placeholder={placeholder}
-        autoComplete="off"
+        autoComplete='off'
         value={filterValue}
         onChange={(e) => handleFilterChange(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -192,7 +192,7 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
     <LogsFilterField>
       <LogsFilterInput
         placeholder={t('usageLogs.fields.channelId')}
-        autoComplete="off"
+        autoComplete='off'
         value={filters.channel || ''}
         onChange={(e) => handleChange('channel', e.target.value)}
         onKeyDown={handleKeyDown}

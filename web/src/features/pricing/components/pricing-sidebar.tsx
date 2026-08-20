@@ -247,7 +247,9 @@ export function PricingSidebar(props: PricingSidebarProps) {
     <aside className={cn('rounded-xl border p-3', props.className)}>
       <div className='mb-2.5 flex items-center justify-between gap-2'>
         <div>
-          <h2 className='text-foreground text-sm font-bold'>{t('dashboard.actions.filter')}</h2>
+          <h2 className='text-foreground text-sm font-bold'>
+            {t('dashboard.actions.filter')}
+          </h2>
           <p className='text-muted-foreground mt-1 text-xs'>
             {t('pricing.tips.refineModelsByProviderGroupTypeAndTags')}
           </p>

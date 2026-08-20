@@ -71,7 +71,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       accessorKey: 'id',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.id')}
+        />
       ),
       cell: ({ row }) => {
         return (
@@ -83,7 +86,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       accessorKey: 'username',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('auth.fields.username')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('auth.fields.username')}
+        />
       ),
       cell: ({ row }) => {
         const username = row.getValue('username') as string
@@ -123,7 +129,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       accessorKey: 'status',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.status')}
+        />
       ),
       cell: ({ row }) => {
         const user = row.original
@@ -204,13 +213,22 @@ export function useUsersColumns(): ColumnDef<User>[] {
             <TooltipContent>
               <div className='space-y-1 text-xs'>
                 <div>
-                  {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {formatQuota(used)}
+                  {t('channels.fields.labelWithColon', {
+                    label: t('common.status.used'),
+                  })}{' '}
+                  {formatQuota(used)}
                 </div>
                 <div>
-                  {t('channels.fields.labelWithColon', { label: t('channels.fields.remaining') })} {formatQuota(remaining)}
+                  {t('channels.fields.labelWithColon', {
+                    label: t('channels.fields.remaining'),
+                  })}{' '}
+                  {formatQuota(remaining)}
                 </div>
                 <div>
-                  {t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') })} {formatQuota(total)}
+                  {t('channels.fields.labelWithColon', {
+                    label: t('dashboard.fields.total'),
+                  })}{' '}
+                  {formatQuota(total)}
                 </div>
                 <div>
                   {t('users.fields.percentage')} {percentage.toFixed(1)}%
@@ -225,14 +243,19 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       accessorKey: 'group',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('common.fields.group')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('common.fields.group')}
+        />
       ),
       cell: ({ row }) => {
         const group = row.getValue('group') as string
         return <GroupBadge group={group} />
       },
       filterFn: (row, id, value) => {
-        const group = String(row.getValue(id) || t('common.fields.userGroup')).toLowerCase()
+        const group = String(
+          row.getValue(id) || t('common.fields.userGroup')
+        ).toLowerCase()
         const searchValue = String(value).toLowerCase()
         return group.includes(searchValue)
       },
@@ -269,7 +292,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       id: 'invite_info',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('users.fields.inviteInfo')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('users.fields.inviteInfo')}
+        />
       ),
       cell: ({ row }) => {
         const user = row.original
@@ -291,7 +317,9 @@ export function useUsersColumns(): ColumnDef<User>[] {
                 }
               />
               <TooltipContent>
-                <p className='text-xs'>{t('users.titles.numberOfUsersInvited')}</p>
+                <p className='text-xs'>
+                  {t('users.titles.numberOfUsersInvited')}
+                </p>
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -306,7 +334,9 @@ export function useUsersColumns(): ColumnDef<User>[] {
                 }
               />
               <TooltipContent>
-                <p className='text-xs'>{t('users.fields.totalInvitationRevenue')}</p>
+                <p className='text-xs'>
+                  {t('users.fields.totalInvitationRevenue')}
+                </p>
               </TooltipContent>
             </Tooltip>
             {inviterId > 0 && (
@@ -344,7 +374,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
     {
       accessorKey: 'created_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('multimodalFiles.status.createdAt')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('multimodalFiles.status.createdAt')}
+        />
       ),
       cell: ({ row }) => {
         const ts = row.getValue('created_at') as number | undefined
@@ -354,12 +387,18 @@ export function useUsersColumns(): ColumnDef<User>[] {
           </span>
         )
       },
-      meta: { label: t('multimodalFiles.status.createdAt'), mobileHidden: true },
+      meta: {
+        label: t('multimodalFiles.status.createdAt'),
+        mobileHidden: true,
+      },
     },
     {
       accessorKey: 'last_login_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('users.fields.lastLogin')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('users.fields.lastLogin')}
+        />
       ),
       cell: ({ row }) => {
         const ts = row.getValue('last_login_at') as number | undefined

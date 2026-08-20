@@ -102,7 +102,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'id',
       meta: { label: t('channels.fields.id'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.id')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.id')}
+        />
       ),
       cell: ({ row }) => {
         const id = row.getValue('id') as number
@@ -136,7 +139,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'model_name',
       meta: { label: t('models.fields.modelName'), mobileTitle: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('models.fields.modelName')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('models.fields.modelName')}
+        />
       ),
       cell: ({ row }) => {
         const name = row.getValue('model_name') as string
@@ -158,7 +164,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'name_rule',
       meta: { label: t('models.fields.matchType') },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('models.fields.matchType')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('models.fields.matchType')}
+        />
       ),
       cell: ({ row }) => {
         const rule = row.getValue('name_rule') as 0 | 1 | 2 | 3
@@ -428,7 +437,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'enable_groups',
       meta: { label: t('models.actions.enableGroups'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('models.actions.enableGroups')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('models.actions.enableGroups')}
+        />
       ),
       cell: ({ row }) => {
         const groups = row.getValue('enable_groups') as string[]
@@ -525,7 +537,11 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
         const syncOfficial = row.getValue('sync_official') as number
         return (
           <StatusBadge
-            label={syncOfficial === 1 ? t('models.fields.officialSync') : t('models.fields.noSync')}
+            label={
+              syncOfficial === 1
+                ? t('models.fields.officialSync')
+                : t('models.fields.noSync')
+            }
             variant={syncOfficial === 1 ? 'success' : 'warning'}
             size='sm'
             copyable={false}
@@ -548,7 +564,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'created_time',
       meta: { label: t('dynamicRatio.status.created'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('dynamicRatio.status.created')}
+        />
       ),
       cell: ({ row }) => {
         const timestamp = row.getValue('created_time') as number
@@ -566,7 +585,10 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'updated_time',
       meta: { label: t('models.status.updatedAt'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('models.status.updatedAt')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('models.status.updatedAt')}
+        />
       ),
       cell: ({ row }) => {
         const timestamp = row.getValue('updated_time') as number

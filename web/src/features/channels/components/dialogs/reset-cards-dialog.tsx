@@ -20,8 +20,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { applyGlmResetCard, getGlmResetCards } from '../../api'
-import type { GlmResetCard, GlmResetCardType } from '../../types'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -33,6 +31,8 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { StatusBadge } from '@/components/status-badge'
+import { applyGlmResetCard, getGlmResetCards } from '../../api'
+import type { GlmResetCard, GlmResetCardType } from '../../types'
 import { useChannels } from '../channels-provider'
 
 // 上游在指定重置次数不可用时返回的固定文案，触发自动重新拉列表。
@@ -135,10 +135,7 @@ function ResetCardSection({
       ) : (
         <div className='divide-y rounded-lg border'>
           {sortedCards.map((card, index) => (
-            <div
-              key={`${card.recordId ?? 'card'}-${index}`}
-              className='px-4'
-            >
+            <div key={`${card.recordId ?? 'card'}-${index}`} className='px-4'>
               <ResetCardRow
                 card={card}
                 resetType={resetType}
@@ -156,7 +153,10 @@ function ResetCardSection({
   )
 }
 
-export function ResetCardsDialog({ open, onOpenChange }: ResetCardsDialogProps) {
+export function ResetCardsDialog({
+  open,
+  onOpenChange,
+}: ResetCardsDialogProps) {
   const { t } = useTranslation()
   const { currentRow } = useChannels()
   const [loading, setLoading] = useState(false)

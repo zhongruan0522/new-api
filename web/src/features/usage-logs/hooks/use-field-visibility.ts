@@ -17,8 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
+import { api } from '@/lib/api'
 import type { UsageLogFieldKey } from '../lib/field-visibility'
 
 interface UsageLogFieldsVisibleResponse {

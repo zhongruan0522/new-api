@@ -46,7 +46,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createVendor, updateVendor } from '../../api'
 import { vendorsQueryKeys, modelsQueryKeys } from '../../lib'
-import { vendorFormSchema, type Vendor, type VendorFormValues } from '../../types'
+import {
+  vendorFormSchema,
+  type Vendor,
+  type VendorFormValues,
+} from '../../types'
 
 type VendorMutateDialogProps = {
   open: boolean
@@ -113,7 +117,9 @@ export function VendorMutateDialog({
 
       if (response.success) {
         toast.success(
-          isEdit ? t('models.status.vendorUpdatedSuccessfully') : t('models.status.vendorCreatedSuccessfully')
+          isEdit
+            ? t('models.status.vendorUpdatedSuccessfully')
+            : t('models.status.vendorCreatedSuccessfully')
         )
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
@@ -123,7 +129,9 @@ export function VendorMutateDialog({
         toast.error(response.message || t('channels.status.operationFailed'))
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || t('channels.status.operationFailed'))
+      toast.error(
+        (error as Error)?.message || t('channels.status.operationFailed')
+      )
     } finally {
       setIsSaving(false)
     }
@@ -134,7 +142,9 @@ export function VendorMutateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? t('models.actions.editVendor') : t('models.actions.createVendor')}
+            {isEdit
+              ? t('models.actions.editVendor')
+              : t('models.actions.createVendor')}
           </DialogTitle>
           <DialogDescription>
             {isEdit
@@ -229,7 +239,9 @@ export function VendorMutateDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('models.tips.use0ForZeroRetentionLeaveEmptyWhenUnknown')}
+                      {t(
+                        'models.tips.use0ForZeroRetentionLeaveEmptyWhenUnknown'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -274,7 +286,11 @@ export function VendorMutateDialog({
               </Button>
               <Button type='submit' disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('channels.tips.saving') : isEdit ? t('channels.fields.update') : t('channels.actions.create')}
+                {isSaving
+                  ? t('channels.tips.saving')
+                  : isEdit
+                    ? t('channels.fields.update')
+                    : t('channels.actions.create')}
               </Button>
             </DialogFooter>
           </form>

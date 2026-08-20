@@ -402,11 +402,11 @@ export function GroupSpecialUsableRulesEditor(
   return (
     <Card className={sectionCardClassName}>
       <CardHeader className={sectionHeaderClassName}>
-        <CardTitle>{t('systemSettings.fields.specialUsableGroupRules')}</CardTitle>
+        <CardTitle>
+          {t('systemSettings.fields.specialUsableGroupRules')}
+        </CardTitle>
         <CardDescription>
-          {t(
-            'systemSettings.tips.definePerGroupRulesToAddRemoveOrAppend'
-          )}
+          {t('systemSettings.tips.definePerGroupRulesToAddRemoveOrAppend')}
         </CardDescription>
       </CardHeader>
       <CardContent>

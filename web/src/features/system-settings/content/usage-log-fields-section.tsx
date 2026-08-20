@@ -30,10 +30,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
-import { SettingsSwitchField } from '../components/settings-form-layout'
-import { SettingsSection } from '../components/settings-section'
-import { useUpdateOption } from '../hooks/use-update-option'
 import {
   USAGE_LOG_FIELDS,
   USAGE_LOG_FIELD_GROUPS,
@@ -42,6 +38,10 @@ import {
   type UsageLogFieldGroup,
   type UsageLogFieldKey,
 } from '@/features/usage-logs/lib/field-visibility'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
+import { SettingsSwitchField } from '../components/settings-form-layout'
+import { SettingsSection } from '../components/settings-section'
+import { useUpdateOption } from '../hooks/use-update-option'
 
 type UsageLogFieldsSectionProps = {
   fieldsData: string
@@ -176,7 +176,9 @@ export function UsageLogFieldsSection({
             disabled={!hasChanges || updateOption.isPending}
           >
             <Save className='mr-2 h-4 w-4' />
-            {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+            {updateOption.isPending
+              ? t('channels.tips.saving')
+              : t('profile.actions.saveSettings')}
           </Button>
           <Button
             onClick={handleReset}
@@ -253,7 +255,10 @@ function FieldGroupRows({
         </TableCell>
       </TableRow>
       {fields.map((field) => {
-        const cfg = config[field.key] ?? { admin: field.admin, user: field.user }
+        const cfg = config[field.key] ?? {
+          admin: field.admin,
+          user: field.user,
+        }
         return (
           <TableRow key={field.key}>
             <TableCell>

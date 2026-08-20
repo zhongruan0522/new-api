@@ -16,8 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2,
   Clock3,
@@ -30,15 +30,12 @@ import {
   Search,
   SendHorizontal,
 } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { ROLE } from '@/lib/roles'
 import { formatTimestampToDate } from '@/lib/format'
+import { ROLE } from '@/lib/roles'
 import { cn } from '@/lib/utils'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-import { SectionPageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -76,6 +73,8 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SectionPageLayout } from '@/components/layout'
 import {
   closeTicket,
   createTicket,
@@ -219,9 +218,7 @@ function MessageItem({ message }: { message: TicketMessage }) {
       <div
         className={cn(
           'max-w-full rounded-lg px-3 py-2 text-sm leading-6 wrap-break-word whitespace-pre-wrap sm:max-w-[78%]',
-          isAdmin
-            ? 'bg-primary/10 text-foreground'
-            : 'bg-muted text-foreground'
+          isAdmin ? 'bg-primary/10 text-foreground' : 'bg-muted text-foreground'
         )}
       >
         {message.content}
@@ -260,7 +257,9 @@ function TicketDetailDialog({
   const { t } = useTranslation()
   const messages = detail?.messages ?? []
   const displayTicket = detail ?? ticket
-  const canClose = Boolean(displayTicket && displayTicket.status !== 'completed')
+  const canClose = Boolean(
+    displayTicket && displayTicket.status !== 'completed'
+  )
   const canReopen = Boolean(
     isAdmin && displayTicket && displayTicket.status === 'completed'
   )
@@ -273,7 +272,9 @@ function TicketDetailDialog({
             <span className='truncate'>
               {displayTicket?.title || t('tickets.fields.ticketDetail')}
             </span>
-            {displayTicket ? <StatusBadge status={displayTicket.status} /> : null}
+            {displayTicket ? (
+              <StatusBadge status={displayTicket.status} />
+            ) : null}
             {displayTicket ? <TypeBadge type={displayTicket.type} /> : null}
           </DialogTitle>
         </DialogHeader>
@@ -317,7 +318,9 @@ function TicketDetailDialog({
               />
               <Button
                 className='sm:w-auto'
-                disabled={!replyText.trim() || loading || sending || !displayTicket}
+                disabled={
+                  !replyText.trim() || loading || sending || !displayTicket
+                }
                 onClick={onSendReply}
               >
                 {sending ? (
@@ -566,7 +569,9 @@ export function Tickets() {
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='ticket-content'>{t('dashboard.fields.content')}</Label>
+            <Label htmlFor='ticket-content'>
+              {t('dashboard.fields.content')}
+            </Label>
             <Textarea
               id='ticket-content'
               value={createForm.content}
@@ -602,11 +607,16 @@ export function Tickets() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('systemSettings.fields.tickets')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>
+          {t('systemSettings.fields.tickets')}
+        </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <Button variant='outline' onClick={() => ticketsQuery.refetch()}>
             <RefreshCw
-              className={cn('size-4', ticketsQuery.isFetching && 'animate-spin')}
+              className={cn(
+                'size-4',
+                ticketsQuery.isFetching && 'animate-spin'
+              )}
             />
             {t('channels.actions.refresh')}
           </Button>
@@ -667,9 +677,15 @@ export function Tickets() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className='min-w-64'>{t('tickets.fields.title')}</TableHead>
-                      <TableHead className='min-w-32'>{t('channels.fields.type')}</TableHead>
-                      <TableHead className='min-w-32'>{t('channels.fields.status')}</TableHead>
+                      <TableHead className='min-w-64'>
+                        {t('tickets.fields.title')}
+                      </TableHead>
+                      <TableHead className='min-w-32'>
+                        {t('channels.fields.type')}
+                      </TableHead>
+                      <TableHead className='min-w-32'>
+                        {t('channels.fields.status')}
+                      </TableHead>
                       <TableHead className='min-w-40'>
                         {t('multimodalFiles.status.createdAt')}
                       </TableHead>
@@ -791,13 +807,13 @@ export function Tickets() {
                 <div className='text-muted-foreground'>
                   {t('dashboard.fields.total')}: {total}
                 </div>
-               <div className='flex flex-wrap items-center gap-2'>
+                <div className='flex flex-wrap items-center gap-2'>
                   <span className='text-muted-foreground whitespace-nowrap'>
                     {t('common.fields.rowsPerPage')}
                   </span>
-                 <Select
-                   value={String(pageSize)}
-                   onValueChange={(value) => {
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => {
                       setPageSize(Number(value))
                       setPage(1)
                     }}
@@ -875,7 +891,9 @@ export function Tickets() {
         desc={confirmDescription}
         destructive={statusTarget?.action === 'close'}
         confirmText={
-          statusTarget?.action === 'close' ? t('tickets.actions.closeTicket') : t('tickets.fields.reopen')
+          statusTarget?.action === 'close'
+            ? t('tickets.actions.closeTicket')
+            : t('tickets.fields.reopen')
         }
         isLoading={statusMutation.isPending}
         handleConfirm={() => {

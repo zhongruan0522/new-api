@@ -65,7 +65,8 @@ function CommandDialog({
 }) {
   const { t } = useTranslation()
   const resolvedTitle = title ?? t('common.fields.commandPalette')
-  const resolvedDescription = description ?? t('common.tips.typeACommandOrSearch')
+  const resolvedDescription =
+    description ?? t('common.tips.typeACommandOrSearch')
 
   return (
     <Dialog {...props}>

@@ -43,7 +43,9 @@ import { Input } from '@/components/ui/input'
 
 const createChatDialogSchema = (t: (key: string) => string) =>
   z.object({
-    name: z.string().min(1, t('systemSettings.errors.chatClientNameIsRequired')),
+    name: z
+      .string()
+      .min(1, t('systemSettings.errors.chatClientNameIsRequired')),
     url: z.string().min(1, t('systemSettings.errors.urlIsRequired')),
   })
 
@@ -101,7 +103,9 @@ export function ChatDialog({
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? t('systemSettings.actions.editChatPreset') : t('systemSettings.actions.addChatPreset')}
+            {isEditMode
+              ? t('systemSettings.actions.editChatPreset')
+              : t('systemSettings.actions.addChatPreset')}
           </DialogTitle>
           <DialogDescription>
             {t('systemSettings.tips.configureAPredefinedChatLinkForEndUsers')}
@@ -118,10 +122,14 @@ export function ChatDialog({
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.chatClientName')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.chatClientName')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('systemSettings.errors.pleaseEnterChatClientName')}
+                      placeholder={t(
+                        'systemSettings.errors.pleaseEnterChatClientName'
+                      )}
                       {...field}
                     />
                   </FormControl>
@@ -140,7 +148,10 @@ export function ChatDialog({
                 <FormItem>
                   <FormLabel>{t('systemSettings.fields.url')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('systemSettings.errors.pleaseEnterTheUrl')} {...field} />
+                    <Input
+                      placeholder={t('systemSettings.errors.pleaseEnterTheUrl')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     {t('systemSettings.tips.urlForThisChatClient')}
@@ -159,7 +170,9 @@ export function ChatDialog({
                 {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
+                {isEditMode
+                  ? t('channels.fields.update')
+                  : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

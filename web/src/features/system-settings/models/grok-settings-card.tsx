@@ -104,7 +104,8 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
 
   const onSubmit = async (values: GrokFormValues) => {
     const normalized: FlatGrokSettings = {
-      'grok.violation_deduction_enabled': values.grok.violation_deduction_enabled,
+      'grok.violation_deduction_enabled':
+        values.grok.violation_deduction_enabled,
       'grok.violation_deduction_amount': values.grok.violation_deduction_amount,
     }
 
@@ -143,7 +144,9 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableViolationDeduction')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableViolationDeduction')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.status.enabledViolationRequestsWillIncurAdditionalCharges'
@@ -173,7 +176,9 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
             name='grok.violation_deduction_amount'
             render={({ field }) => (
               <FormItem className='max-w-xs'>
-                <FormLabel>{t('systemSettings.fields.violationDeductionAmount')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.violationDeductionAmount')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     type='number'

@@ -99,7 +99,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
         toast.success(t('channels.status.settingsUpdatedSuccessfully'))
         onUpdate()
       } else {
-        toast.error(response.message || t('profile.errors.failedToUpdateSettings'))
+        toast.error(
+          response.message || t('profile.errors.failedToUpdateSettings')
+        )
       }
     } catch (_error) {
       toast.error(t('profile.errors.failedToUpdateSettings'))
@@ -150,7 +152,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
 
       {/* Warning Threshold */}
       <div className='space-y-1.5'>
-        <Label htmlFor='threshold'>{t('profile.tips.quotaWarningThreshold')}</Label>
+        <Label htmlFor='threshold'>
+          {t('profile.tips.quotaWarningThreshold')}
+        </Label>
         <Input
           id='threshold'
           type='number'
@@ -169,7 +173,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {/* Email Settings */}
       {settings.notify_type === 'email' && (
         <div className='space-y-1.5'>
-          <Label htmlFor='notifyEmail'>{t('profile.fields.notificationEmail')}</Label>
+          <Label htmlFor='notifyEmail'>
+            {t('profile.fields.notificationEmail')}
+          </Label>
           <Input
             id='notifyEmail'
             type='email'
@@ -196,7 +202,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             />
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='webhookSecret'>{t('profile.fields.webhookSecret')}</Label>
+            <Label htmlFor='webhookSecret'>
+              {t('profile.fields.webhookSecret')}
+            </Label>
             <PasswordInput
               id='webhookSecret'
               value={settings.webhook_secret}
@@ -217,10 +225,13 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             className='h-9'
             value={settings.bark_url}
             onChange={(e) => updateField('bark_url', e.target.value)}
-            placeholder={t('profile.placeholders.urlApiDayAppYourkeyTitleContent')}
+            placeholder={t(
+              'profile.placeholders.urlApiDayAppYourkeyTitleContent'
+            )}
           />
           <p className='text-muted-foreground text-xs'>
-            {t('profile.fields.templateVariables')} {'{{title}}'}, {'{{content}}'}
+            {t('profile.fields.templateVariables')} {'{{title}}'},{' '}
+            {'{{content}}'}
           </p>
         </div>
       )}
@@ -229,7 +240,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       {settings.notify_type === 'gotify' && (
         <>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyUrl'>{t('profile.fields.gotifyServerUrl')}</Label>
+            <Label htmlFor='gotifyUrl'>
+              {t('profile.fields.gotifyServerUrl')}
+            </Label>
             <Input
               id='gotifyUrl'
               type='url'
@@ -243,7 +256,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             </p>
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyToken'>{t('profile.fields.gotifyApplicationToken')}</Label>
+            <Label htmlFor='gotifyToken'>
+              {t('profile.fields.gotifyApplicationToken')}
+            </Label>
             <PasswordInput
               id='gotifyToken'
               value={settings.gotify_token}
@@ -255,7 +270,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
             </p>
           </div>
           <div className='space-y-1.5'>
-            <Label htmlFor='gotifyPriority'>{t('profile.fields.messagePriority')}</Label>
+            <Label htmlFor='gotifyPriority'>
+              {t('profile.fields.messagePriority')}
+            </Label>
             <Input
               id='gotifyPriority'
               type='number'
@@ -269,9 +286,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
               placeholder='5'
             />
             <p className='text-muted-foreground text-xs'>
-              {t(
-                'profile.tips.priorityLevelFrom0LowestTo10HighestDefault'
-              )}
+              {t('profile.tips.priorityLevelFrom0LowestTo10HighestDefault')}
             </p>
           </div>
           <div className='bg-muted/50 rounded-lg border p-3 sm:p-4'>
@@ -279,12 +294,22 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
               {t('profile.titles.setupInstructions')}
             </h5>
             <ol className='text-muted-foreground space-y-1 text-xs'>
-              <li>{t('profile.placeholders.value1CreateAnApplicationInYourGotifyServer')}</li>
+              <li>
+                {t(
+                  'profile.placeholders.value1CreateAnApplicationInYourGotifyServer'
+                )}
+              </li>
               <li>{t('profile.placeholders.value2CopyTheApplicationToken')}</li>
-              <li>{t('profile.placeholders.value3EnterYourGotifyServerUrlAndToken')}</li>
+              <li>
+                {t(
+                  'profile.placeholders.value3EnterYourGotifyServerUrlAndToken'
+                )}
+              </li>
             </ol>
             <p className='text-muted-foreground mt-3 text-xs'>
-              {t('channels.fields.labelWithColon', { label: t('common.fields.learnMore') })}{' '}
+              {t('channels.fields.labelWithColon', {
+                label: t('common.fields.learnMore'),
+              })}{' '}
               <a
                 href='https://gotify.net/'
                 target='_blank'
@@ -302,7 +327,9 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
       <div className='flex justify-end'>
         <Button onClick={handleSave} disabled={loading}>
           {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-          {loading ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+          {loading
+            ? t('channels.tips.saving')
+            : t('profile.actions.saveSettings')}
         </Button>
       </div>
     </div>

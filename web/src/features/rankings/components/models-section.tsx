@@ -145,7 +145,12 @@ export function ModelsSection(props: ModelsSectionProps) {
                 value: formatTokens(otherSum),
               })
             }
-            result.unshift({ key: t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') }), value: formatTokens(sum) })
+            result.unshift({
+              key: t('channels.fields.labelWithColon', {
+                label: t('dashboard.fields.total'),
+              }),
+              value: formatTokens(sum),
+            })
             return result
           },
         },

@@ -59,7 +59,10 @@ export const USER_STATUS_DELETED = 3
 export const getUserStatusOptions = (t: (key: string) => string) => [
   { label: t('channels.status.enabled'), value: String(USER_STATUS.ENABLED) },
   { label: t('channels.status.disabled'), value: String(USER_STATUS.DISABLED) },
-  { label: t('subscriptions.actions.deleted'), value: String(USER_STATUS_DELETED) },
+  {
+    label: t('subscriptions.actions.deleted'),
+    value: String(USER_STATUS_DELETED),
+  },
 ]
 
 // ============================================================================
@@ -91,9 +94,21 @@ export const USER_ROLES = {
 } as const
 
 export const getUserRoleOptions = (t: (key: string) => string) => [
-  { label: t('systemSettings.fields.user'), value: String(USER_ROLE.USER), icon: User },
-  { label: t('systemSettings.fields.admin'), value: String(USER_ROLE.ADMIN), icon: Users },
-  { label: t('users.fields.root'), value: String(USER_ROLE.ROOT), icon: Shield },
+  {
+    label: t('systemSettings.fields.user'),
+    value: String(USER_ROLE.USER),
+    icon: User,
+  },
+  {
+    label: t('systemSettings.fields.admin'),
+    value: String(USER_ROLE.ADMIN),
+    icon: Users,
+  },
+  {
+    label: t('users.fields.root'),
+    value: String(USER_ROLE.ROOT),
+    icon: Shield,
+  },
 ]
 
 // ============================================================================

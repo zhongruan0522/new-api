@@ -114,7 +114,9 @@ export function RateLimitDialog({
               : t('systemSettings.actions.addGroupRateLimit')}
           </DialogTitle>
           <DialogDescription>
-            {t('systemSettings.tips.configureRateLimitingRulesForASpecificUserGroup')}
+            {t(
+              'systemSettings.tips.configureRateLimitingRulesForASpecificUserGroup'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -131,14 +133,18 @@ export function RateLimitDialog({
                   <FormLabel>{t('models.fields.groupName')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('systemSettings.placeholders.eGDefaultVipPremium')}
+                      placeholder={t(
+                        'systemSettings.placeholders.eGDefaultVipPremium'
+                      )}
                       {...field}
                       disabled={isEditMode}
                     />
                   </FormControl>
                   <FormDescription>
                     {isEditMode
-                      ? t('systemSettings.errors.groupNameCannotBeChangedWhenEditing')
+                      ? t(
+                          'systemSettings.errors.groupNameCannotBeChangedWhenEditing'
+                        )
                       : t('systemSettings.tips.uniqueIdentifierForThisGroup')}
                   </FormDescription>
                   <FormMessage />
@@ -172,7 +178,9 @@ export function RateLimitDialog({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('systemSettings.tips.totalRequestsAllowedPerPeriod0Unlimited')}
+                    {t(
+                      'systemSettings.tips.totalRequestsAllowedPerPeriod0Unlimited'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -184,7 +192,9 @@ export function RateLimitDialog({
               name='maxSuccess'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.status.maxSuccessfulRequests')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.status.maxSuccessfulRequests')}
+                  </FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -203,7 +213,9 @@ export function RateLimitDialog({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('systemSettings.status.onlySuccessfulRequestsCountTowardThisLimit')}
+                    {t(
+                      'systemSettings.status.onlySuccessfulRequestsCountTowardThisLimit'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -219,7 +231,9 @@ export function RateLimitDialog({
                 {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
+                {isEditMode
+                  ? t('channels.fields.update')
+                  : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

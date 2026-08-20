@@ -93,7 +93,9 @@ export function BotProtectionSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableTurnstile')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableTurnstile')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.fields.protectLoginAndRegistrationWithCloudflareTurnstile'

@@ -500,7 +500,9 @@ function CodeSamplesSection(props: {
 
   return (
     <section>
-      <SectionTitle icon={ScrollText}>{t('pricing.fields.codeSamples')}</SectionTitle>
+      <SectionTitle icon={ScrollText}>
+        {t('pricing.fields.codeSamples')}
+      </SectionTitle>
 
       <div className='flex flex-wrap items-center gap-2'>
         {endpoints.length > 1 && (
@@ -566,15 +568,25 @@ function SupportedParametersSection(props: { model: PricingModel }) {
 
   return (
     <section>
-      <SectionTitle icon={Sigma}>{t('pricing.fields.supportedParameters')}</SectionTitle>
+      <SectionTitle icon={Sigma}>
+        {t('pricing.fields.supportedParameters')}
+      </SectionTitle>
       <div className='border-border/60 overflow-hidden rounded-lg border'>
         <Table>
           <TableHeader>
             <TableRow className='bg-muted/30 hover:bg-muted/30'>
-              <TableHead className='h-9 w-44'>{t('pricing.fields.parameter')}</TableHead>
-              <TableHead className='h-9 w-24'>{t('channels.fields.type')}</TableHead>
-              <TableHead className='h-9 w-32'>{t('pricing.fields.defaultRange')}</TableHead>
-              <TableHead className='h-9'>{t('auditLogs.tips.description')}</TableHead>
+              <TableHead className='h-9 w-44'>
+                {t('pricing.fields.parameter')}
+              </TableHead>
+              <TableHead className='h-9 w-24'>
+                {t('channels.fields.type')}
+              </TableHead>
+              <TableHead className='h-9 w-32'>
+                {t('pricing.fields.defaultRange')}
+              </TableHead>
+              <TableHead className='h-9'>
+                {t('auditLogs.tips.description')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -767,7 +779,9 @@ function AuthSection() {
   const { t } = useTranslation()
   return (
     <section>
-      <SectionTitle icon={KeyRound}>{t('layout.fields.authentication')}</SectionTitle>
+      <SectionTitle icon={KeyRound}>
+        {t('layout.fields.authentication')}
+      </SectionTitle>
       <div className='border-border/60 bg-muted/20 flex items-start gap-2 rounded-lg border p-3'>
         <ChevronRight className='text-muted-foreground mt-0.5 size-3.5 shrink-0' />
         <div className='space-y-1.5 text-xs leading-relaxed'>
@@ -783,9 +797,7 @@ function AuthSection() {
             {t('pricing.tips.headerInstead')}
           </p>
           <p className='text-muted-foreground'>
-            {t(
-              'pricing.tips.generateTokensFromTheTokensPageYouCanScope'
-            )}
+            {t('pricing.tips.generateTokensFromTheTokensPageYouCanScope')}
           </p>
         </div>
       </div>

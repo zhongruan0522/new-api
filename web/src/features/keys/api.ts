@@ -44,8 +44,15 @@ export async function getApiKeys(
 export async function searchApiKeys(
   params: SearchApiKeysParams
 ): Promise<GetApiKeysResponse> {
-  const { keyword = '', token = '', all = false, group, status, p, size } =
-    params
+  const {
+    keyword = '',
+    token = '',
+    all = false,
+    group,
+    status,
+    p,
+    size,
+  } = params
   const queryParams = new URLSearchParams()
   if (keyword) queryParams.set('keyword', keyword)
   if (token) queryParams.set('token', token)

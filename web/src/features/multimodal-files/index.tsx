@@ -18,20 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy, RefreshCw, Trash2 } from 'lucide-react'
 import {
   type ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Copy, RefreshCw, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import dayjs from '@/lib/dayjs'
 import { ROLE } from '@/lib/roles'
-import { SectionPageLayout } from '@/components/layout'
-import { DataTablePage } from '@/components/data-table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,16 +50,18 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DataTablePage } from '@/components/data-table'
+import { SectionPageLayout } from '@/components/layout'
 import {
   batchDeleteStoredMedia,
   deleteStoredMedia,
   getStoredMedia,
   getStoredMediaDetail,
 } from './api'
-import type { StoredMediaBatchItem, StoredMediaItem } from './types'
+import { MultimodalFilesBulkActions } from './components/multimodal-files-bulk-actions'
 import { useMultimodalFilesColumns } from './components/multimodal-files-columns'
 import { MultimodalFilesFilterBar } from './components/multimodal-files-filter-bar'
-import { MultimodalFilesBulkActions } from './components/multimodal-files-bulk-actions'
+import type { StoredMediaBatchItem, StoredMediaItem } from './types'
 
 const DEFAULT_PAGE_SIZE = 20
 const EMPTY_STORED_MEDIA_ITEMS: StoredMediaItem[] = []
@@ -162,7 +162,9 @@ export function MultimodalFiles() {
       return batchDeleteStoredMedia(target.items)
     },
     onSuccess: async (deleted) => {
-      toast.success(t('multimodalFiles.status.deletedCountFileS', { count: deleted }))
+      toast.success(
+        t('multimodalFiles.status.deletedCountFileS', { count: deleted })
+      )
       setDeleteTarget(null)
       setRowSelection({})
       await refresh()
@@ -199,7 +201,9 @@ export function MultimodalFiles() {
     []
   )
 
-  const columns = useMultimodalFilesColumns(columnActions) as ColumnDef<StoredMediaItem>[]
+  const columns = useMultimodalFilesColumns(
+    columnActions
+  ) as ColumnDef<StoredMediaItem>[]
 
   const table = useReactTable({
     data: items,
@@ -301,26 +305,36 @@ export function MultimodalFiles() {
             <div className='space-y-3'>
               <div className='grid gap-2 text-sm sm:grid-cols-2'>
                 <div>
-                  <span className='text-muted-foreground'>{t('channels.fields.id')}: </span>
+                  <span className='text-muted-foreground'>
+                    {t('channels.fields.id')}:{' '}
+                  </span>
                   <span className='font-mono text-xs'>{detailItem.id}</span>
                 </div>
                 <div>
                   <span className='text-muted-foreground'>
                     {t('multimodalFiles.status.createdAt')}:{' '}
                   </span>
-                  {dayjs.unix(detailItem.created_at).format('YYYY-MM-DD HH:mm:ss')}
+                  {dayjs
+                    .unix(detailItem.created_at)
+                    .format('YYYY-MM-DD HH:mm:ss')}
                 </div>
                 <div>
-                  <span className='text-muted-foreground'>{t('channels.fields.type')}: </span>
+                  <span className='text-muted-foreground'>
+                    {t('channels.fields.type')}:{' '}
+                  </span>
                   {detailItem.media_type}
                 </div>
                 <div>
-                  <span className='text-muted-foreground'>{t('channels.fields.size')}: </span>
+                  <span className='text-muted-foreground'>
+                    {t('channels.fields.size')}:{' '}
+                  </span>
                   {detailItem.size_bytes} B
                 </div>
               </div>
               <div className='grid gap-1.5'>
-                <Label htmlFor='stored-media-url'>{t('multimodalFiles.fields.convertedUrl')}</Label>
+                <Label htmlFor='stored-media-url'>
+                  {t('multimodalFiles.fields.convertedUrl')}
+                </Label>
                 <Input id='stored-media-url' value={detailItem.url} readOnly />
               </div>
               {detailItem.url && detailItem.media_type === 'image' && (
@@ -366,7 +380,9 @@ export function MultimodalFiles() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('multimodalFiles.actions.deleteFile')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('multimodalFiles.actions.deleteFile')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget?.mode === 'batch'
                 ? t('multimodalFiles.actions.deleteCountSelectedFileS', {

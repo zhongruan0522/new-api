@@ -19,8 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import { type Table } from '@tanstack/react-table'
 import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { DataTableBulkActions } from '@/components/data-table'
 import { Button } from '@/components/ui/button'
+import { DataTableBulkActions } from '@/components/data-table'
 import type { StoredMediaItem } from '../types'
 
 export interface MultimodalFilesBulkActionsProps {

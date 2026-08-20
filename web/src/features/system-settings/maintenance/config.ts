@@ -216,15 +216,13 @@ export function parseSidebarModulesAdmin(
         enabled: toBoolean(rawRecord.enabled, defaultSection.enabled ?? true),
       }
 
-      Object.entries(defaultSection).forEach(
-        ([moduleKey, moduleValue]) => {
-          if (moduleKey === 'enabled') return
-          sectionConfig[moduleKey] = toBoolean(
-            rawRecord[moduleKey],
-            moduleValue ?? true
-          )
-        }
-      )
+      Object.entries(defaultSection).forEach(([moduleKey, moduleValue]) => {
+        if (moduleKey === 'enabled') return
+        sectionConfig[moduleKey] = toBoolean(
+          rawRecord[moduleKey],
+          moduleValue ?? true
+        )
+      })
 
       result[sectionKey] = sectionConfig
     })

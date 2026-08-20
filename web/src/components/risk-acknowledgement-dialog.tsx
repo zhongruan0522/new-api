@@ -223,7 +223,8 @@ export function RiskAcknowledgementDialog({
           {requiredTextToDisplay ? (
             <div className='border-destructive/30 bg-destructive/5 space-y-3 rounded-lg border p-3 sm:p-4'>
               <Label className='text-sm font-medium'>
-                {inputPrompt ?? t('common.tips.pleaseTypeTheFollowingTextToConfirm')}
+                {inputPrompt ??
+                  t('common.tips.pleaseTypeTheFollowingTextToConfirm')}
               </Label>
               <div className='bg-background border-border rounded-md border px-3 py-2 font-mono text-sm break-all'>
                 {requiredTextToDisplay}
@@ -270,7 +271,8 @@ export function RiskAcknowledgementDialog({
                   value={typedText}
                   onChange={(event) => setTypedText(event.target.value)}
                   placeholder={
-                    inputPlaceholder ?? t('common.fields.typeTheConfirmationTextHere')
+                    inputPlaceholder ??
+                    t('common.fields.typeTheConfirmationTextHere')
                   }
                   autoFocus={open}
                   onCopy={(event) => event.preventDefault()}

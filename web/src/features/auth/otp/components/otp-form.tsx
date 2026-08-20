@@ -120,7 +120,9 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
       // eslint-disable-next-line no-console
       console.error('2FA verification error:', error)
       const errorMessage =
-        error instanceof Error ? error.message : t('auth.status.verificationFailed')
+        error instanceof Error
+          ? error.message
+          : t('auth.status.verificationFailed')
       toast.error(errorMessage)
     } finally {
       setIsLoading(false)
@@ -179,12 +181,16 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                {useBackupCode ? t('auth.fields.backupCode') : t('auth.fields.verificationCode')}
+                {useBackupCode
+                  ? t('auth.fields.backupCode')
+                  : t('auth.fields.verificationCode')}
               </FormLabel>
               <FormControl>
                 {useBackupCode ? (
                   <Input
-                    placeholder={t('auth.placeholders.enterBackupCodeEGCawdOqdv')}
+                    placeholder={t(
+                      'auth.placeholders.enterBackupCodeEGCawdOqdv'
+                    )}
                     {...field}
                     maxLength={BACKUP_CODE_LENGTH}
                     autoComplete='off'
@@ -244,7 +250,9 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
             className='text-primary h-auto p-0'
             onClick={handleToggleMode}
           >
-            {useBackupCode ? t('auth.actions.useAuthenticatorCode') : t('auth.actions.useBackupCode')}
+            {useBackupCode
+              ? t('auth.actions.useAuthenticatorCode')
+              : t('auth.actions.useBackupCode')}
           </Button>
           <span className='text-muted-foreground'>·</span>
           <Button

@@ -192,7 +192,9 @@ export function MonitoringSettingsSection({
 
   useResetForm(form, formDefaults)
 
-  const autoTestEnabled = form.watch('monitor_setting.auto_test_channel_enabled')
+  const autoTestEnabled = form.watch(
+    'monitor_setting.auto_test_channel_enabled'
+  )
   const autoDisableStatusCodes = form.watch('AutomaticDisableStatusCodes')
   const autoDisableParsed = useMemo(
     () => parseHttpStatusCodeRules(autoDisableStatusCodes),
@@ -239,9 +241,13 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.scheduledChannelTests')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.scheduledChannelTests')}
+                    </FormLabel>
                     <FormDescription>
-                      {t('systemSettings.tips.automaticallyProbeAllChannelsInTheBackground')}
+                      {t(
+                        'systemSettings.tips.automaticallyProbeAllChannelsInTheBackground'
+                      )}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -259,7 +265,9 @@ export function MonitoringSettingsSection({
               name='monitor_setting.auto_test_channel_minutes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.testIntervalMinutes')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.testIntervalMinutes')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -280,7 +288,9 @@ export function MonitoringSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('systemSettings.tips.howFrequentlyTheSystemTestsAllChannels')}
+                    {t(
+                      'systemSettings.tips.howFrequentlyTheSystemTestsAllChannels'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -294,7 +304,9 @@ export function MonitoringSettingsSection({
               name='ChannelDisableThreshold'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.actions.disableThresholdSeconds')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.disableThresholdSeconds')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -319,7 +331,9 @@ export function MonitoringSettingsSection({
               name='QuotaRemindThreshold'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.tips.defaultQuotaReminderThreshold')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.tips.defaultQuotaReminderThreshold')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -347,9 +361,13 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.actions.disableOnFailure')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.actions.disableOnFailure')}
+                    </FormLabel>
                     <FormDescription>
-                      {t('systemSettings.tips.automaticallyDisableChannelsWhenTestsFail')}
+                      {t(
+                        'systemSettings.tips.automaticallyDisableChannelsWhenTestsFail'
+                      )}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -368,9 +386,13 @@ export function MonitoringSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.status.reEnableOnSuccess')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.status.reEnableOnSuccess')}
+                    </FormLabel>
                     <FormDescription>
-                      {t('systemSettings.status.bringChannelsBackOnlineAfterSuccessfulChecks')}
+                      {t(
+                        'systemSettings.status.bringChannelsBackOnlineAfterSuccessfulChecks'
+                      )}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -389,11 +411,15 @@ export function MonitoringSettingsSection({
             name='AutomaticDisableKeywords'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.errors.failureKeywords')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.errors.failureKeywords')}
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     rows={6}
-                    placeholder={t('systemSettings.placeholders.oneKeywordPerLine')}
+                    placeholder={t(
+                      'systemSettings.placeholders.oneKeywordPerLine'
+                    )}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
@@ -413,10 +439,14 @@ export function MonitoringSettingsSection({
             name='AutomaticDisableStatusCodes'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.autoDisableStatusCodes')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.autoDisableStatusCodes')}
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('systemSettings.placeholders.eG401403429500599')}
+                    placeholder={t(
+                      'systemSettings.placeholders.eG401403429500599'
+                    )}
                     value={field.value}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
@@ -429,7 +459,8 @@ export function MonitoringSettingsSection({
                     autoDisableParsed.normalized &&
                     autoDisableParsed.normalized !== field.value.trim() && (
                       <span className='text-muted-foreground'>
-                        {t('systemSettings.fields.normalized')} {autoDisableParsed.normalized}
+                        {t('systemSettings.fields.normalized')}{' '}
+                        {autoDisableParsed.normalized}
                       </span>
                     )}
                 </FormDescription>

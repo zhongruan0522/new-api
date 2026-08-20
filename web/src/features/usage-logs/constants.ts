@@ -225,32 +225,62 @@ export interface StatusMapping {
  */
 export const MJ_TASK_TYPE_MAPPINGS: Record<string, StatusMapping> = {
   [MJ_TASK_TYPES.IMAGINE]: { label: 'common.fields.draw', variant: 'blue' },
-  [MJ_TASK_TYPES.UPSCALE]: { label: 'common.fields.upscale', variant: 'orange' },
+  [MJ_TASK_TYPES.UPSCALE]: {
+    label: 'common.fields.upscale',
+    variant: 'orange',
+  },
   [MJ_TASK_TYPES.VIDEO]: { label: 'pricing.fields.video', variant: 'orange' },
   [MJ_TASK_TYPES.EDITS]: { label: 'channels.actions.edit', variant: 'orange' },
   [MJ_TASK_TYPES.VARIATION]: { label: 'common.fields.vary', variant: 'violet' },
-  [MJ_TASK_TYPES.HIGH_VARIATION]: { label: 'common.fields.varyStrong', variant: 'violet' },
-  [MJ_TASK_TYPES.LOW_VARIATION]: { label: 'common.fields.varySubtle', variant: 'violet' },
+  [MJ_TASK_TYPES.HIGH_VARIATION]: {
+    label: 'common.fields.varyStrong',
+    variant: 'violet',
+  },
+  [MJ_TASK_TYPES.LOW_VARIATION]: {
+    label: 'common.fields.varySubtle',
+    variant: 'violet',
+  },
   [MJ_TASK_TYPES.PAN]: { label: 'common.fields.pan', variant: 'cyan' },
-  [MJ_TASK_TYPES.DESCRIBE]: { label: 'common.fields.describe', variant: 'yellow' },
+  [MJ_TASK_TYPES.DESCRIBE]: {
+    label: 'common.fields.describe',
+    variant: 'yellow',
+  },
   [MJ_TASK_TYPES.BLEND]: { label: 'common.fields.blend', variant: 'lime' },
   [MJ_TASK_TYPES.UPLOAD]: { label: 'common.actions.upload', variant: 'blue' },
   [MJ_TASK_TYPES.SHORTEN]: { label: 'common.fields.shorten', variant: 'pink' },
   [MJ_TASK_TYPES.REROLL]: { label: 'common.fields.reroll', variant: 'indigo' },
   [MJ_TASK_TYPES.INPAINT]: { label: 'common.fields.inpaint', variant: 'teal' },
-  [MJ_TASK_TYPES.SWAP_FACE]: { label: 'common.fields.swapFace', variant: 'purple' },
+  [MJ_TASK_TYPES.SWAP_FACE]: {
+    label: 'common.fields.swapFace',
+    variant: 'purple',
+  },
   [MJ_TASK_TYPES.ZOOM]: { label: 'common.fields.zoom', variant: 'green' },
-  [MJ_TASK_TYPES.CUSTOM_ZOOM]: { label: 'common.fields.customZoom', variant: 'green' },
+  [MJ_TASK_TYPES.CUSTOM_ZOOM]: {
+    label: 'common.fields.customZoom',
+    variant: 'green',
+  },
 }
 
 /**
  * Midjourney task status mappings
  */
 export const MJ_STATUS_MAPPINGS: Record<string, StatusMapping> = {
-  [MJ_TASK_STATUS.SUCCESS]: { label: 'channels.status.success', variant: 'green' },
-  [MJ_TASK_STATUS.NOT_START]: { label: 'common.fields.notStarted', variant: 'neutral' },
-  [MJ_TASK_STATUS.SUBMITTED]: { label: 'common.fields.queued', variant: 'yellow' },
-  [MJ_TASK_STATUS.IN_PROGRESS]: { label: 'common.fields.progress', variant: 'blue' },
+  [MJ_TASK_STATUS.SUCCESS]: {
+    label: 'channels.status.success',
+    variant: 'green',
+  },
+  [MJ_TASK_STATUS.NOT_START]: {
+    label: 'common.fields.notStarted',
+    variant: 'neutral',
+  },
+  [MJ_TASK_STATUS.SUBMITTED]: {
+    label: 'common.fields.queued',
+    variant: 'yellow',
+  },
+  [MJ_TASK_STATUS.IN_PROGRESS]: {
+    label: 'common.fields.progress',
+    variant: 'blue',
+  },
   [MJ_TASK_STATUS.FAILURE]: { label: 'channels.errors.failed', variant: 'red' },
   [MJ_TASK_STATUS.MODAL]: { label: 'common.status.waiting', variant: 'amber' },
 }
@@ -281,10 +311,22 @@ export const MJ_SUBMIT_RESULT_MAPPINGS: Record<string, StatusMapping> = {
  * Task action type mappings
  */
 export const TASK_ACTION_MAPPINGS: Record<string, StatusMapping> = {
-  [TASK_ACTIONS.MUSIC]: { label: 'common.fields.generateMusic', variant: 'neutral' },
-  [TASK_ACTIONS.LYRICS]: { label: 'common.fields.generateLyrics', variant: 'pink' },
-  [TASK_ACTIONS.GENERATE]: { label: 'common.fields.imageToVideo', variant: 'blue' },
-  [TASK_ACTIONS.TEXT_GENERATE]: { label: 'common.fields.textToVideo', variant: 'blue' },
+  [TASK_ACTIONS.MUSIC]: {
+    label: 'common.fields.generateMusic',
+    variant: 'neutral',
+  },
+  [TASK_ACTIONS.LYRICS]: {
+    label: 'common.fields.generateLyrics',
+    variant: 'pink',
+  },
+  [TASK_ACTIONS.GENERATE]: {
+    label: 'common.fields.imageToVideo',
+    variant: 'blue',
+  },
+  [TASK_ACTIONS.TEXT_GENERATE]: {
+    label: 'common.fields.textToVideo',
+    variant: 'blue',
+  },
   [TASK_ACTIONS.FIRST_TAIL_GENERATE]: {
     label: 'common.fields.firstLastFrameToVideo',
     variant: 'blue',
@@ -304,12 +346,21 @@ export const TASK_ACTION_MAPPINGS: Record<string, StatusMapping> = {
  */
 export const TASK_STATUS_MAPPINGS: Record<string, StatusMapping> = {
   [TASK_STATUS.SUCCESS]: { label: 'channels.status.success', variant: 'green' },
-  [TASK_STATUS.NOT_START]: { label: 'common.fields.notStarted', variant: 'neutral' },
+  [TASK_STATUS.NOT_START]: {
+    label: 'common.fields.notStarted',
+    variant: 'neutral',
+  },
   [TASK_STATUS.SUBMITTED]: { label: 'common.fields.queued', variant: 'yellow' },
-  [TASK_STATUS.IN_PROGRESS]: { label: 'common.fields.progress', variant: 'blue' },
+  [TASK_STATUS.IN_PROGRESS]: {
+    label: 'common.fields.progress',
+    variant: 'blue',
+  },
   [TASK_STATUS.FAILURE]: { label: 'channels.errors.failed', variant: 'red' },
   [TASK_STATUS.QUEUED]: { label: 'common.fields.queued', variant: 'orange' },
-  [TASK_STATUS.UNKNOWN]: { label: 'channels.fields.unknown', variant: 'neutral' },
+  [TASK_STATUS.UNKNOWN]: {
+    label: 'channels.fields.unknown',
+    variant: 'neutral',
+  },
 }
 
 /**

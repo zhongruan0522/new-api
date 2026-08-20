@@ -48,7 +48,9 @@ export function VoiceDialog(props: VoiceDialogProps) {
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
           <DialogTitle>
-            {props.editing ? t('minimax.actions.editVoice') : t('minimax.actions.addVoice')}
+            {props.editing
+              ? t('minimax.actions.editVoice')
+              : t('minimax.actions.addVoice')}
           </DialogTitle>
         </DialogHeader>
 
@@ -104,7 +106,9 @@ export function VoiceDialog(props: VoiceDialogProps) {
               }
             />
             <span>
-              <span className='block font-medium'>{t('minimax.fields.allowedForTts')}</span>
+              <span className='block font-medium'>
+                {t('minimax.fields.allowedForTts')}
+              </span>
               <span className='text-muted-foreground'>
                 {t('minimax.status.onlyPaidVoicesWithTtsEnabledCanPassThe')}
               </span>
@@ -129,7 +133,9 @@ export function VoiceDialog(props: VoiceDialogProps) {
             {t('common.actions.cancel')}
           </Button>
           <Button onClick={props.onSubmit} disabled={props.isSubmitting}>
-            {props.isSubmitting ? t('channels.tips.saving') : t('channels.actions.save')}
+            {props.isSubmitting
+              ? t('channels.tips.saving')
+              : t('channels.actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

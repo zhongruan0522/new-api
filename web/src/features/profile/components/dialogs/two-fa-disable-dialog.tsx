@@ -57,12 +57,16 @@ export function TwoFADisableDialog({
 
   const handleDisable = async () => {
     if (!code) {
-      toast.error(t('profile.errors.pleaseEnterYourVerificationCodeOrBackupCode'))
+      toast.error(
+        t('profile.errors.pleaseEnterYourVerificationCodeOrBackupCode')
+      )
       return
     }
 
     if (!confirmed) {
-      toast.error(t('profile.tips.pleaseConfirmThatYouUnderstandTheConsequences'))
+      toast.error(
+        t('profile.tips.pleaseConfirmThatYouUnderstandTheConsequences')
+      )
       return
     }
 
@@ -106,9 +110,7 @@ export function TwoFADisableDialog({
             {t('profile.actions.disableTwoFactorAuthentication')}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'profile.tips.actionWillPermanentlyRemove2FaProtectionFromYour'
-            )}
+            {t('profile.tips.actionWillPermanentlyRemove2FaProtectionFromYour')}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,7 +132,9 @@ export function TwoFADisableDialog({
               disabled={loading}
             />
             <p className='text-muted-foreground text-xs'>
-              {t('profile.placeholders.enterYourAuthenticatorCodeOrABackupCode')}
+              {t(
+                'profile.placeholders.enterYourAuthenticatorCodeOrABackupCode'
+              )}
             </p>
           </div>
 
@@ -144,9 +148,7 @@ export function TwoFADisableDialog({
               htmlFor='confirm'
               className='text-sm leading-tight font-normal'
             >
-              {t(
-                'profile.tips.iUnderstandThatDisabling2FaWillRemoveAll'
-              )}
+              {t('profile.tips.iUnderstandThatDisabling2FaWillRemoveAll')}
             </Label>
           </div>
         </div>
@@ -165,7 +167,9 @@ export function TwoFADisableDialog({
             disabled={loading || !code || !confirmed}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('profile.tips.disabling') : t('profile.actions.disable2Fa')}
+            {loading
+              ? t('profile.tips.disabling')
+              : t('profile.actions.disable2Fa')}
           </Button>
         </DialogFooter>
       </DialogContent>

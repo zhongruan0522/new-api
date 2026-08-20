@@ -17,11 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import {
-  useQueryClient,
-  useIsFetching,
-  useQuery,
-} from '@tanstack/react-query'
+import { useQueryClient, useIsFetching, useQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { type Table } from '@tanstack/react-table'
 import { Loader2 } from 'lucide-react'
@@ -213,9 +209,7 @@ export function ApiKeysFilterBar<TData>(props: ApiKeysFilterBarProps<TData>) {
         value={statusInput || ''}
         onValueChange={(value) => {
           setStatusInput(
-            value && statusValueSet.has(value)
-              ? (value as `${number}`)
-              : ''
+            value && statusValueSet.has(value) ? (value as `${number}`) : ''
           )
         }}
       >

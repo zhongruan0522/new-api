@@ -243,7 +243,9 @@ export function FAQSection({ data }: FAQSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+              {updateOption.isPending
+                ? t('channels.tips.saving')
+                : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -263,7 +265,9 @@ export function FAQSection({ data }: FAQSectionProps) {
                 </TableHead>
                 <TableHead>{t('systemSettings.fields.question')}</TableHead>
                 <TableHead>{t('systemSettings.fields.answer')}</TableHead>
-                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
+                <TableHead className='w-32'>
+                  {t('channels.fields.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -326,10 +330,14 @@ export function FAQSection({ data }: FAQSectionProps) {
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>
-              {editingFaq ? t('systemSettings.actions.editFaq') : t('systemSettings.actions.addFaq')}
+              {editingFaq
+                ? t('systemSettings.actions.editFaq')
+                : t('systemSettings.actions.addFaq')}
             </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.actions.createOrUpdateFrequentlyAskedQuestionsForUsers')}
+              {t(
+                'systemSettings.actions.createOrUpdateFrequentlyAskedQuestionsForUsers'
+              )}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -389,7 +397,9 @@ export function FAQSection({ data }: FAQSectionProps) {
                   {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingFaq ? t('channels.fields.update') : t('channels.actions.add')}
+                  {editingFaq
+                    ? t('channels.fields.update')
+                    : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>
@@ -404,9 +414,12 @@ export function FAQSection({ data }: FAQSectionProps) {
             <AlertDialogDescription>
               {deleteTarget === 'single'
                 ? t('systemSettings.status.faqEntryWillBeRemovedFromTheList')
-                : t('systemSettings.status.countFaqEntriesWillBeRemovedFromTheList', {
-                    count: selectedIds.length,
-                  })}
+                : t(
+                    'systemSettings.status.countFaqEntriesWillBeRemovedFromTheList',
+                    {
+                      count: selectedIds.length,
+                    }
+                  )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

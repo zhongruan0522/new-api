@@ -254,14 +254,16 @@ export function SubscriptionsMutateDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-[600px]')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEdit ? t('subscriptions.fields.updatePlanInfo') : t('subscriptions.actions.createNewSubscriptionPlan')}
+            {isEdit
+              ? t('subscriptions.fields.updatePlanInfo')
+              : t('subscriptions.actions.createNewSubscriptionPlan')}
           </SheetTitle>
           <SheetDescription>
             {isEdit
-              ? t('subscriptions.tips.modifyExistingSubscriptionPlanConfiguration')
-              : t(
-                  'subscriptions.actions.fillInTheFollowingInfoToCreateANew'
-                )}
+              ? t(
+                  'subscriptions.tips.modifyExistingSubscriptionPlanConfiguration'
+                )
+              : t('subscriptions.actions.fillInTheFollowingInfoToCreateANew')}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -284,7 +286,12 @@ export function SubscriptionsMutateDrawer({
                   <FormItem>
                     <FormLabel>{t('subscriptions.fields.planTitle')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('subscriptions.placeholders.eGBasicPlan')} />
+                      <Input
+                        {...field}
+                        placeholder={t(
+                          'subscriptions.placeholders.eGBasicPlan'
+                        )}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,11 +303,15 @@ export function SubscriptionsMutateDrawer({
                 name='subtitle'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('subscriptions.fields.planSubtitle')}</FormLabel>
+                    <FormLabel>
+                      {t('subscriptions.fields.planSubtitle')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder={t('subscriptions.placeholders.eGSuitableForLightUsage')}
+                        placeholder={t(
+                          'subscriptions.placeholders.eGSuitableForLightUsage'
+                        )}
                       />
                     </FormControl>
                     <FormMessage />
@@ -314,7 +325,9 @@ export function SubscriptionsMutateDrawer({
                   name='price_amount'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.actualAmount')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.actualAmount')}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -336,7 +349,9 @@ export function SubscriptionsMutateDrawer({
                   name='total_amount'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.receivedAmount')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.receivedAmount')}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -364,10 +379,15 @@ export function SubscriptionsMutateDrawer({
                   name='upgrade_group'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.upgradeGroup')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.upgradeGroup')}
+                      </FormLabel>
                       <Select
                         items={[
-                          { value: '__none__', label: t('subscriptions.fields.noUpgrade') },
+                          {
+                            value: '__none__',
+                            label: t('subscriptions.fields.noUpgrade'),
+                          },
                           ...groupOptions.map((g) => ({ value: g, label: g })),
                         ]}
                         onValueChange={(v) =>
@@ -377,7 +397,9 @@ export function SubscriptionsMutateDrawer({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('subscriptions.fields.noUpgrade')} />
+                            <SelectValue
+                              placeholder={t('subscriptions.fields.noUpgrade')}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent alignItemWithTrigger={false}>
@@ -403,7 +425,9 @@ export function SubscriptionsMutateDrawer({
                   name='max_purchase_per_user'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.purchaseLimit')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.purchaseLimit')}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -477,7 +501,9 @@ export function SubscriptionsMutateDrawer({
                   name='duration_unit'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.durationUnit')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.durationUnit')}
+                      </FormLabel>
                       <Select
                         items={[
                           ...durationUnitOpts.map((o) => ({
@@ -514,7 +540,9 @@ export function SubscriptionsMutateDrawer({
                     name='custom_seconds'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('subscriptions.fields.customSeconds714d00')}</FormLabel>
+                        <FormLabel>
+                          {t('subscriptions.fields.customSeconds714d00')}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -535,7 +563,9 @@ export function SubscriptionsMutateDrawer({
                     name='duration_value'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('subscriptions.fields.durationValue')}</FormLabel>
+                        <FormLabel>
+                          {t('subscriptions.fields.durationValue')}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -567,7 +597,9 @@ export function SubscriptionsMutateDrawer({
                   name='quota_reset_period'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.actions.resetPeriod')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.actions.resetPeriod')}
+                      </FormLabel>
                       <Select
                         items={[
                           ...resetPeriodOpts.map((o) => ({
@@ -603,7 +635,9 @@ export function SubscriptionsMutateDrawer({
                   name='quota_reset_custom_seconds'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.customSeconds714d00')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.customSeconds714d00')}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -634,7 +668,9 @@ export function SubscriptionsMutateDrawer({
                 name='stripe_price_id'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('subscriptions.fields.stripePriceId')}</FormLabel>
+                    <FormLabel>
+                      {t('subscriptions.fields.stripePriceId')}
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder='price_...' />
                     </FormControl>
@@ -648,7 +684,9 @@ export function SubscriptionsMutateDrawer({
                 name='creem_product_id'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('subscriptions.fields.creemProductId')}</FormLabel>
+                    <FormLabel>
+                      {t('subscriptions.fields.creemProductId')}
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder='prod_...' />
                     </FormControl>
@@ -674,7 +712,9 @@ export function SubscriptionsMutateDrawer({
                   }
                   return (
                     <FormItem>
-                      <FormLabel>{t('subscriptions.fields.waffoPancakeProductId')}</FormLabel>
+                      <FormLabel>
+                        {t('subscriptions.fields.waffoPancakeProductId')}
+                      </FormLabel>
                       <div className='flex gap-2'>
                         <Select
                           items={items}
@@ -683,7 +723,11 @@ export function SubscriptionsMutateDrawer({
                           disabled={items.length === 0}
                         >
                           <SelectTrigger className='w-full flex-1'>
-                            <SelectValue placeholder={t('subscriptions.placeholders.selectAProduct')} />
+                            <SelectValue
+                              placeholder={t(
+                                'subscriptions.placeholders.selectAProduct'
+                              )}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {items.map((item) => (
@@ -729,7 +773,9 @@ export function SubscriptionsMutateDrawer({
             type='submit'
             disabled={isSubmitting}
           >
-            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
+            {isSubmitting
+              ? t('channels.tips.saving')
+              : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

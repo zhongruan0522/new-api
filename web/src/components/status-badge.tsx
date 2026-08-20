@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 /* eslint-disable react-refresh/only-export-components */
 import * as React from 'react'
-import { useTranslation } from 'react-i18next'
 import { type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { stringToColor } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -167,7 +167,13 @@ export function StatusBadge({
         className
       )}
       onClick={handleClick}
-      title={copyable ? t('common.fields.clickToCopyText', { text: copyText || label || '' }) : undefined}
+      title={
+        copyable
+          ? t('common.fields.clickToCopyText', {
+              text: copyText || label || '',
+            })
+          : undefined
+      }
       {...props}
     >
       {Icon && <Icon className='size-3.5 shrink-0' />}

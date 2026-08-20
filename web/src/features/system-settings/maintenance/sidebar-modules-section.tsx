@@ -65,7 +65,9 @@ export function SidebarModulesSection({
   const sectionMeta: Record<string, { title: string; description: string }> = {
     chat: {
       title: t('systemSettings.fields.chatArea'),
-      description: t('systemSettings.tips.playgroundExperimentsAndLiveConversations'),
+      description: t(
+        'systemSettings.tips.playgroundExperimentsAndLiveConversations'
+      ),
     },
     console: {
       title: t('systemSettings.titles.consoleArea'),
@@ -73,7 +75,9 @@ export function SidebarModulesSection({
     },
     personal: {
       title: t('systemSettings.fields.personalArea'),
-      description: t('systemSettings.tips.walletManagementAndPersonalPreferences'),
+      description: t(
+        'systemSettings.tips.walletManagementAndPersonalPreferences'
+      ),
     },
     support: {
       title: t('systemSettings.fields.supportArea'),
@@ -81,7 +85,9 @@ export function SidebarModulesSection({
     },
     admin: {
       title: t('systemSettings.fields.adminArea'),
-      description: t('systemSettings.tips.globalConfigurationAndAdministrativeTools'),
+      description: t(
+        'systemSettings.tips.globalConfigurationAndAdministrativeTools'
+      ),
     },
   }
 
@@ -92,7 +98,9 @@ export function SidebarModulesSection({
     chat: {
       playground: {
         title: t('systemSettings.titles.playground'),
-        description: t('systemSettings.tips.experimentWithPromptsAndModelsInRealTime'),
+        description: t(
+          'systemSettings.tips.experimentWithPromptsAndModelsInRealTime'
+        ),
       },
       custom_voice: {
         title: t('multimodal.fields.customVoice'),
@@ -102,7 +110,9 @@ export function SidebarModulesSection({
     console: {
       detail: {
         title: t('systemSettings.titles.dashboard'),
-        description: t('systemSettings.tips.aggregatedUsageMetricsAndTrendCharts'),
+        description: t(
+          'systemSettings.tips.aggregatedUsageMetricsAndTrendCharts'
+        ),
       },
       token: {
         title: t('systemSettings.titles.tokenManagement'),
@@ -110,11 +120,15 @@ export function SidebarModulesSection({
       },
       log: {
         title: t('dashboard.titles.usageLogs'),
-        description: t('systemSettings.tips.detailedRequestLogsForInvestigations'),
+        description: t(
+          'systemSettings.tips.detailedRequestLogsForInvestigations'
+        ),
       },
       multimodal_files: {
         title: t('systemSettings.fields.multimodalFiles'),
-        description: t('systemSettings.tips.manageUploadedMultimodalFileResources'),
+        description: t(
+          'systemSettings.tips.manageUploadedMultimodalFileResources'
+        ),
       },
     },
     personal: {
@@ -128,13 +142,17 @@ export function SidebarModulesSection({
       },
       personal: {
         title: t('layout.titles.profile'),
-        description: t('systemSettings.tips.personalSettingsAndProfileManagement'),
+        description: t(
+          'systemSettings.tips.personalSettingsAndProfileManagement'
+        ),
       },
     },
     support: {
       ticket: {
         title: t('systemSettings.fields.tickets'),
-        description: t('systemSettings.actions.createReplyToAndManageSupportTickets'),
+        description: t(
+          'systemSettings.actions.createReplyToAndManageSupportTickets'
+        ),
       },
     },
     admin: {
@@ -152,7 +170,9 @@ export function SidebarModulesSection({
       },
       redemption: {
         title: t('redemptionCodes.fields.codes'),
-        description: t('systemSettings.actions.createAndReviewInviteOrCreditCodes'),
+        description: t(
+          'systemSettings.actions.createAndReviewInviteOrCreditCodes'
+        ),
       },
       user: {
         title: t('systemSettings.titles.users'),
@@ -164,11 +184,15 @@ export function SidebarModulesSection({
       },
       audit_log: {
         title: t('auditLogs.titles.logs'),
-        description: t('systemSettings.tips.reviewAdministrativeOperationRecords'),
+        description: t(
+          'systemSettings.tips.reviewAdministrativeOperationRecords'
+        ),
       },
       minimax: {
         title: t('systemSettings.fields.minimax'),
-        description: t('systemSettings.actions.configureMinimaxChannelSettings'),
+        description: t(
+          'systemSettings.actions.configureMinimaxChannelSettings'
+        ),
       },
     },
   }
@@ -250,8 +274,10 @@ export function SidebarModulesSection({
                 moduleKey !== 'enabled' &&
                 (!knownModuleKeys || knownModuleKeys.has(moduleKey))
             )
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const sectionEnabled = Boolean(form.watch(`${sectionKey}.enabled` as any))
+            const sectionEnabled = Boolean(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              form.watch(`${sectionKey}.enabled` as any)
+            )
 
             return (
               <SettingsControlGroup key={sectionKey}>

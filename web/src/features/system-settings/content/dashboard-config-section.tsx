@@ -18,13 +18,13 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SectionPageLayout } from '@/components/layout'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SectionPageLayout } from '@/components/layout'
 import { SettingsPageProvider } from '../components/settings-page-context'
+import { DashboardLimitsSection } from '../dashboard/components/dashboard-limits-section'
 import { DashboardMetricsSection } from '../dashboard/components/dashboard-metrics-section'
 import { DashboardPanelsSection } from '../dashboard/components/dashboard-panels-section'
 import { DashboardRefreshSection } from '../dashboard/components/dashboard-refresh-section'
-import { DashboardLimitsSection } from '../dashboard/components/dashboard-limits-section'
 
 type DashboardTab = 'metrics' | 'panels' | 'refresh' | 'limits'
 
@@ -52,7 +52,9 @@ export function DashboardConfigSection() {
     <SettingsPageProvider actionsContainer={actionsContainer}>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          <span className='truncate'>{t('systemSettings.titles.dashboardConfiguration')}</span>
+          <span className='truncate'>
+            {t('systemSettings.titles.dashboardConfiguration')}
+          </span>
         </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <div

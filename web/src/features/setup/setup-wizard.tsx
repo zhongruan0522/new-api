@@ -103,14 +103,17 @@ export function SetupWizard() {
     mutationFn: submitSetup,
     onSuccess: async (response) => {
       if (response.success) {
-        toast.success(t('setup.status.systemInitializedSuccessfullyRedirecting'))
+        toast.success(
+          t('setup.status.systemInitializedSuccessfullyRedirecting')
+        )
         await queryClient.invalidateQueries({ queryKey: ['setup-status'] })
         setTimeout(() => {
           navigate({ to: '/' })
         }, 1200)
       } else {
         toast.error(
-          response.message || t('setup.status.initializationFailedPleaseTryAgain')
+          response.message ||
+            t('setup.status.initializationFailedPleaseTryAgain')
         )
       }
     },
@@ -123,7 +126,9 @@ export function SetupWizard() {
     if (!statusResponse) return
 
     if (!statusResponse.success) {
-      toast.error(statusResponse.message || t('setup.errors.failedToLoadSetupStatus'))
+      toast.error(
+        statusResponse.message || t('setup.errors.failedToLoadSetupStatus')
+      )
       return
     }
 
@@ -302,9 +307,7 @@ export function SetupWizard() {
             </h1>
           )}
           <p className='text-muted-foreground text-center text-sm sm:text-base'>
-            {t(
-              'setup.tips.followTheGuidedStepsToPrepareYourWorkspaceBefore'
-            )}
+            {t('setup.tips.followTheGuidedStepsToPrepareYourWorkspaceBefore')}
           </p>
         </div>
 

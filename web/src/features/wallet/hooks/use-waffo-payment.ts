@@ -62,7 +62,9 @@ export function useWaffoPayment() {
 
           if (paymentUrl) {
             window.open(paymentUrl, '_blank')
-            toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
+            toast.success(
+              i18next.t('subscriptions.status.redirectingToPaymentPage')
+            )
             return true
           }
         }

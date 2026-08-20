@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   type ColumnDef,
   flexRender,
@@ -26,10 +27,6 @@ import {
 } from '@tanstack/react-table'
 import { ChevronRight, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import {
-  keepPreviousData,
-  useQuery,
-} from '@tanstack/react-query'
 import {
   formatLogQuota,
   formatTimestampToDate,
@@ -55,16 +52,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/status-badge'
+import {
+  DetailsDialog,
+  type UsageLogDetailsVisibility,
+} from '@/features/usage-logs/components/dialogs/details-dialog'
 import { ModelBadge } from '@/features/usage-logs/components/model-badge'
 import {
   getFirstResponseTimeColor,
   getResponseTimeColor,
   parseLogOther,
 } from '@/features/usage-logs/lib/format'
-import {
-  DetailsDialog,
-  type UsageLogDetailsVisibility,
-} from '@/features/usage-logs/components/dialogs/details-dialog'
 import { fetchKeyLogs } from './api'
 import type { KeyQueryLog } from './types'
 import { useKeyQueryFieldVisibility } from './use-field-visibility'
@@ -74,13 +71,18 @@ const LOG_TYPE_CONSUME = 2
 const LOG_TYPE_ERROR = 5
 const LOG_TYPE_REFUND = 6
 
-function timingTextColorClass(variant: 'success' | 'warning' | 'danger'): string {
+function timingTextColorClass(
+  variant: 'success' | 'warning' | 'danger'
+): string {
   if (variant === 'success') return 'text-emerald-600'
   if (variant === 'warning') return 'text-amber-600'
   return 'text-rose-600'
 }
 
-function getLogTypeConfig(type: number): { label: string; variant: 'green' | 'red' | 'blue' | 'neutral' } {
+function getLogTypeConfig(type: number): {
+  label: string
+  variant: 'green' | 'red' | 'blue' | 'neutral'
+} {
   if (type === LOG_TYPE_ERROR) {
     return { label: 'common.errors.error', variant: 'red' }
   }
@@ -203,7 +205,9 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
                 event.stopPropagation()
                 setExpandedRowId(isOpen ? null : row.original.id)
               }}
-              aria-label={isOpen ? t('common.fields.collapse') : t('common.fields.expand')}
+              aria-label={
+                isOpen ? t('common.fields.collapse') : t('common.fields.expand')
+              }
             >
               <ChevronRight
                 className={cn(
@@ -271,7 +275,8 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
             log.type === LOG_TYPE_CONSUME ||
             log.type === LOG_TYPE_ERROR ||
             log.type === LOG_TYPE_REFUND
-          if (!isApiCall) return <span className='text-muted-foreground'>-</span>
+          if (!isApiCall)
+            return <span className='text-muted-foreground'>-</span>
 
           return (
             <div className='flex flex-col gap-1 text-xs'>
@@ -425,7 +430,11 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
       <CardHeader className='border-b'>
         <div className='flex items-center justify-between gap-3'>
           <CardTitle>{t('keyQuery.titles.callDetails')}</CardTitle>
-          <Button variant='outline' onClick={exportLogs} disabled={logs.length === 0}>
+          <Button
+            variant='outline'
+            onClick={exportLogs}
+            disabled={logs.length === 0}
+          >
             <Download />
             {t('keyQuery.actions.exportCsv')}
           </Button>
@@ -589,15 +598,15 @@ function SimplePagination(props: {
         >
           {t('common.actions.previous')}
         </Button>
-       <Button
-         variant='outline'
-         size='sm'
-         className='h-7 px-2'
-         onClick={() => props.onPageChange(props.page + 1)}
-         disabled={props.page >= totalPages}
-       >
-         {t('common.actions.next')}
-       </Button>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-7 px-2'
+          onClick={() => props.onPageChange(props.page + 1)}
+          disabled={props.page >= totalPages}
+        >
+          {t('common.actions.next')}
+        </Button>
         <span className='whitespace-nowrap'>
           {t('common.fields.rowsPerPage')}
         </span>
@@ -669,7 +678,9 @@ function DateTimeRangeInput(props: {
 }
 
 interface LogRowProps {
-  row: ReturnType<ReturnType<typeof useReactTable<KeyQueryLog>>['getRowModel']>['rows'][number]
+  row: ReturnType<
+    ReturnType<typeof useReactTable<KeyQueryLog>>['getRowModel']
+  >['rows'][number]
   isExpanded: boolean
   onToggle: () => void
   visibility: UsageLogDetailsVisibility
@@ -679,7 +690,8 @@ function LogRow({ row, isExpanded, onToggle, visibility }: LogRowProps) {
   const { t } = useTranslation()
   const log = row.original as KeyQueryLog
 
-  const canShowDetails = visibility.detailsEnabled && isDisplayableType(log.type)
+  const canShowDetails =
+    visibility.detailsEnabled && isDisplayableType(log.type)
 
   return (
     <>
@@ -698,11 +710,16 @@ function LogRow({ row, isExpanded, onToggle, visibility }: LogRowProps) {
       </TableRow>
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={row.getVisibleCells().length} className='bg-muted/20 p-3'>
+          <TableCell
+            colSpan={row.getVisibleCells().length}
+            className='bg-muted/20 p-3'
+          >
             {canShowDetails ? (
               <div className='max-h-[60vh] overflow-y-auto rounded-md border p-2'>
                 <DetailsDialog
-                  log={log as unknown as import('@/features/usage-logs/data/schema').UsageLog}
+                  log={
+                    log as unknown as import('@/features/usage-logs/data/schema').UsageLog
+                  }
                   isAdmin={false}
                   open
                   onOpenChange={() => {}}
@@ -716,7 +733,7 @@ function LogRow({ row, isExpanded, onToggle, visibility }: LogRowProps) {
                   {t('keyQuery.tips.detailsNotAvailable')}
                 </p>
                 {log.content && (
-                  <p className='mt-2 text-xs whitespace-pre-wrap wrap-break-word'>
+                  <p className='mt-2 text-xs wrap-break-word whitespace-pre-wrap'>
                     {log.content}
                   </p>
                 )}

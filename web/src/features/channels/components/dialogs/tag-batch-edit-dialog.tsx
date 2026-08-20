@@ -112,7 +112,9 @@ export function TagBatchEditDialog({
       setNewTag(currentTag)
     } catch (_error: unknown) {
       toast.error(
-        _error instanceof Error ? _error.message : t('channels.errors.failedToLoadTagData')
+        _error instanceof Error
+          ? _error.message
+          : t('channels.errors.failedToLoadTagData')
       )
     } finally {
       setIsLoading(false)
@@ -172,7 +174,9 @@ export function TagBatchEditDialog({
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToUpdateTag')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToUpdateTag')
       )
     } finally {
       setIsSaving(false)
@@ -195,7 +199,8 @@ export function TagBatchEditDialog({
         <DialogHeader>
           <DialogTitle>{t('channels.fields.batchEditByTag')}</DialogTitle>
           <DialogDescription>
-            {t('channels.actions.editAllChannelsWithTag')} <strong>{currentTag}</strong>
+            {t('channels.actions.editAllChannelsWithTag')}{' '}
+            <strong>{currentTag}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -254,7 +259,9 @@ export function TagBatchEditDialog({
 
               {/* Model Mapping */}
               <div className='space-y-2'>
-                <Label htmlFor='model-mapping'>{t('channels.fields.modelMapping')}</Label>
+                <Label htmlFor='model-mapping'>
+                  {t('channels.fields.modelMapping')}
+                </Label>
                 <ModelMappingEditor
                   value={modelMapping}
                   onChange={setModelMapping}
@@ -278,7 +285,9 @@ export function TagBatchEditDialog({
                   />
                 )}
                 <p className='text-muted-foreground text-xs'>
-                  {t('channels.tips.userGroupsThatCanAccessChannelsWithThisTag')}
+                  {t(
+                    'channels.tips.userGroupsThatCanAccessChannelsWithThisTag'
+                  )}
                 </p>
               </div>
             </div>
@@ -293,7 +302,9 @@ export function TagBatchEditDialog({
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {isSaving ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
+                {isSaving
+                  ? t('channels.tips.saving')
+                  : t('channels.actions.saveChanges')}
               </Button>
             </DialogFooter>
           </>

@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { useMemo, useState } from 'react'
 import {
   type ColumnDef,
@@ -25,10 +24,10 @@ import {
 } from '@tanstack/react-table'
 import { RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { SectionPageLayout } from '@/components/layout'
-import { DataTablePage } from '@/components/data-table'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { DataTablePage } from '@/components/data-table'
+import { SectionPageLayout } from '@/components/layout'
 import { useBillingHistory } from '@/features/wallet/hooks/use-billing-history'
 import type { TopupRecord } from '@/features/wallet/types'
 import { useOrderQueryColumns } from './components/order-query-columns'
@@ -61,7 +60,10 @@ export function OrderQuery() {
     [completing]
   )
 
-  const columns = useOrderQueryColumns(isAdmin, columnActions) as ColumnDef<TopupRecord>[]
+  const columns = useOrderQueryColumns(
+    isAdmin,
+    columnActions
+  ) as ColumnDef<TopupRecord>[]
 
   const table = useReactTable({
     data: records,
@@ -99,7 +101,9 @@ export function OrderQuery() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('orderQuery.titles.query')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>
+          {t('orderQuery.titles.query')}
+        </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <Button variant='outline' onClick={() => refresh()}>
             <RefreshCw className={loading ? 'size-4 animate-spin' : 'size-4'} />
@@ -131,9 +135,7 @@ export function OrderQuery() {
           if (!open && !completing) setConfirmTradeNo(null)
         }}
         title={t('orderQuery.fields.completeOrder')}
-        desc={t(
-          'orderQuery.tips.sureYouWantToManuallyCompleteThisOrderThe'
-        )}
+        desc={t('orderQuery.tips.sureYouWantToManuallyCompleteThisOrderThe')}
         confirmText={t('orderQuery.fields.completeOrder')}
         isLoading={completing}
         handleConfirm={confirmComplete}

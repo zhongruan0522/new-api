@@ -41,11 +41,14 @@ export async function handleEnableModel(
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('models.errors.failedToEnableModel'))
+      toast.error(
+        response.message || i18next.t('models.errors.failedToEnableModel')
+      )
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('models.errors.failedToEnableModel')
+      (error as Error)?.message ||
+        i18next.t('models.errors.failedToEnableModel')
     )
   }
 }
@@ -65,11 +68,14 @@ export async function handleDisableModel(
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('models.errors.failedToDisableModel'))
+      toast.error(
+        response.message || i18next.t('models.errors.failedToDisableModel')
+      )
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('models.errors.failedToDisableModel')
+      (error as Error)?.message ||
+        i18next.t('models.errors.failedToDisableModel')
     )
   }
 }
@@ -109,11 +115,14 @@ export async function handleDeleteModel(
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('channels.errors.failedToDeleteModel'))
+      toast.error(
+        response.message || i18next.t('channels.errors.failedToDeleteModel')
+      )
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('channels.errors.failedToDeleteModel')
+      (error as Error)?.message ||
+        i18next.t('channels.errors.failedToDeleteModel')
     )
   }
 }
@@ -160,11 +169,15 @@ export async function handleBatchDeleteModels(
 
     if (failedCount > 0) {
       toast.error(
-        i18next.t('models.errors.failedToDeleteCountModelS', { count: failedCount })
+        i18next.t('models.errors.failedToDeleteCountModelS', {
+          count: failedCount,
+        })
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('models.status.batchDeleteFailed'))
+    toast.error(
+      (error as Error)?.message || i18next.t('models.status.batchDeleteFailed')
+    )
   }
 }
 
@@ -212,11 +225,15 @@ export async function handleBatchEnableModels(
 
     if (failedCount > 0) {
       toast.error(
-        i18next.t('models.errors.failedToEnableCountModelS', { count: failedCount })
+        i18next.t('models.errors.failedToEnableCountModelS', {
+          count: failedCount,
+        })
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('models.status.batchEnableFailed'))
+    toast.error(
+      (error as Error)?.message || i18next.t('models.status.batchEnableFailed')
+    )
   }
 }
 
@@ -266,6 +283,8 @@ export async function handleBatchDisableModels(
       )
     }
   } catch (error: unknown) {
-    toast.error((error as Error)?.message || i18next.t('models.status.batchDisableFailed'))
+    toast.error(
+      (error as Error)?.message || i18next.t('models.status.batchDisableFailed')
+    )
   }
 }

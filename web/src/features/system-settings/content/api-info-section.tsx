@@ -90,7 +90,9 @@ const createApiInfoSchema = (t: (key: string) => string) =>
   z.object({
     url: z.string().url(t('systemSettings.errors.mustBeAValidUrl')),
     route: z.string().min(1, t('systemSettings.errors.routeIsRequired')),
-    description: z.string().min(1, t('systemSettings.errors.descriptionIsRequired')),
+    description: z
+      .string()
+      .min(1, t('systemSettings.errors.descriptionIsRequired')),
     color: z.string().min(1, t('systemSettings.errors.colorIsRequired')),
   })
 
@@ -202,9 +204,12 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
       setSelectedIds([])
       setHasChanges(true)
       toast.success(
-        t('systemSettings.status.countApiEntriesDeletedClickSaveSettingsToApply', {
-          count: selectedIds.length,
-        })
+        t(
+          'systemSettings.status.countApiEntriesDeletedClickSaveSettingsToApply',
+          {
+            count: selectedIds.length,
+          }
+        )
       )
     }
     setShowDeleteDialog(false)
@@ -280,7 +285,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+              {updateOption.isPending
+                ? t('channels.tips.saving')
+                : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -302,7 +309,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 <TableHead>{t('systemSettings.fields.route')}</TableHead>
                 <TableHead>{t('auditLogs.tips.description')}</TableHead>
                 <TableHead>{t('systemSettings.fields.color')}</TableHead>
-                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
+                <TableHead className='w-32'>
+                  {t('channels.fields.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -386,10 +395,14 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingApiInfo ? t('systemSettings.actions.editApiShortcut') : t('systemSettings.actions.addApiShortcut')}
+              {editingApiInfo
+                ? t('systemSettings.actions.editApiShortcut')
+                : t('systemSettings.actions.addApiShortcut')}
             </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.tips.configureApiDocumentationLinksForTheDashboard')}
+              {t(
+                'systemSettings.tips.configureApiDocumentationLinksForTheDashboard'
+              )}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -405,7 +418,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                     <FormLabel>{t('systemSettings.fields.apiUrl')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlApiExampleCom')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlApiExampleCom'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -418,9 +433,14 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='route'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.tips.routeDescription')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.tips.routeDescription')}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder={t('systemSettings.placeholders.eGCn2Gia')} {...field} />
+                      <Input
+                        placeholder={t('systemSettings.placeholders.eGCn2Gia')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -449,7 +469,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                 name='color'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.badgeColor')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.badgeColor')}
+                    </FormLabel>
                     <Select
                       items={[
                         ...colorOptions.map((option) => ({
@@ -469,7 +491,11 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('systemSettings.placeholders.selectAColor')} />
+                          <SelectValue
+                            placeholder={t(
+                              'systemSettings.placeholders.selectAColor'
+                            )}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -488,7 +514,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {t('systemSettings.tips.visualIndicatorColorForTheApiCard')}
+                      {t(
+                        'systemSettings.tips.visualIndicatorColorForTheApiCard'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -503,7 +531,9 @@ export function ApiInfoSection({ data }: ApiInfoSectionProps) {
                   {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingApiInfo ? t('channels.fields.update') : t('channels.actions.add')}
+                  {editingApiInfo
+                    ? t('channels.fields.update')
+                    : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>

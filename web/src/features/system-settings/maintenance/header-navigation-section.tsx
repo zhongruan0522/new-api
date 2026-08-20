@@ -170,12 +170,16 @@ export function HeaderNavigationSection({
     {
       key: 'key_query',
       title: t('keyQuery.titles.usageQuery'),
-      description: t('systemSettings.actions.queryBalanceAndRecentUsageByApiKey'),
+      description: t(
+        'systemSettings.actions.queryBalanceAndRecentUsageByApiKey'
+      ),
     },
     {
       key: 'docs',
       title: t('pricing.fields.docs'),
-      description: t('systemSettings.tips.documentationOrExternalKnowledgeBase'),
+      description: t(
+        'systemSettings.tips.documentationOrExternalKnowledgeBase'
+      ),
     },
     {
       key: 'about',
@@ -209,7 +213,9 @@ export function HeaderNavigationSection({
       requireAuthKey: 'rankingsRequireAuth',
       requireAuthDependsOn: 'rankingsEnabled',
       title: t('rankings.titles.value'),
-      description: t('systemSettings.tips.publicRankingsPageBasedOnLiveUsageData'),
+      description: t(
+        'systemSettings.tips.publicRankingsPageBasedOnLiveUsageData'
+      ),
       requireAuthTitle: t('systemSettings.tips.requireLoginToViewRankings'),
       requireAuthDescription: t(
         'systemSettings.errors.visitorsMustAuthenticateBeforeAccessingTheRankingsPage'

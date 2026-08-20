@@ -90,7 +90,9 @@ export function CheckinCalendarCard({
       if (res.success && res.data) {
         return res.data
       }
-      throw new Error(res.message || t('profile.errors.failedToFetchCheckinStatus'))
+      throw new Error(
+        res.message || t('profile.errors.failedToFetchCheckinStatus')
+      )
     },
     enabled: checkinEnabled,
     staleTime: 30000,
@@ -153,7 +155,9 @@ export function CheckinCalendarCard({
         } else {
           if (!token && shouldTriggerTurnstile(res.message)) {
             if (!turnstileSiteKey) {
-              toast.error(t('profile.status.turnstileIsEnabledButSiteKeyIsEmpty'))
+              toast.error(
+                t('profile.status.turnstileIsEnabledButSiteKeyIsEmpty')
+              )
               return
             }
             setTurnstileModalVisible(true)
@@ -256,7 +260,9 @@ export function CheckinCalendarCard({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('profile.fields.securityVerification')}</DialogTitle>
+            <DialogTitle>
+              {t('profile.fields.securityVerification')}
+            </DialogTitle>
           </DialogHeader>
           <div className='text-muted-foreground text-sm'>
             {t('profile.tips.pleaseCompleteTheSecurityCheckToContinue')}
@@ -470,12 +476,18 @@ export function CheckinCalendarCard({
                 <div className='bg-muted/30 text-muted-foreground rounded-lg border p-3 text-xs'>
                   <ul className='list-disc space-y-1 pl-5'>
                     <li>
-                      {t('profile.tips.checkInDailyToReceiveRandomQuotaRewards')}
+                      {t(
+                        'profile.tips.checkInDailyToReceiveRandomQuotaRewards'
+                      )}
                     </li>
                     <li>
-                      {t('profile.tips.rewardsWillBeAddedDirectlyToYourBalance')}
+                      {t(
+                        'profile.tips.rewardsWillBeAddedDirectlyToYourBalance'
+                      )}
                     </li>
-                    <li>{t('profile.tips.doNotRepeatCheckInOnlyOncePerDay')}</li>
+                    <li>
+                      {t('profile.tips.doNotRepeatCheckInOnlyOncePerDay')}
+                    </li>
                   </ul>
                 </div>
               </div>

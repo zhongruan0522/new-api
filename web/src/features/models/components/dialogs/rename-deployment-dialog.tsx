@@ -104,7 +104,9 @@ export function RenameDeploymentDialog({
       }
       toast.error(res.message || t('models.status.renameFailed'))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('models.status.renameFailed'))
+      toast.error(
+        err instanceof Error ? err.message : t('models.status.renameFailed')
+      )
     } finally {
       setIsSubmitting(false)
     }

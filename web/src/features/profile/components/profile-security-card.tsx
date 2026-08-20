@@ -91,7 +91,9 @@ export function ProfileSecurityCard({
     <>
       <TitledCard
         title={t('profile.fields.security')}
-        description={t('profile.tips.manageYourSecuritySettingsAndAccountAccess')}
+        description={t(
+          'profile.tips.manageYourSecuritySettingsAndAccountAccess'
+        )}
         icon={<Shield className='h-4 w-4' />}
       >
         <div className='grid grid-cols-1 gap-2.5 sm:gap-3 md:grid-cols-3'>

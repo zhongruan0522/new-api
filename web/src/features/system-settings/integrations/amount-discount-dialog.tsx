@@ -119,10 +119,14 @@ export function AmountDiscountDialog({
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? t('systemSettings.actions.editDiscountTier') : t('systemSettings.actions.addDiscountTier')}
+            {isEditMode
+              ? t('systemSettings.actions.editDiscountTier')
+              : t('systemSettings.actions.addDiscountTier')}
           </DialogTitle>
           <DialogDescription>
-            {t('systemSettings.tips.setADiscountRateForASpecificRechargeAmount')}
+            {t(
+              'systemSettings.tips.setADiscountRateForASpecificRechargeAmount'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -136,7 +140,9 @@ export function AmountDiscountDialog({
               name='amount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.rechargeAmountUsd')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.rechargeAmountUsd')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -152,7 +158,9 @@ export function AmountDiscountDialog({
                   </FormControl>
                   <FormDescription>
                     {isEditMode
-                      ? t('systemSettings.errors.amountCannotBeChangedWhenEditing')
+                      ? t(
+                          'systemSettings.errors.amountCannotBeChangedWhenEditing'
+                        )
                       : t(
                           'systemSettings.tips.minimumRechargeAmountToQualifyForThisDiscount'
                         )}
@@ -167,7 +175,9 @@ export function AmountDiscountDialog({
               name='discountRate'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.discountRate')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.discountRate')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -205,7 +215,9 @@ export function AmountDiscountDialog({
                 {t('common.actions.cancel')}
               </Button>
               <Button type='submit'>
-                {isEditMode ? t('channels.fields.update') : t('channels.actions.add')}
+                {isEditMode
+                  ? t('channels.fields.update')
+                  : t('channels.actions.add')}
               </Button>
             </DialogFooter>
           </form>

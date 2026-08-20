@@ -115,7 +115,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Power />
-            <span className='sr-only'>{t('models.actions.enableSelectedModels')}</span>
+            <span className='sr-only'>
+              {t('models.actions.enableSelectedModels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('models.actions.enableSelectedModels')}</p>
@@ -136,7 +138,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <PowerOff />
-            <span className='sr-only'>{t('models.actions.disableSelectedModels')}</span>
+            <span className='sr-only'>
+              {t('models.actions.disableSelectedModels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('models.actions.disableSelectedModels')}</p>
@@ -157,7 +161,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Copy />
-            <span className='sr-only'>{t('models.actions.copyModelNames')}</span>
+            <span className='sr-only'>
+              {t('models.actions.copyModelNames')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('models.actions.copyModelNames')}</p>
@@ -178,7 +184,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('models.actions.deleteSelectedModels')}</span>
+            <span className='sr-only'>
+              {t('models.actions.deleteSelectedModels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('models.actions.deleteSelectedModels')}</p>
@@ -192,10 +200,9 @@ export function DataTableBulkActions<TData>({
           <DialogHeader>
             <DialogTitle>{t('models.actions.deleteModels')}</DialogTitle>
             <DialogDescription>
-              {t(
-                'models.errors.sureYouWantToDeleteCountModelSThis',
-                { count: selectedIds.length }
-              )}
+              {t('models.errors.sureYouWantToDeleteCountModelSThis', {
+                count: selectedIds.length,
+              })}
             </DialogDescription>
           </DialogHeader>
 

@@ -378,12 +378,9 @@ export function AccountBindingsTab({
         open={!!unbindTarget}
         onOpenChange={(open) => !open && setUnbindTarget(null)}
         title={t('profile.actions.confirmUnbind')}
-        desc={t(
-          'profile.tips.sureYouWantToUnbindProviderYouWillNo',
-          {
-            provider: unbindTarget?.provider_name || '',
-          }
-        )}
+        desc={t('profile.tips.sureYouWantToUnbindProviderYouWillNo', {
+          provider: unbindTarget?.provider_name || '',
+        })}
         confirmText={t('profile.actions.confirmUnbind')}
         destructive
         handleConfirm={handleUnbindCustom}

@@ -96,7 +96,8 @@ const CAPABILITY_META: Record<ModelCapability, CapabilityMeta> = {
   caching: {
     icon: Database,
     labelKey: 'common.fields.promptCaching',
-    descriptionKey: 'common.tips.cacheRepeatedPromptPrefixesForCheaperFasterReuse',
+    descriptionKey:
+      'common.tips.cacheRepeatedPromptPrefixesForCheaperFasterReuse',
   },
   embeddings: {
     icon: BookOpenCheck,

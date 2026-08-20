@@ -178,7 +178,9 @@ export function RuleEditorDialog(props: Props) {
   const handleSave = (values: RuleFormValues) => {
     const modelRegex = normalizeStringList(values.model_regex_text)
     if (modelRegex.length === 0) {
-      toast.error(t('systemSettings.errors.leastOneModelRegexPatternIsRequired'))
+      toast.error(
+        t('systemSettings.errors.leastOneModelRegexPatternIsRequired')
+      )
       return
     }
 
@@ -199,12 +201,18 @@ export function RuleEditorDialog(props: Props) {
           Array.isArray(parsed) ||
           parsed === null
         ) {
-          toast.error(t('systemSettings.errors.parameterOverrideTemplateMustBeAJsonObject'))
+          toast.error(
+            t(
+              'systemSettings.errors.parameterOverrideTemplateMustBeAJsonObject'
+            )
+          )
           return
         }
         paramTemplate = parsed
       } catch {
-        toast.error(t('systemSettings.errors.invalidJsonInParameterOverrideTemplate'))
+        toast.error(
+          t('systemSettings.errors.invalidJsonInParameterOverrideTemplate')
+        )
         return
       }
     }
@@ -233,7 +241,11 @@ export function RuleEditorDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='max-h-[85vh] max-w-2xl overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('dynamicRatio.actions.editRule') : t('systemSettings.actions.addRule')}</DialogTitle>
+          <DialogTitle>
+            {isEdit
+              ? t('dynamicRatio.actions.editRule')
+              : t('systemSettings.actions.addRule')}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSave)} className='space-y-4'>
@@ -292,7 +304,8 @@ export function RuleEditorDialog(props: Props) {
               </Button>
             </div>
             <p className='text-muted-foreground mb-2 text-xs'>
-              {t('systemSettings.fields.commonKeys')}: {CONTEXT_KEY_PRESETS.join(', ')}
+              {t('systemSettings.fields.commonKeys')}:{' '}
+              {CONTEXT_KEY_PRESETS.join(', ')}
             </p>
             <div className='space-y-2'>
               {keySources.map((src, idx) => (
@@ -379,7 +392,9 @@ export function RuleEditorDialog(props: Props) {
             </CollapsibleTrigger>
             <CollapsibleContent className='space-y-3 pt-2'>
               <div className='grid gap-1.5'>
-                <Label>{t('systemSettings.tips.userAgentIncludeOnePerLine')}</Label>
+                <Label>
+                  {t('systemSettings.tips.userAgentIncludeOnePerLine')}
+                </Label>
                 <Textarea
                   rows={3}
                   placeholder='curl&#10;PostmanRuntime'
@@ -406,7 +421,9 @@ export function RuleEditorDialog(props: Props) {
               </div>
 
               <div className='grid gap-1.5'>
-                <Label>{t('systemSettings.tips.parameterOverrideTemplateJson')}</Label>
+                <Label>
+                  {t('systemSettings.tips.parameterOverrideTemplateJson')}
+                </Label>
                 <Textarea
                   rows={5}
                   placeholder='{"operations": [...]}'

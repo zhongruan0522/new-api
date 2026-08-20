@@ -42,11 +42,14 @@ export async function handleDeleteVendor(
       queryClient?.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
       onSuccess?.()
     } else {
-      toast.error(response.message || i18next.t('models.errors.failedToDeleteVendor'))
+      toast.error(
+        response.message || i18next.t('models.errors.failedToDeleteVendor')
+      )
     }
   } catch (error: unknown) {
     toast.error(
-      (error as Error)?.message || i18next.t('models.errors.failedToDeleteVendor')
+      (error as Error)?.message ||
+        i18next.t('models.errors.failedToDeleteVendor')
     )
   }
 }

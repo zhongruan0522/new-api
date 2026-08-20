@@ -27,11 +27,7 @@ import { type Redemption } from '../types'
  * 兑换码完整 key 不随列表下发（列表默认脱敏），点击展示或复制时
  * 按需请求完整值，服务端会记录查看日志。
  */
-export function RedemptionCodeCell({
-  redemption,
-}: {
-  redemption: Redemption
-}) {
+export function RedemptionCodeCell({ redemption }: { redemption: Redemption }) {
   const { t } = useTranslation()
   const [fullKey, setFullKey] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)

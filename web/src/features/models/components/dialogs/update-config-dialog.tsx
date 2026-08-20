@@ -206,7 +206,8 @@ export function UpdateConfigDialog({
       }
       toast.error(res.message || t('minimax.status.updateFailed'))
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t('minimax.status.updateFailed')
+      const msg =
+        err instanceof Error ? err.message : t('minimax.status.updateFailed')
       toast.error(msg)
     }
   }
@@ -302,7 +303,9 @@ export function UpdateConfigDialog({
                     name='args'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('models.fields.argsSpaceSeparated')}</FormLabel>
+                        <FormLabel>
+                          {t('models.fields.argsSpaceSeparated')}
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder='--foo bar' {...field} />
                         </FormControl>
@@ -319,7 +322,10 @@ export function UpdateConfigDialog({
                     <FormItem>
                       <FormLabel>{t('models.fields.command')}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('models.fields.optional')} {...field} />
+                        <Input
+                          placeholder={t('models.fields.optional')}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -337,7 +343,9 @@ export function UpdateConfigDialog({
                         name='registry_username'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('models.fields.registryUsername')}</FormLabel>
+                            <FormLabel>
+                              {t('models.fields.registryUsername')}
+                            </FormLabel>
                             <FormControl>
                               <Input autoComplete='off' {...field} />
                             </FormControl>
@@ -350,7 +358,9 @@ export function UpdateConfigDialog({
                         name='registry_secret'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('models.fields.registrySecret')}</FormLabel>
+                            <FormLabel>
+                              {t('models.fields.registrySecret')}
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 type='password'
@@ -377,7 +387,9 @@ export function UpdateConfigDialog({
                         name='env_json'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('models.fields.envJsonObject')}</FormLabel>
+                            <FormLabel>
+                              {t('models.fields.envJsonObject')}
+                            </FormLabel>
                             <FormControl>
                               <Textarea
                                 className='min-h-40 font-mono text-xs'

@@ -75,9 +75,7 @@ export function TelegramBindDialog({
                 <span className='font-mono font-semibold'>@{botName}</span>
               </p>
               <p className='text-muted-foreground mt-1 text-xs'>
-                {t(
-                  "common.tips.clickingTheButtonYouLlBeAskedToAuthorize"
-                )}
+                {t('common.tips.clickingTheButtonYouLlBeAskedToAuthorize')}
               </p>
             </div>
 
@@ -91,7 +89,9 @@ export function TelegramBindDialog({
           </div>
 
           <p className='text-muted-foreground text-center text-xs'>
-            {t('profile.tips.bindingWillCompleteAutomaticallyAfterAuthorization')}
+            {t(
+              'profile.tips.bindingWillCompleteAutomaticallyAfterAuthorization'
+            )}
           </p>
         </div>
       </DialogContent>

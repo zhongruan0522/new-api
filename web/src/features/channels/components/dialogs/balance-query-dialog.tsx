@@ -80,11 +80,15 @@ export function BalanceQueryDialog({
           queryKey: channelsQueryKeys.lists(),
         })
       } else {
-        toast.error(response.message || t('channels.errors.failedToQueryBalance'))
+        toast.error(
+          response.message || t('channels.errors.failedToQueryBalance')
+        )
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToQueryBalance')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToQueryBalance')
       )
     } finally {
       setIsQuerying(false)
@@ -115,7 +119,8 @@ export function BalanceQueryDialog({
         <DialogHeader>
           <DialogTitle>{t('channels.titles.queryBalance')}</DialogTitle>
           <DialogDescription>
-            {t('channels.fields.updateBalanceFor')} <strong>{currentRow.name}</strong>
+            {t('channels.fields.updateBalanceFor')}{' '}
+            <strong>{currentRow.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +152,9 @@ export function BalanceQueryDialog({
           >
             {isQuerying && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             {!isQuerying && <RefreshCw className='mr-2 h-4 w-4' />}
-            {isQuerying ? t('channels.tips.querying') : t('channels.fields.updateBalance')}
+            {isQuerying
+              ? t('channels.tips.querying')
+              : t('channels.fields.updateBalance')}
           </Button>
         </div>
 

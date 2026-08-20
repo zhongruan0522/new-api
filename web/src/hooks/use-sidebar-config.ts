@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
-import { useUserSidebarModules } from '@/hooks/use-user-sidebar-modules'
 import { ROLE } from '@/lib/roles'
+import { useUserSidebarModules } from '@/hooks/use-user-sidebar-modules'
 import type { NavGroup, NavItem } from '@/components/layout/types'
 
 type SidebarSectionConfig = {
@@ -172,9 +172,7 @@ function isNavItemVisible(
   // Handle direct link type
   if ('url' in item && item.url) {
     const configUrls = item.configUrls ?? [item.url]
-    return configUrls.some((url) =>
-      isModuleEnabled(url as string, adminConfig)
-    )
+    return configUrls.some((url) => isModuleEnabled(url as string, adminConfig))
   }
 
   // Handle collapsible type (with sub-items)
@@ -225,10 +223,7 @@ export function useSidebarConfig(navGroups: NavGroup[]): NavGroup[] {
   const userRole = useAuthStore((s) => s.auth.user?.role)
   const isLoggedIn = userRole !== undefined
   const isAdmin = isLoggedIn && userRole >= ROLE.ADMIN
-  const { data: sidebarModules } = useUserSidebarModules(
-    isLoggedIn,
-    isAdmin
-  )
+  const { data: sidebarModules } = useUserSidebarModules(isLoggedIn, isAdmin)
 
   const effectiveConfig = useMemo(() => {
     const config = parseSidebarConfig(sidebarModules)

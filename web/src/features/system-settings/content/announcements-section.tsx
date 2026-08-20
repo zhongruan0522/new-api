@@ -217,7 +217,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
         prev.filter((item) => item.id !== editingAnnouncement.id)
       )
       setHasChanges(true)
-      toast.success(t('common.status.announcementDeletedClickSaveSettingsToApply'))
+      toast.success(
+        t('common.status.announcementDeletedClickSaveSettingsToApply')
+      )
     } else if (deleteTarget === 'batch') {
       setAnnouncements((prev) =>
         prev.filter((item) => !selectedIds.includes(item.id))
@@ -225,9 +227,12 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
       setSelectedIds([])
       setHasChanges(true)
       toast.success(
-        t('systemSettings.status.countAnnouncementsDeletedClickSaveSettingsToApply', {
-          count: selectedIds.length,
-        })
+        t(
+          'systemSettings.status.countAnnouncementsDeletedClickSaveSettingsToApply',
+          {
+            count: selectedIds.length,
+          }
+        )
       )
     }
     setShowDeleteDialog(false)
@@ -241,7 +246,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
           item.id === editingAnnouncement.id ? { ...item, ...values } : item
         )
       )
-      toast.success(t('common.status.announcementUpdatedClickSaveSettingsToApply'))
+      toast.success(
+        t('common.status.announcementUpdatedClickSaveSettingsToApply')
+      )
     } else {
       const newId = Math.max(...announcements.map((item) => item.id), 0) + 1
       setAnnouncements((prev) => [...prev, { id: newId, ...values }])
@@ -321,7 +328,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
               disabled={!hasChanges || updateOption.isPending}
             >
               <Save className='mr-2 h-4 w-4' />
-              {updateOption.isPending ? t('channels.tips.saving') : t('profile.actions.saveSettings')}
+              {updateOption.isPending
+                ? t('channels.tips.saving')
+                : t('profile.actions.saveSettings')}
             </Button>
           </div>
         </div>
@@ -343,7 +352,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                 <TableHead>{t('systemSettings.fields.publishDate')}</TableHead>
                 <TableHead>{t('channels.fields.type')}</TableHead>
                 <TableHead>{t('systemSettings.fields.extra')}</TableHead>
-                <TableHead className='w-32'>{t('channels.fields.actions')}</TableHead>
+                <TableHead className='w-32'>
+                  {t('channels.fields.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -440,7 +451,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                 : t('systemSettings.actions.addAnnouncement')}
             </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.actions.createOrUpdateSystemAnnouncementsForTheDashboard')}
+              {t(
+                'systemSettings.actions.createOrUpdateSystemAnnouncementsForTheDashboard'
+              )}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -464,7 +477,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.maximum500CharactersSupportsMarkdownAndHtml')}
+                      {t(
+                        'systemSettings.tips.maximum500CharactersSupportsMarkdownAndHtml'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -475,14 +490,18 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                 name='publishDate'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.publishDate')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.publishDate')}
+                    </FormLabel>
                     <FormControl>
                       <DateTimePicker
                         value={field.value ? new Date(field.value) : undefined}
                         onChange={(date) =>
                           field.onChange(date ? date.toISOString() : '')
                         }
-                        placeholder={t('systemSettings.placeholders.selectPublishDate')}
+                        placeholder={t(
+                          'systemSettings.placeholders.selectPublishDate'
+                        )}
                       />
                     </FormControl>
                     <FormDescription>
@@ -520,7 +539,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
-                            placeholder={t('systemSettings.placeholders.selectAnnouncementType')}
+                            placeholder={t(
+                              'systemSettings.placeholders.selectAnnouncementType'
+                            )}
                           />
                         </SelectTrigger>
                       </FormControl>
@@ -548,10 +569,14 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                 name='extra'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.extraNotesOptional')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.extraNotesOptional')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('dashboard.titles.additionalInformation')}
+                        placeholder={t(
+                          'dashboard.titles.additionalInformation'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -573,7 +598,9 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
                   {t('common.actions.cancel')}
                 </Button>
                 <Button type='submit'>
-                  {editingAnnouncement ? t('channels.fields.update') : t('channels.actions.add')}
+                  {editingAnnouncement
+                    ? t('channels.fields.update')
+                    : t('channels.actions.add')}
                 </Button>
               </DialogFooter>
             </form>
@@ -587,10 +614,15 @@ export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
             <AlertDialogTitle>{t('keys.tips.sure')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget === 'single'
-                ? t('systemSettings.status.announcementWillBeRemovedFromTheList')
-                : t('systemSettings.status.countAnnouncementsWillBeRemovedFromTheList', {
-                    count: selectedIds.length,
-                  })}
+                ? t(
+                    'systemSettings.status.announcementWillBeRemovedFromTheList'
+                  )
+                : t(
+                    'systemSettings.status.countAnnouncementsWillBeRemovedFromTheList',
+                    {
+                      count: selectedIds.length,
+                    }
+                  )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

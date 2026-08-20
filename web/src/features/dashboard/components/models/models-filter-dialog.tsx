@@ -151,7 +151,9 @@ export function ModelsFilter(props: ModelsFilterProps) {
       </DialogTrigger>
       <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('dashboard.actions.filterDashboardModels')}</DialogTitle>
+          <DialogTitle>
+            {t('dashboard.actions.filterDashboardModels')}
+          </DialogTitle>
           <DialogDescription>
             {t(
               'dashboard.tips.setFiltersToCustomizeYourDashboardStatisticsAndCharts'
@@ -194,7 +196,9 @@ export function ModelsFilter(props: ModelsFilterProps) {
             {/* Custom time range */}
             <div className='grid gap-3 sm:gap-4'>
               <div className='grid gap-2'>
-                <Label htmlFor='start_timestamp'>{t('dashboard.actions.startTime')}</Label>
+                <Label htmlFor='start_timestamp'>
+                  {t('dashboard.actions.startTime')}
+                </Label>
                 <DateTimePicker
                   value={filters.start_timestamp}
                   onChange={(date) =>
@@ -205,7 +209,9 @@ export function ModelsFilter(props: ModelsFilterProps) {
               </div>
 
               <div className='grid gap-2'>
-                <Label htmlFor='end_timestamp'>{t('dashboard.fields.endTime')}</Label>
+                <Label htmlFor='end_timestamp'>
+                  {t('dashboard.fields.endTime')}
+                </Label>
                 <DateTimePicker
                   value={filters.end_timestamp}
                   onChange={(date) =>
@@ -219,7 +225,9 @@ export function ModelsFilter(props: ModelsFilterProps) {
             <SectionDivider label={t('dashboard.titles.chartSettings')} />
 
             <div className='grid gap-2'>
-              <Label htmlFor='time_granularity'>{t('dashboard.fields.timeGranularity')}</Label>
+              <Label htmlFor='time_granularity'>
+                {t('dashboard.fields.timeGranularity')}
+              </Label>
               <Select
                 items={[
                   ...TIME_GRANULARITY_OPTIONS.map((option) => ({
@@ -233,7 +241,11 @@ export function ModelsFilter(props: ModelsFilterProps) {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('dashboard.placeholders.selectTimeGranularity')} />
+                  <SelectValue
+                    placeholder={t(
+                      'dashboard.placeholders.selectTimeGranularity'
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>

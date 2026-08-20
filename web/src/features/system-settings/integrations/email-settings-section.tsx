@@ -162,7 +162,9 @@ export function EmailSettingsSection({
                 <FormControl>
                   <Input
                     autoComplete='off'
-                    placeholder={t('systemSettings.placeholders.smtpExampleCom')}
+                    placeholder={t(
+                      'systemSettings.placeholders.smtpExampleCom'
+                    )}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
@@ -205,9 +207,13 @@ export function EmailSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.actions.enableSslTls')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.actions.enableSslTls')}
+                    </FormLabel>
                     <FormDescription>
-                      {t('systemSettings.actions.useSecureConnectionWhenSendingEmails')}
+                      {t(
+                        'systemSettings.actions.useSecureConnectionWhenSendingEmails'
+                      )}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -226,9 +232,13 @@ export function EmailSettingsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.forceAuthLogin')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.forceAuthLogin')}
+                    </FormLabel>
                     <FormDescription>
-                      {t('systemSettings.tips.alwaysUseSmtpLoginAuthForOutboundMail')}
+                      {t(
+                        'systemSettings.tips.alwaysUseSmtpLoginAuthForOutboundMail'
+                      )}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>
@@ -251,13 +261,17 @@ export function EmailSettingsSection({
                 <FormControl>
                   <Input
                     autoComplete='off'
-                    placeholder={t('systemSettings.placeholders.noreplyExampleCom')}
+                    placeholder={t(
+                      'systemSettings.placeholders.noreplyExampleCom'
+                    )}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('systemSettings.status.accountUsedWhenAuthenticatingWithTheSmtpServer')}
+                  {t(
+                    'systemSettings.status.accountUsedWhenAuthenticatingWithTheSmtpServer'
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -273,13 +287,17 @@ export function EmailSettingsSection({
                 <FormControl>
                   <Input
                     autoComplete='off'
-                    placeholder={t('systemSettings.tips.newApiNoreplyExampleCom')}
+                    placeholder={t(
+                      'systemSettings.tips.newApiNoreplyExampleCom'
+                    )}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('systemSettings.status.displayNameAndEmailUsedInOutgoingMessages')}
+                  {t(
+                    'systemSettings.status.displayNameAndEmailUsedInOutgoingMessages'
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -291,18 +309,24 @@ export function EmailSettingsSection({
             name='SMTPToken'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.passwordAccessToken')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.passwordAccessToken')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     autoComplete='off'
                     type='password'
-                    placeholder={t('systemSettings.placeholders.enterNewTokenToUpdate')}
+                    placeholder={t(
+                      'systemSettings.placeholders.enterNewTokenToUpdate'
+                    )}
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('systemSettings.tips.leaveBlankToKeepTheExistingCredential')}
+                  {t(
+                    'systemSettings.tips.leaveBlankToKeepTheExistingCredential'
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

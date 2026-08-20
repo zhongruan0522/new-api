@@ -106,7 +106,9 @@ function PaginationPrevious({
         strokeWidth={2}
         data-icon='inline-start'
       />
-      <span className='hidden sm:block'>{text ?? t('common.fields.previous')}</span>
+      <span className='hidden sm:block'>
+        {text ?? t('common.fields.previous')}
+      </span>
     </PaginationLink>
   )
 }

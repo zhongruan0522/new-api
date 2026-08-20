@@ -71,17 +71,13 @@ export function MissingModelsConfirmationDialog({
             render={<div className='space-y-3 text-sm' />}
           >
             <div>
-              {t(
-                'common.tips.followingModelsInTheModelRedirectHaveNotBeen'
-              )}
+              {t('common.tips.followingModelsInTheModelRedirectHaveNotBeen')}
             </div>
             <div className='rounded-md bg-red-50 p-2 font-mono text-xs break-all text-red-600 dark:bg-red-950/50 dark:text-red-400'>
               {missingModels.join(', ')}
             </div>
             <div>
-              {t(
-                'common.tips.manuallyAddThemInCustomModelNamesClickFill'
-              )}
+              {t('common.tips.manuallyAddThemInCustomModelNamesClickFill')}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

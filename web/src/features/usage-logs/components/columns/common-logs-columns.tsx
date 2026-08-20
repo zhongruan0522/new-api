@@ -39,6 +39,7 @@ import { DataTableColumnHeader } from '@/components/data-table'
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
 import { LOG_TYPE_ALL_VALUE } from '../../constants'
 import type { UsageLog } from '../../data/schema'
+import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 import {
   formatModelName,
   getFirstResponseTimeColor,
@@ -59,7 +60,6 @@ import type { LogOtherData } from '../../types'
 import { DetailsDialog } from '../dialogs/details-dialog'
 import { ModelBadge } from '../model-badge'
 import { useUsageLogsContext } from '../usage-logs-provider'
-import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 
 interface DetailSegment {
   text: string
@@ -289,7 +289,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'created_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('auditLogs.fields.time')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('auditLogs.fields.time')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -325,7 +328,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       {
         id: 'channel',
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('channels.fields.channel')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('channels.fields.channel')}
+          />
         ),
         cell: function ChannelCell({ row }) {
           const { sensitiveVisible, setAffinityTarget, setAffinityDialogOpen } =
@@ -403,9 +409,12 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     )}
                     {affinity && (
                       <div className='border-t pt-1 text-xs'>
-                        <p className='font-medium'>{t('systemSettings.fields.channelAffinity')}</p>
+                        <p className='font-medium'>
+                          {t('systemSettings.fields.channelAffinity')}
+                        </p>
                         <p>
-                          {t('systemSettings.fields.rule')}: {affinity.rule_name || '-'}
+                          {t('systemSettings.fields.rule')}:{' '}
+                          {affinity.rule_name || '-'}
                         </p>
                         <p>
                           {t('common.fields.group')}:{' '}
@@ -428,7 +437,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       {
         id: 'user',
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('systemSettings.fields.user')} />
+          <DataTableColumnHeader
+            column={column}
+            title={t('systemSettings.fields.user')}
+          />
         ),
         cell: function UserCell({ row }) {
           const { sensitiveVisible, setSelectedUserId, setUserInfoDialogOpen } =
@@ -487,7 +499,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
   columns.push({
     accessorKey: 'token_name',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('pricing.fields.token')} />
+      <DataTableColumnHeader
+        column={column}
+        title={t('pricing.fields.token')}
+      />
     ),
     cell: function TokenNameCell({ row }) {
       const { sensitiveVisible } = useUsageLogsContext()
@@ -545,7 +560,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'model_name',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('common.fields.model')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('common.fields.model')}
+        />
       ),
       cell: function ModelCell({ row }) {
         const log = row.original
@@ -569,7 +587,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'use_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('usageLogs.fields.timing')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('usageLogs.fields.timing')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -623,7 +644,9 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             </div>
             <div className='flex items-center gap-1 text-[11px]'>
               <span className='text-muted-foreground/60'>
-                {log.is_stream ? t('keyQuery.fields.stream') : t('keyQuery.fields.nonStream')}
+                {log.is_stream
+                  ? t('keyQuery.fields.stream')
+                  : t('keyQuery.fields.nonStream')}
               </span>
               {log.is_stream && speed != null && speedVariant && (
                 <StatusBadge
@@ -645,7 +668,8 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                       <TooltipContent>
                         <div className='space-y-0.5 text-xs'>
                           <p>
-                            {t('usageLogs.fields.streamStatus')}: {t('common.errors.error')}
+                            {t('usageLogs.fields.streamStatus')}:{' '}
+                            {t('common.errors.error')}
                           </p>
                           <p>{other.stream_status.end_reason || 'unknown'}</p>
                           {(other.stream_status.error_count ?? 0) > 0 && (
@@ -669,7 +693,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'prompt_tokens',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('rankings.fields.tokens')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('rankings.fields.tokens')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -702,7 +729,8 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               <div className='flex items-center gap-1 text-[11px]'>
                 {cacheReadTokens > 0 && (
                   <span className='text-muted-foreground/60'>
-                    {t('pricing.fields.cache')}↓ {cacheReadTokens.toLocaleString()}
+                    {t('pricing.fields.cache')}↓{' '}
+                    {cacheReadTokens.toLocaleString()}
                   </span>
                 )}
                 {cacheWriteTokens > 0 && (
@@ -721,7 +749,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'quota',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keyQuery.fields.cost')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keyQuery.fields.cost')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -748,7 +779,8 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                 />
                 <TooltipContent>
                   <span>
-                    {t('usageLogs.fields.deductedBySubscription')}: {formatLogQuota(quota)}
+                    {t('usageLogs.fields.deductedBySubscription')}:{' '}
+                    {formatLogQuota(quota)}
                   </span>
                 </TooltipContent>
               </Tooltip>

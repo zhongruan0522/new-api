@@ -30,7 +30,7 @@ export function MaintenanceError() {
         </span>
         <p className='text-muted-foreground text-center'>
           {t('common.tips.siteIsNotAvailableAtTheMoment')} <br />
-          {t("common.tips.llBeBackOnlineShortly")}
+          {t('common.tips.llBeBackOnlineShortly')}
         </p>
         <div className='mt-6 flex gap-4'>
           <Button variant='outline'>{t('common.fields.learnMore')}</Button>

@@ -56,7 +56,11 @@ export function LogStatCards(props: LogStatCardsProps) {
         filters?.start_timestamp,
         filters?.end_timestamp
       ),
-    [filters?.end_timestamp, filters?.start_timestamp, filters?.time_granularity]
+    [
+      filters?.end_timestamp,
+      filters?.start_timestamp,
+      filters?.time_granularity,
+    ]
   )
 
   const queryParams = useMemo(

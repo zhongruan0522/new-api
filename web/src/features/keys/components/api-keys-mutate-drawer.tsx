@@ -247,7 +247,9 @@ export function ApiKeysMutateDrawer({
   const quotaLabel = `${t('keys.fields.quota')} (${t(currencyLabel)})`
   const quotaPlaceholder = tokensOnly
     ? t('keys.placeholders.enterQuotaInTokens')
-    : t('keys.placeholders.enterQuotaInCurrency', { currency: t(currencyLabel) })
+    : t('keys.placeholders.enterQuotaInCurrency', {
+        currency: t(currencyLabel),
+      })
   const quotaInputStep = tokensOnly ? 1 : 0.01
   const selectedGroup = form.watch('group')
   const quotaType = form.watch('quota_type')
@@ -289,7 +291,9 @@ export function ApiKeysMutateDrawer({
       >
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isUpdate ? t('keys.fields.updateApiKey') : t('dashboard.actions.createApiKey')}
+            {isUpdate
+              ? t('keys.fields.updateApiKey')
+              : t('dashboard.actions.createApiKey')}
           </SheetTitle>
           <SheetDescription>
             {isUpdate
@@ -316,7 +320,10 @@ export function ApiKeysMutateDrawer({
                   <FormItem>
                     <FormLabel>{t('channels.fields.name')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('keys.placeholders.enterAName')} />
+                      <Input
+                        {...field}
+                        placeholder={t('keys.placeholders.enterAName')}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -334,7 +341,9 @@ export function ApiKeysMutateDrawer({
                         options={groups}
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder={t('dynamicRatio.placeholders.selectAGroup')}
+                        placeholder={t(
+                          'dynamicRatio.placeholders.selectAGroup'
+                        )}
                       />
                     </FormControl>
                     <FormMessage />
@@ -498,9 +507,7 @@ export function ApiKeysMutateDrawer({
 
               {quotaType === 0 && (
                 <p className='text-muted-foreground text-sm'>
-                  {t(
-                    'keys.tips.keyItselfHasNoQuotaCapButActualUsage'
-                  )}
+                  {t('keys.tips.keyItselfHasNoQuotaCapButActualUsage')}
                 </p>
               )}
 
@@ -525,9 +532,12 @@ export function ApiKeysMutateDrawer({
                       <FormDescription>
                         {tokensOnly
                           ? t('keys.placeholders.enterTheQuotaAmountInTokens')
-                          : t('keys.placeholders.enterTheQuotaAmountInCurrency', {
-                              currency: t(currencyLabel),
-                            })}
+                          : t(
+                              'keys.placeholders.enterTheQuotaAmountInCurrency',
+                              {
+                                currency: t(currencyLabel),
+                              }
+                            )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -728,9 +738,7 @@ export function ApiKeysMutateDrawer({
                         />
                       </FormControl>
                       <FormDescription>
-                        {t(
-                          'keys.tips.doNotOverTrustThisFeatureIpMayBe'
-                        )}
+                        {t('keys.tips.doNotOverTrustThisFeatureIpMayBe')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -752,7 +760,9 @@ export function ApiKeysMutateDrawer({
             disabled={isSubmitting}
             className='w-full sm:w-auto'
           >
-            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
+            {isSubmitting
+              ? t('channels.tips.saving')
+              : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

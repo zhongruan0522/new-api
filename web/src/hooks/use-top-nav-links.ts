@@ -74,14 +74,22 @@ export function useTopNavLinks(): TopNavLink[] {
   const pricing = modules?.pricing
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed
-    links.push({ title: t('pricing.fields.modelSquare'), href: '/pricing', requiresAuth })
+    links.push({
+      title: t('pricing.fields.modelSquare'),
+      href: '/pricing',
+      requiresAuth,
+    })
   }
 
   // Rankings
   const rankings = modules?.rankings
   if (rankings && typeof rankings === 'object' && rankings.enabled) {
     const requiresAuth = rankings.requireAuth && !isAuthed
-    links.push({ title: t('rankings.titles.value'), href: '/rankings', requiresAuth })
+    links.push({
+      title: t('rankings.titles.value'),
+      href: '/rankings',
+      requiresAuth,
+    })
   }
 
   // Key usage query
@@ -91,7 +99,11 @@ export function useTopNavLinks(): TopNavLink[] {
 
   // Docs is only exposed when the backend provides an external docs link.
   if (modules?.docs !== false && docsLink) {
-    links.push({ title: t('pricing.fields.docs'), href: docsLink, external: true })
+    links.push({
+      title: t('pricing.fields.docs'),
+      href: docsLink,
+      external: true,
+    })
   }
 
   // About

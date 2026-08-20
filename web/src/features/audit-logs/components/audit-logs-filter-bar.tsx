@@ -163,7 +163,9 @@ export function AuditLogsFilterBar({
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           <SelectGroup>
-            <SelectItem value=''>{t('auditLogs.fields.allActionTypes')}</SelectItem>
+            <SelectItem value=''>
+              {t('auditLogs.fields.allActionTypes')}
+            </SelectItem>
             {AUDIT_ACTION_TYPES.map((a) => (
               <SelectItem key={a.value} value={a.value}>
                 {t(a.label)}

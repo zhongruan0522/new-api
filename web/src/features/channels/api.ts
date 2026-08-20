@@ -219,9 +219,7 @@ export async function updateChannelBalance(
 /**
  * Test proxy connectivity by resolving the exit IP through the given proxy URL.
  */
-export async function testProxy(
-  proxy: string
-): Promise<ProxyTestResponse> {
+export async function testProxy(proxy: string): Promise<ProxyTestResponse> {
   const config: ExtendedApiConfig = { skipBusinessError: true }
   const res = await api.post('/api/channel/test_proxy', { proxy }, config)
   return res.data

@@ -163,7 +163,9 @@ export function processChartData(
       }
 
       array.unshift({
-        key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
+        key: tt('channels.fields.labelWithColon', {
+          label: tt('dashboard.fields.total'),
+        }),
         value: formatQuotaValue(sum),
       })
       return array
@@ -660,7 +662,9 @@ export function processChartData(
               array[i].value = formatInt(v)
             }
             array.unshift({
-              key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
+              key: tt('channels.fields.labelWithColon', {
+                label: tt('dashboard.fields.total'),
+              }),
               value: formatInt(sum),
             })
             return array
@@ -966,7 +970,9 @@ export function processUserChartData(
               array[i].value = formatVal(v)
             }
             array.unshift({
-              key: tt('channels.fields.labelWithColon', { label: tt('dashboard.fields.total') }),
+              key: tt('channels.fields.labelWithColon', {
+                label: tt('dashboard.fields.total'),
+              }),
               value: formatVal(sum),
             })
             return array

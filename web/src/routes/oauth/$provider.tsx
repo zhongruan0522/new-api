@@ -204,11 +204,14 @@ function OAuthCallback() {
             redirectAfterLogin()
             return
           }
-          toast.error(res?.data?.message || i18next.t('channels.status.oauthFailed'))
+          toast.error(
+            res?.data?.message || i18next.t('channels.status.oauthFailed')
+          )
           safeNavigate('/sign-in')
           return
         }
-        const message = res?.data?.message || i18next.t('channels.status.oauthFailed')
+        const message =
+          res?.data?.message || i18next.t('channels.status.oauthFailed')
         if (!res?.data?.success && !isBindingFlow) {
           // When logging in with an already bound GitHub account, backend may return this message.
           // Backend returns translated text, so we need to check both locales.
