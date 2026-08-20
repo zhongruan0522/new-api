@@ -27,6 +27,11 @@
 - infra 包之间可以按需单向依赖（当前既定方向：`tokenizer → media → httpclient`、
   `notify → {media, httpclient}`），新增依赖前确认无环；infra 不得 import
   controller / middleware / router / relay（`media` 不得引用 relay 包）。
+  既有例外须保持现状并注明：`tokenizer/token_counter.go` 直接 import
+  `relay/common`（`EstimateRequestToken`/`CountTokenRealtime` 的 `RelayInfo` 参数）
+  与 `relay/constant`（`RelayFormat`/`RelayMode` 常量），系阶段 5.3 迁移前的既有
+  签名依赖，待后续阶段收敛（`config/reasoning` 还会间接拉入
+  `relay/channel/openrouter`）；除此之外不得新增 infra → relay 依赖。
 - 待机内存相关默认值保守（连接池、缓存、后台任务），调大须保留环境变量覆盖。
 
 ## 验证
