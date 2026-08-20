@@ -9,12 +9,14 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	media "github.com/NookMux/NookMux/internal/infra/media"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
@@ -76,7 +78,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 				return rawURL, nil
 			}
 
-			mimeType, b64, err := service.DecodeBase64FileData(rawURL)
+			mimeType, b64, err := media.DecodeBase64FileData(rawURL)
 			if err != nil {
 				return "", shared.NewErrorWithStatusCode(fmt.Errorf("decode media data failed: %w", err), shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 			}
@@ -293,9 +295,9 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 		httpResp = resp.(*http.Response)
 		info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
 		if httpResp.StatusCode != http.StatusOK {
-			newApiErr := service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+			newApiErr := helper.RelayErrorHandler(c.Request.Context(), httpResp, false)
 			// reset status code 重置状态码
-			service.ResetStatusCode(newApiErr, statusCodeMappingStr)
+			helper.ResetStatusCode(newApiErr, statusCodeMappingStr)
 			return newApiErr
 		}
 	}
@@ -303,7 +305,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 	usage, newApiErr := adaptor.DoResponse(c, httpResp, info)
 	if newApiErr != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newApiErr, statusCodeMappingStr)
+		helper.ResetStatusCode(newApiErr, statusCodeMappingStr)
 		return newApiErr
 	}
 
@@ -311,7 +313,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 	var containsAudioRatios = ratio.ContainsAudioRatio(info.OriginModelName) || ratio.ContainsAudioCompletionRatio(info.OriginModelName)
 
 	if containAudioTokens && containsAudioRatios {
-		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), ""); apiErr != nil {
+		if apiErr := billing.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), ""); apiErr != nil {
 			return apiErr
 		}
 	} else {
@@ -334,7 +336,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 
 	if originUsage != nil {
-		service.ObserveChannelAffinityUsageCacheFromContext(ctx, usage)
+		domainchannel.ObserveChannelAffinityUsageCacheFromContext(ctx, usage)
 	}
 
 	adminRejectReason := common.GetContextKeyString(ctx, constant.ContextKeyAdminRejectReason)
@@ -357,7 +359,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	cachedCreationRatio := relayInfo.PriceData.CacheCreationRatio
 	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude
 
-	if _, enabled, err := service.ApplyContextPricingForUsage(modelName, service.BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
+	if _, enabled, err := billing.ApplyContextPricingForUsage(modelName, billing.BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
 		if err != nil {
 			log.LogError(ctx, "context pricing failed: "+err.Error())
 			extraContent = append(extraContent, "分段计费匹配失败: "+err.Error())
@@ -564,7 +566,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	// 发生规范转换时，可能是转换导致的 token 统计异常，继续记录消费日志但不触发重试。
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if apiErr := service.NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
+		if apiErr := billing.NewEmptyUsageRetryError(ctx, relayInfo); apiErr != nil {
 			return apiErr
 		}
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费
@@ -589,7 +591,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
-	if err := service.SettleBilling(ctx, relayInfo, quota); err != nil {
+	if err := billing.SettleBilling(ctx, relayInfo, quota); err != nil {
 		log.LogError(ctx, "error settling billing: "+err.Error())
 	}
 
@@ -609,7 +611,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	if dynamicRatio > 0 {
 		originalGroupRatio = groupRatio / dynamicRatio
 	}
-	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, originalGroupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
+	other := billing.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, originalGroupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
 	if adminRejectReason != "" {
 		other["reject_reason"] = adminRejectReason
 	}
@@ -660,7 +662,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["image_generation_call_price"] = imageGenerationCallPrice
 	}
 	// 共享流式日志指标，确保 OpenAI 兼容与 Claude 消费日志展示一致。
-	service.AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
+	billing.AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,

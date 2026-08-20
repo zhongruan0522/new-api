@@ -6,10 +6,11 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/constant"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
@@ -489,7 +490,7 @@ func GetUserModels(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	groups := service.GetUserUsableGroups(user.Group)
+	groups := domaingroup.GetUserUsableGroups(user.Group)
 	var models []string
 	for group := range groups {
 		for _, g := range channelstore.GetGroupEnabledModels(group) {
@@ -572,7 +573,7 @@ func UpdateUser(c *gin.Context) {
 	if originUser.Quota != updatedUser.Quota {
 		userstore.RecordLog(originUser.Id, logstore.LogTypeManage, fmt.Sprintf("管理员将用户额度从 %s修改为 %s", log.LogQuota(originUser.Quota), log.LogQuota(updatedUser.Quota)))
 	}
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionUpdate, "修改用户: "+updatedUser.Username,
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionUpdate, "修改用户: "+updatedUser.Username,
 		map[string]interface{}{"id": originUser.Id, "username": originUser.Username, "display_name": originUser.DisplayName, "role": originUser.Role, "status": originUser.Status, "quota": originUser.Quota, "group": originUser.Group},
 		map[string]interface{}{"id": updatedUser.Id, "username": updatedUser.Username, "display_name": updatedUser.DisplayName, "role": updatedUser.Role, "quota": updatedUser.Quota, "group": updatedUser.Group, "remark": updatedUser.Remark})
 	c.JSON(http.StatusOK, gin.H{
@@ -670,7 +671,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(id)
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "删除用户: "+originUser.Username,
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "删除用户: "+originUser.Username,
 		map[string]interface{}{"id": originUser.Id, "username": originUser.Username, "display_name": originUser.DisplayName, "role": originUser.Role, "status": originUser.Status}, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -733,7 +734,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionCreate, "新增用户: "+cleanUser.Username, nil, map[string]interface{}{"username": cleanUser.Username, "display_name": cleanUser.DisplayName, "role": cleanUser.Role})
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionCreate, "新增用户: "+cleanUser.Username, nil, map[string]interface{}{"username": cleanUser.Username, "display_name": cleanUser.DisplayName, "role": cleanUser.Role})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -858,7 +859,7 @@ func ManageUser(c *gin.Context) {
 		}
 		userstore.RecordLog(user.Id, logstore.LogTypeManage, fmt.Sprintf("管理员调整用户额度从 %s 到 %s", log.LogQuota(originQuota), log.LogQuota(user.Quota)))
 		invalidateSecuritySensitiveUserCaches(user.Id)
-		service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionUpdate, "管理用户: 调整额度",
+		audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionUpdate, "管理用户: 调整额度",
 			map[string]interface{}{"id": user.Id, "username": user.Username, "quota": originQuota},
 			map[string]interface{}{"id": user.Id, "username": user.Username, "quota": user.Quota, "mode": req.Mode, "value": req.Value})
 		c.JSON(http.StatusOK, gin.H{
@@ -884,7 +885,7 @@ func ManageUser(c *gin.Context) {
 	if req.Action == "delete" {
 		auditAction = auditstore.AuditActionDelete
 	}
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditAction, "管理用户: "+req.Action, nil, map[string]interface{}{"username": user.Username, "action": req.Action})
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditAction, "管理用户: "+req.Action, nil, map[string]interface{}{"username": user.Username, "action": req.Action})
 	clearUser := userstore.User{
 		Role:   user.Role,
 		Status: user.Status,

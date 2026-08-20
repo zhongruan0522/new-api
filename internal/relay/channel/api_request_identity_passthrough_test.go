@@ -12,15 +12,15 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/gin-gonic/gin"
 )
 
 var initHTTPClientOnce sync.Once
 
 func ensureHTTPClient() {
-	initHTTPClientOnce.Do(service.InitHttpClient)
+	initHTTPClientOnce.Do(httpclient.InitHttpClient)
 }
 
 const upstreamRequestWaitTimeout = 2 * time.Second

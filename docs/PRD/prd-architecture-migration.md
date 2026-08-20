@@ -367,6 +367,14 @@ internal/
 
 **验证**：`go build ./... && go test ./internal/domain/... ./internal/infra/... ./internal/relay/...`。
 
+> **执行记录（2026-08-20，阶段 5.3 落地）**：`internal/service/` 49 个源文件 + 测试全部迁出（git mv 保留历史），包已删除。执行中发现并处理四处 PRD 未预见/已过时的问题，偏离原映射（与 5.1/5.2 同类，均为依赖成环或前提失效）：
+> 1. **计费契约下沉 `domain/billing/contract/`**（PRD 未预见）：`quota.go` 等服务文件依赖 `config/ratio` 与 `store/channel`，而两者又引用 `domain/billing` 的 `PriceData`/`ContextPricing*` 契约，服务与契约同包必成环（`billing → store/channel → config/ratio → billing`）。两份契约文件（5.1 刚迁入 `billing/` 根包）下沉为叶子子包 `contract/`，4 个引用方（config/ratio、store/pricing、relay/common、relay/helper）同步改指。`domain/channel` 无此问题（无 store 包反向引用其契约），`channel_error.go` 与渠道服务同包保留。
+> 2. **`convert.go` 改落 `relay/helper/`**（PRD 5.3 树列 `infra/media`，PRD 顶部目标树的 media 定义本就不含 convert.go）：若 convert.go 进 media，则 `billing(usage_helpr→EstimateTokenByModel) → tokenizer(token_counter→media 文件函数) → media(convert→gemini_usage) → billing` 三方成环。convert.go 是 Claude/Gemini ↔ OpenAI 协议转换，调用方全部在 relay，按调用方归位；`gemini_usage_test.go` 中 convert 侧用例随之拆分至 `relay/helper/gemini_convert_test.go`。
+> 3. **`http.go` 改落 `relay/helper/`**（PRD 列 `domain/channel`，其依据"`NewProxyHttpClient` 渠道代理规则"已过时——该函数自始在 `http_client.go`）：现 `http.go` 是 relay 响应透传工具（`CloseResponseBodyGracefully`/`IOCopyBytesGracefully`/`ShouldCopyUpstreamHeader`），唯一调用方均在 relay。`http_client.go`（含代理客户端构造 + SSRF 连接时复查）按 PRD 目标树整体落 `infra/httpclient`，"每渠道走哪个代理"的选择规则留在调用方。
+> 4. **`user_notify.go` 归 `infra/notify/`**（PRD 双列 `domain/user` 与 `infra/notify`）：其与 `notify_limit.go`（`CheckNotificationLimit`）、`webhook.go`（`SendWebhookNotify`）同域强耦合，按内容取 `infra/notify`；不创建空的 `domain/user/` 包。
+>
+> 另有若干符号级适配（逻辑零变更）：stripe 非边界逻辑（`Session*`/`FulfillOrder`/`GenStripeLink`/价格计算）与 `LockOrder`/`UnlockOrder` 自 `controller/topup_stripe.go`、`controller/topup.go` 提取至 `infra/payment`（gin handler 留守 controller，`GenStripeLink` 保留 `*gin.Context` 参数仅为本地化 API Key 错误文案）；`parseAudio`→`ParseAudio` 导出（`token_counter.go` 跨包调用）；billing 域按 PRD 重命名合并（`billing.go`+`billing_session.go`→`service.go`、`context_pricing.go`→`pricing.go`、`usage_helpr.go`→`usage_helper.go`、`log_info_generate.go`→`log_info.go`）；72 个 importer 文件以符号映射表机械改写（`domainchannel`/`domaingroup`/`domainticket` 等别名规避调用方局部变量遮蔽，`controller/channel_test_handler.go` 因局部变量 `notify` 改用 `domainnotify`）。AGENTS.md 同步：根文件结构概览/审计入口/代理规则/验证命令、新增 `internal/infra/AGENTS.md` 与 `internal/domain/audit/AGENTS.md`、重写 `internal/domain/AGENTS.md` 依赖方向约束（domain 由"必须叶子"修订为"契约子包必须叶子，领域服务可依赖 store/config/infra 且须无环"）、controller/store/pkg/relay/common 各处路径引用；用户文档（中英文技术架构、本地开发结构树、rate-settings、合并化文档）同步。验证：`go build ./...` 全绿；`go test ./...` 49 包通过、0 失败；测试函数 717=717（与 5.1/5.2 基线一致，`^func Test` 口径）；`gofmt -l` 干净；`go list -deps ./pkg/...` 无业务依赖；`go list -deps ./internal/store/...` 无 service/controller/middleware 反向依赖（service 包已不存在）。
+
 #### 5.4 `controller/` → 按资源拆
 
 ```

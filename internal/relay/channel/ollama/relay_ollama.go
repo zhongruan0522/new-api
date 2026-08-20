@@ -9,7 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/internal/service"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -87,7 +87,7 @@ const ollamaLongPullTimeout = 30 * time.Minute
 
 // newOllamaHttpClient 返回经渠道代理的客户端；超时会覆盖共享客户端，需拷贝实例。
 func newOllamaHttpClient(proxyURL string, timeout time.Duration) (*http.Client, error) {
-	client, err := service.GetHttpClientWithProxy(proxyURL)
+	client, err := httpclient.GetHttpClientWithProxy(proxyURL)
 	if err != nil {
 		return nil, err
 	}

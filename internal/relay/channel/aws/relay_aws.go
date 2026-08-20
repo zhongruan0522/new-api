@@ -14,10 +14,10 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -51,12 +51,12 @@ func newAwsClient(c *gin.Context, info *relaycommon.RelayInfo) (*bedrockruntime.
 		err        error
 	)
 	if info.ChannelSetting.Proxy != "" {
-		httpClient, err = service.NewProxyHttpClient(info.ChannelSetting.Proxy)
+		httpClient, err = httpclient.NewProxyHttpClient(info.ChannelSetting.Proxy)
 		if err != nil {
 			return nil, fmt.Errorf("new proxy http client failed: %w", err)
 		}
 	} else {
-		httpClient = service.GetHttpClient()
+		httpClient = httpclient.GetHttpClient()
 	}
 
 	awsSecret := strings.Split(info.ApiKey, "|")

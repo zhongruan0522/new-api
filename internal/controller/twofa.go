@@ -3,8 +3,8 @@ package controller
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/twofa"
@@ -492,6 +492,6 @@ func AdminDisable2FA(c *gin.Context) {
 	userstore.RecordLogWithAdminInfo(userId, logstore.LogTypeManage,
 		"管理员强制禁用了用户的两步验证", adminInfo)
 
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "禁用用户 2FA: "+targetUser.Username, nil, map[string]interface{}{"user_id": userId})
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "禁用用户 2FA: "+targetUser.Username, nil, map[string]interface{}{"user_id": userId})
 	common.ApiSuccessI18n(c, i18n.MsgTwoFAAdminDisabled, nil)
 }

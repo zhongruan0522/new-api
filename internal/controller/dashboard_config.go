@@ -4,8 +4,8 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	"github.com/NookMux/NookMux/internal/config/manager"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/gin-gonic/gin"
@@ -110,7 +110,7 @@ func UpdateDashboardConfig(c *gin.Context) {
 	afterMap, _ := manager.ConfigToMap(afterConfig)
 
 	// 记录审计日志
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleDashboardConfig,
 		auditstore.AuditActionUpdate,
@@ -183,7 +183,7 @@ func ResetDashboardConfig(c *gin.Context) {
 	afterMap, _ := manager.ConfigToMap(afterConfig)
 
 	// 记录审计日志
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleDashboardConfig,
 		auditstore.AuditActionUpdate,

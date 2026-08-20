@@ -3,8 +3,8 @@ package controller
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -153,7 +153,7 @@ func AddRedemption(c *gin.Context) {
 		})
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionCreate, "新增兑换码", nil, map[string]interface{}{"name": redemption.Name, "count": redemption.Count})
+	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionCreate, "新增兑换码", nil, map[string]interface{}{"name": redemption.Name, "count": redemption.Count})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -169,7 +169,7 @@ func DeleteRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -211,7 +211,7 @@ func UpdateRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
+	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
 	// 与列表/详情口径一致：更新响应不回传完整 key，完整 key 只能通过
 	// GetRedemptionKey 按需查看（留痕）获取。
 	cleanRedemption.Key = ""
@@ -229,7 +229,7 @@ func DeleteInvalidRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除无效兑换码", nil, nil)
+	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除无效兑换码", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

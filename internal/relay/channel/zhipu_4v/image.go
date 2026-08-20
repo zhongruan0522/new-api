@@ -7,10 +7,11 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	media "github.com/NookMux/NookMux/internal/infra/media"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,7 +47,7 @@ type openAIImageData struct {
 }
 
 func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
@@ -89,7 +90,7 @@ func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 		case data.B64Image != "":
 			b64 = data.B64Image
 		default:
-			_, downloaded, err := service.GetImageFromUrl(url)
+			_, downloaded, err := media.GetImageFromUrl(url)
 			if err != nil {
 				log.LogError(c, "zhipu_image_get_b64_failed: "+err.Error())
 				continue
@@ -113,7 +114,7 @@ func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 		return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 
-	service.IOCopyBytesGracefully(c, resp, jsonResp)
+	helper.IOCopyBytesGracefully(c, resp, jsonResp)
 
 	return &shared.Usage{}, nil
 }

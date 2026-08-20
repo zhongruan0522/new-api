@@ -3,7 +3,7 @@ package common
 import "github.com/gin-gonic/gin"
 
 // BillingSettler 抽象计费会话的生命周期操作。
-// 由 service.BillingSession 实现，存储在 RelayInfo 上以避免循环引用。
+// 由 billing.BillingSession（internal/domain/billing）实现，存储在 RelayInfo 上以避免循环引用。
 type BillingSettler interface {
 	// Settle 根据实际消耗额度进行结算，计算 delta = actualQuota - preConsumedQuota，
 	// 同时调整资金来源（钱包/订阅）和令牌额度。

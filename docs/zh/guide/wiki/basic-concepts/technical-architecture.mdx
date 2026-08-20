@@ -25,8 +25,9 @@ Gin 路由层（router）
 - `internal/router/`：挂载 API、relay、dashboard、静态资源和调试路由。
 - `internal/controller/`：HTTP 边界、请求校验、响应组织和管理操作审计埋点。
 - `internal/middleware/`：认证、限速、请求体恢复、分发和安全校验。
-- `internal/service/`：业务逻辑、计费、迁移、通知、审计记录和外部服务编排。
-- `internal/model/`：GORM 模型、迁移、缓存和数据库访问，需兼容 SQLite / MySQL / PostgreSQL。
+- `internal/domain/`：领域服务：计费（billing）、渠道选择与自动禁用（channel）、审计（audit）、排行榜、工单、敏感词匹配、分组倍率。
+- `internal/store/`：GORM 模型、迁移、缓存和数据库访问（按资源子包组织），需兼容 SQLite / MySQL / PostgreSQL。
+- `internal/infra/`：基础设施：HTTP 传输层与 SSRF 防护、媒体解码、token 计数、通知、支付集成、Passkey、定制语音。
 - `internal/config/`：系统、运营、模型、计费、审计和性能配置。
 - `internal/relay/`：AI 请求中继、协议转换、供应商适配、usage 统计和计费保护。
 - `internal/common/`：JSON 包装、环境变量、缓存、URL/安全工具、静态资源服务。

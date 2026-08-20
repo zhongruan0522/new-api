@@ -9,8 +9,8 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -173,7 +173,7 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 }
 
 func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
@@ -202,7 +202,7 @@ func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	}
 
 	c.Writer.Header().Set("Content-Type", "application/json")
-	service.IOCopyBytesGracefully(c, resp, jsonResponse)
+	helper.IOCopyBytesGracefully(c, resp, jsonResponse)
 
 	return &shared.Usage{}, nil
 }

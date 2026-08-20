@@ -11,10 +11,10 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/gin-gonic/gin"
 )
 
@@ -121,9 +121,9 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 		httpResp = resp.(*http.Response)
 		info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
 		if httpResp.StatusCode != http.StatusOK {
-			newAPIError = service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+			newAPIError = helper.RelayErrorHandler(c.Request.Context(), httpResp, false)
 			// reset status code 重置状态码
-			service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+			helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 			return newAPIError
 		}
 	}
@@ -132,11 +132,11 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 	//log.Printf("usage: %v", usage)
 	if newAPIError != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+		helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
 
-	if apiErr := service.PostClaudeConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {
+	if apiErr := billing.PostClaudeConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {
 		return apiErr
 	}
 	return nil

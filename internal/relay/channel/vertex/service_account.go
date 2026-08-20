@@ -11,12 +11,12 @@ import (
 	"strings"
 
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/bytedance/gopkg/cache/asynccache"
 	"github.com/golang-jwt/jwt/v5"
 
 	"fmt"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"time"
 )
 
@@ -114,12 +114,12 @@ func exchangeJwtForAccessToken(signedJWT string, info *relaycommon.RelayInfo) (s
 	var client *http.Client
 	var err error
 	if info.ChannelSetting.Proxy != "" {
-		client, err = service.NewProxyHttpClient(info.ChannelSetting.Proxy)
+		client, err = httpclient.NewProxyHttpClient(info.ChannelSetting.Proxy)
 		if err != nil {
 			return "", fmt.Errorf("new proxy http client failed: %w", err)
 		}
 	} else {
-		client = service.GetHttpClient()
+		client = httpclient.GetHttpClient()
 	}
 
 	resp, err := client.PostForm(authURL, data)
@@ -157,12 +157,12 @@ func exchangeJwtForAccessTokenWithProxy(signedJWT string, proxy string) (string,
 	var client *http.Client
 	var err error
 	if proxy != "" {
-		client, err = service.NewProxyHttpClient(proxy)
+		client, err = httpclient.NewProxyHttpClient(proxy)
 		if err != nil {
 			return "", fmt.Errorf("new proxy http client failed: %w", err)
 		}
 	} else {
-		client = service.GetHttpClient()
+		client = httpclient.GetHttpClient()
 	}
 
 	resp, err := client.PostForm(authURL, data)

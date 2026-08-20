@@ -5,7 +5,7 @@
 ## 规则
 
 - 外部输入必须在这里或更近边界校验：path/query/body/form/file/header。
-- 控制器不要沉淀复杂业务逻辑；可复用业务放 `internal/service/`，持久化放 `internal/store/` 各资源子包。
+- 控制器不要沉淀复杂业务逻辑；可复用业务放 `internal/domain/` 对应领域子包（计费 `billing/`、渠道 `channel/`、审计 `audit/` 等），持久化放 `internal/store/` 各资源子包，基础能力放 `internal/infra/` 对应子包。
 - 响应结构保持现有 `{ success, message, data }` 风格，避免为单个前端新增不兼容格式。
 - 不要为了前端改后端业务 API。字段不匹配时优先改前端适配本项目接口。
 - 安全相关控制器要保留二次验证、角色校验、限速和审计日志。
@@ -39,8 +39,8 @@
 ## 审计日志埋点
 
 管理员对系统资源的增删改操作必须接入审计日志。调用
-`service.RecordAudit(c, module, actionType, description, before, after)`，
-参数说明见 `internal/service/AGENTS.md`。
+`audit.RecordAudit(c, module, actionType, description, before, after)`（`internal/domain/audit`），
+参数说明见 `internal/domain/audit/AGENTS.md`。
 
 ### 何时埋点
 
@@ -64,7 +64,7 @@
   场景应基于 origin 构造 after（如 `afterModel := origin; afterModel.Status = newStatus`），
   避免请求体零值字段产生噪声 diff。
 - 纯新增操作 before 传 `nil`；纯删除操作 after 传 `nil` 或简要元数据 map。
-- 敏感字段（key、password、token、secret 等）由 `service.RecordAudit` 自动脱敏，
+- 敏感字段（key、password、token、secret 等）由 `audit.RecordAudit` 自动脱敏，
   controller 无需额外处理；但系统设置更新（`UpdateOption`）需要对值本身判断是否敏感。
 
 ### 审计配置变更的特殊处理
@@ -81,7 +81,7 @@
 3. 在 `web/src/features/audit-logs/constants.ts` 的 `AUDIT_MODULES` 中注册。
 4. 在 `web/src/i18n/static-keys.ts` 中注册模块标签 key。
 5. 在 `web/src/i18n/locales/{en,zh}.json` 中添加翻译。
-6. 在涉及的 controller 函数中添加 `service.RecordAudit` 调用。
+6. 在涉及的 controller 函数中添加 `audit.RecordAudit` 调用。
 
 ## 使用日志字段可见性
 
@@ -104,5 +104,5 @@
 ## 验证
 
 - 改请求校验、权限或响应字段后执行对应 controller 测试。
-- 影响系统设置、登录、渠道、令牌、计费、文件或 relay 入口时执行 `go test ./internal/controller/... ./internal/service/...`。
+- 影响系统设置、登录、渠道、令牌、计费、文件或 relay 入口时执行 `go test ./internal/controller/... ./internal/domain/...`。
 - 新增或修改审计埋点后执行 `go build .` 确认编译通过。

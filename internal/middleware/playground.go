@@ -7,8 +7,8 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/service"
 
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,7 +41,7 @@ func PlaygroundRequestContext() func(c *gin.Context) {
 		if userGroup == "" {
 			userGroup = common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 		}
-		if !service.GroupInUserUsableGroups(userGroup, selectedGroup) && selectedGroup != userGroup {
+		if !domaingroup.GroupInUserUsableGroups(userGroup, selectedGroup) && selectedGroup != userGroup {
 			abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组", shared.ErrorCodeAccessDenied)
 			return
 		}

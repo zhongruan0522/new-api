@@ -15,7 +15,7 @@ Go 实现的 AI API 网关与后台,聚合 OpenAI / Claude / Gemini / Azure / AW
 - `internal/router/AGENTS.md` — 路由分层、web 静态资源、SSE 保护。
 - `internal/controller/AGENTS.md` — HTTP 边界、输入校验、**审计埋点检查清单**、使用日志字段可见性。
 - `internal/middleware/AGENTS.md` — 认证/限速/分发/请求体恢复/SSE 保护。
-- `internal/service/AGENTS.md` — 业务逻辑、**`service.RecordAudit` 签名与行为约定**、计费/配额。
+- `internal/domain/audit/AGENTS.md` — **`audit.RecordAudit` 签名与行为约定**;`internal/domain/AGENTS.md` — 计费/配额/渠道领域服务规则(阶段5.3起)。
 - `internal/store/AGENTS.md` — GORM、**SQLite/MySQL/PostgreSQL 三库兼容**、缓存、幂等迁移。
 - `internal/config/AGENTS.md` — 配置注册、默认值校验、**审计配置**。
 - `internal/relay/AGENTS.md` — AI 中继、协议转换、流式输出/usage/计费保护、供应商适配。

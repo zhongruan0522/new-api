@@ -29,7 +29,7 @@
 
 ### 管理员资源增删改漏埋 RecordAudit
 **后果**:管理员操作无追溯,安全审计失败,出问题无法追责。
-**规则**:`internal/controller/AGENTS.md` 的"何时埋点" + `internal/service/AGENTS.md` — 渠道/用户/令牌/兑换码/模型/供应商/动态倍率/预填充分组/系统设置等资源的 create/update/delete 必须调 `service.RecordAudit`。多个成功分支(如 enable/disable/delete/add_quota)每个都要埋。
+**规则**:`internal/controller/AGENTS.md` 的"何时埋点" + `internal/domain/audit/AGENTS.md` — 渠道/用户/令牌/兑换码/模型/供应商/动态倍率/预填充分组/系统设置等资源的 create/update/delete 必须调 `audit.RecordAudit`(阶段5.3起,包 `internal/domain/audit`)。多个成功分支(如 enable/disable/delete/add_quota)每个都要埋。
 **场景**:只读操作(查询/测试/余额/模型拉取预览)不埋;普通用户自助操作(改自己信息/签到/充值/Passkey)不埋。
 
 ### 审计配置变更不用 forceRecord
@@ -63,7 +63,7 @@
 
 ### 路由层承载业务逻辑
 **后果**:层次混乱,controller/service 难复用,重复代码。
-**规则**:`internal/router/AGENTS.md` + 根 `AGENTS.md` — 路由只挂载,controller 只做边界(校验/权限/响应组织),service 承载业务,model 承载持久化。
+**规则**:`internal/router/AGENTS.md` + 根 `AGENTS.md` — 路由只挂载,controller 只做边界(校验/权限/响应组织),domain(internal/domain)承载业务,store(internal/store)承载持久化。
 
 ### middleware 读 body 后不恢复
 **后果**:后续 handler 读不到 body,relay / 文件上传 / 签名校验全炸。

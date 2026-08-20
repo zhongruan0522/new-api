@@ -9,7 +9,6 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -90,9 +89,9 @@ func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
-			newAPIError = service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+			newAPIError = helper.RelayErrorHandler(c.Request.Context(), httpResp, false)
 			// reset status code 重置状态码
-			service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+			helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 			return newAPIError
 		}
 	}
@@ -100,7 +99,7 @@ func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 	usage, newAPIError := adaptor.DoResponse(c, httpResp, info)
 	if newAPIError != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+		helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
 	if apiErr := postConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {

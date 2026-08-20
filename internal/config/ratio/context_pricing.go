@@ -9,13 +9,13 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
-	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 )
 
 // Claude 1h cache creation keeps the existing fixed relationship to 5m cache creation pricing.
 const ClaudeCacheCreation1hMultiplier = 6 / 3.75
 
-var contextPricingMap = shared.NewRWMap[string, billing.ContextPricingConfig]()
+var contextPricingMap = shared.NewRWMap[string, contract.ContextPricingConfig]()
 
 func ContextPricing2JSONString() string {
 	return contextPricingMap.MarshalJSONString()
@@ -28,17 +28,17 @@ func UpdateContextPricingByJSONString(jsonStr string) error {
 	return shared.LoadFromJsonString(contextPricingMap, jsonStr)
 }
 
-func GetContextPricingCopy() map[string]billing.ContextPricingConfig {
+func GetContextPricingCopy() map[string]contract.ContextPricingConfig {
 	return contextPricingMap.ReadAll()
 }
 
-func GetContextPricingConfig(model string) (billing.ContextPricingConfig, bool) {
+func GetContextPricingConfig(model string) (contract.ContextPricingConfig, bool) {
 	model = FormatMatchingModelName(model)
 	cfg, ok := contextPricingMap.Get(model)
 	return cfg, ok
 }
 
-func MatchContextPricingTier(model string, contextTokens int) (*billing.ContextPricingResult, bool, error) {
+func MatchContextPricingTier(model string, contextTokens int) (*contract.ContextPricingResult, bool, error) {
 	cfg, ok := GetContextPricingConfig(model)
 	if !ok || !cfg.Enabled {
 		return nil, false, nil
@@ -50,7 +50,7 @@ func MatchContextPricingTier(model string, contextTokens int) (*billing.ContextP
 		return nil, true, fmt.Errorf("context pricing enabled for model %s but no tiers configured", model)
 	}
 
-	tiers := make([]billing.ContextPricingTier, len(cfg.Tiers))
+	tiers := make([]contract.ContextPricingTier, len(cfg.Tiers))
 	copy(tiers, cfg.Tiers)
 	sort.SliceStable(tiers, func(i, j int) bool {
 		return tiers[i].MinTokens < tiers[j].MinTokens
@@ -63,7 +63,7 @@ func MatchContextPricingTier(model string, contextTokens int) (*billing.ContextP
 		if tier.MaxTokens != nil && contextTokens >= *tier.MaxTokens {
 			continue
 		}
-		prices := billing.ContextPricingTierPrices{
+		prices := contract.ContextPricingTierPrices{
 			ModelRatio:           tier.ModelRatio,
 			CompletionRatio:      tier.CompletionRatio,
 			CacheRatio:           tier.CacheRatio,
@@ -73,7 +73,7 @@ func MatchContextPricingTier(model string, contextTokens int) (*billing.ContextP
 			AudioRatio:           tier.AudioRatio,
 			AudioCompletionRatio: tier.AudioCompletionRatio,
 		}
-		return &billing.ContextPricingResult{
+		return &contract.ContextPricingResult{
 			Enabled:              true,
 			ContextTokensForTier: contextTokens,
 			TierIndex:            idx,
@@ -87,7 +87,7 @@ func MatchContextPricingTier(model string, contextTokens int) (*billing.ContextP
 	return nil, true, fmt.Errorf("context pricing enabled for model %s but no tier matches %d tokens", model, contextTokens)
 }
 
-func ApplyContextPricingResult(priceData *billing.PriceData, result *billing.ContextPricingResult) {
+func ApplyContextPricingResult(priceData *contract.PriceData, result *contract.ContextPricingResult) {
 	if priceData == nil || result == nil || !result.Enabled {
 		return
 	}
@@ -208,10 +208,10 @@ func validateContextPricingTierPrices(modelName string, tierIndex int, tier rawC
 // ByteDance Seed 1.6+ above 128K tokens). Source: OpenRouter provider catalog.
 // When a model appears here, the per-tier ratios override the base model/completion
 // ratios from defaultModelRatio/defaultCompletionRatio for matched token ranges.
-var defaultContextPricing = map[string]billing.ContextPricingConfig{
+var defaultContextPricing = map[string]contract.ContextPricingConfig{
 	"claude-sonnet-4.5": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -238,7 +238,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gemini-2.5-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -265,7 +265,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gemini-2.5-pro-preview": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -292,7 +292,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gemini-2.5-pro-preview-05-06": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -319,7 +319,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gemini-3.1-pro-preview": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -346,7 +346,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gemini-3.1-pro-preview-customtools": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -373,7 +373,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.4": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -400,7 +400,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.4-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -427,7 +427,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.5": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -454,7 +454,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.5-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -481,7 +481,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-luna": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -508,7 +508,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-luna-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -535,7 +535,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-sol": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -562,7 +562,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-sol-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -589,7 +589,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-terra": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -616,7 +616,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"gpt-5.6-terra-pro": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -643,7 +643,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"seed-1.6": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -670,7 +670,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"seed-1.6-flash": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -697,7 +697,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"seed-2.0-lite": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,
@@ -724,7 +724,7 @@ var defaultContextPricing = map[string]billing.ContextPricingConfig{
 	},
 	"seed-2.0-mini": {
 		Enabled: true,
-		Tiers: []billing.ContextPricingTier{
+		Tiers: []contract.ContextPricingTier{
 			{
 				Name:                 "base",
 				MinTokens:            0,

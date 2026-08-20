@@ -2,8 +2,9 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -41,7 +42,7 @@ func CreateDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	channelstore.RefreshDynamicRatioCache()
-	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionCreate, "新增动态倍率规则", nil, rule)
+	audit.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionCreate, "新增动态倍率规则", nil, rule)
 	common.ApiSuccess(c, rule)
 }
 
@@ -73,7 +74,7 @@ func UpdateDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	channelstore.RefreshDynamicRatioCache()
-	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "修改动态倍率规则", origin, rule)
+	audit.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "修改动态倍率规则", origin, rule)
 	common.ApiSuccess(c, rule)
 }
 
@@ -91,7 +92,7 @@ func DeleteDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	channelstore.RefreshDynamicRatioCache()
-	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionDelete, "删除动态倍率规则 #"+strconv.FormatInt(id, 10), nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionDelete, "删除动态倍率规则 #"+strconv.FormatInt(id, 10), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 
@@ -114,7 +115,7 @@ func ReorderDynamicRatioRules(c *gin.Context) {
 		return
 	}
 	channelstore.RefreshDynamicRatioCache()
-	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "重排动态倍率规则", nil, map[string]interface{}{"ids": req.Ids})
+	audit.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "重排动态倍率规则", nil, map[string]interface{}{"ids": req.Ids})
 	common.ApiSuccess(c, nil)
 }
 
@@ -132,7 +133,7 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
+	audit.RecordAudit(c, auditstore.AuditModuleDynamicRatio, auditstore.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
 	common.ApiSuccess(c, nil)
 }
 
@@ -148,7 +149,7 @@ func GetDynamicRatioStatus(c *gin.Context) {
 	}
 
 	if group != "" {
-		if !service.GroupInUserUsableGroups(user.Group, group) {
+		if !domaingroup.GroupInUserUsableGroups(user.Group, group) {
 			common.ApiErrorI18n(c, i18n.MsgDynamicRatioGroupForbidden)
 			return
 		}
@@ -156,7 +157,7 @@ func GetDynamicRatioStatus(c *gin.Context) {
 		return
 	}
 
-	usableGroups := service.GetUserUsableGroups(user.Group)
+	usableGroups := domaingroup.GetUserUsableGroups(user.Group)
 	groups := make([]string, 0, len(usableGroups)+1)
 	for usableGroup := range usableGroups {
 		groups = append(groups, usableGroup)

@@ -12,7 +12,6 @@ import (
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -101,9 +100,9 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 		httpResp = resp.(*http.Response)
 		info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
 		if httpResp.StatusCode != http.StatusOK {
-			newAPIError = service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+			newAPIError = helper.RelayErrorHandler(c.Request.Context(), httpResp, false)
 			// reset status code 重置状态码
-			service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+			helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 			return newAPIError
 		}
 	}
@@ -111,7 +110,7 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 	usage, newAPIError := adaptor.DoResponse(c, httpResp, info)
 	if newAPIError != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+		helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
 

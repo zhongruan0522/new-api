@@ -5,8 +5,9 @@ import (
 
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -37,10 +38,10 @@ func WssHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shared
 	usage, newAPIError := adaptor.DoResponse(c, nil, info)
 	if newAPIError != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+		helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
-	if apiErr := service.PostWssConsumeQuota(c, info, info.UpstreamModelName, usage.(*shared.RealtimeUsage), ""); apiErr != nil {
+	if apiErr := billing.PostWssConsumeQuota(c, info, info.UpstreamModelName, usage.(*shared.RealtimeUsage), ""); apiErr != nil {
 		return apiErr
 	}
 	return nil

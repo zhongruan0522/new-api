@@ -6,10 +6,11 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -89,7 +90,7 @@ func Distribute() func(c *gin.Context) {
 						return
 					}
 					if playgroundRequest.Group != "" {
-						if !service.GroupInUserUsableGroups(usingGroup, playgroundRequest.Group) && playgroundRequest.Group != usingGroup {
+						if !domaingroup.GroupInUserUsableGroups(usingGroup, playgroundRequest.Group) && playgroundRequest.Group != usingGroup {
 							abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组")
 							return
 						}
@@ -98,20 +99,20 @@ func Distribute() func(c *gin.Context) {
 					}
 				}
 
-				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
+				if preferredChannelID, found := domainchannel.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					affinityUsable := false
 					preferred, err := channelstore.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
-							autoGroups := service.GetUserAutoGroup(userGroup)
+							autoGroups := domaingroup.GetUserAutoGroup(userGroup)
 							for _, g := range autoGroups {
 								if channelstore.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) {
 									selectGroup = g
 									common.SetContextKey(c, constant.ContextKeyAutoGroup, g)
 									channel = preferred
 									affinityUsable = true
-									service.MarkChannelAffinityUsed(c, g, preferred.Id)
+									domainchannel.MarkChannelAffinityUsed(c, g, preferred.Id)
 									break
 								}
 							}
@@ -119,18 +120,18 @@ func Distribute() func(c *gin.Context) {
 							channel = preferred
 							selectGroup = usingGroup
 							affinityUsable = true
-							service.MarkChannelAffinityUsed(c, usingGroup, preferred.Id)
+							domainchannel.MarkChannelAffinityUsed(c, usingGroup, preferred.Id)
 						}
 					}
 					// 亲和渠道被禁用或对当前分组/模型不可用时，按配置决定是否清空粘性条目：
 					// 默认清空并改选其他渠道；开启 keep_on_channel_disabled 后保留条目等待渠道恢复。
-					if !affinityUsable && !service.ShouldKeepChannelAffinityOnChannelDisabled() {
-						service.ClearCurrentChannelAffinityCache(c)
+					if !affinityUsable && !domainchannel.ShouldKeepChannelAffinityOnChannelDisabled() {
+						domainchannel.ClearCurrentChannelAffinityCache(c)
 					}
 				}
 
 				if channel == nil {
-					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
+					channel, selectGroup, err = domainchannel.CacheGetRandomSatisfiedChannel(&domainchannel.RetryParam{
 						Ctx:         c,
 						ModelName:   modelRequest.Model,
 						TokenGroup:  usingGroup,
@@ -169,7 +170,7 @@ func Distribute() func(c *gin.Context) {
 		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
-			service.RecordChannelAffinity(c, channel.Id)
+			domainchannel.RecordChannelAffinity(c, channel.Id)
 		}
 	}
 }

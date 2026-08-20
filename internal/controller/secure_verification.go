@@ -5,7 +5,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/i18n"
-	passkeysvc "github.com/NookMux/NookMux/internal/service/passkey"
+	passkeysvc "github.com/NookMux/NookMux/internal/infra/passkey"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/passkey"
 	"github.com/NookMux/NookMux/internal/store/twofa"

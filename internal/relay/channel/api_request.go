@@ -11,11 +11,11 @@ import (
 
 	common2 "github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -443,7 +443,7 @@ func DoWssRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 		targetHeader.Set(key, value)
 	}
 	targetHeader.Set("Content-Type", c.Request.Header.Get("Content-Type"))
-	dialer, err := service.NewProxyWebSocketDialer(info.ChannelSetting.Proxy)
+	dialer, err := httpclient.NewProxyWebSocketDialer(info.ChannelSetting.Proxy)
 	if err != nil {
 		return nil, fmt.Errorf("new proxy websocket dialer failed: %w", err)
 	}
@@ -453,7 +453,7 @@ func DoWssRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	}
 	// send request body
 	//all, err := io.ReadAll(requestBody)
-	//err = service.WssString(c, targetConn, string(all))
+	//err = helper.WssString(c, targetConn, string(all))
 	return targetConn, nil
 }
 
@@ -464,12 +464,12 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	var client *http.Client
 	var err error
 	if info.ChannelSetting.Proxy != "" {
-		client, err = service.NewProxyHttpClient(info.ChannelSetting.Proxy)
+		client, err = httpclient.NewProxyHttpClient(info.ChannelSetting.Proxy)
 		if err != nil {
 			return nil, fmt.Errorf("new proxy http client failed: %w", err)
 		}
 	} else {
-		client = service.GetHttpClient()
+		client = httpclient.GetHttpClient()
 	}
 
 	if info.IsStream {

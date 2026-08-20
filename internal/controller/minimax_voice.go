@@ -3,8 +3,8 @@ package controller
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/minimax_voice"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -118,7 +118,7 @@ func CreateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleVoice,
 		auditstore.AuditActionCreate,
@@ -196,7 +196,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleVoice,
 		auditstore.AuditActionUpdate,
@@ -234,7 +234,7 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleVoice,
 		auditstore.AuditActionDelete,

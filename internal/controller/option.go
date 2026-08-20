@@ -8,8 +8,9 @@ import (
 	configmodel "github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	rankings "github.com/NookMux/NookMux/internal/domain/rankings"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -453,7 +454,7 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleOption,
 		auditstore.AuditActionUpdate,
@@ -560,7 +561,7 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(
+	audit.RecordAudit(
 		c,
 		auditstore.AuditModuleOption,
 		auditstore.AuditActionUpdate,
@@ -830,7 +831,7 @@ func UpdateOption(c *gin.Context) {
 		return
 	}
 	if option.Key == "DataExportInterval" {
-		service.ClearRankingsCache()
+		rankings.ClearRankingsCache()
 	}
 	// 审计系统设置变更：对敏感配置值脱敏，防止凭证泄露到审计日志。
 	// 复用 GetOptions 中的敏感 key 后缀规则。
@@ -859,7 +860,7 @@ func UpdateOption(c *gin.Context) {
 	// 如果管理员关闭了审计总开关或 option 模块，RecordAudit 会按新配置跳过。
 	// 因此对 audit_setting.* 的任何变更都强制记录。
 	forceRecord := strings.HasPrefix(option.Key, "audit_setting.")
-	service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "修改系统设置 "+option.Key, beforeMap, map[string]interface{}{"key": option.Key, "value": auditValue}, forceRecord)
+	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "修改系统设置 "+option.Key, beforeMap, map[string]interface{}{"key": option.Key, "value": auditValue}, forceRecord)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

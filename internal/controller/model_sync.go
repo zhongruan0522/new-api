@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/missing_models"
@@ -451,7 +451,7 @@ func SyncUpstreamModels(c *gin.Context) {
 		}
 	}
 
-	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "同步上游模型", nil, map[string]interface{}{"created": createdModels, "updated": updatedModels})
+	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "同步上游模型", nil, map[string]interface{}{"created": createdModels, "updated": updatedModels})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{

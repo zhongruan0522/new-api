@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/constant"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -138,7 +138,7 @@ func PostSetup(c *gin.Context) {
 	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录。
 	// 审计元数据区分「新建 root 用户」与「复用已有 root 用户」两种初始化路径。
 	c.Set("username", req.Username)
-	service.RecordAudit(c, auditstore.AuditModuleSetup, auditstore.AuditActionCreate, "系统初始化", nil, map[string]interface{}{
+	audit.RecordAudit(c, auditstore.AuditModuleSetup, auditstore.AuditActionCreate, "系统初始化", nil, map[string]interface{}{
 		"username":          req.Username,
 		"root_user_created": !rootExists,
 	}, true)

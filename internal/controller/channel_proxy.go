@@ -9,9 +9,9 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,7 +68,7 @@ func TestProxy(c *gin.Context) {
 	// NewProxyHttpClient parses and validates the scheme (http, https, socks5,
 	// socks5h) before attempting any connection, so a returned error means the
 	// URL itself is non-compliant rather than a connectivity problem.
-	client, err := service.NewProxyHttpClient(proxyURL)
+	client, err := httpclient.NewProxyHttpClient(proxyURL)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,

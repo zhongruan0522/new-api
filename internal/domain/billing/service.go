@@ -1,0 +1,369 @@
+package billing
+
+import (
+	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/log"
+	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"sync"
+)
+
+const (
+	BillingSourceWallet = "wallet"
+)
+
+// PreConsumeBilling 根据用户计费偏好创建 BillingSession 并执行预扣费。
+// 会话存储在 relayInfo.Billing 上，供后续 Settle / Refund 使用。
+func PreConsumeBilling(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *shared.NookMuxError {
+	session, apiErr := NewBillingSession(c, relayInfo, preConsumedQuota)
+	if apiErr != nil {
+		return apiErr
+	}
+	relayInfo.Billing = session
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// SettleBilling — 后结算辅助函数
+// ---------------------------------------------------------------------------
+
+// SettleBilling 执行计费结算。如果 RelayInfo 上有 BillingSession 则通过 session 结算，
+// 否则回退到旧的 PostConsumeQuota 路径（兼容按次计费等场景）。
+func SettleBilling(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, actualQuota int) error {
+	if relayInfo.Billing != nil {
+		preConsumed := relayInfo.Billing.GetPreConsumedQuota()
+		delta := actualQuota - preConsumed
+
+		if delta > 0 {
+			log.LogInfo(ctx, fmt.Sprintf("预扣费后补扣费：%s（实际消耗：%s，预扣费：%s）",
+				log.FormatQuota(delta),
+				log.FormatQuota(actualQuota),
+				log.FormatQuota(preConsumed),
+			))
+		} else if delta < 0 {
+			log.LogInfo(ctx, fmt.Sprintf("预扣费后返还扣费：%s（实际消耗：%s，预扣费：%s）",
+				log.FormatQuota(-delta),
+				log.FormatQuota(actualQuota),
+				log.FormatQuota(preConsumed),
+			))
+		} else {
+			log.LogInfo(ctx, fmt.Sprintf("预扣费与实际消耗一致，无需调整：%s（按次计费）",
+				log.FormatQuota(actualQuota),
+			))
+		}
+
+		if err := relayInfo.Billing.Settle(actualQuota); err != nil {
+			return err
+		}
+
+		// 发送额度通知（订阅计费使用订阅剩余额度）
+		if actualQuota != 0 {
+			checkAndSendQuotaNotify(relayInfo, actualQuota-preConsumed, preConsumed)
+		}
+		return nil
+	}
+
+	// 回退：无 BillingSession 时使用旧路径
+	quotaDelta := actualQuota - relayInfo.FinalPreConsumedQuota
+	if quotaDelta != 0 {
+		return PostConsumeQuota(ctx, relayInfo, quotaDelta, relayInfo.FinalPreConsumedQuota, true)
+	}
+	return nil
+}
+
+type BillingSession struct {
+	relayInfo        *relaycommon.RelayInfo
+	funding          FundingSource
+	preConsumedQuota int
+	tokenConsumed    int
+	fundingSettled   bool
+	settled          bool
+	refunded         bool
+	mu               sync.Mutex
+}
+
+func (s *BillingSession) Settle(actualQuota int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.settled {
+		return nil
+	}
+
+	delta := actualQuota - s.preConsumedQuota
+	if delta == 0 {
+		s.settled = true
+		return nil
+	}
+
+	if !s.fundingSettled {
+		if err := s.funding.Settle(delta); err != nil {
+			return err
+		}
+		s.fundingSettled = true
+	}
+
+	var tokenErr error
+	if delta > 0 {
+		tokenErr = s.decreaseTokenQuota(delta)
+	} else {
+		tokenErr = s.increaseTokenQuota(-delta)
+	}
+	if tokenErr != nil {
+		common.SysLog(fmt.Sprintf(
+			"error adjusting token quota after funding settled (userId=%d, tokenId=%d, delta=%d): %s",
+			s.relayInfo.UserId, s.relayInfo.TokenId, delta, tokenErr.Error(),
+		))
+	}
+
+	s.settled = true
+	return tokenErr
+}
+
+func (s *BillingSession) Refund(c *gin.Context) {
+	s.mu.Lock()
+	if s.settled || s.refunded || !s.needsRefundLocked() {
+		s.mu.Unlock()
+		return
+	}
+	s.refunded = true
+	s.mu.Unlock()
+
+	log.LogInfo(c, fmt.Sprintf(
+		"用户 %d 请求失败, 返还预扣费（token_quota=%s, funding=%s）",
+		s.relayInfo.UserId,
+		log.FormatQuota(s.tokenConsumed),
+		s.funding.Source(),
+	))
+
+	tokenId := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+	tokenConsumed := s.tokenConsumed
+	funding := s.funding
+
+	common.RelayGo(func() {
+		if err := funding.Refund(); err != nil {
+			common.SysLog("error refunding billing source: " + err.Error())
+		}
+		if tokenConsumed > 0 {
+			if err := s.increaseTokenQuotaByAmount(tokenId, tokenKey, tokenConsumed); err != nil {
+				common.SysLog("error refunding token quota: " + err.Error())
+			}
+		}
+	})
+}
+
+func (s *BillingSession) NeedsRefund() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.needsRefundLocked()
+}
+
+func (s *BillingSession) needsRefundLocked() bool {
+	if s.settled || s.refunded || s.fundingSettled {
+		return false
+	}
+	return s.tokenConsumed > 0
+}
+
+func (s *BillingSession) GetPreConsumedQuota() int {
+	return s.preConsumedQuota
+}
+
+func (s *BillingSession) preConsume(c *gin.Context, quota int) *shared.NookMuxError {
+	effectiveQuota := quota
+	if s.shouldTrust(c) {
+		effectiveQuota = 0
+		log.LogInfo(c, fmt.Sprintf("用户 %d 额度充足, 信任且不需要预扣费 (funding=%s)", s.relayInfo.UserId, s.funding.Source()))
+	} else if effectiveQuota > 0 {
+		log.LogInfo(c, fmt.Sprintf("用户 %d 需要预扣费 %s (funding=%s)", s.relayInfo.UserId, log.FormatQuota(effectiveQuota), s.funding.Source()))
+	}
+
+	if effectiveQuota > 0 {
+		if err := PreConsumeTokenQuota(c, s.relayInfo, effectiveQuota); err != nil {
+			return shared.NewErrorWithStatusCode(
+				err,
+				shared.ErrorCodePreConsumeTokenQuotaFailed,
+				http.StatusForbidden,
+				shared.ErrOptionWithSkipRetry(),
+				shared.ErrOptionWithNoRecordErrorLog(),
+			)
+		}
+		s.tokenConsumed = effectiveQuota
+	}
+
+	if err := s.funding.PreConsume(effectiveQuota); err != nil {
+		if s.tokenConsumed > 0 {
+			if rollbackErr := s.increaseTokenQuotaByAmount(s.relayInfo.TokenId, s.relayInfo.TokenKey, s.tokenConsumed); rollbackErr != nil {
+				common.SysLog(fmt.Sprintf(
+					"error rolling back token quota (userId=%d, tokenId=%d, amount=%d, fundingErr=%s): %s",
+					s.relayInfo.UserId, s.relayInfo.TokenId, s.tokenConsumed, err.Error(), rollbackErr.Error(),
+				))
+			}
+			s.tokenConsumed = 0
+		}
+		return shared.NewError(err, shared.ErrorCodeUpdateDataError, shared.ErrOptionWithSkipRetry())
+	}
+
+	s.preConsumedQuota = effectiveQuota
+	s.syncRelayInfo()
+	return nil
+}
+
+func (s *BillingSession) shouldTrust(c *gin.Context) bool {
+	trustQuota := common.GetTrustQuota()
+	if trustQuota <= 0 {
+		return false
+	}
+
+	quotaType := s.relayInfo.TokenQuotaType
+
+	tokenTrusted := quotaType == 0 || s.relayInfo.TokenUnlimited
+	if !tokenTrusted {
+		tokenTrusted = s.relayInfo.TokenQuota > trustQuota
+	}
+	if !tokenTrusted {
+		return false
+	}
+
+	return s.relayInfo.UserQuota > trustQuota
+}
+
+func (s *BillingSession) syncRelayInfo() {
+	info := s.relayInfo
+	info.FinalPreConsumedQuota = s.preConsumedQuota
+	info.BillingSource = s.funding.Source()
+}
+
+// decreaseTokenQuota 根据配额类型扣减 token 额度
+func (s *BillingSession) decreaseTokenQuota(quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+	tokenId := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+
+	switch quotaType {
+	case 0: // 无限额度，只记录已用额度，不扣减剩余额度
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, quota)
+	case 1: // 永久限额
+		return tokenstore.DecreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2: // 时段限额
+		return tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3: // 时段+周期限额
+		if err := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		if err := tokenstore.DecreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
+			}
+			return err
+		}
+		return nil
+	default:
+		return tokenstore.DecreaseTokenQuota(tokenId, tokenKey, quota)
+	}
+}
+
+// increaseTokenQuota 根据配额类型退还 token 额度
+func (s *BillingSession) increaseTokenQuota(quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+	tokenId := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+
+	switch quotaType {
+	case 0: // 无限额度，只回滚已用额度，不恢复剩余额度
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
+	case 1: // 永久限额
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2: // 时段限额
+		return tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3: // 时段+周期限额
+		if err := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		if err := tokenstore.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
+			}
+			return err
+		}
+		return nil
+	default:
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	}
+}
+
+// increaseTokenQuotaByAmount 退还 token 额度（用于退款场景，使用独立的 tokenId/tokenKey 参数）
+func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string, quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+
+	switch quotaType {
+	case 0:
+		return tokenstore.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
+	case 1:
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2:
+		return tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3:
+		if err := tokenstore.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		if err := tokenstore.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			if rollbackErr := tokenstore.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
+			}
+			return err
+		}
+		return nil
+	default:
+		return tokenstore.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	}
+}
+
+func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *shared.NookMuxError) {
+	if relayInfo == nil {
+		return nil, shared.NewError(
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingRelayInfoNil)),
+			shared.ErrorCodeInvalidRequest,
+			shared.ErrOptionWithSkipRetry(),
+		)
+	}
+
+	userQuota, err := userstore.GetUserQuota(relayInfo.UserId, false)
+	if err != nil {
+		return nil, shared.NewError(err, shared.ErrorCodeQueryDataError, shared.ErrOptionWithSkipRetry())
+	}
+	if userQuota <= 0 {
+		return nil, shared.NewErrorWithStatusCode(
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingUserQuotaNotEnough, map[string]any{"Quota": log.FormatQuota(userQuota)})),
+			shared.ErrorCodeInsufficientUserQuota,
+			http.StatusForbidden,
+			shared.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithNoRecordErrorLog(),
+		)
+	}
+	if userQuota-preConsumedQuota < 0 {
+		return nil, shared.NewErrorWithStatusCode(
+			fmt.Errorf("%s", i18n.T(c, i18n.MsgBillingPrepaidFailed, map[string]any{"UserQuota": log.FormatQuota(userQuota), "NeedQuota": log.FormatQuota(preConsumedQuota)})),
+			shared.ErrorCodeInsufficientUserQuota,
+			http.StatusForbidden,
+			shared.ErrOptionWithSkipRetry(),
+			shared.ErrOptionWithNoRecordErrorLog(),
+		)
+	}
+	relayInfo.UserQuota = userQuota
+
+	session := &BillingSession{
+		relayInfo: relayInfo,
+		funding:   &WalletFunding{userId: relayInfo.UserId},
+	}
+	if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
+		return nil, apiErr
+	}
+	return session, nil
+}

@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/console"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
@@ -556,7 +556,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 	if firstErr != nil {
 		detail["error"] = firstErr.Error()
 	}
-	service.RecordAudit(c, auditstore.AuditModuleLog, auditstore.AuditActionDelete, "清理历史日志", nil, detail, true)
+	audit.RecordAudit(c, auditstore.AuditModuleLog, auditstore.AuditActionDelete, "清理历史日志", nil, detail, true)
 
 	if firstErr != nil {
 		common.SysError("failed to delete history logs: " + firstErr.Error())

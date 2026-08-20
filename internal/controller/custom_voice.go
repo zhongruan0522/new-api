@@ -8,7 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
+	customvoice "github.com/NookMux/NookMux/internal/infra/custom_voice"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -33,7 +33,7 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 		return
 	}
 
-	req := service.CustomVoicePreviewRequest{
+	req := customvoice.CustomVoicePreviewRequest{
 		Model:                   c.PostForm("model"),
 		VoiceId:                 c.PostForm("voice_id"),
 		PreviewText:             c.PostForm("text"),
@@ -41,7 +41,7 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 		NeedVolumeNormalization: c.PostForm("need_volume_normalization") == "true",
 	}
 
-	result, err := service.CustomVoicePreview(c, userId, req, fileHeader)
+	result, err := customvoice.CustomVoicePreview(c, userId, req, fileHeader)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return
@@ -67,7 +67,7 @@ func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := service.CustomVoiceConfirmQuote(c, userId, req.VoiceId)
+	result, err := customvoice.CustomVoiceConfirmQuote(c, userId, req.VoiceId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return
@@ -93,7 +93,7 @@ func CustomVoiceConfirmHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := service.CustomVoiceConfirm(c, userId, req.VoiceId)
+	result, err := customvoice.CustomVoiceConfirm(c, userId, req.VoiceId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return

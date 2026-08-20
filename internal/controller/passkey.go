@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
-	passkeysvc "github.com/NookMux/NookMux/internal/service/passkey"
+	passkeysvc "github.com/NookMux/NookMux/internal/infra/passkey"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/passkey"
 	"github.com/NookMux/NookMux/internal/store/twofa"
@@ -513,7 +513,7 @@ func AdminResetPasskey(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "重置用户 Passkey: "+user.Username, nil, map[string]interface{}{"user_id": user.Id})
+	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "重置用户 Passkey: "+user.Username, nil, map[string]interface{}{"user_id": user.Id})
 	common.ApiSuccessI18n(c, i18n.MsgPasskeyResetOK, nil)
 }
 

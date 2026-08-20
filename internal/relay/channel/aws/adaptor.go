@@ -10,11 +10,11 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel"
 	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/pkg/errors"
 
+	media "github.com/NookMux/NookMux/internal/infra/media"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,7 +51,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 					if mediaMessage.Source.Type == "url" {
 						// 使用统一的文件服务获取图片数据
 						source := shared.NewURLFileSource(mediaMessage.Source.Url)
-						base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting image for Claude")
+						base64Data, mimeType, err := media.GetBase64Data(c, source, "formatting image for Claude")
 						if err != nil {
 							return nil, fmt.Errorf("get file base64 from url failed: %s", err.Error())
 						}

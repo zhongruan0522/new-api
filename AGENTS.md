@@ -11,8 +11,9 @@
 
 阅读顺序：根 `AGENTS.md` → 目标目录的 `AGENTS.md` → 如有更深层级继续向下。
 
-涉及跨包改动时，阅读所有受影响包的 `AGENTS.md`。例如改 controller 调用
-service 的逻辑时，同时阅读 `internal/controller/AGENTS.md` 和 `internal/service/AGENTS.md`。
+涉及跨包改动时，阅读所有受影响包的 `AGENTS.md`。例如改 controller 调用计费
+的逻辑时，同时阅读 `internal/controller/AGENTS.md`、`internal/domain/AGENTS.md`
+和 `internal/domain/billing/` 相关子包规则。
 
 ## 子规则索引
 
@@ -29,11 +30,12 @@ service 的逻辑时，同时阅读 `internal/controller/AGENTS.md` 和 `interna
 后端 Go 包:
 
 - [internal/domain/AGENTS.md](internal/domain/AGENTS.md)
+- [internal/domain/audit/AGENTS.md](internal/domain/audit/AGENTS.md)
 - [internal/common/AGENTS.md](internal/common/AGENTS.md)
+- [internal/infra/AGENTS.md](internal/infra/AGENTS.md)
 - [internal/router/AGENTS.md](internal/router/AGENTS.md)
 - [internal/controller/AGENTS.md](internal/controller/AGENTS.md)
 - [internal/middleware/AGENTS.md](internal/middleware/AGENTS.md)
-- [internal/service/AGENTS.md](internal/service/AGENTS.md)
 - [internal/store/AGENTS.md](internal/store/AGENTS.md)
 - [internal/config/AGENTS.md](internal/config/AGENTS.md)
 - [internal/relay/AGENTS.md](internal/relay/AGENTS.md)
@@ -58,15 +60,15 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `internal/router/`: API、relay、dashboard、web 静态路由。
 - `internal/controller/`: HTTP 边界、请求校验、响应组织。
 - `internal/middleware/`: 认证、限速、日志、分发、安全校验。
-- `internal/service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
+- `internal/middleware/`: 认证、限速、日志、分发、安全校验。
+- `internal/domain/`: 领域层（阶段 5.1/5.3 落地）：`billing/`（计费核心服务 + `contract/` 契约叶子包 + `plan_quota/` 套餐配额）、`channel/`（渠道服务与自动禁用，含 `constant/`）、`audit/`（RecordAudit 入口）、`rankings/`、`ticket/`、`sensitive/`（敏感词匹配）、`group/`（分组倍率）、`shared/`（原 `dto/`+`types/` 合并的过渡收容包，只出不进）。
+- `internal/infra/`: 基础设施层（阶段 5.3 起）：`log/`（日志）、`httpclient/`（通用 HTTP 传输层与 SSRF 复查、代理客户端构造）、`media/`（文件/图片/音频解码下载）、`tokenizer/`（token 计数与估算）、`notify/`（用户通知：邮件/webhook/bark/gotify 与频控）、`payment/`（epay 回调地址、stripe 集成与订单锁）、`passkey/`、`custom_voice/`。
 - `internal/store/`: 持久层（原 `model/`，阶段 5.2 按资源拆）：GORM 模型、迁移、缓存、数据库访问；子包按资源垂直拆分（`db/`、`channel/`、`user/`、`token/`、`log/` 等，包名带 `store` 后缀）。
 - `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
 - `internal/common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
-- `internal/relay/`: AI 请求中继、协议转换、供应商适配。
-- `internal/domain/`: 领域契约层（阶段 5.1 落地）：`channel/`（含渠道域常量 `constant/`）、`billing/`（计费契约）、`shared/`（原 `dto/`+`types/` 合并的过渡收容包，只出不进）。
+- `internal/relay/`: AI 请求中继、协议转换、供应商适配；`helper/` 含协议转换（Claude/Gemini ↔ OpenAI）、relay 错误包装与响应透传工具（阶段 5.3 自原 `service/` 并入）。
 - `internal/oauth/`、`internal/constant/`: OAuth 供应商、跨领域全局常量（渠道域常量已迁 `domain/channel/constant/`，`FinishReason`/`RelayFormat` 已迁 `relay/constant/`）。
 - `internal/i18n/`: 后端 API 响应消息多语言翻译。
-- `internal/infra/log/`: 日志工具（原 `logger/`）。
 - `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild；`web/embed.go` 是 `web/dist` 的 Go embed 声明载体，经 `internal/app/webdist` 暴露给启动装配层。
 
@@ -88,11 +90,11 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
   `jsonx.UnmarshalJsonStr` / `jsonx.DecodeJson`）；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
-- 渠道相关的外网请求（中继、测试、模型拉取、余额/套餐查询、WebSocket 等）必须走该渠道配置的代理（`service.NewProxyHttpClient` / `NewProxyWebSocketDialer`）。
+- 渠道相关的外网请求（中继、测试、模型拉取、余额/套餐查询、WebSocket 等）必须走该渠道配置的代理（`httpclient.NewProxyHttpClient` / `NewProxyWebSocketDialer`，包路径 `internal/infra/httpclient`）。
 - 待机内存相关默认值必须保守：连接池 idle 上限、prepared statement 缓存、后台 worker/goroutine 池、
   ticker 唤醒频率等常驻资源不能为追求峰值吞吐随意调大。确需调大时必须保留环境变量覆盖、同步
   `.env.example` 和中英文环境变量文档，并说明低流量/待机场景的内存影响。
-- 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
+- 路由层不要承载业务逻辑；控制器只做边界处理；领域层（`internal/domain/`）承载业务；存储层（`internal/store/`）承载持久化。
 - relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
 - relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。
 - 后端 API 响应消息的多语言翻译遵守 [internal/i18n/AGENTS.md](internal/i18n/AGENTS.md)：用户可见提示走 `i18n.Msg*` 常量，不要硬编码中英文字符串。
@@ -100,14 +102,15 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 ### 审计日志
 
 管理员对系统资源（渠道、用户、令牌、系统设置等）的增删改操作必须接入审计日志。
-通过 `service.RecordAudit(...)` 记录，详见 `internal/controller/AGENTS.md` 和 `internal/service/AGENTS.md`。
+通过 `audit.RecordAudit(...)`（包路径 `internal/domain/audit`）记录，详见 `internal/controller/AGENTS.md`
+和 `internal/domain/audit/AGENTS.md`。
 新增需要审计的资源类型时，按 `internal/controller/AGENTS.md` 中的检查清单同步更新 store（audit 常量）、
 config、前端常量和 i18n。
 
 常用验证:
 
 - `go test ./...`
-- `go test ./internal/relay/... ./internal/controller/... ./internal/service/...`
+- `go test ./internal/domain/... ./internal/infra/... ./internal/relay/... ./internal/controller/...`
 - `go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server`
 
 ## 前端规则

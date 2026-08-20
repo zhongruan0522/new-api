@@ -6,15 +6,15 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 )
 
 func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
@@ -35,7 +35,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	var errProbe shared.SimpleResponse
 	if probeErr := jsonx.Unmarshal(responseBody, &errProbe); probeErr == nil {
 		if oaiError := errProbe.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
-			return nil, shared.WithOpenAIError(*oaiError, service.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
+			return nil, shared.WithOpenAIError(*oaiError, helper.UpstreamErrorStatusCode(resp.StatusCode, oaiError.Code))
 		}
 	}
 

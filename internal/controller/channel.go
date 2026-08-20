@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	planquota "github.com/NookMux/NookMux/internal/domain/billing/plan_quota"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/relay/channel/gemini"
 	"github.com/NookMux/NookMux/internal/relay/channel/ollama"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
@@ -930,8 +932,8 @@ func AddChannel(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.ResetProxyClientCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "新增渠道: "+addChannelRequest.Channel.Name, nil, map[string]interface{}{"name": addChannelRequest.Channel.Name, "type": addChannelRequest.Channel.Type, "models": addChannelRequest.Channel.Models})
+	httpclient.ResetProxyClientCache()
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "新增渠道: "+addChannelRequest.Channel.Name, nil, map[string]interface{}{"name": addChannelRequest.Channel.Name, "type": addChannelRequest.Channel.Type, "models": addChannelRequest.Channel.Models})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -948,7 +950,7 @@ func DeleteChannel(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除渠道 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除渠道 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -963,7 +965,7 @@ func DeleteDisabledChannel(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除所有已禁用渠道", nil, nil)
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除所有已禁用渠道", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -995,7 +997,7 @@ func DisableTagChannels(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签禁用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签禁用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1016,7 +1018,7 @@ func EnableTagChannels(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签启用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签启用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1057,7 +1059,7 @@ func EditTagChannels(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签编辑渠道: "+channelTag.Tag, nil, channelTag)
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "按标签编辑渠道: "+channelTag.Tag, nil, channelTag)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1083,7 +1085,7 @@ func DeleteChannelBatch(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "批量删除渠道", nil, map[string]interface{}{"ids": channelBatch.Ids})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "批量删除渠道", nil, map[string]interface{}{"ids": channelBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1247,8 +1249,8 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.ResetProxyClientCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "修改渠道: "+channel.Name, originChannel, channel)
+	httpclient.ResetProxyClientCache()
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "修改渠道: "+channel.Name, originChannel, channel)
 	channel.Key = ""
 	clearChannelInfo(&channel.Channel)
 	c.JSON(http.StatusOK, gin.H{
@@ -1346,7 +1348,7 @@ func FetchModels(c *gin.Context) {
 
 	// 复用带 CheckRedirect 的受控 client：每次跳转都会复查 SSRF 规则，
 	// 防止初始校验通过后经 301/302/307/308 重定向探测内网或外带认证头。
-	client := service.GetHttpClient()
+	client := httpclient.GetHttpClient()
 	var url string
 	switch req.Type {
 	case constant.ChannelTypeZhipu_v4:
@@ -1453,7 +1455,7 @@ func BatchSetChannelTag(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "批量设置渠道标签", nil, map[string]interface{}{"ids": channelBatch.Ids, "tag": channelBatch.Tag})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "批量设置渠道标签", nil, map[string]interface{}{"ids": channelBatch.Ids, "tag": channelBatch.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1549,7 +1551,7 @@ func CopyChannel(c *gin.Context) {
 		return
 	}
 	channelstore.InitChannelCache()
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "复制渠道: "+clone.Name, map[string]interface{}{"source_id": id}, map[string]interface{}{"name": clone.Name, "type": clone.Type})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionCreate, "复制渠道: "+clone.Name, map[string]interface{}{"source_id": id}, map[string]interface{}{"name": clone.Name, "type": clone.Type})
 	// success
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"id": clone.Id}})
 }
@@ -1770,7 +1772,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyDisabled),
@@ -1808,7 +1810,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyEnabled),
@@ -1834,7 +1836,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeysEnabled, map[string]any{"Count": enabledCount}),
@@ -1880,7 +1882,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeysDisabled, map[string]any{"Count": disabledCount}),
@@ -1953,7 +1955,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelKeyDeleted),
@@ -2020,7 +2022,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channelstore.InitChannelCache()
-		service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
+		audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": i18n.T(c, i18n.MsgChannelAutoDisabledKeysDeleted, map[string]any{"Count": deletedCount}),
@@ -2236,7 +2238,7 @@ func OllamaDeleteModel(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
+	audit.RecordAudit(c, auditstore.AuditModuleChannel, auditstore.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": i18n.T(c, i18n.MsgChannelDeleteModelSuccess, map[string]any{"Model": req.ModelName}),
@@ -2318,9 +2320,9 @@ func QueryPlanQuota(c *gin.Context) {
 	switch planName {
 	case "glm-coding-plan", "glm-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchGlmPlanQuota(key, planName, channel.GetSetting().Proxy)
+		quotaData, err := planquota.FetchGlmPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
-			if errors.Is(err, service.ErrGlmKeyInvalid) {
+			if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 				common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 				return
 			}
@@ -2335,7 +2337,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "kimi-coding-plan":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchKimiPlanQuota(key, channel.GetSetting().Proxy)
+		quotaData, err := planquota.FetchKimiPlanQuota(key, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2347,7 +2349,7 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	case "minimax-coding-plan", "minimax-coding-plan-international":
 		key := strings.Split(channel.Key, "\n")[0]
-		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName, channel.GetSetting().Proxy)
+		quotaData, err := planquota.FetchMiniMaxPlanQuota(key, planName, channel.GetSetting().Proxy)
 		if err != nil {
 			common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 			return
@@ -2420,9 +2422,9 @@ func QueryGlmUsage(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime, channel.GetSetting().Proxy)
+	rawData, err := planquota.FetchGlmUsageData(key, planName, dataType, startTime, endTime, channel.GetSetting().Proxy)
 	if err != nil {
-		if errors.Is(err, service.ErrGlmKeyInvalid) {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 			return
 		}
@@ -2461,11 +2463,11 @@ func QueryGlmPlanActivity(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	startTime, endTime := service.ComputeGlmActivityTimeRange()
+	startTime, endTime := planquota.ComputeGlmActivityTimeRange()
 
-	data, err := service.FetchGlmCreditUsageActivity(key, planName, service.GlmActivityAccountPersonal, startTime, endTime, channel.GetSetting().Proxy)
+	data, err := planquota.FetchGlmCreditUsageActivity(key, planName, planquota.GlmActivityAccountPersonal, startTime, endTime, channel.GetSetting().Proxy)
 	if err != nil {
-		if errors.Is(err, service.ErrGlmKeyInvalid) {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 			return
 		}
@@ -2505,9 +2507,9 @@ func QueryRiskStatus(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	result, err := service.CheckGlmRiskStatus(key, channel.GetSetting().Proxy)
+	result, err := planquota.CheckGlmRiskStatus(key, channel.GetSetting().Proxy)
 	if err != nil {
-		if errors.Is(err, service.ErrGlmKeyInvalid) {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 			return
 		}
@@ -2548,9 +2550,9 @@ func QueryGlmResetCards(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	data, err := service.FetchGlmResetCards(key, planName, channel.GetSetting().Proxy)
+	data, err := planquota.FetchGlmResetCards(key, planName, channel.GetSetting().Proxy)
 	if err != nil {
-		if errors.Is(err, service.ErrGlmKeyInvalid) {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 			return
 		}
@@ -2604,13 +2606,13 @@ func UseGlmResetCard(c *gin.Context) {
 	}
 
 	key := strings.Split(channel.Key, "\n")[0]
-	result, err := service.UseGlmResetCard(key, planName, channel.GetSetting().Proxy, service.GlmResetCardUseRequest{
-		TargetType: service.GlmResetCardTypePersonal,
-		ResetType:  service.GlmResetCardType(req.ResetType),
+	result, err := planquota.UseGlmResetCard(key, planName, channel.GetSetting().Proxy, planquota.GlmResetCardUseRequest{
+		TargetType: planquota.GlmResetCardTypePersonal,
+		ResetType:  planquota.GlmResetCardType(req.ResetType),
 		RecordId:   req.RecordId,
 	})
 	if err != nil {
-		if errors.Is(err, service.ErrGlmKeyInvalid) {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
 			common.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
 			return
 		}

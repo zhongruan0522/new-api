@@ -9,7 +9,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
+	payment "github.com/NookMux/NookMux/internal/infra/payment"
 	"github.com/NookMux/NookMux/internal/store/topup"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,6 @@ import (
 	"log"
 	"net/url"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -153,7 +152,7 @@ func RequestEpay(c *gin.Context) {
 		return
 	}
 
-	callBackAddress := service.GetCallbackAddress()
+	callBackAddress := payment.GetCallbackAddress()
 	returnUrl, _ := url.Parse(system.ServerAddress + "/console/log")
 	notifyUrl, _ := url.Parse(callBackAddress + "/api/user/epay/notify")
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
@@ -196,32 +195,6 @@ func RequestEpay(c *gin.Context) {
 }
 
 // tradeNo lock
-var orderLocks sync.Map
-var createLock sync.Mutex
-
-// LockOrder 尝试对给定订单号加锁
-func LockOrder(tradeNo string) {
-	lock, ok := orderLocks.Load(tradeNo)
-	if !ok {
-		createLock.Lock()
-		defer createLock.Unlock()
-		lock, ok = orderLocks.Load(tradeNo)
-		if !ok {
-			lock = new(sync.Mutex)
-			orderLocks.Store(tradeNo, lock)
-		}
-	}
-	lock.(*sync.Mutex).Lock()
-}
-
-// UnlockOrder 释放给定订单号的锁
-func UnlockOrder(tradeNo string) {
-	lock, ok := orderLocks.Load(tradeNo)
-	if ok {
-		lock.(*sync.Mutex).Unlock()
-	}
-}
-
 func EpayNotify(c *gin.Context) {
 	var params map[string]string
 
@@ -270,8 +243,8 @@ func EpayNotify(c *gin.Context) {
 
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		log.Println(verifyInfo)
-		LockOrder(verifyInfo.ServiceTradeNo)
-		defer UnlockOrder(verifyInfo.ServiceTradeNo)
+		payment.LockOrder(verifyInfo.ServiceTradeNo)
+		defer payment.UnlockOrder(verifyInfo.ServiceTradeNo)
 		if err := topupstore.CompleteEpayTopUp(verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money); err != nil {
 			log.Printf("易支付回调完成订单失败: trade_no=%s type=%s money=%s err=%v", verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money, err)
 			// 订单已非 pending（通常是重复回调且此前已入账），确认 success
@@ -388,8 +361,8 @@ func AdminCompleteTopUp(c *gin.Context) {
 	}
 
 	// 订单级互斥，防止并发补单
-	LockOrder(req.TradeNo)
-	defer UnlockOrder(req.TradeNo)
+	payment.LockOrder(req.TradeNo)
+	defer payment.UnlockOrder(req.TradeNo)
 
 	if err := topupstore.ManualCompleteTopUp(req.TradeNo); err != nil {
 		common.SysError("manual complete topup failed: " + err.Error())

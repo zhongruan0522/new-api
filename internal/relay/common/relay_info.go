@@ -14,7 +14,7 @@ import (
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
-	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -144,7 +144,7 @@ type RelayInfo struct {
 	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
 	UpstreamRequestBodySize int64
 
-	PriceData billing.PriceData
+	PriceData contract.PriceData
 
 	Request shared.Request
 

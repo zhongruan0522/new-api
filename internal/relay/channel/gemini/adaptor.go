@@ -13,10 +13,10 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,7 +44,7 @@ func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *shared.ClaudeRequest) (any, error) {
-	oaiReq, err := service.ClaudeToOpenAIRequest(*req, info)
+	oaiReq, err := helper.ClaudeToOpenAIRequest(*req, info)
 	if err != nil {
 		return nil, err
 	}

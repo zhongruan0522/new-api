@@ -6,8 +6,9 @@ import (
 	_ "github.com/NookMux/NookMux/internal/config/performance"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/i18n"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/infra/log"
-	"github.com/NookMux/NookMux/internal/service"
+	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/NookMux/NookMux/internal/store/db/migrate"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/pricing"
@@ -33,9 +34,9 @@ func Bootstrap() error {
 	// Initialize model settings
 	ratio.InitRatioSettings()
 
-	service.InitHttpClient()
+	httpclient.InitHttpClient()
 
-	service.InitTokenEncoders()
+	tokenizer.InitTokenEncoders()
 
 	// Initialize SQL Database
 	err = dbmigrate.InitDB()

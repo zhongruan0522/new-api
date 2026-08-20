@@ -8,16 +8,18 @@ import (
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/constant"
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	sensitive "github.com/NookMux/NookMux/internal/domain/sensitive"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/NookMux/NookMux/internal/middleware"
 	"github.com/NookMux/NookMux/internal/relay"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/gin-gonic/gin"
@@ -135,7 +137,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 	}
 
 	if needSensitiveCheck && meta != nil {
-		contains, words := service.CheckSensitiveText(meta.CombineText)
+		contains, words := sensitive.CheckSensitiveText(meta.CombineText)
 		if contains {
 			log.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))
 			newAPIError = shared.NewError(err, shared.ErrorCodeSensitiveWordsDetected)
@@ -143,7 +145,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 		}
 	}
 
-	tokens, err := service.EstimateRequestToken(c, meta, relayInfo)
+	tokens, err := tokenizer.EstimateRequestToken(c, meta, relayInfo)
 	if err != nil {
 		newAPIError = shared.NewError(err, shared.ErrorCodeCountTokenFailed)
 		return
@@ -162,7 +164,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 	if priceData.FreeModel {
 		log.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
 	} else {
-		newAPIError = service.PreConsumeBilling(c, priceData.QuotaToPreConsume, relayInfo)
+		newAPIError = billing.PreConsumeBilling(c, priceData.QuotaToPreConsume, relayInfo)
 		if newAPIError != nil {
 			return
 		}
@@ -171,15 +173,15 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 	defer func() {
 		// Only return quota if downstream failed and quota was actually pre-consumed
 		if newAPIError != nil {
-			newAPIError = service.NormalizeViolationFeeError(newAPIError)
+			newAPIError = billing.NormalizeViolationFeeError(newAPIError)
 			if relayInfo.Billing != nil {
 				relayInfo.Billing.Refund(c)
 			}
-			service.ChargeViolationFeeIfNeeded(c, relayInfo, newAPIError)
+			billing.ChargeViolationFeeIfNeeded(c, relayInfo, newAPIError)
 		}
 	}()
 
-	retryParam := &service.RetryParam{
+	retryParam := &domainchannel.RetryParam{
 		Ctx:         c,
 		TokenGroup:  relayInfo.TokenGroup,
 		ModelName:   relayInfo.OriginModelName,
@@ -244,7 +246,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 			return
 		}
 
-		newAPIError = service.NormalizeViolationFeeError(newAPIError)
+		newAPIError = billing.NormalizeViolationFeeError(newAPIError)
 
 		channelWillBeDisabled := processChannelError(c, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 		allowFailedChannelFallback = !channelWillBeDisabled
@@ -301,7 +303,7 @@ func fastTokenCountMetaForPricing(request shared.Request) *shared.TokenCountMeta
 	return meta
 }
 
-func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*channelstore.Channel, *shared.NookMuxError) {
+func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *domainchannel.RetryParam) (*channelstore.Channel, *shared.NookMuxError) {
 	if info.ChannelMeta == nil {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
@@ -315,7 +317,7 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 			AutoBan: &autoBanInt,
 		}, nil
 	}
-	channel, selectGroup, err := service.CacheGetRandomSatisfiedChannel(retryParam)
+	channel, selectGroup, err := domainchannel.CacheGetRandomSatisfiedChannel(retryParam)
 
 	info.PriceData.GroupRatioInfo = helper.HandleGroupRatio(c, info)
 
@@ -344,7 +346,7 @@ func shouldRetry(c *gin.Context, openaiErr *shared.NookMuxError, retryTimes int)
 	if openaiErr == nil {
 		return false
 	}
-	if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
+	if domainchannel.ShouldSkipRetryAfterChannelAffinityFailure(c) {
 		return false
 	}
 	if shared.IsChannelError(openaiErr) {
@@ -401,10 +403,10 @@ func processChannelError(c *gin.Context, channelError domainchannel.ChannelError
 	log.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, common.LocalLogPreview(err.Error())))
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
-	channelWillBeDisabled := service.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan
+	channelWillBeDisabled := domainchannel.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan
 	if channelWillBeDisabled {
 		common.RelayGo(func() {
-			service.DisableChannel(channelError, err.ErrorWithStatusCode())
+			domainchannel.DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}
 
@@ -433,7 +435,7 @@ func processChannelError(c *gin.Context, channelError domainchannel.ChannelError
 			adminInfo["is_multi_key"] = true
 			adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
 		}
-		service.AppendChannelAffinityAdminInfo(c, adminInfo)
+		domainchannel.AppendChannelAffinityAdminInfo(c, adminInfo)
 		other["admin_info"] = adminInfo
 		startTime := common.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
 		if startTime.IsZero() {

@@ -9,9 +9,9 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +23,7 @@ func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayIn
 		return nil, errors.New("request is nil")
 	}
 
-	openAIRequest, err := service.GeminiToOpenAIRequest(request, info)
+	openAIRequest, err := helper.GeminiToOpenAIRequest(request, info)
 	if err != nil {
 		return nil, err
 	}

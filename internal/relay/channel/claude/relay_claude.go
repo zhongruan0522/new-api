@@ -17,11 +17,12 @@ import (
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/relay/reasonmap"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	media "github.com/NookMux/NookMux/internal/infra/media"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -58,7 +59,7 @@ func createClaudeFileSource(file *shared.MessageFile) *shared.FileSource {
 	}
 	mimeType := ""
 	if ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(file.FileName)), "."); ext != "" {
-		if detected := service.GetMimeTypeByExtension(ext); detected != "application/octet-stream" {
+		if detected := media.GetMimeTypeByExtension(ext); detected != "application/octet-stream" {
 			mimeType = detected
 		}
 	}
@@ -70,7 +71,7 @@ func buildClaudeFileMessage(c *gin.Context, file *shared.MessageFile) (*shared.C
 	if source == nil {
 		return nil, nil
 	}
-	base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting document for Claude")
+	base64Data, mimeType, err := media.GetBase64Data(c, source, "formatting document for Claude")
 	if err != nil {
 		return nil, fmt.Errorf("get file data failed: %w", err)
 	}
@@ -534,7 +535,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						} else {
 							source = shared.NewBase64FileSource(imageUrl.Url, "")
 						}
-						base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting image for Claude")
+						base64Data, mimeType, err := media.GetBase64Data(c, source, "formatting image for Claude")
 						if err != nil {
 							return nil, fmt.Errorf("get file data failed: %s", err.Error())
 						}
@@ -779,7 +780,7 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 	if incoming1h := claudeUsage.GetCacheCreation1hTokens(); incoming1h > 0 {
 		cacheCreation1h = incoming1h
 	}
-	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(cacheCreationTokens, cacheCreation5m, cacheCreation1h)
+	cacheCreation5m, cacheCreation1h = helper.NormalizeCacheCreationSplit(cacheCreationTokens, cacheCreation5m, cacheCreation1h)
 
 	if claudeUsage.InputTokens > 0 {
 		current.PromptTokens = claudeUsage.InputTokens + cacheReadTokens + cacheCreationTokens
@@ -838,7 +839,7 @@ func buildMessageDeltaPatchUsage(claudeResponse *shared.ClaudeResponse, claudeIn
 		cacheCreation5m = localUsage.CacheCreation.Ephemeral5mInputTokens
 		cacheCreation1h = localUsage.CacheCreation.Ephemeral1hInputTokens
 	}
-	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
+	cacheCreation5m, cacheCreation1h = helper.NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
 	if cacheCreation5m > 0 || cacheCreation1h > 0 {
 		usage.CacheCreation = &shared.ClaudeCacheCreationUsage{
 			Ephemeral5mInputTokens: cacheCreation5m,
@@ -1010,7 +1011,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 		helper.MaskChatStreamResponseModel(response, info)
 
-		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
+		geminiResponse := helper.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
 			return nil
 		}
@@ -1037,7 +1038,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			common.SysLog("claude response usage is not complete, maybe upstream error")
 		}
 		// 只补缺失字段，不整份覆盖，保留 message_start 已拿到的 cache 计费字段。
-		fallback := service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		fallback := billing.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
 		if claudeInfo.Usage.CompletionTokens == 0 || (!claudeInfo.Done && fallback.CompletionTokens > claudeInfo.Usage.CompletionTokens) {
 			claudeInfo.Usage.CompletionTokens = fallback.CompletionTokens
 			claudeInfo.Usage.OutputTokens = fallback.CompletionTokens
@@ -1066,7 +1067,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		}
 	} else if info.RelayFormat == relayconstant.RelayFormatGemini {
 		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
-		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
+		geminiResponse := helper.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
 			return
 		}
@@ -1207,7 +1208,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
-		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
+		geminiResponse := helper.ResponseOpenAI2Gemini(openaiResponse, info)
 		responseData, err = jsonx.Marshal(geminiResponse)
 		if err != nil {
 			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
@@ -1218,12 +1219,12 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		c.Set("claude_web_search_requests", claudeResponse.Usage.ServerToolUse.WebSearchRequests)
 	}
 
-	service.IOCopyBytesGracefully(c, httpResp, responseData)
+	helper.IOCopyBytesGracefully(c, httpResp, responseData)
 	return nil
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),

@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/gin-gonic/gin"
@@ -354,7 +354,7 @@ func AddToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
+	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -373,7 +373,7 @@ func DeleteToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -515,7 +515,7 @@ func UpdateToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
+	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -540,7 +540,7 @@ func DeleteTokenBatch(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
+	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -587,7 +587,7 @@ func ResetTokenKey(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

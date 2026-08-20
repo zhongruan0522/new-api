@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
+	rankings "github.com/NookMux/NookMux/internal/domain/rankings"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/NookMux/NookMux/internal/store/usedata"
 	"github.com/gin-gonic/gin"
@@ -146,7 +146,7 @@ func RecalculateQuotaData(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.ClearRankingsCache()
+	rankings.ClearRankingsCache()
 	common.ApiSuccessI18n(c, i18n.MsgDashboardRecalculateComplete, nil)
 }
 

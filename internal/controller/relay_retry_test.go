@@ -8,7 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/domain/shared"
-	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +59,7 @@ func TestShouldRetryUsesOriginalStatusCodeAfterMapping(t *testing.T) {
 		Code:    "rate_limit_exceeded",
 	}, http.StatusTooManyRequests)
 
-	service.ResetStatusCode(err, `{"429":"200"}`)
+	helper.ResetStatusCode(err, `{"429":"200"}`)
 
 	require.Equal(t, http.StatusTooManyRequests, err.OriginalStatusCode)
 	require.Equal(t, http.StatusOK, err.StatusCode)

@@ -1,8 +1,9 @@
 package controller
 
 import (
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 )
 
 func GetChannelAffinityCacheStats(c *gin.Context) {
-	stats := service.GetChannelAffinityCacheStats()
+	stats := domainchannel.GetChannelAffinityCacheStats()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -23,8 +24,8 @@ func ClearChannelAffinityCache(c *gin.Context) {
 	ruleName := strings.TrimSpace(c.Query("rule_name"))
 
 	if all == "true" {
-		deleted := service.ClearChannelAffinityCacheAll()
-		service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionDelete, "清空渠道亲和缓存", nil, nil)
+		deleted := domainchannel.ClearChannelAffinityCacheAll()
+		audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionDelete, "清空渠道亲和缓存", nil, nil)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
@@ -43,7 +44,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 		return
 	}
 
-	deleted, err := service.ClearChannelAffinityCacheByRuleName(c, ruleName)
+	deleted, err := domainchannel.ClearChannelAffinityCacheByRuleName(c, ruleName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -52,7 +53,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 		return
 	}
 
-	service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionDelete, "清空渠道亲和缓存: "+ruleName, nil, map[string]interface{}{"rule_name": ruleName})
+	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionDelete, "清空渠道亲和缓存: "+ruleName, nil, map[string]interface{}{"rule_name": ruleName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -83,7 +84,7 @@ func GetChannelAffinityUsageCacheStats(c *gin.Context) {
 		return
 	}
 
-	stats := service.GetChannelAffinityUsageCacheStats(ruleName, usingGroup, modelName, keyFp)
+	stats := domainchannel.GetChannelAffinityUsageCacheStats(ruleName, usingGroup, modelName, keyFp)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

@@ -14,10 +14,11 @@ import (
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -47,7 +48,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		return nil, shared.NewOpenAIError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse, http.StatusInternalServerError)
 	}
 
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	model := info.UpstreamModelName
 	var responseId string
@@ -105,7 +106,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			Usage *shared.Usage `json:"usage"`
 		}
 		err := jsonx.Unmarshal([]byte(secondLastStreamData), &streamResp)
-		if err == nil && streamResp.Usage != nil && service.ValidUsage(streamResp.Usage) {
+		if err == nil && streamResp.Usage != nil && billing.ValidUsage(streamResp.Usage) {
 			usage = streamResp.Usage
 			containStreamUsage = true
 
@@ -119,7 +120,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	if streamApiErr != nil {
 		// 上游在流内返回了错误帧：真实错误已识别，直接向上暴露，不再伪造 usage。
-		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		helper.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
 		return nil, streamApiErr
 	}
 
@@ -143,7 +144,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	}
 
 	if !containStreamUsage {
-		usage = service.ResponseText2Usage(c, responseTextBuilder.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
+		usage = billing.ResponseText2Usage(c, responseTextBuilder.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 		usage.CompletionTokens += toolCount * 7
 	}
 
@@ -155,7 +156,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 }
 
 func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	var simpleResponse shared.OpenAITextResponse
 	responseBody, err := readOpenAIResponseBody(info, resp.Body)
@@ -208,7 +209,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		completionTokens := simpleResponse.Usage.CompletionTokens
 		if completionTokens == 0 {
 			for _, choice := range simpleResponse.Choices {
-				ctkm := service.CountTextToken(choice.Message.StringContent()+choice.Message.GetReasoningContent(), info.UpstreamModelName)
+				ctkm := tokenizer.CountTextToken(choice.Message.StringContent()+choice.Message.GetReasoningContent(), info.UpstreamModelName)
 				completionTokens += ctkm
 			}
 		}
@@ -243,14 +244,14 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			break
 		}
 	case relayconstant.RelayFormatClaude:
-		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
+		claudeResp := helper.ResponseOpenAI2Claude(&simpleResponse, info)
 		claudeRespStr, err := jsonx.Marshal(claudeResp)
 		if err != nil {
 			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
 	case relayconstant.RelayFormatGemini:
-		geminiResp := service.ResponseOpenAI2Gemini(&simpleResponse, info)
+		geminiResp := helper.ResponseOpenAI2Gemini(&simpleResponse, info)
 		geminiRespStr, err := jsonx.Marshal(geminiResp)
 		if err != nil {
 			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
@@ -258,7 +259,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		responseBody = geminiRespStr
 	}
 
-	service.IOCopyBytesGracefully(c, resp, responseBody)
+	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	return &simpleResponse.Usage, nil
 }
@@ -315,7 +316,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 					}
 				}
 
-				textToken, audioToken, err := service.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
+				textToken, audioToken, err := tokenizer.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
 				if err != nil {
 					errChan <- fmt.Errorf("error counting text token: %v", err)
 					return
@@ -383,7 +384,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 
 						localUsage = &shared.RealtimeUsage{}
 					} else {
-						textToken, audioToken, err := service.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
+						textToken, audioToken, err := tokenizer.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
 						if err != nil {
 							errChan <- fmt.Errorf("error counting text token: %v", err)
 							return
@@ -413,7 +414,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 						info.OutputAudioFormat = common.GetStringIfEmpty(realtimeSession.OutputAudioFormat, info.OutputAudioFormat)
 					}
 				} else {
-					textToken, audioToken, err := service.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
+					textToken, audioToken, err := tokenizer.CountTokenRealtime(info, *realtimeEvent, info.UpstreamModelName)
 					if err != nil {
 						errChan <- fmt.Errorf("error counting text token: %v", err)
 						return
@@ -439,7 +440,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 	case <-clientClosed:
 	case <-targetClosed:
 	case err := <-errChan:
-		//return service.OpenAIErrorWrapper(err, "realtime_error", http.StatusInternalServerError), nil
+		//return shared.OpenAIErrorWrapper(err, "realtime_error", http.StatusInternalServerError), nil
 		log.LogError(c, "realtime error: "+err.Error())
 	case <-c.Done():
 	}
@@ -471,12 +472,12 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *share
 	totalUsage.OutputTokenDetails.TextTokens += usage.OutputTokenDetails.TextTokens
 	totalUsage.OutputTokenDetails.AudioTokens += usage.OutputTokenDetails.AudioTokens
 	// clear usage
-	err := service.PreWssConsumeQuota(ctx, info, usage)
+	err := billing.PreWssConsumeQuota(ctx, info, usage)
 	return err
 }
 
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
@@ -502,7 +503,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 
 	// 写入新的 response body
-	service.IOCopyBytesGracefully(c, resp, responseBody)
+	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	// Once we've written to the client, we should not return errors anymore
 	// because the upstream has already consumed resources and returned content

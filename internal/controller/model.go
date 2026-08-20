@@ -6,13 +6,13 @@ import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/relay"
 	"github.com/NookMux/NookMux/internal/relay/channel/minimax"
 	"github.com/NookMux/NookMux/internal/relay/channel/moonshot"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -144,7 +144,7 @@ func ListModels(c *gin.Context, modelType int) {
 		}
 		var models []string
 		if tokenGroup == "auto" {
-			for _, autoGroup := range service.GetUserAutoGroup(userGroup) {
+			for _, autoGroup := range domaingroup.GetUserAutoGroup(userGroup) {
 				groupModels := channelstore.GetGroupEnabledModels(autoGroup)
 				for _, g := range groupModels {
 					if !common.StringsContains(models, g) {

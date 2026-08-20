@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/vendor_meta"
@@ -85,7 +85,7 @@ func CreateVendorMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionCreate, "新增供应商: "+v.Name, nil, v)
+	audit.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionCreate, "新增供应商: "+v.Name, nil, v)
 	common.ApiSuccess(c, &v)
 }
 
@@ -122,7 +122,7 @@ func UpdateVendorMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionUpdate, "修改供应商: "+v.Name, origin, v)
+	audit.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionUpdate, "修改供应商: "+v.Name, origin, v)
 	common.ApiSuccess(c, &v)
 }
 
@@ -139,6 +139,6 @@ func DeleteVendorMeta(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionDelete, "删除供应商 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleVendor, auditstore.AuditActionDelete, "删除供应商 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }

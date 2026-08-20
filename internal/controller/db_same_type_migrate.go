@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db/migrate"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -50,7 +50,7 @@ func StartDBSameTypeMigrate(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleDB, auditstore.AuditActionUpdate, "启动同类型数据库迁移", nil, req)
+	audit.RecordAudit(c, auditstore.AuditModuleDB, auditstore.AuditActionUpdate, "启动同类型数据库迁移", nil, req)
 	common.ApiSuccess(c, gin.H{"job_id": jobID})
 }
 

@@ -11,16 +11,16 @@ import (
 
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/gin-gonic/gin"
 )
 
 var fetchModelsSSRFClientOnce sync.Once
 
 func ensureFetchModelsSSRFHttpClient() {
-	fetchModelsSSRFClientOnce.Do(service.InitHttpClient)
+	fetchModelsSSRFClientOnce.Do(httpclient.InitHttpClient)
 }
 
 // overrideFetchModelsSSRFSetting 构造"初始 URL 合法、redirect 目标非法"的 SSRF 配置：
@@ -76,7 +76,7 @@ func fetchModelsRedirectProbeURL(baseURL string) string {
 }
 
 // TestFetchModelsRedirectBlockedByControlledClient 证明修复生效：
-// FetchModels 用 service.GetHttpClient()，其 CheckRedirect 会对 redirect
+// FetchModels 用 httpclient.GetHttpClient()，其 CheckRedirect 会对 redirect
 // 目标复查 SSRF 规则并拦截跳转。测试通过 gin 上下文实际调用 FetchModels
 // 处理器，覆盖完整链路（初始校验 → 请求 → redirect 复查）；若生产代码
 // 换回裸 http.Client，本用例会因跳转未被拦截而失败。

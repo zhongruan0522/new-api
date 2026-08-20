@@ -10,11 +10,11 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
 )
 
@@ -126,7 +126,7 @@ func convertNonStreamBody(body []byte, upstream shared.OpenAIWireAPI, downstream
 
 func copyHeaders(dst http.Header, src http.Header) {
 	for k, vals := range src {
-		if strings.TrimSpace(k) == "" || !service.ShouldCopyUpstreamHeader(nil, k, vals) {
+		if strings.TrimSpace(k) == "" || !helper.ShouldCopyUpstreamHeader(nil, k, vals) {
 			continue
 		}
 		dst[k] = append([]string(nil), vals...)

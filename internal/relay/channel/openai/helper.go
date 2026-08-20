@@ -9,22 +9,22 @@ import (
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/samber/lo"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/gin-gonic/gin"
 )
 
-// upstreamErrorStatusCode 见 service.UpstreamErrorStatusCode：还原被网关
+// upstreamErrorStatusCode 见 helper.UpstreamErrorStatusCode：还原被网关
 // 转成 HTTP 200 的真实上游状态码，无法还原时回退 502（保持可重试语义）。
 func upstreamErrorStatusCode(httpStatusCode int, oaiError *shared.OpenAIError) int {
 	if oaiError == nil {
-		return service.UpstreamErrorStatusCode(httpStatusCode, nil)
+		return helper.UpstreamErrorStatusCode(httpStatusCode, nil)
 	}
-	return service.UpstreamErrorStatusCode(httpStatusCode, oaiError.Code)
+	return helper.UpstreamErrorStatusCode(httpStatusCode, oaiError.Code)
 }
 
 // HandleStreamFormat 按下游协议格式转发流式帧。
@@ -52,7 +52,7 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 	if streamResponse.Usage != nil {
 		info.ClaudeConvertInfo.Usage = streamResponse.Usage
 	}
-	claudeResponses := service.StreamResponseOpenAI2Claude(&streamResponse, info)
+	claudeResponses := helper.StreamResponseOpenAI2Claude(&streamResponse, info)
 	for _, resp := range claudeResponses {
 		helper.ClaudeData(c, *resp)
 	}
@@ -67,7 +67,7 @@ func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 	}
 	helper.MaskChatStreamResponseModel(&streamResponse, info)
 
-	geminiResponse := service.StreamResponseOpenAI2Gemini(&streamResponse, info)
+	geminiResponse := helper.StreamResponseOpenAI2Gemini(&streamResponse, info)
 
 	// 如果返回 nil，表示没有实际内容，跳过发送
 	if geminiResponse == nil {
@@ -138,7 +138,7 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 	*systemFingerprint = lastStreamResponse.GetSystemFingerprint()
 	*model = lastStreamResponse.Model
 
-	if service.ValidUsage(lastStreamResponse.Usage) {
+	if billing.ValidUsage(lastStreamResponse.Usage) {
 		*containStreamUsage = true
 		*usage = lastStreamResponse.Usage
 		if !info.ShouldIncludeUsage {
@@ -178,7 +178,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 
 		info.ClaudeConvertInfo.Usage = usage
 
-		claudeResponses := service.StreamResponseOpenAI2Claude(&streamResponse, info)
+		claudeResponses := helper.StreamResponseOpenAI2Claude(&streamResponse, info)
 		for _, resp := range claudeResponses {
 			_ = helper.ClaudeData(c, *resp)
 		}
@@ -197,7 +197,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 		// 而包含最后一段文本输出的响应（倒数第二个）的 finishReason 为 null
 		// 暂不知是否有程序会不兼容。
 
-		geminiResponse := service.StreamResponseOpenAI2Gemini(&streamResponse, info)
+		geminiResponse := helper.StreamResponseOpenAI2Gemini(&streamResponse, info)
 
 		// openai 流响应开头的空数据
 		if geminiResponse == nil {

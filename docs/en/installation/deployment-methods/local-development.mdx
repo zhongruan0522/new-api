@@ -122,8 +122,9 @@ NookMux/
 ├─ internal/router/        # API, relay, dashboard, web static routes
 ├─ internal/controller/    # HTTP boundary, request validation, response shaping
 ├─ internal/middleware/    # Auth, rate limiting, logging, dispatch
-├─ internal/model/         # GORM models, migrations, database access
-├─ internal/service/       # Business logic, external requests, audit, and more
+├─ internal/store/         # GORM models, migrations, database access (per-resource subpackages)
+├─ internal/domain/        # Domain services: billing, channel, audit, rankings, ticket, sensitive, group
+├─ internal/infra/         # Infrastructure: httpclient, media, tokenizer, notify, payment, passkey, custom_voice
 ├─ internal/relay/         # AI protocol translation and vendor adapters
 ├─ internal/config/        # System, operation, model, and ratio settings (formerly setting/)
 ├─ internal/common/        # Shared utilities, env vars, cache, static file service

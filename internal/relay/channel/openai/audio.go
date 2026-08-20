@@ -12,8 +12,8 @@ import (
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
+	sensitive "github.com/NookMux/NookMux/internal/domain/sensitive"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -25,12 +25,12 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	// if the upstream returns a specific status code, once the upstream has already written the header,
 	// the subsequent failure of the response body should be regarded as a non-recoverable error,
 	// and can be terminated directly.
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 	usage := &shared.Usage{}
 	usage.PromptTokens = info.GetEstimatePromptTokens()
 	usage.TotalTokens = info.GetEstimatePromptTokens()
 	for k, v := range resp.Header {
-		if !service.ShouldCopyUpstreamHeader(c, k, v) {
+		if !helper.ShouldCopyUpstreamHeader(c, k, v) {
 			continue
 		}
 		c.Writer.Header().Set(k, v[0])
@@ -39,7 +39,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 
 	if info.IsStream {
 		helper.StreamScannerHandler(c, resp, info, func(data string) bool {
-			if service.SundaySearch(data, "usage") {
+			if sensitive.SundaySearch(data, "usage") {
 				var simpleResponse shared.SimpleResponse
 				err := jsonx.Unmarshal([]byte(data), &simpleResponse)
 				if err != nil {
@@ -115,14 +115,14 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 }
 
 func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*shared.NookMuxError, *shared.Usage) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
 		return shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
 	}
 	// 写入新的 response body
-	service.IOCopyBytesGracefully(c, resp, responseBody)
+	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	var responseData struct {
 		Usage *shared.Usage `json:"usage"`

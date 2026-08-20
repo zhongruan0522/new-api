@@ -19,9 +19,11 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
+	media "github.com/NookMux/NookMux/internal/infra/media"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -428,7 +430,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 					}
 					// 提取 data URL (从 "](" 后面开始，到 ")" 之前)
 					dataUrl := text[bracketIdx+2 : closeIdx]
-					format, base64String, err := service.DecodeBase64FileData(dataUrl)
+					format, base64String, err := media.DecodeBase64FileData(dataUrl)
 					if err != nil {
 						return nil, fmt.Errorf("decode markdown base64 image data failed: %s", err.Error())
 					}
@@ -460,7 +462,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 				} else {
 					source = shared.NewBase64FileSource(imageUrl, "")
 				}
-				base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting image for Gemini")
+				base64Data, mimeType, err := media.GetBase64Data(c, source, "formatting image for Gemini")
 				if err != nil {
 					return nil, fmt.Errorf("get file data from '%s' failed: %w", source.GetIdentifier(), err)
 				}
@@ -481,7 +483,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 					return nil, fmt.Errorf("only base64 file is supported in gemini")
 				}
 				fileSource := shared.NewBase64FileSource(part.GetFile().FileData, "")
-				base64Data, mimeType, err := service.GetBase64Data(c, fileSource, "formatting file for Gemini")
+				base64Data, mimeType, err := media.GetBase64Data(c, fileSource, "formatting file for Gemini")
 				if err != nil {
 					return nil, fmt.Errorf("decode base64 file data failed: %s", err.Error())
 				}
@@ -496,7 +498,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 					return nil, fmt.Errorf("only base64 audio is supported in gemini")
 				}
 				audioSource := shared.NewBase64FileSource(part.GetInputAudio().Data, "audio/"+part.GetInputAudio().Format)
-				base64Data, mimeType, err := service.GetBase64Data(c, audioSource, "formatting audio for Gemini")
+				base64Data, mimeType, err := media.GetBase64Data(c, audioSource, "formatting audio for Gemini")
 				if err != nil {
 					return nil, fmt.Errorf("decode base64 audio data failed: %s", err.Error())
 				}
@@ -1187,7 +1189,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 				Message: geminiResponse.Error.Message,
 				Type:    "upstream_error",
 				Code:    geminiResponse.Error.Status,
-			}, service.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
+			}, helper.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
 			return false
 		}
 
@@ -1208,8 +1210,8 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 
 		// Gemini 兼容实现可能返回 snake_case usage，这里统一走标准化映射。
-		if service.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
-			convertedUsage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+		if billing.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
+			convertedUsage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 			*usage = convertedUsage
 		}
 
@@ -1218,7 +1220,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	if streamApiErr != nil {
 		// 上游在流内返回了错误载荷：真实错误已识别，直接向上暴露，不再伪造 usage。
-		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		helper.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
 		return nil, streamApiErr
 	}
 
@@ -1230,7 +1232,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	if usage.CompletionTokens <= 0 {
 		if info.ReceivedResponseCount > 0 {
-			usage = service.ResponseText2Usage(c, responseText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
+			usage = billing.ResponseText2Usage(c, responseText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 		} else {
 			usage = &shared.Usage{}
 		}
@@ -1344,7 +1346,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 }
 
 func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
@@ -1366,10 +1368,10 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 			Message: geminiResponse.Error.Message,
 			Type:    "upstream_error",
 			Code:    geminiResponse.Error.Status,
-		}, service.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
+		}, helper.UpstreamErrorStatusCode(resp.StatusCode, geminiResponse.Error.Code))
 	}
 	if len(geminiResponse.Candidates) == 0 {
-		usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+		usage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 		if usage.PromptTokens <= 0 {
 			usage.PromptTokens = info.GetEstimatePromptTokens()
 			if usage.TotalTokens < usage.PromptTokens {
@@ -1394,7 +1396,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 			)
 		}
 
-		service.ResetStatusCode(newAPIError, c.GetString("status_code_mapping"))
+		helper.ResetStatusCode(newAPIError, c.GetString("status_code_mapping"))
 
 		switch info.RelayFormat {
 		case relayconstant.RelayFormatClaude:
@@ -1411,7 +1413,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.GetResponseModelName()
-	usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+	usage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 
 	fullTextResponse.Usage = usage
 
@@ -1422,7 +1424,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}
 	case relayconstant.RelayFormatClaude:
-		claudeResp := service.ResponseOpenAI2Claude(fullTextResponse, info)
+		claudeResp := helper.ResponseOpenAI2Claude(fullTextResponse, info)
 		claudeRespStr, err := jsonx.Marshal(claudeResp)
 		if err != nil {
 			return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
@@ -1432,13 +1434,13 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		break
 	}
 
-	service.IOCopyBytesGracefully(c, resp, responseBody)
+	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	return &usage, nil
 }
 
 func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, readErr := common.ReadEmbeddingResponseBody(resp.Body)
 	if readErr != nil {
@@ -1470,7 +1472,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	// Google has not yet clarified how embedding models will be billed
 	// refer to openai billing method to use input tokens billing
 	// https://platform.openai.com/docs/guides/embeddings#what-are-embeddings
-	usage := service.ResponseText2Usage(c, "", info.UpstreamModelName, info.GetEstimatePromptTokens())
+	usage := billing.ResponseText2Usage(c, "", info.UpstreamModelName, info.GetEstimatePromptTokens())
 	openAIResponse.Usage = *usage
 
 	jsonResponse, jsonErr := jsonx.Marshal(openAIResponse)
@@ -1478,12 +1480,12 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 		return nil, shared.NewOpenAIError(jsonErr, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
-	service.IOCopyBytesGracefully(c, resp, jsonResponse)
+	helper.IOCopyBytesGracefully(c, resp, jsonResponse)
 	return usage, nil
 }
 
 func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
@@ -1547,7 +1549,7 @@ func FetchGeminiModels(baseURL, apiKey, proxyURL string) ([]string, error) {
 }
 
 func FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL string, headers http.Header) ([]string, error) {
-	client, err := service.GetHttpClientWithProxy(proxyURL)
+	client, err := httpclient.GetHttpClientWithProxy(proxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("创建HTTP客户端失败: %v", err)
 	}

@@ -10,16 +10,16 @@ import (
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
 
 func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	// read response body
 	var responsesResponse shared.OpenAIResponsesResponse
@@ -56,7 +56,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	}
 
 	// 写入新的 response body
-	service.IOCopyBytesGracefully(c, resp, responseBody)
+	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	if info == nil || info.ResponsesUsageInfo == nil || info.ResponsesUsageInfo.BuiltInTools == nil {
 		return &usage, nil
@@ -89,7 +89,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		return nil, shared.NewError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse)
 	}
 
-	defer service.CloseResponseBodyGracefully(resp)
+	defer helper.CloseResponseBodyGracefully(resp)
 
 	var usage = &shared.Usage{}
 	var responseTextBuilder strings.Builder
@@ -171,7 +171,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 
 	if streamApiErr != nil {
 		// 上游在流内返回了 failed 事件：真实错误已识别，直接向上暴露，不再伪造 usage。
-		service.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
+		helper.ResetStatusCode(streamApiErr, c.GetString("status_code_mapping"))
 		return nil, streamApiErr
 	}
 
@@ -180,7 +180,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		tempStr := responseTextBuilder.String()
 		if len(tempStr) > 0 {
 			// 非正常结束，使用输出文本的 token 数量
-			completionTokens := service.CountTextToken(tempStr, info.UpstreamModelName)
+			completionTokens := tokenizer.CountTextToken(tempStr, info.UpstreamModelName)
 			usage.CompletionTokens = completionTokens
 		}
 	}
@@ -204,7 +204,7 @@ func convertResponsesBodyToClaudeBody(responsesResponse *shared.OpenAIResponsesR
 	if usage != nil {
 		chatResponse.Usage = *usage
 	}
-	claudeResp := service.ResponseOpenAI2Claude(chatResponse, info)
+	claudeResp := helper.ResponseOpenAI2Claude(chatResponse, info)
 	return jsonx.Marshal(claudeResp)
 }
 

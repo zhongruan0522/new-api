@@ -9,16 +9,17 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/constant"
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/i18n"
+	domainnotify "github.com/NookMux/NookMux/internal/infra/notify"
 	"github.com/NookMux/NookMux/internal/middleware"
 	"github.com/NookMux/NookMux/internal/relay"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -451,7 +452,7 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
-			err := service.RelayErrorHandler(c.Request.Context(), httpResp, true)
+			err := helper.RelayErrorHandler(c.Request.Context(), httpResp, true)
 			common.SysError(fmt.Sprintf(
 				"channel test bad response: channel_id=%d name=%s type=%d model=%s endpoint_type=%s status=%d err=%v",
 				channel.Id,
@@ -526,10 +527,10 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 	if priceData.GroupRatioInfo.DynamicRatio > 0 {
 		originalGroupRatio = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
 	}
-	other := service.GenerateTextOtherInfo(c, info, priceData.ModelRatio, originalGroupRatio, priceData.CompletionRatio,
+	other := billing.GenerateTextOtherInfo(c, info, priceData.ModelRatio, originalGroupRatio, priceData.CompletionRatio,
 		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio, priceData.GroupRatioInfo.DynamicRatio)
 	// 复用正式消费日志的流式指标，保证模型测试日志与线上展示一致。
-	service.AppendStreamMetrics(other, info, milliseconds, usage.CompletionTokens)
+	billing.AppendStreamMetrics(other, info, milliseconds, usage.CompletionTokens)
 	logstore.RecordConsumeLog(c, testUserID, logstore.RecordConsumeLogParams{
 		ChannelId:        channel.Id,
 		PromptTokens:     usage.PromptTokens,
@@ -1576,7 +1577,7 @@ func testAllChannels(c *gin.Context, notify bool) error {
 			newAPIError := result.newAPIError
 			// request error disables the channel
 			if newAPIError != nil {
-				shouldBanChannel = service.ShouldDisableChannel(channel.Type, result.newAPIError)
+				shouldBanChannel = domainchannel.ShouldDisableChannel(channel.Type, result.newAPIError)
 			}
 
 			// 当错误检查通过，才检查响应时间
@@ -1597,8 +1598,8 @@ func testAllChannels(c *gin.Context, notify bool) error {
 			}
 
 			// enable channel
-			if !isChannelEnabled && service.ShouldEnableChannel(newAPIError, channel.Status) {
-				service.EnableChannel(channel.Id, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.Name)
+			if !isChannelEnabled && domainchannel.ShouldEnableChannel(newAPIError, channel.Status) {
+				domainchannel.EnableChannel(channel.Id, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.Name)
 			}
 
 			channel.UpdateResponseTime(milliseconds)
@@ -1606,7 +1607,7 @@ func testAllChannels(c *gin.Context, notify bool) error {
 		}
 
 		if notify {
-			service.NotifyRootUser(shared.NotifyTypeChannelTest, "通道测试完成", "所有通道测试已完成")
+			domainnotify.NotifyRootUser(shared.NotifyTypeChannelTest, "通道测试完成", "所有通道测试已完成")
 		}
 	})
 	return nil

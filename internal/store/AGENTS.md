@@ -64,4 +64,4 @@
 
 - 改模型、迁移或缓存后执行相关 store 测试。
 - 涉及 SQL 或迁移时至少做 SQLite 路径验证；能配置 MySQL/PostgreSQL 时补充对应验证。
-- 跨层影响执行 `go test ./internal/store/... ./internal/service/... ./internal/controller/...`。
+- 跨层影响执行 `go test ./internal/store/... ./internal/domain/... ./internal/controller/...`。

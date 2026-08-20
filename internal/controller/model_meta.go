@@ -3,9 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/pricing"
@@ -110,7 +110,7 @@ func CreateModelMeta(c *gin.Context) {
 		return
 	}
 	pricingstore.RefreshPricing()
-	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
+	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
 	common.ApiSuccess(c, &m)
 }
 
@@ -146,7 +146,7 @@ func UpdateModelMeta(c *gin.Context) {
 		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
 		afterModel := origin
 		afterModel.Status = m.Status
-		service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+origin.ModelName, origin, afterModel)
+		audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+origin.ModelName, origin, afterModel)
 	} else {
 		// 名称冲突检查
 		if dup, err := vendormetastore.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
@@ -163,7 +163,7 @@ func UpdateModelMeta(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
-		service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
+		audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
 	}
 	pricingstore.RefreshPricing()
 	common.ApiSuccess(c, &m)
@@ -183,7 +183,7 @@ func DeleteModelMeta(c *gin.Context) {
 		return
 	}
 	pricingstore.RefreshPricing()
-	service.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 

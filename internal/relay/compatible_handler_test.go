@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/service"
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 )
 
 func TestCalculateStreamSpeed(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCalculateStreamSpeed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSpeed, gotOK := service.CalculateStreamSpeed(tt.useTimeMs, tt.frtMs, tt.completionTokens, tt.receivedResponseCount)
+			gotSpeed, gotOK := billing.CalculateStreamSpeed(tt.useTimeMs, tt.frtMs, tt.completionTokens, tt.receivedResponseCount)
 			if gotOK != tt.wantOK {
 				t.Fatalf("CalculateStreamSpeed() ok = %v, want %v", gotOK, tt.wantOK)
 			}

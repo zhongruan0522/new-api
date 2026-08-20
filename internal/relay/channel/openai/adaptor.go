@@ -18,7 +18,7 @@ import (
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/common_handler"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/store/minimax_voice"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -36,8 +36,8 @@ type Adaptor struct {
 }
 
 func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.GeminiChatRequest) (any, error) {
-	// 使用 service.GeminiToOpenAIRequest 转换请求格式
-	openaiRequest, err := service.GeminiToOpenAIRequest(request, info)
+	// 使用 helper.GeminiToOpenAIRequest 转换请求格式
+	openaiRequest, err := helper.GeminiToOpenAIRequest(request, info)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	//		println(fmt.Sprintf("failed to save request body to file: %v", err))
 	//	}
 	//}
-	aiRequest, err := service.ClaudeToOpenAIRequest(*request, info)
+	aiRequest, err := helper.ClaudeToOpenAIRequest(*request, info)
 	if err != nil {
 		return nil, err
 	}

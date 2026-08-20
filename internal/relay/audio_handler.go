@@ -9,8 +9,8 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
-	"github.com/NookMux/NookMux/internal/service"
 
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,9 +53,9 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
-			newAPIError = service.RelayErrorHandler(c.Request.Context(), httpResp, false)
+			newAPIError = helper.RelayErrorHandler(c.Request.Context(), httpResp, false)
 			// reset status code 重置状态码
-			service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+			helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 			return newAPIError
 		}
 	}
@@ -63,7 +63,7 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 	usage, newAPIError := adaptor.DoResponse(c, httpResp, info)
 	if newAPIError != nil {
 		// reset status code 重置状态码
-		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+		helper.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
 	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id（经重定向后的）
@@ -73,7 +73,7 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 	}
 
 	if usage.(*shared.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*shared.Usage).PromptTokensDetails.AudioTokens > 0 {
-		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), extraContent); apiErr != nil {
+		if apiErr := billing.PostAudioConsumeQuota(c, info, usage.(*shared.Usage), extraContent); apiErr != nil {
 			return apiErr
 		}
 	} else {

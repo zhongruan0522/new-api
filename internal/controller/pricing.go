@@ -4,8 +4,9 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/pricing"
@@ -35,7 +36,7 @@ func GetPricing(c *gin.Context) {
 		}
 	}
 
-	usableGroup = service.GetUserUsableGroups(group)
+	usableGroup = domaingroup.GetUserUsableGroups(group)
 	// check groupRatio contains usableGroup
 	for group := range ratio.GetGroupRatioCopy() {
 		if _, ok := usableGroup[group]; !ok {
@@ -62,7 +63,7 @@ func GetPricing(c *gin.Context) {
 		"group_ratio":        groupRatio,
 		"usable_group":       usableGroup,
 		"supported_endpoint": pricingstore.GetSupportedEndpointMap(),
-		"auto_groups":        service.GetUserAutoGroup(group),
+		"auto_groups":        domaingroup.GetUserAutoGroup(group),
 	})
 }
 
@@ -84,7 +85,7 @@ func ResetModelRatio(c *gin.Context) {
 		})
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置模型倍率", nil, nil)
+	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置模型倍率", nil, nil)
 	common.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
 }
 
@@ -101,6 +102,6 @@ func ResetToolBillingRules(c *gin.Context) {
 		})
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置工具计费规则", nil, nil)
+	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置工具计费规则", nil, nil)
 	common.ApiSuccessI18n(c, i18n.MsgPricingResetToolBillingRulesSuccess, nil)
 }

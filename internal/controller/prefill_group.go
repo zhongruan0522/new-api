@@ -2,8 +2,8 @@ package controller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
+	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/i18n"
-	"github.com/NookMux/NookMux/internal/service"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/prefill_group"
@@ -49,7 +49,7 @@ func CreatePrefillGroup(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionCreate, "新增预填充分组: "+g.Name, nil, g)
+	audit.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionCreate, "新增预填充分组: "+g.Name, nil, g)
 	common.ApiSuccess(c, &g)
 }
 
@@ -86,7 +86,7 @@ func UpdatePrefillGroup(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionUpdate, "修改预填充分组: "+g.Name, origin, g)
+	audit.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionUpdate, "修改预填充分组: "+g.Name, origin, g)
 	common.ApiSuccess(c, &g)
 }
 
@@ -103,6 +103,6 @@ func DeletePrefillGroup(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	service.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionDelete, "删除预填充分组 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
+	audit.RecordAudit(c, auditstore.AuditModulePrefillGroup, auditstore.AuditActionDelete, "删除预填充分组 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }

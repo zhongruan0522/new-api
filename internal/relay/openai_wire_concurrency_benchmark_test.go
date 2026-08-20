@@ -17,16 +17,16 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel/openai"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
-	"github.com/NookMux/NookMux/internal/service"
 
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
 func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 	gin.SetMode(gin.TestMode)
-	service.InitHttpClient()
+	httpclient.InitHttpClient()
 
 	const (
 		concurrency     = 128
