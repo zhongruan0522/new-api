@@ -20,7 +20,7 @@
 - `RecordDiff`：是否记录前后差异。
 
 新增审计模块时必须在 `defaultAuditModules()` 中注册，详见
-`internal/controller/AGENTS.md` 的"新增资源类型时的检查清单"。
+`internal/httpapi/controller/AGENTS.md` 的"新增资源类型时的检查清单"。
 
 ## 验证
 

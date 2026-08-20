@@ -119,9 +119,7 @@ make test-backend
 NookMux/
 ├─ cmd/server/             # Backend entry point (main.go)
 ├─ internal/app/           # Bootstrap, gin assembly, webdist facade
-├─ internal/router/        # API, relay, dashboard, web static routes
-├─ internal/controller/    # HTTP boundary, request validation, response shaping
-├─ internal/middleware/    # Auth, rate limiting, logging, dispatch
+├─ internal/httpapi/       # HTTP boundary: router + middleware + controller (per-resource subpackages)
 ├─ internal/store/         # GORM models, migrations, database access (per-resource subpackages)
 ├─ internal/domain/        # Domain services: billing, channel, audit, rankings, ticket, sensitive, group
 ├─ internal/infra/         # Infrastructure: httpclient, media, tokenizer, notify, payment, passkey, custom_voice

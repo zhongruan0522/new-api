@@ -14,7 +14,7 @@
 - 阶段一内的业务包 import 路径保持不变，不在本层顺手迁移业务代码。
 - 启动顺序变更必须逐项说明原因，特别不要破坏数据库初始化、配置热更新、渠道缓存、i18n 和监控的依赖关系。
 - 分析脚本注入必须保持占位符替换语义，并继续保护 API/SSE 路由不被前端静态路由吞掉。
-- 修改前端嵌入载体时同步检查 `web/dist/index.html`、`internal/router/web_router.go` 和 Docker 构建检查。
+- 修改前端嵌入载体时同步检查 `web/dist/index.html`、`internal/httpapi/router/web_router.go` 和 Docker 构建检查。
 
 ## 验证
 

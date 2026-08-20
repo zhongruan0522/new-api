@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/app/webdist"
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/controller"
-	"github.com/NookMux/NookMux/internal/middleware"
-	"github.com/NookMux/NookMux/internal/router"
+	"github.com/NookMux/NookMux/internal/httpapi/controller/channel"
+	"github.com/NookMux/NookMux/internal/httpapi/middleware"
+	"github.com/NookMux/NookMux/internal/httpapi/router"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -89,10 +89,10 @@ func Run() int {
 		if err != nil {
 			common.FatalLog("failed to parse CHANNEL_UPDATE_FREQUENCY: " + err.Error())
 		}
-		go controller.AutomaticallyUpdateChannels(frequency)
+		go channelcontroller.AutomaticallyUpdateChannels(frequency)
 	}
 
-	go controller.AutomaticallyTestChannels()
+	go channelcontroller.AutomaticallyTestChannels()
 
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true

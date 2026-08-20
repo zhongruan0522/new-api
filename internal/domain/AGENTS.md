@@ -55,4 +55,4 @@
 
 - `go build ./... && go test ./internal/domain/...`。
 - 改计费、quota、倍率、渠道选择逻辑后执行对应 billing/channel 测试与
-  `go test ./internal/relay/... ./internal/controller/...`。
+  `go test ./internal/relay/... ./internal/httpapi/controller/...`。

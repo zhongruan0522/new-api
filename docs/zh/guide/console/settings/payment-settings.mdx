@@ -45,4 +45,4 @@ title: 计费与支付
 - `type`：支付通道标识；`stripe` 走 Stripe，其余常见值走易支付风格网关，具体支持取决于后端控制器和已启用的支付模块。
 - `min_topup`：该支付方式最低充值金额。
 
-相关实现：`internal/controller/topup.go`、`internal/controller/topup_stripe.go`、`web/src/features/system-settings/integrations/payment-settings-section.tsx`。
+相关实现：`internal/httpapi/controller/topup/topup.go`、`internal/httpapi/controller/topup/topup_stripe.go`、`web/src/features/system-settings/integrations/payment-settings-section.tsx`。

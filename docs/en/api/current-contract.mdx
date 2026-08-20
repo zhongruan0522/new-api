@@ -7,8 +7,8 @@ description: Interface differences verified against NookMux runtime routes and r
 
 This page uses the current repository code as the source of truth, and the verification scope is limited to `docs/en/api/`:
 
-- Routing: `internal/router/api-router.go`, `internal/router/relay-router.go`, `internal/router/dashboard.go`
-- Request boundaries: `internal/controller/`
+- Routing: `internal/httpapi/router/api_router.go`, `internal/httpapi/router/relay_router.go`, `internal/httpapi/router/dashboard.go`
+- Request boundaries: `internal/httpapi/controller/` (per-resource subpackages)
 - AI request shapes: `internal/domain/shared/`, `internal/relay/`
 - Management resource shapes: `internal/model/`, `internal/config/`
 

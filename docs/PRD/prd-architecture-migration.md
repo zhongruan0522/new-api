@@ -421,6 +421,15 @@ internal/httpapi/controller/
 
 **验证**：`go build ./... && go test ./internal/httpapi/...`。
 
+> **执行记录（2026-08-20，阶段 5.4 落地）**：`internal/controller/` 67 个 Go 文件全部迁出（git mv 保留历史），按资源建 32 个子包，包名统一带 `controller` 后缀（`channelcontroller`/`usercontroller`/...，与 5.2 的 `store` 后缀惯例一致，规避 router 及调用方局部变量 `channel`/`user`/`token`/`log` 遮蔽）；`internal/router/` + `internal/middleware/` 整体上移 `internal/httpapi/`。PRD 编写后仓库继续演进，执行中偏离原映射的内容（均为依赖成环、前提失效或文件已变更，与 5.1–5.3 同类）：
+> 1. **PRD 列出的 `user_access_token_test.go`、`user_batch_update_test.go` 已不存在**（PRD 编写后随功能调整删除）；新增的 `channel_fetch_models_ssrf_test.go`、`channel_multi_key_mode_test.go`、`channel_test_helpers_test.go`、`channel_test_internal_test.go` 归 `channel/`，`passkey_admin_reset_test.go` 归 `passkey/`，`twofa_login_pending_session_test.go` 归 `twofa/`。
+> 2. **`status_user_modules_test.go`、`password_reset_test.go` 归 `misc/` 而非 PRD 所列 `user/`**：两文件只测 `misc.go` 的 handler（`GetStatusUserModules`/`stripAdminSidebarSection`、`SendPasswordResetEmail`），按被测对象归属。
+> 3. **`validateTwoFactorAuth` 自 `channel.go` 移至 `secure_verification/`**（PRD 未预见）：该函数是 2FA 验证逻辑，历史上误放 channel.go，唯一调用方是 `secure_verification.go` 的 `UniversalVerify`；随唯一消费者落位可保持未导出，避免 secure_verification → channel 的跨包边。
+> 4. **新增 `testsupport/` 共享测试 fixture 包**（PRD 未预见）：`setupSecureVerificationTestDB`/`createSecureVerificationTest*`/`secureVerificationSessionMiddleware` 原定义在 `secure_verification_test.go`，被 7 个未来分属 user/oauth/passkey/twofa/misc 的测试文件引用；抽为仅 `_test.go` 可导入的 fixture 包（真实 sqlite 内存库，非 mock）。随之：测 passkey handler 的 3 个用例（TestPasskeyDelete*、TestPasskeyRegisterBegin*）移至 `passkey/`（被测 handler 所在包）；`secure_verification_test.go` 转**外部测试包**（`secureverificationcontroller_test`，沿用 5.2 先例）——testsupport 为构造已验证 session 需引用 secure_verification 的导出常量，内部测试包会成环；安全验证方式常量（`SecureVerificationMethodSessionKey`/`2FA`/`Passkey`）因此导出（同组会话键本已导出）。
+> 5. **符号级适配（逻辑零变更）**：`setupLogin`→`SetupLogin`（user/，供 oauth/passkey/twofa 登录落位）、`getTokenForFeedback`→`GetTokenForFeedback`（token/，供 billing）、`processChannelError`→`ProcessChannelError`（relay/，供 channel 测试 handler）。拆分后 controller 子包间的生产依赖边（全部无环）：billing→{token,channel}、channel→relay、oauth→user、passkey→{secure_verification,user}、twofa→{secure_verification,user}、playground→relay；`app/server.go` 的两个自动任务入口改指 channelcontroller。
+>
+> AGENTS.md 同步：根文件（子规则索引/结构概览/审计入口/验证命令，顺带消除 middleware 条目重复行）、router/middleware/controller 三份随迁并更新路径与包结构说明（controller 新增子包与 testsupport 纪律）、app/common/domain/audit/store/config/web 各处路径；用户文档（中英文技术架构、本地开发结构树、current-contract、payment-settings）与 `.serena/memories` 同步；`docs/差异性/` 为历史分析记录，沿用 5.2/5.3 口径不回改。验证：`go build ./...` 全绿；`go test ./...` 60 个测试包中 59 个全过，user 包仅 `TestManageUserOverrideQuotaFromNegativeOrigin` 一个失败（迁移前基线即失败，非本次引入）；测试函数 717=717（与 5.1/5.2/5.3 基线一致，`^func Test` 口径，passkey 侧 3 用例移包不增减）；`gofmt -l` 干净；`go vet ./internal/httpapi/...` 干净。
+
 #### 5.5 `relay/` 内部精修（不动外部 import 路径）
 
 `relay/` 已经做得不错，主要是把顶层散落的 `openai_wire_*` 和 handler 收口：

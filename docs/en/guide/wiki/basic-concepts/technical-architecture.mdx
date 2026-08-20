@@ -22,9 +22,9 @@ Gin router layer (`router`)
 
 ## Backend Layers
 
-- `internal/router/`: mounts API, relay, dashboard, static assets, and debug routes.
-- `internal/controller/`: HTTP boundary, request validation, response shaping, and audit hooks for admin actions.
-- `internal/middleware/`: authentication, rate limiting, request-body restoration, dispatch, and security checks.
+- `internal/httpapi/router/`: mounts API, relay, dashboard, static assets, and debug routes.
+- `internal/httpapi/controller/`: HTTP boundary, request validation, response shaping, and audit hooks for admin actions; split into per-resource subpackages (channel, user, token, billing, relay, ...).
+- `internal/httpapi/middleware/`: authentication, rate limiting, request-body restoration, dispatch, and security checks.
 - `internal/domain/`: domain services: billing, channel selection and auto-disable, audit, rankings, tickets, sensitive-word matching, and group ratios.
 - `internal/store/`: GORM models, migrations, cache, and database access (per-resource subpackages); must be compatible with SQLite / MySQL / PostgreSQL.
 - `internal/infra/`: infrastructure: HTTP transport with SSRF protection, media decoding, token counting, notifications, payment integration, passkey, and custom voice.

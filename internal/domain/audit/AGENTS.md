@@ -31,4 +31,4 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 ## 验证
 
 - 改审计服务后执行 `go build ./...` 和 `go vet ./internal/domain/audit/...`。
-- 影响跨包行为时执行 `go test ./internal/domain/... ./internal/controller/...`。
+- 影响跨包行为时执行 `go test ./internal/domain/... ./internal/httpapi/controller/...`。

@@ -29,16 +29,16 @@
 
 ### 管理员资源增删改漏埋 RecordAudit
 **后果**:管理员操作无追溯,安全审计失败,出问题无法追责。
-**规则**:`internal/controller/AGENTS.md` 的"何时埋点" + `internal/domain/audit/AGENTS.md` — 渠道/用户/令牌/兑换码/模型/供应商/动态倍率/预填充分组/系统设置等资源的 create/update/delete 必须调 `audit.RecordAudit`(阶段5.3起,包 `internal/domain/audit`)。多个成功分支(如 enable/disable/delete/add_quota)每个都要埋。
+**规则**:`internal/httpapi/controller/AGENTS.md` 的"何时埋点" + `internal/domain/audit/AGENTS.md` — 渠道/用户/令牌/兑换码/模型/供应商/动态倍率/预填充分组/系统设置等资源的 create/update/delete 必须调 `audit.RecordAudit`(阶段5.3起,包 `internal/domain/audit`)。多个成功分支(如 enable/disable/delete/add_quota)每个都要埋。
 **场景**:只读操作(查询/测试/余额/模型拉取预览)不埋;普通用户自助操作(改自己信息/签到/充值/Passkey)不埋。
 
 ### 审计配置变更不用 forceRecord
 **后果**:管理员关闭审计总开关或 option 模块后,后续 RecordAudit 被跳过,"关闭审计"这个动作本身也不被记录 —— 安全漏洞。
-**规则**:`internal/controller/AGENTS.md` 的"审计配置变更的特殊处理" — `UpdateOption` 中对 `audit_setting.*` 的变更必须传 `forceRecord=true`。因为 `model.UpdateOption` 先于 `RecordAudit` 执行,新配置会立即生效。
+**规则**:`internal/httpapi/controller/AGENTS.md` 的"审计配置变更的特殊处理" — `UpdateOption` 中对 `audit_setting.*` 的变更必须传 `forceRecord=true`。因为 `model.UpdateOption` 先于 `RecordAudit` 执行,新配置会立即生效。
 
 ### 新增审计资源类型不更新检查清单
 **后果**:新资源的审计模块未注册,前端审计日志页面看不到该模块,后端 IsAuditModuleEnabled 返回 false 导致 RecordAudit 被跳过。
-**规则**:`internal/controller/AGENTS.md` 的"新增资源类型时的检查清单"(6 步:model 常量 + AuditModuleList → setting 注册 → 前端 AUDIT_MODULES → static-keys.ts → en/zh.json → controller 埋点)。
+**规则**:`internal/httpapi/controller/AGENTS.md` 的"新增资源类型时的检查清单"(6 步:model 常量 + AuditModuleList → setting 注册 → 前端 AUDIT_MODULES → static-keys.ts → en/zh.json → controller 埋点)。
 
 ---
 
@@ -63,15 +63,15 @@
 
 ### 路由层承载业务逻辑
 **后果**:层次混乱,controller/service 难复用,重复代码。
-**规则**:`internal/router/AGENTS.md` + 根 `AGENTS.md` — 路由只挂载,controller 只做边界(校验/权限/响应组织),domain(internal/domain)承载业务,store(internal/store)承载持久化。
+**规则**:`internal/httpapi/router/AGENTS.md` + 根 `AGENTS.md` — 路由只挂载,controller 只做边界(校验/权限/响应组织),domain(internal/domain)承载业务,store(internal/store)承载持久化。
 
 ### middleware 读 body 后不恢复
 **后果**:后续 handler 读不到 body,relay / 文件上传 / 签名校验全炸。
-**规则**:`internal/middleware/AGENTS.md` — 读取请求 body 后必须恢复给后续处理器。
+**规则**:`internal/httpapi/middleware/AGENTS.md` — 读取请求 body 后必须恢复给后续处理器。
 
 ### 全局 gzip 破坏 SSE / streaming
 **后果**:AI 回复被缓冲,用户看到卡住或一次性吐出。
-**规则**:`internal/router/AGENTS.md` + `internal/middleware/AGENTS.md` — 不要添加会破坏 SSE/streaming/websocket 的全局 gzip;web 静态资源 gzip 只在 web router 中处理。
+**规则**:`internal/httpapi/router/AGENTS.md` + `internal/httpapi/middleware/AGENTS.md` — 不要添加会破坏 SSE/streaming/websocket 的全局 gzip;web 静态资源 gzip 只在 web router 中处理。
 
 ---
 
@@ -146,4 +146,4 @@
 
 ### 使用日志字段新增/删除不同步
 **后果**:详情弹窗字段错乱,管理员/普通用户可见性配置失效。
-**规则**:`internal/controller/AGENTS.md` 的"使用日志字段可见性"(4 步同步:后端 `UsageLogFieldsDefaults()` + `UsageLogField*` 常量 → 前端 `field-visibility.ts` → `details-dialog.tsx` 条件渲染改 `isVisible('<fieldKey>')`)。
+**规则**:`internal/httpapi/controller/AGENTS.md` 的"使用日志字段可见性"(4 步同步:后端 `UsageLogFieldsDefaults()` + `UsageLogField*` 常量 → 前端 `field-visibility.ts` → `details-dialog.tsx` 条件渲染改 `isVisible('<fieldKey>')`)。
