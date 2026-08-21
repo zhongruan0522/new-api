@@ -90,7 +90,7 @@
 2. 在 `internal/config/operation/audit_setting.go` 的 `defaultAuditModules()` 中注册。
 3. 在 `web/src/features/audit-logs/constants.ts` 的 `AUDIT_MODULES` 中注册。
 4. 在 `web/src/i18n/static-keys.ts` 中注册模块标签 key。
-5. 在 `web/src/i18n/locales/{en,zh}.json` 中添加翻译。
+5. 在 `web/src/i18n/locales/{en,zh}/` 对应命名空间 JSON（审计相关为 `audit-logs.json`）中添加翻译。
 6. 在涉及的 controller 函数中添加 `audit.RecordAudit` 调用。
 
 ## 使用日志字段可见性

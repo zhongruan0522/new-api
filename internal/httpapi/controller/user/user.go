@@ -842,7 +842,7 @@ func ManageUser(c *gin.Context) {
 			}
 			user.Quota = originQuota - req.Value
 		case "override":
-			maxQuotaLimit := int(100_000_000 * common.QuotaPerUnit)
+			maxQuotaLimit := common.QuotaUpperLimit(100_000_000)
 			if req.Value > maxQuotaLimit {
 				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 				return

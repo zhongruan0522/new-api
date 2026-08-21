@@ -18,6 +18,6 @@
 
 ## 验证
 
-- `go test ./internal/app/... ./router/... ./common/...`
+- `go test ./internal/app/... ./internal/httpapi/router/... ./internal/common/...`
 - `go build ./...`
 - 修改启动或嵌入路径后执行 `go run ./cmd/server` 冒烟验证。
