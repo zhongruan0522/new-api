@@ -307,6 +307,19 @@ export interface GlmRiskResponse {
   }
 }
 
+export interface GlmContactData {
+  phone?: string
+  name?: string
+  raw_name?: string
+  billing_month?: string
+}
+
+export interface GlmContactResponse {
+  success: boolean
+  message?: string
+  data?: GlmContactData
+}
+
 export interface GlmActivityDay {
   date?: string
   totalTokens?: number

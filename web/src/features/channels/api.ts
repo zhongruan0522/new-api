@@ -34,6 +34,7 @@ import type {
   GetChannelsParams,
   GetChannelsResponse,
   GlmPlanActivityResponse,
+  GlmContactResponse,
   GlmResetCardListResponse,
   GlmResetCardUseParams,
   GlmResetCardUseResponse,
@@ -375,6 +376,17 @@ export async function getGlmRiskStatus(
     disableDuplicate: true,
   }
   const res = await api.get(`/api/channel/plan/glm/risk/${channelId}`, config)
+  return res.data
+}
+
+export async function getGlmContactInfo(
+  channelId: number
+): Promise<GlmContactResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(`/api/channel/glm/contact/${channelId}`, config)
   return res.data
 }
 

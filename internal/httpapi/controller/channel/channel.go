@@ -2507,6 +2507,44 @@ func QueryRiskStatus(c *gin.Context) {
 	})
 }
 
+// QueryGlmContactInfo 查询智谱渠道账户的联系方式（月度账单明细 customerAcName）。
+// 不限套餐渠道：上游 base URL 按套餐区域划分（国际套餐 api.z.ai，
+// 国内套餐与非套餐渠道 bigmodel.cn），Key 始终取数据库保存的渠道密钥。
+func QueryGlmContactInfo(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
+		return
+	}
+
+	channel, err := channelstore.GetChannelById(id, true)
+	if err != nil {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelNotFound)
+		return
+	}
+
+	if channel.Type != constant.ChannelTypeZhipu_v4 {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelContactUnsupported)
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	result, err := planquota.FetchGlmContactInfo(key, channel.ChannelInfo.PlanName, channel.GetSetting().Proxy)
+	if err != nil {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
+			httpapi.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelContactQueryFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    result,
+	})
+}
+
 // QueryGlmResetCards 查询智谱 GLM 套餐的重置卡列表。
 // 上游 base URL 按套餐区域划分（国内 bigmodel.cn / 国际 api.z.ai），targetType 固定 PERSONAL。
 func QueryGlmResetCards(c *gin.Context) {

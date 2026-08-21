@@ -35,6 +35,7 @@ import {
   PackageSearch,
   ShieldAlert,
   CreditCard,
+  Phone,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -63,15 +64,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { getGlmRiskStatus } from '../api'
+import { getGlmContactInfo, getGlmRiskStatus } from '../api'
 import {
   handleDeleteChannel,
   handleToggleChannelStatus,
   isChannelEnabled,
   isMultiKeyChannel,
   isPlanChannel,
+  isZhipuChannel,
 } from '../lib'
-import type { Channel } from '../types'
+import type { Channel, GlmContactData } from '../types'
 import { useChannels } from './channels-provider'
 
 interface DataTableRowActionsProps {
@@ -88,10 +90,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const [riskDetected, setRiskDetected] = useState(false)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
   const [isCheckingRisk, setIsCheckingRisk] = useState(false)
+  const [contactDialogOpen, setContactDialogOpen] = useState(false)
+  const [contactInfo, setContactInfo] = useState<GlmContactData | null>(null)
+  const [isCheckingContact, setIsCheckingContact] = useState(false)
 
   const isEnabled = isChannelEnabled(channel)
   const isMultiKey = isMultiKeyChannel(channel)
   const isPlan = isPlanChannel(channel)
+  const isZhipu = isZhipuChannel(channel)
   const isGlmPlan =
     channel.channel_info?.plan_name === 'glm-coding-plan' ||
     channel.channel_info?.plan_name === 'glm-coding-plan-international'
@@ -163,6 +169,29 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     }
   }
 
+  const handleQueryContact = async () => {
+    setIsCheckingContact(true)
+    try {
+      const response = await getGlmContactInfo(channel.id)
+      const data = response.data
+      if (!response.success || !data) {
+        throw new Error(
+          response.message || t('channels.status.contactQueryFailed')
+        )
+      }
+      setContactInfo(data)
+      setContactDialogOpen(true)
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('channels.status.contactQueryFailed')
+      )
+    } finally {
+      setIsCheckingContact(false)
+    }
+  }
+
   const handleToggleStatus = async (
     e?: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -174,6 +203,23 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       setIsTogglingStatus(false)
     }
   }
+
+  // 联系方式查询：仅智谱 GLM 渠道显示，不限套餐。套餐渠道放在【套餐】用量查询前，
+  // 非套餐渠道放在复制渠道后；尺寸与风控查询菜单项保持一致。
+  const contactMenuItem = isZhipu ? (
+    <DropdownMenuItem onClick={handleQueryContact} disabled={isCheckingContact}>
+      {isCheckingContact
+        ? t('channels.tips.querying')
+        : t('channels.titles.contactQuery')}
+      <DropdownMenuShortcut>
+        {isCheckingContact ? (
+          <Loader2 size={16} className='animate-spin' />
+        ) : (
+          <Phone size={16} />
+        )}
+      </DropdownMenuShortcut>
+    </DropdownMenuItem>
+  ) : null
 
   return (
     <div className='flex items-center justify-end gap-1'>
@@ -286,6 +332,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
+          {/* Contact Query (non-plan Zhipu channels: after Copy Channel) */}
+          {!isPlan && contactMenuItem}
+
           {/* Manage Keys (only for multi-key channels) */}
           {isMultiKey && (
             <DropdownMenuItem onClick={handleManageKeys}>
@@ -295,6 +344,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           )}
+
+          {/* Contact Query (plan Zhipu channels: before Plan Usage) */}
+          {isPlan && contactMenuItem}
 
           {isPlan && (
             <DropdownMenuItem onClick={handlePlanQuota}>
@@ -402,6 +454,42 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               </AlertDialogCancel>
             )}
             <AlertDialogAction onClick={() => setRiskDialogOpen(false)}>
+              {t('channels.actions.ok')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <AlertDialogContent className='sm:max-w-md'>
+          <AlertDialogHeader className='text-start'>
+            <AlertDialogTitle>
+              {t('channels.titles.contactQuery')}
+            </AlertDialogTitle>
+            <AlertDialogDescription render={<div />}>
+              {contactInfo ? (
+                <div className='space-y-2'>
+                  {contactInfo.name && (
+                    <p>
+                      {t('channels.fields.contactName')}: {contactInfo.name}
+                    </p>
+                  )}
+                  {contactInfo.phone && (
+                    <p>
+                      {t('channels.fields.contactPhone')}: {contactInfo.phone}
+                    </p>
+                  )}
+                  {!contactInfo.name && !contactInfo.phone && (
+                    <p>{contactInfo.raw_name}</p>
+                  )}
+                </div>
+              ) : (
+                <p>{t('channels.status.contactQueryFailed')}</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setContactDialogOpen(false)}>
               {t('channels.actions.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>

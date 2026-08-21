@@ -111,6 +111,13 @@ export function isPlanChannel(channel: Channel): boolean {
   return channel.channel_info?.is_plan || false
 }
 
+/**
+ * Check if channel is a Zhipu V4 (智谱GLM-4V) channel.
+ */
+export function isZhipuChannel(channel: Channel): boolean {
+  return channel.type === 26
+}
+
 // ============================================================================
 // Key Formatting
 // ============================================================================

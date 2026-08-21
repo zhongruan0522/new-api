@@ -221,6 +221,8 @@ const (
 	MsgChannelUsageQueryFailed                 = "channel.usage_query_failed"
 	MsgChannelRiskUnsupported                  = "channel.risk_unsupported"
 	MsgChannelRiskCheckFailed                  = "channel.risk_check_failed"
+	MsgChannelContactUnsupported               = "channel.contact_unsupported"
+	MsgChannelContactQueryFailed               = "channel.contact_query_failed"
 	MsgChannelKeyInvalid                       = "channel.key_invalid"
 	MsgChannelActivityUnsupported              = "channel.activity_unsupported"
 	MsgChannelActivityQueryFailed              = "channel.activity_query_failed"

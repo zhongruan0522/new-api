@@ -1038,3 +1038,135 @@ func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req Glm
 
 	return &GlmResetCardUseResult{Success: true}, nil
 }
+
+// ============================================================================
+// GLM 账户联系方式 (monthlyBill/monthlyBillDetails)
+// ============================================================================
+
+// glmContactBillPath 智谱月度账单明细接口路径。
+// 账单明细中的 customerAcName 形如 "13121009002(郁有坤)"，携带账户手机号与姓名。
+const glmContactBillPath = "/api/finance/monthlyBill/monthlyBillDetails"
+
+// glmContactUserAgent 模拟 iPhone Safari 浏览器的 UA。账单明细接口要求浏览器 UA，
+// 缺失时上游会拒绝请求。
+const glmContactUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
+
+// GlmContactInfo 智谱账户联系信息，由月度账单明细的 customerAcName 解析而来。
+// RawName 保留原始字符串，便于前端在格式解析失败时兜底展示。
+type GlmContactInfo struct {
+	Phone        string `json:"phone,omitempty"`
+	Name         string `json:"name,omitempty"`
+	RawName      string `json:"raw_name,omitempty"`
+	BillingMonth string `json:"billing_month,omitempty"`
+}
+
+// getGlmContactApiBase 按套餐区域返回账单明细接口的 base URL：
+// 国际套餐走 api.z.ai，国内套餐与未标识套餐的渠道走 bigmodel.cn。
+func getGlmContactApiBase(planName string) string {
+	if planName == "glm-coding-plan-international" {
+		return "https://api.z.ai"
+	}
+	return "https://bigmodel.cn"
+}
+
+// parseGlmCustomerAcName 解析 "手机号(姓名)" 形式的 customerAcName。
+// 不匹配该格式时整体作为姓名返回，避免信息丢失。
+func parseGlmCustomerAcName(value string) (phone, name string) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", ""
+	}
+	if open := strings.IndexByte(trimmed, '('); open > 0 {
+		if close := strings.LastIndexByte(trimmed, ')'); close > open {
+			return strings.TrimSpace(trimmed[:open]), strings.TrimSpace(trimmed[open+1 : close])
+		}
+	}
+	return "", trimmed
+}
+
+// FetchGlmContactInfo 查询智谱账户联系信息（月度账单明细中的 customerAcName）。
+// billingMonth 由服务器时区取当前年月（YYYY-MM）；proxyURL 非空时请求经渠道代理发出。
+// Key 由后端注入（Authorization: Bearer <key>），并强制携带浏览器 UA，不在浏览器直连智谱后台。
+func FetchGlmContactInfo(apiKey string, planName string, proxyURL string) (*GlmContactInfo, error) {
+	base := getGlmContactApiBase(planName)
+	query := url.Values{}
+	query.Set("billingMonth", time.Now().Format("2006-01"))
+	target := base + glmContactBillPath + "?" + query.Encode()
+
+	req, err := http.NewRequest("GET", target, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("User-Agent", glmContactUserAgent)
+
+	client, err := newGlmHttpClient(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("代理客户端创建失败: %w", err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(body))
+	}
+
+	if isGlmAuthFailure(body) {
+		return nil, ErrGlmKeyInvalid
+	}
+
+	return parseGlmContactResponse(body)
+}
+
+// parseGlmContactResponse 解析月度账单明细响应，提取 customerAcName 中的
+// 手机号与姓名。code/success 为指针字段，缺失视为未给出；显式失败时立即
+// 报错并透传上游 msg。
+func parseGlmContactResponse(body []byte) (*GlmContactInfo, error) {
+	var resp struct {
+		Code    *int   `json:"code"`
+		Msg     string `json:"msg"`
+		Success *bool  `json:"success"`
+		Data    struct {
+			BillingMonth   string `json:"billingMonth"`
+			CustomerAcName string `json:"customerAcName"`
+		} `json:"data"`
+	}
+	if err := jsonx.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("解析联系方式响应失败: %w", err)
+	}
+	if (resp.Code != nil && *resp.Code != 200) || (resp.Success != nil && !*resp.Success) {
+		msg := strings.TrimSpace(resp.Msg)
+		if msg == "" {
+			msg = "智谱返回非成功状态"
+		}
+		code := "nil"
+		if resp.Code != nil {
+			code = strconv.Itoa(*resp.Code)
+		}
+		return nil, fmt.Errorf("%s (code=%s)", msg, code)
+	}
+
+	// 成功响应但缺少 customerAcName 属于上游异常状态，直接暴露错误，
+	// 不返回空数据让前端弹空白窗。
+	rawName := strings.TrimSpace(resp.Data.CustomerAcName)
+	if rawName == "" {
+		return nil, fmt.Errorf("上游未返回 customerAcName")
+	}
+
+	phone, name := parseGlmCustomerAcName(rawName)
+	return &GlmContactInfo{
+		Phone:        phone,
+		Name:         name,
+		RawName:      rawName,
+		BillingMonth: resp.Data.BillingMonth,
+	}, nil
+}

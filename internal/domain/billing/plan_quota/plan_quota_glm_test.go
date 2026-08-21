@@ -265,3 +265,96 @@ func TestGlmResetCardListParse_NumericRecordId(t *testing.T) {
 		t.Fatal("first available card must keep available=true and be marked priority")
 	}
 }
+
+// 上游月度账单明细的 customerAcName 形如 "13121009002(郁有坤)"，
+// 解析失败时会把原始串整体放进姓名，避免联系方式信息丢失。
+func TestParseGlmCustomerAcName(t *testing.T) {
+	cases := []struct {
+		name   string
+		input  string
+		phone  string
+		acName string
+	}{
+		{name: "phone with parenthesized name", input: "13121009002(郁有坤)", phone: "13121009002", acName: "郁有坤"},
+		{name: "surrounding spaces trimmed", input: " 13121009002(郁有坤) ", phone: "13121009002", acName: "郁有坤"},
+		{name: "no parens falls back to name", input: "郁有坤", phone: "", acName: "郁有坤"},
+		{name: "empty input", input: "", phone: "", acName: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			phone, acName := parseGlmCustomerAcName(tc.input)
+			if phone != tc.phone {
+				t.Fatalf("phone = %q, want %q", phone, tc.phone)
+			}
+			if acName != tc.acName {
+				t.Fatalf("name = %q, want %q", acName, tc.acName)
+			}
+		})
+	}
+}
+
+// 联系方式接口的上游按套餐区域划分：国际套餐 api.z.ai，
+// 国内套餐与未标识套餐统一走 bigmodel.cn。
+func TestGetGlmContactApiBase(t *testing.T) {
+	cases := map[string]string{
+		"glm-coding-plan-international": "https://api.z.ai",
+		"glm-coding-plan":               "https://bigmodel.cn",
+		"":                              "https://bigmodel.cn",
+		"kimi-coding-plan":              "https://bigmodel.cn",
+	}
+	for plan, want := range cases {
+		if got := getGlmContactApiBase(plan); got != want {
+			t.Fatalf("getGlmContactApiBase(%q) = %q, want %q", plan, got, want)
+		}
+	}
+}
+
+// 用上游真实响应结构做回归：只解析 customerAcName，
+// 其余字段（billingStatus 等）忽略但不得导致解析失败。
+func TestParseGlmContactResponse(t *testing.T) {
+	raw := `{
+		"code": 200,
+		"msg": "操作成功",
+		"data": {
+			"billingMonth": "2026-08",
+			"billingStatus": "出账中",
+			"customerAcName": "13121009002(郁有坤)"
+		},
+		"success": true
+	}`
+
+	info, err := parseGlmContactResponse([]byte(raw))
+	if err != nil {
+		t.Fatalf("parseGlmContactResponse failed: %v", err)
+	}
+	if info.Phone != "13121009002" {
+		t.Fatalf("Phone = %q, want 13121009002", info.Phone)
+	}
+	if info.Name != "郁有坤" {
+		t.Fatalf("Name = %q, want 郁有坤", info.Name)
+	}
+	if info.RawName != "13121009002(郁有坤)" {
+		t.Fatalf("RawName = %q, want 13121009002(郁有坤)", info.RawName)
+	}
+	if info.BillingMonth != "2026-08" {
+		t.Fatalf("BillingMonth = %q, want 2026-08", info.BillingMonth)
+	}
+}
+
+// 上游显式返回失败（code != 200 / success = false）时必须报错，
+// 不得把空 data 静默当作查询成功。
+func TestParseGlmContactResponse_Failure(t *testing.T) {
+	raw := `{"code": 1000, "msg": "Authentication Failed", "data": null, "success": false}`
+	if _, err := parseGlmContactResponse([]byte(raw)); err == nil {
+		t.Fatal("parseGlmContactResponse should fail on code=1000")
+	}
+}
+
+// 上游成功响应但 customerAcName 为空时必须报错，
+// 不得让前端拿到空数据弹空白联系方式窗口。
+func TestParseGlmContactResponse_EmptyCustomerAcName(t *testing.T) {
+	raw := `{"code": 200, "msg": "操作成功", "data": {"billingMonth": "2026-08"}, "success": true}`
+	if _, err := parseGlmContactResponse([]byte(raw)); err == nil {
+		t.Fatal("parseGlmContactResponse should fail when customerAcName is empty")
+	}
+}
