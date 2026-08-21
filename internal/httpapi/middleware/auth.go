@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -319,15 +320,15 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 		}
 
 		c.Set("id", token.UserId)
-		common.SetContextKey(c, constant.ContextKeyTokenId, token.Id)
-		common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
-		common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
+		httpapi.SetContextKey(c, common.ContextKeyTokenId, token.Id)
+		httpapi.SetContextKey(c, common.ContextKeyTokenKey, token.Key)
+		httpapi.SetContextKey(c, common.ContextKeyTokenUnlimited, token.UnlimitedQuota)
 
 		quotaType := token.QuotaType
 		if quotaType == 0 && !token.UnlimitedQuota {
 			quotaType = 1
 		}
-		common.SetContextKey(c, constant.ContextKeyTokenQuotaType, quotaType)
+		httpapi.SetContextKey(c, common.ContextKeyTokenQuotaType, quotaType)
 
 		c.Next()
 	}
@@ -404,7 +405,7 @@ func TokenAuth() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "无法解析客户端 IP 地址")
 				return
 			}
-			if !common.IsIpInCIDRList(ip, allowIps) {
+			if !security.IsIpInCIDRList(ip, allowIps) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", shared.ErrorCodeAccessDenied)
 				return
 			}
@@ -442,7 +443,7 @@ func TokenAuth() func(c *gin.Context) {
 			}
 			userGroup = tokenGroup
 		}
-		common.SetContextKey(c, constant.ContextKeyUsingGroup, userGroup)
+		httpapi.SetContextKey(c, common.ContextKeyUsingGroup, userGroup)
 
 		err = SetupContextForToken(c, token, parts...)
 		if err != nil {
@@ -457,31 +458,31 @@ func SetupContextForToken(c *gin.Context, token *tokenstore.Token, parts ...stri
 		return fmt.Errorf("token is nil")
 	}
 	c.Set("id", token.UserId)
-	common.SetContextKey(c, constant.ContextKeyTokenId, token.Id)
-	common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
+	httpapi.SetContextKey(c, common.ContextKeyTokenId, token.Id)
+	httpapi.SetContextKey(c, common.ContextKeyTokenKey, token.Key)
 	c.Set("token_name", token.Name)
-	common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
+	httpapi.SetContextKey(c, common.ContextKeyTokenUnlimited, token.UnlimitedQuota)
 	// 兼容旧数据：quota_type=0 && !unlimited_quota 应视为永久限额
 	quotaType := token.QuotaType
 	if quotaType == 0 && !token.UnlimitedQuota {
 		quotaType = 1
 	}
-	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, quotaType)
+	httpapi.SetContextKey(c, common.ContextKeyTokenQuotaType, quotaType)
 	if !token.UnlimitedQuota {
 		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
 		switch quotaType {
 		case 2:
-			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.WindowQuota-token.WindowUsedQuota)
+			httpapi.SetContextKey(c, common.ContextKeyTokenQuota, token.WindowQuota-token.WindowUsedQuota)
 		case 3:
 			windowRemain := token.WindowQuota - token.WindowUsedQuota
 			cycleRemain := token.CycleQuota - token.CycleUsedQuota
 			if windowRemain < cycleRemain {
-				common.SetContextKey(c, constant.ContextKeyTokenQuota, windowRemain)
+				httpapi.SetContextKey(c, common.ContextKeyTokenQuota, windowRemain)
 			} else {
-				common.SetContextKey(c, constant.ContextKeyTokenQuota, cycleRemain)
+				httpapi.SetContextKey(c, common.ContextKeyTokenQuota, cycleRemain)
 			}
 		default:
-			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
+			httpapi.SetContextKey(c, common.ContextKeyTokenQuota, token.RemainQuota)
 		}
 	}
 	if token.ModelLimitsEnabled {
@@ -490,8 +491,8 @@ func SetupContextForToken(c *gin.Context, token *tokenstore.Token, parts ...stri
 	} else {
 		c.Set("token_model_limit_enabled", false)
 	}
-	common.SetContextKey(c, constant.ContextKeyTokenGroup, token.Group)
-	common.SetContextKey(c, constant.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)
+	httpapi.SetContextKey(c, common.ContextKeyTokenGroup, token.Group)
+	httpapi.SetContextKey(c, common.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)
 	if len(parts) > 1 {
 		if userstore.IsAdmin(token.UserId) {
 			c.Set("specific_channel_id", parts[1])

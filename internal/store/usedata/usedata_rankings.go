@@ -2,7 +2,7 @@ package usedatastore
 
 import (
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"gorm.io/gorm"
 )
@@ -58,12 +58,12 @@ func rankingBucketExpr(bucketSize int64, dayOffset int64) string {
 		if dayOffset > 0 {
 			offsetExpr = fmt.Sprintf("(+%d)", dayOffset)
 		}
-		if common.UsingMySQL {
+		if infradb.UsingMySQL {
 			return fmt.Sprintf("(FLOOR((created_at + %s) / %d) * %d) - %s", offsetExpr, bucketSize, bucketSize, offsetExpr)
 		}
 		return fmt.Sprintf("((((created_at + %s) / %d) * %d) - %s)", offsetExpr, bucketSize, bucketSize, offsetExpr)
 	}
-	if common.UsingMySQL {
+	if infradb.UsingMySQL {
 		return fmt.Sprintf("FLOOR(created_at / %d) * %d", bucketSize, bucketSize)
 	}
 	return fmt.Sprintf("(created_at / %d) * %d", bucketSize, bucketSize)

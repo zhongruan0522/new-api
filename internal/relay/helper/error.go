@@ -73,7 +73,7 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 	newApiErr = shared.InitOpenAIError(shared.ErrorCodeBadResponseStatusCode, resp.StatusCode)
 	defer CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadErrorResponseBody(resp.Body)
+	responseBody, err := ReadErrorResponseBody(resp.Body)
 	if err != nil {
 		newApiErr.Err = fmt.Errorf("failed to read upstream error response body: %w", err)
 		return

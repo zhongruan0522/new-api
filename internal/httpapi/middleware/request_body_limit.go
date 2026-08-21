@@ -5,13 +5,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/gin-gonic/gin"
 )
 
 func AnonymousRequestBodyLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		maxBytes := common.GetAnonymousRequestBodyLimitBytes()
+		maxBytes := httpapi.GetAnonymousRequestBodyLimitBytes()
 		if maxBytes <= 0 || c.Request.Body == nil {
 			c.Next()
 			return
@@ -21,7 +22,7 @@ func AnonymousRequestBodyLimit() gin.HandlerFunc {
 		body, err := readAnonymousRequestBody(originalBody, maxBytes)
 		_ = originalBody.Close()
 		if err != nil {
-			if common.IsRequestBodyTooLargeError(err) {
+			if cache.IsRequestBodyTooLargeError(err) {
 				c.AbortWithStatus(http.StatusRequestEntityTooLarge)
 				return
 			}
@@ -41,7 +42,7 @@ func readAnonymousRequestBody(body io.Reader, maxBytes int64) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(data)) > maxBytes {
-		return nil, common.ErrRequestBodyTooLarge
+		return nil, cache.ErrRequestBodyTooLarge
 	}
 	return data, nil
 }

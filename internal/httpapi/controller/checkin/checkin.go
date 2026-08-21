@@ -2,8 +2,8 @@ package checkincontroller
 
 import (
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/store/checkin"
@@ -18,7 +18,7 @@ import (
 func GetCheckinStatus(c *gin.Context) {
 	setting := operation.GetCheckinSetting()
 	if !setting.Enabled {
-		common.ApiErrorI18n(c, i18n.MsgCheckinDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgCheckinDisabled)
 		return
 	}
 	userId := c.GetInt("id")
@@ -49,7 +49,7 @@ func GetCheckinStatus(c *gin.Context) {
 func DoCheckin(c *gin.Context) {
 	setting := operation.GetCheckinSetting()
 	if !setting.Enabled {
-		common.ApiErrorI18n(c, i18n.MsgCheckinDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgCheckinDisabled)
 		return
 	}
 

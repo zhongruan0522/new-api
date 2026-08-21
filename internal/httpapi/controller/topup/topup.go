@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	payment "github.com/NookMux/NookMux/internal/infra/payment"
 	"github.com/NookMux/NookMux/internal/store/topup"
@@ -57,7 +58,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"discount":            operation.GetPaymentSetting().AmountDiscount,
 		"topup_link":          common.TopUpLink,
 	}
-	common.ApiSuccess(c, data)
+	httpapi.ApiSuccess(c, data)
 }
 
 type EpayRequest struct {
@@ -127,7 +128,7 @@ func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if req.Amount < getMinTopup() {
@@ -274,7 +275,7 @@ func RequestAmount(c *gin.Context) {
 	var req AmountRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -313,13 +314,13 @@ func GetUserTopUps(c *gin.Context) {
 	}
 	if err != nil {
 		common.SysError("get user topups failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(topups)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 // GetAllTopUps 管理员获取全平台充值记录
@@ -339,13 +340,13 @@ func GetAllTopUps(c *gin.Context) {
 	}
 	if err != nil {
 		common.SysError("get all topups failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(topups)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 type AdminCompleteTopupRequest struct {
@@ -356,7 +357,7 @@ type AdminCompleteTopupRequest struct {
 func AdminCompleteTopUp(c *gin.Context) {
 	var req AdminCompleteTopupRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.TradeNo == "" {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -366,8 +367,8 @@ func AdminCompleteTopUp(c *gin.Context) {
 
 	if err := topupstore.ManualCompleteTopUp(req.TradeNo); err != nil {
 		common.SysError("manual complete topup failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	common.ApiSuccess(c, nil)
+	httpapi.ApiSuccess(c, nil)
 }

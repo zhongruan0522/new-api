@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -14,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,7 +21,7 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	// 读取响应体
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := helper.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -49,7 +49,7 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 	}
 
 	if len(geminiResponse.Candidates) == 0 && geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
-		common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
+		httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 	}
 
 	// 计算使用量（基于 UsageMetadata）
@@ -63,7 +63,7 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadEmbeddingResponseBody(resp.Body)
+	responseBody, err := helper.ReadEmbeddingResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}

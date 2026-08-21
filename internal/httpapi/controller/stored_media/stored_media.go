@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -53,7 +55,7 @@ func GetAllStoredMedia(c *gin.Context) {
 	items, total, err := storedmediastore.GetAllStoredMedia(c.Request.Context(), startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get all stored media failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -71,7 +73,7 @@ func GetAllStoredMedia(c *gin.Context) {
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(rows)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetSelfStoredMedia(c *gin.Context) {
@@ -83,7 +85,7 @@ func GetSelfStoredMedia(c *gin.Context) {
 	items, total, err := storedmediastore.GetUserStoredMedia(c.Request.Context(), userId, startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get user stored media failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -101,18 +103,18 @@ func GetSelfStoredMedia(c *gin.Context) {
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(rows)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetStoredMediaDetail(c *gin.Context) {
 	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
 	id := strings.TrimSpace(c.Param("id"))
 	if id == "" {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
 		return
 	}
 	if mediaType != "image" && mediaType != "video" {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
 		return
 	}
 
@@ -124,22 +126,22 @@ func GetStoredMediaDetail(c *gin.Context) {
 		meta, err := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.SysError("get stored image meta failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 
 		img, err := storedmediastore.GetStoredImageByID(c.Request.Context(), id)
 		if err != nil {
 			common.SysError("get stored image failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -161,22 +163,22 @@ func GetStoredMediaDetail(c *gin.Context) {
 	meta, err := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 			return
 		}
 		common.SysError("get stored video meta failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if !isAdminUser && meta.UserId != userId {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 		return
 	}
 
 	v, err := storedmediastore.GetStoredVideoByID(c.Request.Context(), id)
 	if err != nil {
 		common.SysError("get stored video failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -197,11 +199,11 @@ func DeleteStoredMedia(c *gin.Context) {
 	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
 	id := strings.TrimSpace(c.Param("id"))
 	if id == "" {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
 		return
 	}
 	if mediaType != "image" && mediaType != "video" {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
 		return
 	}
 
@@ -216,15 +218,15 @@ func DeleteStoredMedia(c *gin.Context) {
 		meta, metaErr := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
-				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.SysError("get stored image meta failed: " + metaErr.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 		if isAdminUser {
@@ -236,15 +238,15 @@ func DeleteStoredMedia(c *gin.Context) {
 		meta, metaErr := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
 		if metaErr != nil {
 			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
-				common.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
 				return
 			}
 			common.SysError("get stored video meta failed: " + metaErr.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if !isAdminUser && meta.UserId != userId {
-			common.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
 			return
 		}
 		if isAdminUser {
@@ -256,7 +258,7 @@ func DeleteStoredMedia(c *gin.Context) {
 
 	if err != nil {
 		common.SysError("delete stored media failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -270,7 +272,7 @@ func DeleteStoredMedia(c *gin.Context) {
 func DeleteStoredMediaBatch(c *gin.Context) {
 	req := storedMediaBatchRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.Items) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -298,7 +300,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 	}
 
 	if len(imageIDs) == 0 && len(videoIDs) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgStoredMediaNoValidIDs)
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNoValidIDs)
 		return
 	}
 
@@ -315,7 +317,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 		n, err := storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), imageIDs, imgUser)
 		if err != nil {
 			common.SysError("batch delete stored images failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		totalDeleted += n
@@ -324,7 +326,7 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 		n, err := storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), videoIDs, videoUser)
 		if err != nil {
 			common.SysError("batch delete stored videos failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		totalDeleted += n
@@ -355,7 +357,7 @@ func buildStoredMediaURL(c *gin.Context, mediaType string, id string) string {
 	}
 
 	exp := time.Now().Add(defaultStoredMediaSignedURLTTL).Unix()
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
 	path := fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", mediaType, url.PathEscape(id), exp, sig)
 
 	base := strings.TrimRight(strings.TrimSpace(system.ServerAddress), "/")

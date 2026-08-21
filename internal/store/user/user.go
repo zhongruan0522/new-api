@@ -6,6 +6,9 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/token"
@@ -334,7 +337,7 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 func (user *User) Insert(inviterId int) error {
 	var err error
 	if user.Password != "" {
-		user.Password, err = common.Password2Hash(user.Password)
+		user.Password, err = security.Password2Hash(user.Password)
 		if err != nil {
 			return err
 		}
@@ -379,7 +382,7 @@ func (user *User) Insert(inviterId int) error {
 func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 	var err error
 	if user.Password != "" {
-		user.Password, err = common.Password2Hash(user.Password)
+		user.Password, err = security.Password2Hash(user.Password)
 		if err != nil {
 			return err
 		}
@@ -423,7 +426,7 @@ func (user *User) FinalizeOAuthUserCreation(inviterId int) {
 func (user *User) Update(updatePassword bool) error {
 	var err error
 	if updatePassword {
-		user.Password, err = common.Password2Hash(user.Password)
+		user.Password, err = security.Password2Hash(user.Password)
 		if err != nil {
 			return err
 		}
@@ -441,7 +444,7 @@ func (user *User) Update(updatePassword bool) error {
 func (user *User) Edit(updatePassword bool) error {
 	var err error
 	if updatePassword {
-		user.Password, err = common.Password2Hash(user.Password)
+		user.Password, err = security.Password2Hash(user.Password)
 		if err != nil {
 			return err
 		}
@@ -513,7 +516,7 @@ func (user *User) ValidateAndFill() (err error) {
 		}
 		return fmt.Errorf("%w: %v", dbstore.ErrDatabase, err)
 	}
-	okay := common.ValidatePasswordAndHash(password, user.Password)
+	okay := security.ValidatePasswordAndHash(password, user.Password)
 	if !okay || user.Status != common.UserStatusEnabled {
 		return dbstore.ErrInvalidCredentials
 	}
@@ -564,7 +567,7 @@ func ResetUserPasswordByEmail(email string, password string) error {
 	if email == "" || password == "" {
 		return errors.New("邮箱地址或密码为空！")
 	}
-	hashedPassword, err := common.Password2Hash(password)
+	hashedPassword, err := security.Password2Hash(password)
 	if err != nil {
 		return err
 	}
@@ -622,14 +625,14 @@ func GetUserQuota(id int, fromDB bool) (quota int, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := updateUserQuotaCache(id, quota); err != nil {
 					common.SysLog("failed to update user quota cache: " + err.Error())
 				}
 			})
 		}
 	}()
-	if !fromDB && common.RedisEnabled {
+	if !fromDB && redis.RedisEnabled {
 		quota, err := getUserQuotaCache(id)
 		if err == nil {
 			return quota, nil
@@ -660,14 +663,14 @@ func GetUserGroup(id int, fromDB bool) (group string, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := updateUserGroupCache(id, group); err != nil {
 					common.SysLog("failed to update user group cache: " + err.Error())
 				}
 			})
 		}
 	}()
-	if !fromDB && common.RedisEnabled {
+	if !fromDB && redis.RedisEnabled {
 		group, err := getUserGroupCache(id)
 		if err == nil {
 			return group, nil
@@ -689,14 +692,14 @@ func GetUserSetting(id int, fromDB bool) (settingMap shared.UserSetting, err err
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := updateUserSettingCache(id, setting); err != nil {
 					common.SysLog("failed to update user setting cache: " + err.Error())
 				}
 			})
 		}
 	}()
-	if !fromDB && common.RedisEnabled {
+	if !fromDB && redis.RedisEnabled {
 		setting, err := getUserSettingCache(id)
 		if err == nil {
 			return setting, nil
@@ -718,7 +721,7 @@ func IncreaseUserQuota(id int, quota int, db bool) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		err := CacheIncrUserQuota(id, int64(quota))
 		if err != nil {
 			common.SysLog("failed to increase user quota: " + err.Error())
@@ -743,7 +746,7 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		err := cacheDecrUserQuota(id, int64(quota))
 		if err != nil {
 			common.SysLog("failed to decrease user quota: " + err.Error())
@@ -852,14 +855,14 @@ func GetUsernameById(id int, fromDB bool) (username string, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := updateUserNameCache(id, username); err != nil {
 					common.SysLog("failed to update user name cache: " + err.Error())
 				}
 			})
 		}
 	}()
-	if !fromDB && common.RedisEnabled {
+	if !fromDB && redis.RedisEnabled {
 		username, err := getUserNameCache(id)
 		if err == nil {
 			return username, nil

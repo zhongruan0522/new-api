@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -64,7 +65,7 @@ func GetAndValidateRequest(c *gin.Context, format relayconstant.RelayFormat) (re
 
 func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*shared.AudioRequest, error) {
 	audioRequest := &shared.AudioRequest{}
-	err := common.UnmarshalBodyReusable(c, audioRequest)
+	err := httpapi.UnmarshalBodyReusable(c, audioRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +87,7 @@ func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*shared.AudioReques
 
 func GetAndValidateRerankRequest(c *gin.Context) (*shared.RerankRequest, error) {
 	var rerankRequest *shared.RerankRequest
-	err := common.UnmarshalBodyReusable(c, &rerankRequest)
+	err := httpapi.UnmarshalBodyReusable(c, &rerankRequest)
 	if err != nil {
 		log.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return nil, shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
@@ -103,7 +104,7 @@ func GetAndValidateRerankRequest(c *gin.Context) (*shared.RerankRequest, error) 
 
 func GetAndValidateEmbeddingRequest(c *gin.Context, relayMode int) (*shared.EmbeddingRequest, error) {
 	var embeddingRequest *shared.EmbeddingRequest
-	err := common.UnmarshalBodyReusable(c, &embeddingRequest)
+	err := httpapi.UnmarshalBodyReusable(c, &embeddingRequest)
 	if err != nil {
 		log.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return nil, shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
@@ -123,7 +124,7 @@ func GetAndValidateEmbeddingRequest(c *gin.Context, relayMode int) (*shared.Embe
 
 func GetAndValidateResponsesRequest(c *gin.Context) (*shared.OpenAIResponsesRequest, error) {
 	request := &shared.OpenAIResponsesRequest{}
-	err := common.UnmarshalBodyReusable(c, request)
+	err := httpapi.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +142,7 @@ func GetAndValidateResponsesRequest(c *gin.Context) (*shared.OpenAIResponsesRequ
 
 func GetAndValidateResponsesCompactionRequest(c *gin.Context) (*shared.OpenAIResponsesCompactionRequest, error) {
 	request := &shared.OpenAIResponsesCompactionRequest{}
-	if err := common.UnmarshalBodyReusable(c, request); err != nil {
+	if err := httpapi.UnmarshalBodyReusable(c, request); err != nil {
 		return nil, err
 	}
 	if request.Model == "" {
@@ -188,7 +189,7 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*shared.Image
 		}
 		fallthrough
 	default:
-		err := common.UnmarshalBodyReusable(c, imageRequest)
+		err := httpapi.UnmarshalBodyReusable(c, imageRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -270,7 +271,7 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *shared.ClaudeRequ
 
 func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*shared.GeneralOpenAIRequest, error) {
 	textRequest := &shared.GeneralOpenAIRequest{}
-	err := common.UnmarshalBodyReusable(c, textRequest)
+	err := httpapi.UnmarshalBodyReusable(c, textRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +332,7 @@ func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*shared.GeneralOp
 
 func GetAndValidateGeminiRequest(c *gin.Context) (*shared.GeminiChatRequest, error) {
 	request := &shared.GeminiChatRequest{}
-	err := common.UnmarshalBodyReusable(c, request)
+	err := httpapi.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +352,7 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*shared.GeminiChatRequest, err
 
 func GetAndValidateGeminiEmbeddingRequest(c *gin.Context) (*shared.GeminiEmbeddingRequest, error) {
 	request := &shared.GeminiEmbeddingRequest{}
-	err := common.UnmarshalBodyReusable(c, request)
+	err := httpapi.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +361,7 @@ func GetAndValidateGeminiEmbeddingRequest(c *gin.Context) (*shared.GeminiEmbeddi
 
 func GetAndValidateGeminiBatchEmbeddingRequest(c *gin.Context) (*shared.GeminiBatchEmbeddingRequest, error) {
 	request := &shared.GeminiBatchEmbeddingRequest{}
-	err := common.UnmarshalBodyReusable(c, request)
+	err := httpapi.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
 	}

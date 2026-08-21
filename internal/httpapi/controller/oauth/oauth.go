@@ -3,6 +3,7 @@ package oauthcontroller
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	usercontroller "github.com/NookMux/NookMux/internal/httpapi/controller/user"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/oauth"
@@ -32,7 +33,7 @@ func GenerateOAuthCode(c *gin.Context) {
 	err := session.Save()
 	if err != nil {
 		common.SysError("failed to save oauth session: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -75,7 +76,7 @@ func HandleOAuth(c *gin.Context) {
 
 	// 3. Check if provider is enabled
 	if !provider.IsEnabled() {
-		common.ApiErrorI18n(c, i18n.MsgOAuthNotEnabled, providerParams(provider.GetName()))
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthNotEnabled, providerParams(provider.GetName()))
 		return
 	}
 
@@ -110,19 +111,19 @@ func HandleOAuth(c *gin.Context) {
 	if err != nil {
 		switch err.(type) {
 		case *OAuthUserDeletedError:
-			common.ApiErrorI18n(c, i18n.MsgOAuthUserDeleted)
+			httpapi.ApiErrorI18n(c, i18n.MsgOAuthUserDeleted)
 		case *OAuthRegistrationDisabledError:
-			common.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
+			httpapi.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
 		default:
 			common.SysError("failed to find or create oauth user: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgUserRegisterFailed)
+			httpapi.ApiErrorI18n(c, i18n.MsgUserRegisterFailed)
 		}
 		return
 	}
 
 	// 8. Check user status
 	if user.Status != common.UserStatusEnabled {
-		common.ApiErrorI18n(c, i18n.MsgOAuthUserBanned)
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthUserBanned)
 		return
 	}
 
@@ -133,7 +134,7 @@ func HandleOAuth(c *gin.Context) {
 // handleOAuthBind handles binding OAuth account to existing user
 func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	if !provider.IsEnabled() {
-		common.ApiErrorI18n(c, i18n.MsgOAuthNotEnabled, providerParams(provider.GetName()))
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthNotEnabled, providerParams(provider.GetName()))
 		return
 	}
 
@@ -154,13 +155,13 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 
 	// Check if this OAuth account is already bound (check both new ID and legacy ID)
 	if provider.IsUserIDTaken(oauthUser.ProviderUserID) {
-		common.ApiErrorI18n(c, i18n.MsgOAuthAlreadyBound, providerParams(provider.GetName()))
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthAlreadyBound, providerParams(provider.GetName()))
 		return
 	}
 	// Also check legacy ID to prevent duplicate bindings during migration period
 	if legacyID, ok := oauthUser.Extra["legacy_id"].(string); ok && legacyID != "" {
 		if provider.IsUserIDTaken(legacyID) {
-			common.ApiErrorI18n(c, i18n.MsgOAuthAlreadyBound, providerParams(provider.GetName()))
+			httpapi.ApiErrorI18n(c, i18n.MsgOAuthAlreadyBound, providerParams(provider.GetName()))
 			return
 		}
 	}
@@ -172,7 +173,7 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	err = user.FillUserById()
 	if err != nil {
 		common.SysError("failed to fill user by id during oauth bind: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// Re-check the authoritative status from DB; the session snapshot may be
@@ -180,7 +181,7 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	if user.Status != common.UserStatusEnabled {
 		session.Clear()
 		_ = session.Save()
-		common.ApiErrorI18n(c, i18n.MsgOAuthUserBanned)
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthUserBanned)
 		return
 	}
 
@@ -188,11 +189,11 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 	err = user.Update(false)
 	if err != nil {
 		common.SysError("failed to update user during oauth bind: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgOAuthBindSuccess, gin.H{
+	httpapi.ApiSuccessI18n(c, i18n.MsgOAuthBindSuccess, gin.H{
 		"action": "bind",
 	})
 }
@@ -342,15 +343,15 @@ func handleOAuthError(c *gin.Context, err error) {
 	switch e := err.(type) {
 	case *oauth.OAuthError:
 		if e.Params != nil {
-			common.ApiErrorI18n(c, e.MsgKey, e.Params)
+			httpapi.ApiErrorI18n(c, e.MsgKey, e.Params)
 		} else {
-			common.ApiErrorI18n(c, e.MsgKey)
+			httpapi.ApiErrorI18n(c, e.MsgKey)
 		}
 	case *oauth.TrustLevelError:
-		common.ApiErrorI18n(c, i18n.MsgOAuthTrustLevelLow)
+		httpapi.ApiErrorI18n(c, i18n.MsgOAuthTrustLevelLow)
 	default:
 		common.SysError("unhandled oauth error: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 	}
 }
 

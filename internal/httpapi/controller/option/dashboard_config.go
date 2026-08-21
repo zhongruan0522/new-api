@@ -5,6 +5,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	"github.com/NookMux/NookMux/internal/config/manager"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -44,7 +45,7 @@ func UpdateDashboardConfig(c *gin.Context) {
 	}
 
 	if len(updates) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgDashboardConfigNoUpdates)
+		httpapi.ApiErrorI18n(c, i18n.MsgDashboardConfigNoUpdates)
 		return
 	}
 

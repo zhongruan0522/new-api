@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/gin-gonic/gin"
 )
@@ -22,10 +22,10 @@ import (
 func streamScannerTestContext(t *testing.T) (*gin.Context, func()) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
-	oldStreamingTimeout := constant.StreamingTimeout
-	constant.StreamingTimeout = 30
+	oldStreamingTimeout := shared.StreamingTimeout
+	shared.StreamingTimeout = 30
 	cleanup := func() {
-		constant.StreamingTimeout = oldStreamingTimeout
+		shared.StreamingTimeout = oldStreamingTimeout
 	}
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
@@ -327,10 +327,10 @@ func TestStreamScannerHandlerPingDisabledByRelayInfo(t *testing.T) {
 }
 
 func TestGetScannerBufferSizeUsesConservativeDefault(t *testing.T) {
-	oldMaxBufferMB := constant.StreamScannerMaxBufferMB
-	constant.StreamScannerMaxBufferMB = 0
+	oldMaxBufferMB := shared.StreamScannerMaxBufferMB
+	shared.StreamScannerMaxBufferMB = 0
 	t.Cleanup(func() {
-		constant.StreamScannerMaxBufferMB = oldMaxBufferMB
+		shared.StreamScannerMaxBufferMB = oldMaxBufferMB
 	})
 
 	if got := getScannerBufferSize(); got != 8<<20 {
@@ -340,10 +340,10 @@ func TestGetScannerBufferSizeUsesConservativeDefault(t *testing.T) {
 
 func BenchmarkStreamScannerHandler(b *testing.B) {
 	gin.SetMode(gin.TestMode)
-	oldStreamingTimeout := constant.StreamingTimeout
-	constant.StreamingTimeout = 30
+	oldStreamingTimeout := shared.StreamingTimeout
+	shared.StreamingTimeout = 30
 	b.Cleanup(func() {
-		constant.StreamingTimeout = oldStreamingTimeout
+		shared.StreamingTimeout = oldStreamingTimeout
 	})
 
 	frame := `data: {"id":"chatcmpl","choices":[{"delta":{"content":"hello"}}]}`
@@ -373,10 +373,10 @@ func BenchmarkStreamScannerHandler(b *testing.B) {
 
 func BenchmarkStreamScannerHandlerConcurrent128(b *testing.B) {
 	gin.SetMode(gin.TestMode)
-	oldStreamingTimeout := constant.StreamingTimeout
-	constant.StreamingTimeout = 30
+	oldStreamingTimeout := shared.StreamingTimeout
+	shared.StreamingTimeout = 30
 	b.Cleanup(func() {
-		constant.StreamingTimeout = oldStreamingTimeout
+		shared.StreamingTimeout = oldStreamingTimeout
 	})
 
 	const (

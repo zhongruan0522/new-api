@@ -9,13 +9,13 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/security"
 )
 
 // testSSRFProtection 构建与默认 FetchSetting 等价的防护配置：
 // 拦截私网/保留地址，不启用域名/IP 黑白名单。
-func testSSRFProtection() *common.SSRFProtection {
-	return &common.SSRFProtection{
+func testSSRFProtection() *security.SSRFProtection {
+	return &security.SSRFProtection{
 		AllowPrivateIp:   false,
 		DomainFilterMode: false,
 		IpFilterMode:     false,

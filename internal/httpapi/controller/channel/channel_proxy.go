@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +48,7 @@ type proxyTestRequest struct {
 func TestProxy(c *gin.Context) {
 	var req proxyTestRequest
 	if err := jsonx.DecodeJson(c.Request.Body, &req); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 

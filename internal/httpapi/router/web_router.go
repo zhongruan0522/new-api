@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/app/webdist"
 	"github.com/NookMux/NookMux/internal/httpapi/controller/relay"
 	"github.com/NookMux/NookMux/internal/httpapi/middleware"
 	"github.com/gin-contrib/gzip"
@@ -24,7 +24,7 @@ type WebAssets struct {
 }
 
 func SetWebRouter(router *gin.Engine, assets WebAssets) {
-	webFS := common.EmbedFolder(assets.BuildFS, "dist")
+	webFS := webdist.EmbedFolder(assets.BuildFS, "dist")
 
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())

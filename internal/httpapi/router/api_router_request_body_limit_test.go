@@ -7,17 +7,17 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
 
 func TestAnonymousPostRoutesRejectOversizedBodiesBeforeControllers(t *testing.T) {
-	oldLimit := constant.AnonymousRequestBodyLimitKB
+	oldLimit := shared.AnonymousRequestBodyLimitKB
 	oldGlobalRateLimit := common.GlobalApiRateLimitEnable
-	constant.AnonymousRequestBodyLimitKB = 1
+	shared.AnonymousRequestBodyLimitKB = 1
 	common.GlobalApiRateLimitEnable = false
 	t.Cleanup(func() {
-		constant.AnonymousRequestBodyLimitKB = oldLimit
+		shared.AnonymousRequestBodyLimitKB = oldLimit
 		common.GlobalApiRateLimitEnable = oldGlobalRateLimit
 	})
 

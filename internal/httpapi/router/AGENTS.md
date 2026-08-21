@@ -18,5 +18,5 @@
 
 ## 验证
 
-- 改 web router 或 embed 资源后执行 `go test ./internal/httpapi/router/... ./internal/common/...` 和 `go build`。
+- 改 web router 或 embed 资源后执行 `go test ./internal/httpapi/router/... ./internal/app/webdist/...` 和 `go build`。
 - 如果影响 relay 路由，执行相关 `relay` 测试并检查流式响应路径。

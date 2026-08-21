@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -101,7 +102,7 @@ func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, ta
 	}
 
 	refCol := "`trade_no`"
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		refCol = `"trade_no"`
 	}
 
@@ -138,7 +139,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 	topUp := &TopUp{}
 
 	refCol := "`trade_no`"
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		refCol = `"trade_no"`
 	}
 
@@ -202,7 +203,7 @@ func CompleteEpayTopUp(tradeNo string, paymentMethod string, paidMoney string) e
 	}
 
 	refCol := "`trade_no`"
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		refCol = `"trade_no"`
 	}
 
@@ -417,7 +418,7 @@ func ManualCompleteTopUp(tradeNo string) error {
 	}
 
 	refCol := "`trade_no`"
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		refCol = `"trade_no"`
 	}
 

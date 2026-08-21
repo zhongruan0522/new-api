@@ -3,9 +3,12 @@ package setupcontroller
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/db"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -15,7 +18,7 @@ import (
 )
 
 // setupMutex 保护安装流程的进程内 check-then-act 竞态：并发安装请求在检查
-// constant.Setup / RootUserExists 与实际写入之间可能交错。
+// shared.Setup / RootUserExists 与实际写入之间可能交错。
 // 跨进程/多实例安全由 optionstore.InitializeSetup 的数据库事务 + 固定主键占位保证。
 var setupMutex sync.Mutex
 
@@ -33,9 +36,9 @@ type SetupRequest struct {
 
 func GetSetup(c *gin.Context) {
 	setup := Setup{
-		Status: constant.Setup,
+		Status: shared.Setup,
 	}
-	if constant.Setup {
+	if shared.Setup {
 		c.JSON(200, gin.H{
 			"success": true,
 			"data":    setup,
@@ -43,13 +46,13 @@ func GetSetup(c *gin.Context) {
 		return
 	}
 	setup.RootInit = userstore.RootUserExists()
-	if common.UsingMySQL {
+	if db.UsingMySQL {
 		setup.DatabaseType = "mysql"
 	}
-	if common.UsingPostgreSQL {
+	if db.UsingPostgreSQL {
 		setup.DatabaseType = "postgres"
 	}
-	if common.UsingSQLite {
+	if db.UsingSQLite {
 		setup.DatabaseType = "sqlite"
 	}
 	c.JSON(200, gin.H{
@@ -59,15 +62,15 @@ func GetSetup(c *gin.Context) {
 }
 
 func PostSetup(c *gin.Context) {
-	// 安装流程全局只允许一个在途请求：check-then-act（检查 constant.Setup 与
+	// 安装流程全局只允许一个在途请求：check-then-act（检查 shared.Setup 与
 	// RootUserExists 后再写入）没有锁保护时，并发安装请求可能交错创建
 	// 重复的 root 用户或 setup 记录。
 	setupMutex.Lock()
 	defer setupMutex.Unlock()
 
 	// Check if setup is already completed
-	if constant.Setup {
-		common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
+	if shared.Setup {
+		httpapi.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
 		return
 	}
 
@@ -77,7 +80,7 @@ func PostSetup(c *gin.Context) {
 	var req SetupRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgSetupRequestInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgSetupRequestInvalid)
 		return
 	}
 
@@ -86,25 +89,25 @@ func PostSetup(c *gin.Context) {
 	if !rootExists {
 		// Validate username length: max 12 characters to align with userstore.User validation
 		if len(req.Username) > 12 {
-			common.ApiErrorI18n(c, i18n.MsgSetupUsernameTooLong)
+			httpapi.ApiErrorI18n(c, i18n.MsgSetupUsernameTooLong)
 			return
 		}
 		// Validate password
 		if req.Password != req.ConfirmPassword {
-			common.ApiErrorI18n(c, i18n.MsgSetupPasswordMismatch)
+			httpapi.ApiErrorI18n(c, i18n.MsgSetupPasswordMismatch)
 			return
 		}
 
 		if len(req.Password) < 8 {
-			common.ApiErrorI18n(c, i18n.MsgSetupPasswordMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgSetupPasswordMin)
 			return
 		}
 
 		// Create root user
-		hashedPassword, err := common.Password2Hash(req.Password)
+		hashedPassword, err := security.Password2Hash(req.Password)
 		if err != nil {
 			common.SysError("setup: failed to hash password: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgSetupSystemError)
+			httpapi.ApiErrorI18n(c, i18n.MsgSetupSystemError)
 			return
 		}
 		rootUser = &userstore.User{
@@ -125,15 +128,15 @@ func PostSetup(c *gin.Context) {
 		if errors.Is(err, optionstore.ErrSetupAlreadyInitialized) {
 			// 数据库已确认初始化（其他实例率先完成）：同步本进程内存状态，
 			// 否则该实例会持续对外报告未初始化直到重启。
-			constant.Setup = true
-			common.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
+			shared.Setup = true
+			httpapi.ApiErrorI18n(c, i18n.MsgSetupAlreadyInitialized)
 			return
 		}
 		common.SysError("setup: failed to initialize: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgSetupInitFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgSetupInitFailed)
 		return
 	}
-	constant.Setup = true
+	shared.Setup = true
 
 	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录。
 	// 审计元数据区分「新建 root 用户」与「复用已有 root 用户」两种初始化路径。
@@ -143,5 +146,5 @@ func PostSetup(c *gin.Context) {
 		"root_user_created": !rootExists,
 	}, true)
 
-	common.ApiSuccessI18n(c, i18n.MsgSetupInitSuccess, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgSetupInitSuccess, nil)
 }

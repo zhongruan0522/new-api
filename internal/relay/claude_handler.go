@@ -15,6 +15,7 @@ import (
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,7 +51,7 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 
 	var requestBody io.Reader
 	if info.ChannelSetting.PassThroughBodyEnabled {
-		storage, err := common.GetBodyStorage(c)
+		storage, err := httpapi.GetBodyStorage(c)
 		if err != nil {
 			return shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}

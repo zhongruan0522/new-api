@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -21,7 +22,7 @@ func setupListModelsTestDB(t *testing.T) {
 	t.Helper()
 
 	oldDB := dbstore.DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
@@ -31,7 +32,7 @@ func setupListModelsTestDB(t *testing.T) {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
 	dbstore.DB = db
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
 	t.Cleanup(func() {
@@ -39,7 +40,7 @@ func setupListModelsTestDB(t *testing.T) {
 			_ = sqlDB.Close()
 		}
 		dbstore.DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
 }

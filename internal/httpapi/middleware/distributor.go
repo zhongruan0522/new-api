@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/gin-gonic/gin"
@@ -28,7 +28,7 @@ type ModelRequest struct {
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *channelstore.Channel
-		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
+		channelId, ok := httpapi.GetContextKey(c, common.ContextKeyTokenSpecificChannelId)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, "Invalid request, "+err.Error())
@@ -52,9 +52,9 @@ func Distribute() func(c *gin.Context) {
 		} else {
 			// Select a channel for the user
 			// check token model mapping
-			modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)
+			modelLimitEnable := httpapi.GetContextKeyBool(c, common.ContextKeyTokenModelLimitEnabled)
 			if modelLimitEnable {
-				s, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
+				s, ok := httpapi.GetContextKey(c, common.ContextKeyTokenModelLimit)
 				if !ok {
 					// token model limit is empty, all models are not allowed
 					abortWithOpenAiMessage(c, http.StatusForbidden, "该令牌无权访问任何模型")
@@ -78,13 +78,13 @@ func Distribute() func(c *gin.Context) {
 					return
 				}
 				var selectGroup string
-				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+				usingGroup := httpapi.GetContextKeyString(c, common.ContextKeyUsingGroup)
 				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
 
 				// Playground: allow user to select a group for the request
 				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
 					playgroundRequest := &shared.PlayGroundRequest{}
-					err = common.UnmarshalBodyReusable(c, playgroundRequest)
+					err = httpapi.UnmarshalBodyReusable(c, playgroundRequest)
 					if err != nil {
 						abortWithOpenAiMessage(c, http.StatusBadRequest, "无效的游乐场请求: "+err.Error())
 						return
@@ -95,7 +95,7 @@ func Distribute() func(c *gin.Context) {
 							return
 						}
 						usingGroup = playgroundRequest.Group
-						common.SetContextKey(c, constant.ContextKeyUsingGroup, usingGroup)
+						httpapi.SetContextKey(c, common.ContextKeyUsingGroup, usingGroup)
 					}
 				}
 
@@ -104,12 +104,12 @@ func Distribute() func(c *gin.Context) {
 					preferred, err := channelstore.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
 						if usingGroup == "auto" {
-							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+							userGroup := httpapi.GetContextKeyString(c, common.ContextKeyUserGroup)
 							autoGroups := domaingroup.GetUserAutoGroup(userGroup)
 							for _, g := range autoGroups {
 								if channelstore.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) {
 									selectGroup = g
-									common.SetContextKey(c, constant.ContextKeyAutoGroup, g)
+									httpapi.SetContextKey(c, common.ContextKeyAutoGroup, g)
 									channel = preferred
 									affinityUsable = true
 									domainchannel.MarkChannelAffinityUsed(c, g, preferred.Id)
@@ -159,7 +159,7 @@ func Distribute() func(c *gin.Context) {
 				}
 			}
 		}
-		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
+		httpapi.SetContextKey(c, common.ContextKeyRequestStartTime, time.Now())
 		if apiErr := SetupContextForSelectedChannel(c, channel, modelRequest.Model); apiErr != nil {
 			statusCode := apiErr.StatusCode
 			if statusCode == 0 {
@@ -182,7 +182,7 @@ func Distribute() func(c *gin.Context) {
 // - multipart/form-data
 func getModelFromRequest(c *gin.Context) (*ModelRequest, error) {
 	var modelRequest ModelRequest
-	err := common.UnmarshalBodyReusable(c, &modelRequest)
+	err := httpapi.UnmarshalBodyReusable(c, &modelRequest)
 	if err != nil {
 		return nil, errors.New("无效的请求, " + err.Error())
 	}
@@ -272,35 +272,35 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *channelstore.Channe
 	if _, ok := channelconstant.ChannelTypeNames[channel.Type]; !ok {
 		return shared.NewError(fmt.Errorf("unsupported channel type: %d", channel.Type), shared.ErrorCodeInvalidApiType, shared.ErrOptionWithSkipRetry())
 	}
-	common.SetContextKey(c, constant.ContextKeyChannelId, channel.Id)
-	common.SetContextKey(c, constant.ContextKeyChannelName, channel.Name)
-	common.SetContextKey(c, constant.ContextKeyChannelType, channel.Type)
-	common.SetContextKey(c, constant.ContextKeyChannelCreateTime, channel.CreatedTime)
-	common.SetContextKey(c, constant.ContextKeyChannelSetting, channel.GetSetting())
-	common.SetContextKey(c, constant.ContextKeyChannelOtherSetting, channel.GetOtherSettings())
-	common.SetContextKey(c, constant.ContextKeyChannelParamOverride, channel.GetParamOverride())
-	common.SetContextKey(c, constant.ContextKeyChannelHeaderOverride, channel.GetHeaderOverride())
+	httpapi.SetContextKey(c, common.ContextKeyChannelId, channel.Id)
+	httpapi.SetContextKey(c, common.ContextKeyChannelName, channel.Name)
+	httpapi.SetContextKey(c, common.ContextKeyChannelType, channel.Type)
+	httpapi.SetContextKey(c, common.ContextKeyChannelCreateTime, channel.CreatedTime)
+	httpapi.SetContextKey(c, common.ContextKeyChannelSetting, channel.GetSetting())
+	httpapi.SetContextKey(c, common.ContextKeyChannelOtherSetting, channel.GetOtherSettings())
+	httpapi.SetContextKey(c, common.ContextKeyChannelParamOverride, channel.GetParamOverride())
+	httpapi.SetContextKey(c, common.ContextKeyChannelHeaderOverride, channel.GetHeaderOverride())
 	if nil != channel.OpenAIOrganization && *channel.OpenAIOrganization != "" {
-		common.SetContextKey(c, constant.ContextKeyChannelOrganization, *channel.OpenAIOrganization)
+		httpapi.SetContextKey(c, common.ContextKeyChannelOrganization, *channel.OpenAIOrganization)
 	}
-	common.SetContextKey(c, constant.ContextKeyChannelAutoBan, channel.GetAutoBan())
-	common.SetContextKey(c, constant.ContextKeyChannelModelMapping, channel.GetModelMapping())
-	common.SetContextKey(c, constant.ContextKeyChannelStatusCodeMapping, channel.GetStatusCodeMapping())
+	httpapi.SetContextKey(c, common.ContextKeyChannelAutoBan, channel.GetAutoBan())
+	httpapi.SetContextKey(c, common.ContextKeyChannelModelMapping, channel.GetModelMapping())
+	httpapi.SetContextKey(c, common.ContextKeyChannelStatusCodeMapping, channel.GetStatusCodeMapping())
 
 	key, index, newAPIError := channel.GetNextEnabledKey()
 	if newAPIError != nil {
 		return newAPIError
 	}
 	if channel.ChannelInfo.IsMultiKey {
-		common.SetContextKey(c, constant.ContextKeyChannelIsMultiKey, true)
-		common.SetContextKey(c, constant.ContextKeyChannelMultiKeyIndex, index)
+		httpapi.SetContextKey(c, common.ContextKeyChannelIsMultiKey, true)
+		httpapi.SetContextKey(c, common.ContextKeyChannelMultiKeyIndex, index)
 	} else {
 		// 必须设置为 false，否则在重试到单个 key 的时候会导致日志显示错误
-		common.SetContextKey(c, constant.ContextKeyChannelIsMultiKey, false)
+		httpapi.SetContextKey(c, common.ContextKeyChannelIsMultiKey, false)
 	}
 	// c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", key))
-	common.SetContextKey(c, constant.ContextKeyChannelKey, key)
-	common.SetContextKey(c, constant.ContextKeyChannelBaseUrl, channel.GetBaseURL())
+	httpapi.SetContextKey(c, common.ContextKeyChannelKey, key)
+	httpapi.SetContextKey(c, common.ContextKeyChannelBaseUrl, channel.GetBaseURL())
 
 	// TODO: api_version统一
 	switch channel.Type {

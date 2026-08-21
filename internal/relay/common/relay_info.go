@@ -8,7 +8,6 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
@@ -16,6 +15,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -167,24 +167,24 @@ type RelayInfo struct {
 }
 
 func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
-	channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
-	paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelParamOverride)
-	headerOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelHeaderOverride)
+	channelType := httpapi.GetContextKeyInt(c, common.ContextKeyChannelType)
+	paramOverride := httpapi.GetContextKeyStringMap(c, common.ContextKeyChannelParamOverride)
+	headerOverride := httpapi.GetContextKeyStringMap(c, common.ContextKeyChannelHeaderOverride)
 	apiType, _ := common.ChannelType2APIType(channelType)
 	channelMeta := &ChannelMeta{
 		ChannelType:          channelType,
-		ChannelId:            common.GetContextKeyInt(c, constant.ContextKeyChannelId),
-		ChannelIsMultiKey:    common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey),
-		ChannelMultiKeyIndex: common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex),
-		ChannelBaseUrl:       common.GetContextKeyString(c, constant.ContextKeyChannelBaseUrl),
+		ChannelId:            httpapi.GetContextKeyInt(c, common.ContextKeyChannelId),
+		ChannelIsMultiKey:    httpapi.GetContextKeyBool(c, common.ContextKeyChannelIsMultiKey),
+		ChannelMultiKeyIndex: httpapi.GetContextKeyInt(c, common.ContextKeyChannelMultiKeyIndex),
+		ChannelBaseUrl:       httpapi.GetContextKeyString(c, common.ContextKeyChannelBaseUrl),
 		ApiType:              apiType,
 		ApiVersion:           c.GetString("api_version"),
-		ApiKey:               common.GetContextKeyString(c, constant.ContextKeyChannelKey),
+		ApiKey:               httpapi.GetContextKeyString(c, common.ContextKeyChannelKey),
 		Organization:         c.GetString("channel_organization"),
 		ChannelCreateTime:    c.GetInt64("channel_create_time"),
 		ParamOverride:        paramOverride,
 		HeadersOverride:      headerOverride,
-		UpstreamModelName:    common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		UpstreamModelName:    httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel),
 		IsModelMapped:        false,
 		SupportStreamOptions: false,
 	}
@@ -196,12 +196,12 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		channelMeta.ApiVersion = c.GetString("region")
 	}
 
-	channelSetting, ok := common.GetContextKeyType[shared.ChannelSettings](c, constant.ContextKeyChannelSetting)
+	channelSetting, ok := httpapi.GetContextKeyType[shared.ChannelSettings](c, common.ContextKeyChannelSetting)
 	if ok {
 		channelMeta.ChannelSetting = channelSetting
 	}
 
-	channelOtherSettings, ok := common.GetContextKeyType[shared.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	channelOtherSettings, ok := httpapi.GetContextKeyType[shared.ChannelOtherSettings](c, common.ContextKeyChannelOtherSetting)
 	if ok {
 		channelMeta.ChannelOtherSettings = channelOtherSettings
 	}
@@ -344,7 +344,7 @@ func GenRelayInfoClaude(c *gin.Context, request shared.Request) *RelayInfo {
 }
 
 func isClaudeBetaForced(c *gin.Context) bool {
-	channelOtherSettings, ok := common.GetContextKeyType[shared.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	channelOtherSettings, ok := httpapi.GetContextKeyType[shared.ChannelOtherSettings](c, common.ContextKeyChannelOtherSetting)
 	return ok && channelOtherSettings.ClaudeBetaQuery
 }
 
@@ -421,17 +421,17 @@ func GenRelayInfoOpenAI(c *gin.Context, request shared.Request) *RelayInfo {
 
 func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 
-	//channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
-	//channelId := common.GetContextKeyInt(c, constant.ContextKeyChannelId)
-	//paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelParamOverride)
+	//channelType := httpapi.GetContextKeyInt(c, common.ContextKeyChannelType)
+	//channelId := httpapi.GetContextKeyInt(c, common.ContextKeyChannelId)
+	//paramOverride := httpapi.GetContextKeyStringMap(c, common.ContextKeyChannelParamOverride)
 
-	tokenGroup := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
+	tokenGroup := httpapi.GetContextKeyString(c, common.ContextKeyTokenGroup)
 	// 当令牌分组为空时，表示使用用户分组
 	if tokenGroup == "" {
-		tokenGroup = common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+		tokenGroup = httpapi.GetContextKeyString(c, common.ContextKeyUserGroup)
 	}
 
-	startTime := common.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
+	startTime := httpapi.GetContextKeyTime(c, common.ContextKeyRequestStartTime)
 	if startTime.IsZero() {
 		startTime = time.Now()
 	}
@@ -444,7 +444,7 @@ func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 
 	// firstResponseTime = time.Now() - 1 second
 
-	reqId := common.GetContextKeyString(c, common.RequestIdKey)
+	reqId := httpapi.GetContextKeyString(c, common.RequestIdKey)
 	if reqId == "" {
 		reqId = common.GetTimeString() + common.GetRandomString(8)
 	}
@@ -452,20 +452,20 @@ func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 		Request: request,
 
 		RequestId:  reqId,
-		UserId:     common.GetContextKeyInt(c, constant.ContextKeyUserId),
-		UsingGroup: common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
-		UserGroup:  common.GetContextKeyString(c, constant.ContextKeyUserGroup),
-		UserQuota:  common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
-		UserEmail:  common.GetContextKeyString(c, constant.ContextKeyUserEmail),
+		UserId:     httpapi.GetContextKeyInt(c, common.ContextKeyUserId),
+		UsingGroup: httpapi.GetContextKeyString(c, common.ContextKeyUsingGroup),
+		UserGroup:  httpapi.GetContextKeyString(c, common.ContextKeyUserGroup),
+		UserQuota:  httpapi.GetContextKeyInt(c, common.ContextKeyUserQuota),
+		UserEmail:  httpapi.GetContextKeyString(c, common.ContextKeyUserEmail),
 
-		OriginModelName:   common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
-		ResponseModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		OriginModelName:   httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel),
+		ResponseModelName: httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel),
 
-		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
-		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),
-		TokenQuota:     common.GetContextKeyInt(c, constant.ContextKeyTokenQuota),
-		TokenQuotaType: common.GetContextKeyInt(c, constant.ContextKeyTokenQuotaType),
-		TokenUnlimited: common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
+		TokenId:        httpapi.GetContextKeyInt(c, common.ContextKeyTokenId),
+		TokenKey:       httpapi.GetContextKeyString(c, common.ContextKeyTokenKey),
+		TokenQuota:     httpapi.GetContextKeyInt(c, common.ContextKeyTokenQuota),
+		TokenQuotaType: httpapi.GetContextKeyInt(c, common.ContextKeyTokenQuotaType),
+		TokenUnlimited: httpapi.GetContextKeyBool(c, common.ContextKeyTokenUnlimited),
 		TokenGroup:     tokenGroup,
 
 		isFirstResponse: true,
@@ -481,8 +481,8 @@ func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 			ToolCallIDs:       make(map[int]map[int]string),
 		},
 		TokenCountMeta: TokenCountMeta{
-			//promptTokens: common.GetContextKeyInt(c, constant.ContextKeyPromptTokens),
-			estimatePromptTokens: common.GetContextKeyInt(c, constant.ContextKeyEstimatedTokens),
+			//promptTokens: httpapi.GetContextKeyInt(c, common.ContextKeyPromptTokens),
+			estimatePromptTokens: httpapi.GetContextKeyInt(c, common.ContextKeyEstimatedTokens),
 		},
 	}
 
@@ -490,7 +490,7 @@ func genBaseRelayInfo(c *gin.Context, request shared.Request) *RelayInfo {
 		info.RelayMode = c.GetInt("relay_mode")
 	}
 
-	userSetting, ok := common.GetContextKeyType[shared.UserSetting](c, constant.ContextKeyUserSetting)
+	userSetting, ok := httpapi.GetContextKeyType[shared.UserSetting](c, common.ContextKeyUserSetting)
 	if ok {
 		info.UserSetting = userSetting
 	}

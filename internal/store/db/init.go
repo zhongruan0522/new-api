@@ -3,6 +3,7 @@ package dbstore
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
@@ -31,7 +32,7 @@ func init() {
 
 func InitCol() {
 	// init common column names
-	if common.UsingPostgreSQL {
+	if db.UsingPostgreSQL {
 		CommonGroupCol = `"group"`
 		CommonKeyCol = `"key"`
 	} else {
@@ -39,22 +40,22 @@ func InitCol() {
 		CommonKeyCol = "`key`"
 	}
 	if os.Getenv("LOG_SQL_DSN") != "" {
-		switch common.LogSqlType {
-		case common.DatabaseTypePostgreSQL:
+		switch db.LogSqlType {
+		case db.DatabaseTypePostgreSQL:
 			LogGroupCol = `"group"`
 		default:
 			LogGroupCol = CommonGroupCol
 		}
 	} else {
 		// LOG_SQL_DSN 为空时，日志数据库与主数据库相同
-		if common.UsingPostgreSQL {
+		if db.UsingPostgreSQL {
 			LogGroupCol = `"group"`
 		} else {
 			LogGroupCol = CommonGroupCol
 		}
 	}
 	// log sql type and database type
-	//common.SysLog("Using Log SQL Type: " + common.LogSqlType)
+	//common.SysLog("Using Log SQL Type: " + db.LogSqlType)
 }
 
 var DB *gorm.DB
@@ -77,9 +78,9 @@ func ChooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			// Use PostgreSQL
 			common.SysLog("using PostgreSQL as database")
 			if !isLog {
-				common.UsingPostgreSQL = true
+				db.UsingPostgreSQL = true
 			} else {
-				common.LogSqlType = common.DatabaseTypePostgreSQL
+				db.LogSqlType = db.DatabaseTypePostgreSQL
 			}
 			return gorm.Open(postgres.New(postgres.Config{
 				DSN:                  dsn,
@@ -89,11 +90,11 @@ func ChooseDB(envName string, isLog bool) (*gorm.DB, error) {
 		if strings.HasPrefix(dsn, "local") {
 			common.SysLog("SQL_DSN not set, using SQLite as database")
 			if !isLog {
-				common.UsingSQLite = true
+				db.UsingSQLite = true
 			} else {
-				common.LogSqlType = common.DatabaseTypeSQLite
+				db.LogSqlType = db.DatabaseTypeSQLite
 			}
-			return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
+			return gorm.Open(sqlite.Open(db.SQLitePath), newGormConfig())
 		}
 		// Use MySQL
 		common.SysLog("using MySQL as database")
@@ -106,16 +107,16 @@ func ChooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			}
 		}
 		if !isLog {
-			common.UsingMySQL = true
+			db.UsingMySQL = true
 		} else {
-			common.LogSqlType = common.DatabaseTypeMySQL
+			db.LogSqlType = db.DatabaseTypeMySQL
 		}
 		return gorm.Open(mysql.Open(dsn), newGormConfig())
 	}
 	// Use SQLite
 	common.SysLog("SQL_DSN not set, using SQLite as database")
-	common.UsingSQLite = true
-	return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
+	db.UsingSQLite = true
+	return gorm.Open(sqlite.Open(db.SQLitePath), newGormConfig())
 }
 
 // newGormConfig 构建统一的 GORM 配置。

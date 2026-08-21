@@ -49,7 +49,7 @@ func newSetupRootUser(name string) *userstore.User {
 	}
 }
 
-// 多实例并发初始化：两个进程同时通过 constant.Setup/RootUserExists 检查后
+// 多实例并发初始化：两个进程同时通过 shared.Setup/RootUserExists 检查后
 // 各自尝试写入。修复前（无固定主键占位）会创建两个 root 用户和两条 setup
 // 记录；修复后只允许一个成功，另一个按已初始化返回。
 func TestInitializeSetupConcurrentInstancesCreateSingleRoot(t *testing.T) {

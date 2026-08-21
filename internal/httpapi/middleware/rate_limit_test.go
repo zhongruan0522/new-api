@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,7 +45,7 @@ func TestSearchRateLimitEnabled(t *testing.T) {
 	common.SearchRateLimitNum = 2
 	common.SearchRateLimitDuration = 3600
 
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	inMemoryRateLimiter.Init(common.RateLimitKeyExpirationDuration)
 
 	t.Cleanup(func() {
@@ -91,7 +92,7 @@ func TestSearchRateLimitHonorsConfiguredDuration(t *testing.T) {
 	common.SearchRateLimitNum = 1
 	common.SearchRateLimitDuration = 1
 
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	inMemoryRateLimiter.Init(common.RateLimitKeyExpirationDuration)
 
 	t.Cleanup(func() {

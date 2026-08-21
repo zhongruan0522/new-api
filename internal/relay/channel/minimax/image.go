@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
@@ -175,7 +174,7 @@ func responseMiniMax2OpenAIImage(response *MiniMaxImageResponse, info *relaycomm
 func miniMaxImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadMediaResponseBody(resp.Body)
+	responseBody, err := helper.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}

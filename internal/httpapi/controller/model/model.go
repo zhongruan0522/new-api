@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/relay"
 	"github.com/NookMux/NookMux/internal/relay/channel/minimax"
@@ -100,9 +100,9 @@ func init() {
 func ListModels(c *gin.Context, modelType int) {
 	userOpenAiModels := make([]shared.OpenAIModels, 0)
 
-	modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)
+	modelLimitEnable := httpapi.GetContextKeyBool(c, common.ContextKeyTokenModelLimitEnabled)
 	if modelLimitEnable {
-		s, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
+		s, ok := httpapi.GetContextKey(c, common.ContextKeyTokenModelLimit)
 		var tokenModelLimit map[string]bool
 		if ok {
 			tokenModelLimit = s.(map[string]bool)
@@ -138,7 +138,7 @@ func ListModels(c *gin.Context, modelType int) {
 			return
 		}
 		group := userGroup
-		tokenGroup := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
+		tokenGroup := httpapi.GetContextKeyString(c, common.ContextKeyTokenGroup)
 		if tokenGroup != "" {
 			group = tokenGroup
 		}

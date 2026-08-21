@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -127,7 +128,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 	redemption := &Redemption{}
 
 	keyCol := "`key`"
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
 	common.RandomSleep()

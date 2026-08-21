@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	rankings "github.com/NookMux/NookMux/internal/domain/rankings"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -175,7 +176,7 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	}
 	items := map[string]string{}
 	if err := jsonx.UnmarshalJsonStr(value, &items); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+		httpapi.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 		return nil, "", false
 	}
 	return items, value, true
@@ -195,7 +196,7 @@ func readPricingJsonMapOption(c *gin.Context, key string) (map[string]json.RawMe
 	}
 	items := map[string]json.RawMessage{}
 	if err := jsonx.UnmarshalJsonStr(value, &items); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+		httpapi.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 		return nil, "", false
 	}
 	return items, value, true
@@ -413,7 +414,7 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		}
 		beforeValue = value
 		if _, exists := items[req.MapKey]; !exists {
-			common.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
 			return
 		}
 
@@ -421,12 +422,12 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		bytes, err := jsonx.Marshal(items)
 		if err != nil {
 			common.SysError("failed to marshal option items: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		nextValue = string(bytes)
 		if err := configmodel.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	} else {
@@ -436,7 +437,7 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		}
 		beforeValue = value
 		if _, exists := items[req.MapKey]; !exists {
-			common.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMapItemNotFound)
 			return
 		}
 
@@ -444,14 +445,14 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		var err error
 		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	}
 
 	if err := optionstore.UpdateOption(req.Key, nextValue); err != nil {
 		common.SysError("failed to update option: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(
@@ -498,11 +499,11 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 
 		if oldMapKey != "" && oldMapKey != mapKey {
 			if _, exists := items[oldMapKey]; !exists {
-				common.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
+				httpapi.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
 				return
 			}
 			if _, exists := items[mapKey]; exists {
-				common.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
+				httpapi.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
 				return
 			}
 			delete(items, oldMapKey)
@@ -512,12 +513,12 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		bytes, err := jsonx.Marshal(items)
 		if err != nil {
 			common.SysError("failed to marshal option items: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		nextValue = string(bytes)
 		if err := configmodel.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	} else {
@@ -529,11 +530,11 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 
 		if oldMapKey != "" && oldMapKey != mapKey {
 			if _, exists := items[oldMapKey]; !exists {
-				common.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
+				httpapi.ApiErrorI18n(c, i18n.MsgOptionOriginalMapItemNotFound)
 				return
 			}
 			if _, exists := items[mapKey]; exists {
-				common.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
+				httpapi.ApiErrorI18n(c, i18n.MsgOptionMapKeyExists)
 				return
 			}
 			delete(items, oldMapKey)
@@ -551,14 +552,14 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		var err error
 		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionJSONMapParseFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	}
 
 	if err := optionstore.UpdateOption(req.Key, nextValue); err != nil {
 		common.SysError("failed to update option: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(
@@ -635,22 +636,22 @@ func UpdateOption(c *gin.Context) {
 	switch option.Key {
 	case "GitHubOAuthEnabled":
 		if option.Value == "true" && common.GitHubClientId == "" {
-			common.ApiErrorI18n(c, i18n.MsgOptionGitHubOAuthConfigRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionGitHubOAuthConfigRequired)
 			return
 		}
 	case "LinuxDOOAuthEnabled":
 		if option.Value == "true" && common.LinuxDOClientId == "" {
-			common.ApiErrorI18n(c, i18n.MsgOptionLinuxDOOAuthConfigRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionLinuxDOOAuthConfigRequired)
 			return
 		}
 	case "EmailDomainRestrictionEnabled":
 		if option.Value == "true" && len(common.EmailDomainWhitelist) == 0 {
-			common.ApiErrorI18n(c, i18n.MsgOptionEmailDomainRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionEmailDomainRequired)
 			return
 		}
 	case "TurnstileCheckEnabled":
 		if option.Value == "true" && common.TurnstileSiteKey == "" {
-			common.ApiErrorI18n(c, i18n.MsgOptionTurnstileConfigRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionTurnstileConfigRequired)
 
 			return
 		}
@@ -666,25 +667,25 @@ func UpdateOption(c *gin.Context) {
 	case "AudioRatio":
 		err = ratio.UpdateAudioRatioByJSONString(option.Value.(string))
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionAudioRatioFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionAudioRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "AudioCompletionRatio":
 		err = ratio.UpdateAudioCompletionRatioByJSONString(option.Value.(string))
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionAudioCompletionRatioFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionAudioCompletionRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "CreateCacheRatio":
 		err = ratio.UpdateCreateCacheRatioByJSONString(option.Value.(string))
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionCreateCacheRatioFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionCreateCacheRatioFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "ContextPricing":
 		err = ratio.UpdateContextPricingByJSONString(option.Value.(string))
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionContextPricingFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionContextPricingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "ModelRequestRateLimitGroup":
@@ -718,22 +719,22 @@ func UpdateOption(c *gin.Context) {
 		// RetryTimes must be a non-negative integer strictly less than 100.
 		retryValue, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
 		if parseErr != nil || retryValue < 0 || retryValue >= 100 {
-			common.ApiErrorI18n(c, i18n.MsgOptionRetryTimesRange)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionRetryTimesRange)
 			return
 		}
 		// When enabling retry the count must be positive; allow 0 only when retry is disabled.
 		if common.AutomaticRetryEnabled && retryValue <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgOptionRetryTimesPositiveWhenEnable)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionRetryTimesPositiveWhenEnable)
 			return
 		}
 	case "AutomaticRetryEnabled":
 		if option.Value != "true" && option.Value != "false" {
-			common.ApiErrorI18n(c, i18n.MsgOptionRetryEnabledMustBool)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionRetryEnabledMustBool)
 			return
 		}
 		// Turning retry on requires a positive RetryTimes.
 		if option.Value == "true" && common.RetryTimes <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgOptionRetryEnableNeedsPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionRetryEnableNeedsPositive)
 			return
 		}
 	case "SidebarModulesAdmin":
@@ -787,7 +788,7 @@ func UpdateOption(c *gin.Context) {
 		// 旧格式（带 quality/size/model_filter/provider 字段）自动迁移为新 conditions 格式
 		migrated, didMigrate, migrateErr := operation.MigrateLegacyRules(option.Value.(string))
 		if migrateErr != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesParseFailed, map[string]any{"Error": migrateErr.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesParseFailed, map[string]any{"Error": migrateErr.Error()})
 			return
 		}
 		if didMigrate {
@@ -795,19 +796,19 @@ func UpdateOption(c *gin.Context) {
 		}
 		err = operation.ValidateToolBillingRules(option.Value.(string))
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesSetFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionToolBillingRulesSetFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.model_redirect", "minimax.emotion_redirect",
 		"minimax.tone_word_redirect":
 		// 仍保留的 JSON 映射型 MiniMax 选项：保存前校验。
 		if err := configmodel.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.emotion_pattern", "minimax.tone_word_pattern":
 		if err := configmodel.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
+			httpapi.ApiErrorI18n(c, i18n.MsgOptionMiniMaxSettingFailed, map[string]any{"Error": err.Error()})
 			return
 		}
 	case "minimax.voice_whitelist", "minimax.voice_redirect":
@@ -827,7 +828,7 @@ func UpdateOption(c *gin.Context) {
 	err = optionstore.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {
 		common.SysError("failed to update option: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if option.Key == "DataExportInterval" {

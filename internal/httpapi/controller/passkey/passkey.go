@@ -7,6 +7,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	secureverificationcontroller "github.com/NookMux/NookMux/internal/httpapi/controller/secure_verification"
 	usercontroller "github.com/NookMux/NookMux/internal/httpapi/controller/user"
 	"github.com/NookMux/NookMux/internal/i18n"
@@ -55,7 +56,7 @@ func normalizePasskeyDeviceName(deviceName string) string {
 
 func PasskeyRegisterBegin(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
@@ -81,26 +82,26 @@ func PasskeyRegisterBegin(c *gin.Context) {
 	count, err := passkeystore.CountPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("count passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if count >= int64(maxPasskeys) {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLimitReached, map[string]any{"Max": maxPasskeys})
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLimitReached, map[string]any{"Max": maxPasskeys})
 		return
 	}
 
 	credentials, err := passkeystore.GetPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("get passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
@@ -118,7 +119,7 @@ func PasskeyRegisterBegin(c *gin.Context) {
 	creation, sessionData, err := wa.BeginRegistration(waUser, options...)
 	if err != nil {
 		common.SysError("begin passkey registration failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
@@ -137,7 +138,7 @@ func PasskeyRegisterBegin(c *gin.Context) {
 
 	if err := passkeysvc.SaveSessionData(c, passkeysvc.RegistrationSessionKey, sessionData); err != nil {
 		common.SysError("save passkey registration session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
@@ -152,7 +153,7 @@ func PasskeyRegisterBegin(c *gin.Context) {
 
 func PasskeyRegisterFinish(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
@@ -178,26 +179,26 @@ func PasskeyRegisterFinish(c *gin.Context) {
 	count, err := passkeystore.CountPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("count passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if count >= int64(maxPasskeys) {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLimitReached, map[string]any{"Max": maxPasskeys})
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLimitReached, map[string]any{"Max": maxPasskeys})
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
 	sessionData, err := passkeysvc.PopSessionData(c, passkeysvc.RegistrationSessionKey)
 	if err != nil {
 		common.SysError("pop passkey registration session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
@@ -205,13 +206,13 @@ func PasskeyRegisterFinish(c *gin.Context) {
 	credential, err := wa.FinishRegistration(waUser, *sessionData, c.Request)
 	if err != nil {
 		common.SysError("finish passkey registration failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
 	passkeyCredential := passkeystore.NewPasskeyCredentialFromWebAuthn(user.Id, credential)
 	if passkeyCredential == nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyCreateFailed)
 		return
 	}
 
@@ -224,11 +225,11 @@ func PasskeyRegisterFinish(c *gin.Context) {
 
 	if err := passkeystore.CreatePasskeyCredential(passkeyCredential); err != nil {
 		common.SysError("create passkey credential failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgPasskeyRegisterOK, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPasskeyRegisterOK, nil)
 }
 
 func PasskeyDelete(c *gin.Context) {
@@ -249,20 +250,20 @@ func PasskeyDelete(c *gin.Context) {
 	if idStr == "" {
 		if err := passkeystore.DeletePasskeyByUserID(user.Id); err != nil {
 			common.SysError("delete passkey by user id failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	} else {
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgPasskeyInvalidID)
+			httpapi.ApiErrorI18n(c, i18n.MsgPasskeyInvalidID)
 			return
 		}
 
 		credential, err := passkeystore.GetPasskeyByID(id)
 		if err != nil {
 			common.SysError("get passkey by id failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 
@@ -276,12 +277,12 @@ func PasskeyDelete(c *gin.Context) {
 
 		if err := passkeystore.DeletePasskeyByID(id); err != nil {
 			common.SysError("delete passkey by id failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgPasskeyUnbound, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPasskeyUnbound, nil)
 }
 
 func PasskeyStatus(c *gin.Context) {
@@ -297,7 +298,7 @@ func PasskeyStatus(c *gin.Context) {
 	credentials, err := passkeystore.GetPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("get passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -336,27 +337,27 @@ func PasskeyStatus(c *gin.Context) {
 
 func PasskeyLoginBegin(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	assertion, sessionData, err := wa.BeginDiscoverableLogin()
 	if err != nil {
 		common.SysError("begin passkey discoverable login failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if err := passkeysvc.SaveSessionData(c, passkeysvc.LoginSessionKey, sessionData); err != nil {
 		common.SysError("save passkey login session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -371,21 +372,21 @@ func PasskeyLoginBegin(c *gin.Context) {
 
 func PasskeyLoginFinish(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	sessionData, err := passkeysvc.PopSessionData(c, passkeysvc.LoginSessionKey)
 	if err != nil {
 		common.SysError("pop passkey login session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -422,31 +423,31 @@ func PasskeyLoginFinish(c *gin.Context) {
 	waUser, credential, err := wa.FinishPasskeyLogin(handler, *sessionData, c.Request)
 	if err != nil {
 		common.SysError("finish passkey login failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	userWrapper, ok := waUser.(*passkeysvc.WebAuthnUser)
 	if !ok {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyStateInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyStateInvalid)
 		return
 	}
 
 	modelUser := userWrapper.ModelUser()
 	if modelUser == nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyStateInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyStateInvalid)
 		return
 	}
 
 	if modelUser.Status != common.UserStatusEnabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
 		return
 	}
 
 	// 更新凭证信息
 	updatedCredential := passkeystore.NewPasskeyCredentialFromWebAuthn(modelUser.Id, credential)
 	if updatedCredential == nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUpdateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUpdateFailed)
 		return
 	}
 
@@ -461,13 +462,13 @@ func PasskeyLoginFinish(c *gin.Context) {
 	if updatedCredential.ID > 0 {
 		if err := passkeystore.UpdatePasskeyCredential(updatedCredential); err != nil {
 			common.SysError("update passkey credential failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	} else {
 		if err := passkeystore.CreatePasskeyCredential(updatedCredential); err != nil {
 			common.SysError("create passkey credential failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	}
@@ -478,14 +479,14 @@ func PasskeyLoginFinish(c *gin.Context) {
 func AdminResetPasskey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyInvalidUserID)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyInvalidUserID)
 		return
 	}
 
 	user := &userstore.User{Id: id}
 	if err := user.FillUserById(); err != nil {
 		common.SysError("fill user by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -493,35 +494,35 @@ func AdminResetPasskey(c *gin.Context) {
 	// 匹配 ManageUser / AdminDisable2FA 的既有模式。
 	myRole := c.GetInt("role")
 	if myRole <= user.Role && myRole != common.RoleRootUser {
-		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		httpapi.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
 		return
 	}
 
 	count, err := passkeystore.CountPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("count passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if count == 0 {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 		return
 	}
 
 	if err := passkeystore.DeletePasskeyByUserID(user.Id); err != nil {
 		common.SysError("delete passkey by user id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	audit.RecordAudit(c, auditstore.AuditModuleUser, auditstore.AuditActionDelete, "重置用户 Passkey: "+user.Username, nil, map[string]interface{}{"user_id": user.Id})
-	common.ApiSuccessI18n(c, i18n.MsgPasskeyResetOK, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPasskeyResetOK, nil)
 }
 
 func PasskeyVerifyBegin(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
@@ -537,18 +538,18 @@ func PasskeyVerifyBegin(c *gin.Context) {
 	credentials, err := passkeystore.GetPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("get passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if len(credentials) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -556,13 +557,13 @@ func PasskeyVerifyBegin(c *gin.Context) {
 	assertion, sessionData, err := wa.BeginLogin(waUser)
 	if err != nil {
 		common.SysError("begin passkey login failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	if err := passkeysvc.SaveSessionData(c, passkeysvc.VerifySessionKey, sessionData); err != nil {
 		common.SysError("save passkey verify session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -577,7 +578,7 @@ func PasskeyVerifyBegin(c *gin.Context) {
 
 func PasskeyVerifyFinish(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
@@ -593,25 +594,25 @@ func PasskeyVerifyFinish(c *gin.Context) {
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
 		common.SysError("build webauthn failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	credentials, err := passkeystore.GetPasskeysByUserID(user.Id)
 	if err != nil {
 		common.SysError("get passkeys failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if len(credentials) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 		return
 	}
 
 	sessionData, err := passkeysvc.PopSessionData(c, passkeysvc.VerifySessionKey)
 	if err != nil {
 		common.SysError("pop passkey verify session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -619,7 +620,7 @@ func PasskeyVerifyFinish(c *gin.Context) {
 	validatedCred, err := wa.FinishLogin(waUser, *sessionData, c.Request)
 	if err != nil {
 		common.SysError("finish passkey login failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -632,7 +633,7 @@ func PasskeyVerifyFinish(c *gin.Context) {
 			cred.SignCount = validatedCred.Authenticator.SignCount
 			if err := passkeystore.UpdatePasskeyCredential(cred); err != nil {
 				common.SysError("update passkey credential failed: " + err.Error())
-				common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+				httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 				return
 			}
 			break
@@ -642,11 +643,11 @@ func PasskeyVerifyFinish(c *gin.Context) {
 	_, err = secureverificationcontroller.PasskeyVerifyAndMarkReadySession(c, user.Id)
 	if err != nil {
 		common.SysError("save passkey verify session failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
 		return
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgPasskeyVerifyOK, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPasskeyVerifyOK, nil)
 }
 
 func getSessionUser(c *gin.Context) (*userstore.User, error) {
@@ -673,7 +674,7 @@ func requirePasskeyRegistrationVerification(c *gin.Context, userID int) bool {
 	twoFA, err := twofastore.GetTwoFAByUserId(userID)
 	if err != nil {
 		common.SysError("get two fa by user id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return false
 	}
 	if twoFA == nil || !twoFA.IsEnabled {
@@ -686,7 +687,7 @@ func requirePasskeyDeleteVerification(c *gin.Context, userID int) bool {
 	twoFA, err := twofastore.GetTwoFAByUserId(userID)
 	if err != nil {
 		common.SysError("get two fa by user id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return false
 	}
 	if twoFA != nil && twoFA.IsEnabled {
@@ -696,11 +697,11 @@ func requirePasskeyDeleteVerification(c *gin.Context, userID int) bool {
 	_, err = passkeystore.GetPasskeyByUserID(userID)
 	if err != nil {
 		if errors.Is(err, passkeystore.ErrPasskeyNotFound) {
-			common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
+			httpapi.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 			return false
 		}
 		common.SysError("get passkey by user id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return false
 	}
 
@@ -724,14 +725,14 @@ func PasskeyUpdate(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyInvalidID)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyInvalidID)
 		return
 	}
 
 	credential, err := passkeystore.GetPasskeyByID(id)
 	if err != nil {
 		common.SysError("get passkey by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -745,23 +746,23 @@ func PasskeyUpdate(c *gin.Context) {
 
 	var req PasskeyUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyRequestInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyRequestInvalid)
 		return
 	}
 
 	credential.DeviceName = normalizePasskeyDeviceName(req.DeviceName)
 	if err := passkeystore.UpdatePasskeyCredential(credential); err != nil {
 		common.SysError("update passkey credential failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgPasskeyUpdated, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPasskeyUpdated, nil)
 }
 
 func requireSecureVerificationMethod(c *gin.Context, userID int, method string) bool {
 	if !secureverificationcontroller.HasSecureVerificationMethodForUser(c, userID, method) {
-		common.ApiErrorI18n(c, i18n.MsgPasskeySecureRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeySecureRequired)
 		return false
 	}
 	return true

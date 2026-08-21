@@ -7,6 +7,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,7 +45,7 @@ func checkSystemPerformance() *shared.NookMuxError {
 		return nil
 	}
 
-	status := common.GetSystemStatus()
+	status := runtime.GetSystemStatus()
 
 	// 检查 CPU
 	if config.CPUThreshold > 0 && int(status.CPUUsage) > config.CPUThreshold {

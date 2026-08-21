@@ -16,7 +16,7 @@ import (
 func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := helper.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}

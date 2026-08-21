@@ -3,7 +3,6 @@ package operation
 import (
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -151,10 +150,10 @@ func TestGetToolBillingPrice_ZeroPriceRule(t *testing.T) {
 		ToolType:    "web_search",
 		BillingMode: ToolBillingModePerCall,
 		Price:       0,
-		Conditions: []common.Condition{
-			{Field: "provider", Mode: common.ConditionModeEq, Value: "test_provider"},
+		Conditions: []Condition{
+			{Field: "provider", Mode: ConditionModeEq, Value: "test_provider"},
 		},
-		Logic:   common.ConditionLogicAnd,
+		Logic:   ConditionLogicAnd,
 		Enabled: true,
 	})
 	toolBillingSetting.Rules = rules

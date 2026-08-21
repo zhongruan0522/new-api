@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/common/limiter"
 	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/infra/cache/limiter"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
+	infraredis "github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )
@@ -79,7 +80,7 @@ func redisRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) g
 	return func(c *gin.Context) {
 		userId := strconv.Itoa(c.GetInt("id"))
 		ctx := context.Background()
-		rdb := common.RDB
+		rdb := infraredis.RDB
 
 		// 1. 检查成功请求数限制
 		successKey := fmt.Sprintf("rateLimit:%s:%s", ModelRequestRateLimitSuccessCountMark, userId)
@@ -178,9 +179,9 @@ func ModelRequestRateLimit() func(c *gin.Context) {
 		successMaxCount := config.ModelRequestRateLimitSuccessCount
 
 		// 获取分组
-		group := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
+		group := httpapi.GetContextKeyString(c, common.ContextKeyTokenGroup)
 		if group == "" {
-			group = common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+			group = httpapi.GetContextKeyString(c, common.ContextKeyUserGroup)
 		}
 
 		//获取分组的限流配置
@@ -191,7 +192,7 @@ func ModelRequestRateLimit() func(c *gin.Context) {
 		}
 
 		// 根据存储类型选择并执行限流处理器
-		if common.RedisEnabled {
+		if infraredis.RedisEnabled {
 			redisRateLimitHandler(duration, totalMaxCount, successMaxCount)(c)
 		} else {
 			memoryRateLimitHandler(duration, totalMaxCount, successMaxCount)(c)

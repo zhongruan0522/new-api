@@ -11,7 +11,8 @@ Go 实现的 AI API 网关与后台,聚合 OpenAI / Claude / Gemini / Azure / AW
 
 - 根 `AGENTS.md` — 全局工作规则、分层规则、子规则索引、项目概览、常用验证命令。入口,必读。
 - `web/AGENTS.md` — 前端技术栈(React 19/Rsbuild/TanStack/Base UI/Tailwind 4)、命令、文件组织、i18n。
-- `internal/common/AGENTS.md` — JSON 包装、静态资源、URL/缓存安全边界。
+- `internal/common/AGENTS.md` — 业务全局变量与零碎工具内核（ContextKey 注册表、SysLog、env 读取）。
+- `internal/infra/AGENTS.md` — 基础设施层（db/redis/cache/email/security/runtime/log 等）与依赖方向例外。
 - `internal/httpapi/router/AGENTS.md` — 路由分层、web 静态资源、SSE 保护。
 - `internal/httpapi/controller/AGENTS.md` — HTTP 边界、输入校验、**审计埋点检查清单**、使用日志字段可见性。
 - `internal/httpapi/middleware/AGENTS.md` — 认证/限速/分发/请求体恢复/SSE 保护。

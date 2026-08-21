@@ -3,6 +3,7 @@ package performance
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/manager"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 )
 
 // PerformanceSetting 性能设置配置
@@ -48,7 +49,7 @@ func init() {
 
 // syncToCommon 将配置同步到 common 包
 func syncToCommon() {
-	common.SetDiskCacheConfig(common.DiskCacheConfig{
+	cache.SetDiskCacheConfig(cache.DiskCacheConfig{
 		Enabled:     performanceSetting.DiskCacheEnabled,
 		ThresholdMB: performanceSetting.DiskCacheThresholdMB,
 		MaxSizeMB:   performanceSetting.DiskCacheMaxSizeMB,
@@ -75,11 +76,11 @@ func UpdateAndSync() {
 }
 
 // GetCacheStats 获取缓存统计信息（代理到 common 包）
-func GetCacheStats() common.DiskCacheStats {
-	return common.GetDiskCacheStats()
+func GetCacheStats() cache.DiskCacheStats {
+	return cache.GetDiskCacheStats()
 }
 
 // ResetStats 重置统计信息
 func ResetStats() {
-	common.ResetDiskCacheStats()
+	cache.ResetDiskCacheStats()
 }

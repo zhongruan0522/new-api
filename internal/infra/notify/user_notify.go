@@ -7,6 +7,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/email"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -87,7 +88,7 @@ func sendEmailNotify(userEmail string, data shared.Notify) error {
 	for _, value := range data.Values {
 		content = strings.Replace(content, shared.ContentValueParam, fmt.Sprintf("%v", value), 1)
 	}
-	return common.SendEmail(data.Title, userEmail, content)
+	return email.SendEmail(data.Title, userEmail, content)
 }
 
 func sendBarkNotify(barkURL string, data shared.Notify) error {

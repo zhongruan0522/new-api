@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
@@ -278,7 +279,7 @@ func SyncUpstreamModels(c *gin.Context) {
 	missing, err := missingmodelstore.GetMissingModels()
 	if err != nil {
 		common.SysError("failed to get missing models: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgModelSyncGetModelsFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgModelSyncGetModelsFailed)
 		return
 	}
 

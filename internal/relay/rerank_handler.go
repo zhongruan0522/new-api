@@ -12,6 +12,8 @@ import (
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,12 +43,12 @@ func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 
 	var requestBody io.Reader
 	if info.ChannelSetting.PassThroughBodyEnabled {
-		storage, err := common.GetBodyStorage(c)
+		storage, err := httpapi.GetBodyStorage(c)
 		if err != nil {
 			return shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}
 		info.UpstreamRequestBodySize = storage.Size()
-		requestBody = common.ReaderOnly(storage)
+		requestBody = cache.ReaderOnly(storage)
 	} else {
 		convertedRequest, err := adaptor.ConvertRerankRequest(c, info.RelayMode, *request)
 		if err != nil {

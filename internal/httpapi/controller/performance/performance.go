@@ -3,7 +3,10 @@ package performancecontroller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/cache"
+	infraruntime "github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -15,13 +18,13 @@ import (
 // PerformanceStats 性能统计信息
 type PerformanceStats struct {
 	// 缓存统计
-	CacheStats common.DiskCacheStats `json:"cache_stats"`
+	CacheStats cache.DiskCacheStats `json:"cache_stats"`
 	// 系统内存统计
 	MemoryStats MemoryStats `json:"memory_stats"`
 	// 磁盘缓存目录信息
 	DiskCacheInfo DiskCacheInfo `json:"disk_cache_info"`
 	// 磁盘空间信息
-	DiskSpaceInfo common.DiskSpaceInfo `json:"disk_space_info"`
+	DiskSpaceInfo infraruntime.DiskSpaceInfo `json:"disk_space_info"`
 	// 配置信息
 	Config PerformanceConfig `json:"config"`
 }
@@ -79,7 +82,7 @@ type PerformanceConfig struct {
 func GetPerformanceStats(c *gin.Context) {
 	// 不再每次获取统计都全量扫描磁盘，依赖原子计数器保证性能
 	// 仅在系统启动或显式清理时同步
-	cacheStats := common.GetDiskCacheStats()
+	cacheStats := cache.GetDiskCacheStats()
 
 	// 获取内存统计
 	var memStats runtime.MemStats
@@ -89,7 +92,7 @@ func GetPerformanceStats(c *gin.Context) {
 	diskCacheInfo := getDiskCacheInfo()
 
 	// 获取配置信息
-	diskConfig := common.GetDiskCacheConfig()
+	diskConfig := cache.GetDiskCacheConfig()
 	monitorConfig := common.GetPerformanceMonitorConfig()
 	config := PerformanceConfig{
 		DiskCacheEnabled:       diskConfig.Enabled,
@@ -103,7 +106,7 @@ func GetPerformanceStats(c *gin.Context) {
 		MonitorDiskThreshold:   monitorConfig.DiskThreshold,
 	}
 
-	diskSpaceInfo := common.GetDiskSpaceInfo()
+	diskSpaceInfo := infraruntime.GetDiskSpaceInfo()
 
 	stats := PerformanceStats{
 		CacheStats: cacheStats,
@@ -129,10 +132,10 @@ func GetPerformanceStats(c *gin.Context) {
 func ClearDiskCache(c *gin.Context) {
 	// 清理超过 10 分钟未使用的缓存文件
 	// 10 分钟是一个安全的阈值，确保正在进行的请求不会被误删
-	err := common.CleanupOldDiskCacheFiles(10 * time.Minute)
+	err := cache.CleanupOldDiskCacheFiles(10 * time.Minute)
 	if err != nil {
 		common.SysError("failed to cleanup old disk cache files: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -146,7 +149,7 @@ func ClearDiskCache(c *gin.Context) {
 
 // ResetPerformanceStats 重置性能统计
 func ResetPerformanceStats(c *gin.Context) {
-	common.ResetDiskCacheStats()
+	cache.ResetDiskCacheStats()
 
 	audit.RecordAudit(c, auditstore.AuditModulePerformance, auditstore.AuditActionUpdate, "重置性能统计", nil, nil)
 
@@ -171,7 +174,7 @@ func ForceGC(c *gin.Context) {
 // getDiskCacheInfo 获取磁盘缓存目录信息
 func getDiskCacheInfo() DiskCacheInfo {
 	// 使用统一的缓存目录
-	dir := common.GetDiskCacheDir()
+	dir := cache.GetDiskCacheDir()
 
 	info := DiskCacheInfo{
 		Path:   dir,

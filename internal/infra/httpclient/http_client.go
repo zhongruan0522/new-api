@@ -13,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/gorilla/websocket"
 	"golang.org/x/net/proxy"
 )
@@ -32,7 +33,7 @@ type ssrfRecheckKey struct{}
 // WithSSRFRecheck 返回携带 SSRF 连接时复查配置的 ctx。
 // 后续对该 ctx 内发起的每一次 TCP 连接（含 redirect 后续跳转，redirect
 // 请求继承初始请求的 context）都会在拨号前复查目标 IP。
-func WithSSRFRecheck(ctx context.Context, protection *common.SSRFProtection) context.Context {
+func WithSSRFRecheck(ctx context.Context, protection *security.SSRFProtection) context.Context {
 	if protection == nil {
 		return ctx
 	}
@@ -40,11 +41,11 @@ func WithSSRFRecheck(ctx context.Context, protection *common.SSRFProtection) con
 }
 
 // recheckProtectionFromContext 取出拨号时复查配置；无标记返回 nil。
-func recheckProtectionFromContext(ctx context.Context) *common.SSRFProtection {
+func recheckProtectionFromContext(ctx context.Context) *security.SSRFProtection {
 	if ctx == nil {
 		return nil
 	}
-	protection, _ := ctx.Value(ssrfRecheckKey{}).(*common.SSRFProtection)
+	protection, _ := ctx.Value(ssrfRecheckKey{}).(*security.SSRFProtection)
 	return protection
 }
 
@@ -90,12 +91,12 @@ func dialContextWithSSRFRecheck(base func(ctx context.Context, network, addr str
 }
 
 // buildFetchSSRFProtection 按 FetchSetting 构建 SSRF 防护配置。
-func buildFetchSSRFProtection() (*common.SSRFProtection, error) {
+func buildFetchSSRFProtection() (*security.SSRFProtection, error) {
 	fetchSetting := system.GetFetchSetting()
 	if !fetchSetting.EnableSSRFProtection {
 		return nil, nil
 	}
-	return common.BuildSSRFProtection(
+	return security.BuildSSRFProtection(
 		fetchSetting.AllowPrivateIp,
 		fetchSetting.DomainFilterMode,
 		fetchSetting.IpFilterMode,
@@ -132,7 +133,7 @@ func NewSSRFValidatedRequest(method, url string, body io.Reader) (*http.Request,
 // validateURLWithCurrentFetchSetting 用当前 FetchSetting 静态校验 URL。
 func validateURLWithCurrentFetchSetting(urlStr string) error {
 	fetchSetting := system.GetFetchSetting()
-	return common.ValidateURLWithFetchSetting(urlStr, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain)
+	return security.ValidateURLWithFetchSetting(urlStr, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain)
 }
 
 func checkRedirect(req *http.Request, via []*http.Request) error {

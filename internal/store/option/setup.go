@@ -3,7 +3,7 @@ package optionstore
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"gorm.io/gorm"
@@ -45,7 +45,7 @@ func NewSetupRecord(version string, initializedAt int64) Setup {
 
 // InitializeSetup 在单个数据库事务内写入 setup 记录并按需创建 root 用户。
 //
-// 多实例部署下，进程内锁无法阻止不同进程同时通过 constant.Setup /
+// 多实例部署下，进程内锁无法阻止不同进程同时通过 shared.Setup /
 // RootUserExists 检查后交错写入（重复 root 用户、重复 setup 记录）。
 // 事务内先插入固定主键的 setup 记录占位：
 //   - 并发实例的占位插入因主键冲突失败，事务回滚后按已初始化返回；
@@ -77,7 +77,7 @@ func InitializeSetup(rootUser *userstore.User, setup Setup) error {
 	return err
 }
 
-// CheckSetup 检查系统初始化状态并同步 constant.Setup。
+// CheckSetup 检查系统初始化状态并同步 shared.Setup。
 // 迁移自原 model/main.go：依赖 setup 记录与 root 用户探测，随 setup 域落在本包。
 func CheckSetup() {
 	setup := GetSetup()
@@ -91,14 +91,14 @@ func CheckSetup() {
 			if err != nil {
 				common.SysLog("failed to create setup record: " + err.Error())
 			}
-			constant.Setup = true
+			shared.Setup = true
 		} else {
 			common.SysLog("system is not initialized and no root user exists")
-			constant.Setup = false
+			shared.Setup = false
 		}
 	} else {
 		// Setup record exists, system is initialized
 		common.SysLog("system is already initialized at: " + time.Unix(setup.InitializedAt, 0).String())
-		constant.Setup = true
+		shared.Setup = true
 	}
 }

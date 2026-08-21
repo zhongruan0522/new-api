@@ -4,6 +4,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	rankings "github.com/NookMux/NookMux/internal/domain/rankings"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/NookMux/NookMux/internal/store/usedata"
@@ -29,21 +30,21 @@ func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
 func GetAllQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
+		httpapi.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
+		httpapi.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	username := c.Query("username")
 	dates, err := usedatastore.GetAllQuotaDates(startTimestamp, endTimestamp, username)
 	if err != nil {
 		common.SysError("failed to get all quota dates: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -56,20 +57,20 @@ func GetAllQuotaDates(c *gin.Context) {
 func GetQuotaDataGroupByUser(c *gin.Context) {
 	dashboardConfig := dashboard.GetDashboardConfig()
 	if !dashboardConfig.UserAnalyticsEnabled {
-		common.ApiSuccessI18n(c, i18n.MsgDashboardUserAnalyticsDisabled, []interface{}{})
+		httpapi.ApiSuccessI18n(c, i18n.MsgDashboardUserAnalyticsDisabled, []interface{}{})
 		return
 	}
 
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
+		httpapi.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := usedatastore.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get quota data group by user: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -82,7 +83,7 @@ func GetQuotaDataGroupByUser(c *gin.Context) {
 func GetUserQuotaDates(c *gin.Context) {
 	dashboardConfig := dashboard.GetDashboardConfig()
 	if !dashboardConfig.QuotaDataEnabled {
-		common.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
+		httpapi.ApiSuccessI18n(c, i18n.MsgDashboardQuotaDataDisabled, []interface{}{})
 		return
 	}
 
@@ -90,13 +91,13 @@ func GetUserQuotaDates(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
-		common.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
+		httpapi.ApiErrorI18n(c, i18n.MsgDashboardTimeRangeTooLong)
 		return
 	}
 	dates, err := usedatastore.GetQuotaDataByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get quota data by user id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -110,7 +111,7 @@ func GetUserQuotaDates(c *gin.Context) {
 func GetAllMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
+		httpapi.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 
@@ -120,7 +121,7 @@ func GetAllMediaConvertStats(c *gin.Context) {
 	stats, err := storedmediastore.GetAllMediaConvertStats(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get all media convert stats: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -136,25 +137,25 @@ func RecalculateQuotaData(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 
 	if startTimestamp <= 0 || endTimestamp <= 0 || endTimestamp <= startTimestamp {
-		common.ApiErrorI18n(c, i18n.MsgDashboardInvalidTimeRange)
+		httpapi.ApiErrorI18n(c, i18n.MsgDashboardInvalidTimeRange)
 		return
 	}
 
 	err := usedatastore.RecalculateQuotaData(startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to recalculate quota data: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	rankings.ClearRankingsCache()
-	common.ApiSuccessI18n(c, i18n.MsgDashboardRecalculateComplete, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgDashboardRecalculateComplete, nil)
 }
 
 // GetUserMediaConvertStats 普通用户查询自己的图片/视频转URL统计
 func GetUserMediaConvertStats(c *gin.Context) {
 	dashboardConfig := dashboard.GetDashboardConfig()
 	if !dashboardConfig.MediaConvertStatsEnabled {
-		common.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
+		httpapi.ApiSuccessI18n(c, i18n.MsgDashboardMediaConvertDisabled, map[string]interface{}{"image_count": 0, "video_count": 0})
 		return
 	}
 
@@ -165,7 +166,7 @@ func GetUserMediaConvertStats(c *gin.Context) {
 	stats, err := storedmediastore.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
 	if err != nil {
 		common.SysError("failed to get media convert stats by user id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -5,6 +5,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
@@ -23,7 +24,7 @@ func GetAllModelsMeta(c *gin.Context) {
 	modelsMeta, err := vendormetastore.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to get all models: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
@@ -36,7 +37,7 @@ func GetAllModelsMeta(c *gin.Context) {
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(modelsMeta)
-	common.ApiSuccess(c, gin.H{
+	httpapi.ApiSuccess(c, gin.H{
 		"items":         modelsMeta,
 		"total":         total,
 		"page":          pageInfo.GetPage(),
@@ -55,14 +56,14 @@ func SearchModelsMeta(c *gin.Context) {
 	modelsMeta, total, err := vendormetastore.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to search models: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
 	enrichModels(modelsMeta)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(modelsMeta)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 // GetModelMeta 根据 ID 获取单条模型信息
@@ -70,48 +71,48 @@ func GetModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	var m vendormetastore.Model
 	if err := dbstore.DB.First(&m, id).Error; err != nil {
 		common.SysError("failed to get model by id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	enrichModels([]*vendormetastore.Model{&m})
-	common.ApiSuccess(c, &m)
+	httpapi.ApiSuccess(c, &m)
 }
 
 // CreateModelMeta 新建模型
 func CreateModelMeta(c *gin.Context) {
 	var m vendormetastore.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.ModelName == "" {
-		common.ApiErrorI18n(c, i18n.MsgModelMetaNameRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgModelMetaNameRequired)
 		return
 	}
 	// 名称冲突检查
 	if dup, err := vendormetastore.IsModelNameDuplicated(0, m.ModelName); err != nil {
 		common.SysError("failed to check model name duplication: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	} else if dup {
-		common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
+		httpapi.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 		return
 	}
 
 	if err := m.Insert(); err != nil {
 		common.SysError("failed to insert model: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pricingstore.RefreshPricing()
 	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
-	common.ApiSuccess(c, &m)
+	httpapi.ApiSuccess(c, &m)
 }
 
 // UpdateModelMeta 更新模型
@@ -120,11 +121,11 @@ func UpdateModelMeta(c *gin.Context) {
 
 	var m vendormetastore.Model
 	if err := c.ShouldBindJSON(&m); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if m.Id == 0 {
-		common.ApiErrorI18n(c, i18n.MsgModelMetaMissingID)
+		httpapi.ApiErrorI18n(c, i18n.MsgModelMetaMissingID)
 		return
 	}
 
@@ -132,7 +133,7 @@ func UpdateModelMeta(c *gin.Context) {
 	var origin vendormetastore.Model
 	if err := dbstore.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
 		common.SysError("failed to get model origin: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -140,7 +141,7 @@ func UpdateModelMeta(c *gin.Context) {
 		// 只更新状态，防止误清空其他字段
 		if err := dbstore.DB.Model(&vendormetastore.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
 			common.SysError("failed to update model status: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
@@ -151,22 +152,22 @@ func UpdateModelMeta(c *gin.Context) {
 		// 名称冲突检查
 		if dup, err := vendormetastore.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
 			common.SysError("failed to check model name duplication: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		} else if dup {
-			common.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
+			httpapi.ApiErrorI18n(c, i18n.MsgModelMetaNameExists)
 			return
 		}
 
 		if err := m.Update(); err != nil {
 			common.SysError("failed to update model: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
 	}
 	pricingstore.RefreshPricing()
-	common.ApiSuccess(c, &m)
+	httpapi.ApiSuccess(c, &m)
 }
 
 // DeleteModelMeta 删除模型
@@ -174,17 +175,17 @@ func DeleteModelMeta(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if err := dbstore.DB.Delete(&vendormetastore.Model{}, id).Error; err != nil {
 		common.SysError("failed to delete model: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pricingstore.RefreshPricing()
 	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
-	common.ApiSuccess(c, nil)
+	httpapi.ApiSuccess(c, nil)
 }
 
 // enrichModels 批量填充附加信息：端点、渠道、分组、计费类型，避免 N+1 查询

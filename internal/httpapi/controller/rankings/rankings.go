@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	rankings "github.com/NookMux/NookMux/internal/domain/rankings"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +28,7 @@ func GetRankings(c *gin.Context) {
 	result, err := rankings.GetRankingsSnapshot(c.DefaultQuery("period", "week"))
 	if err != nil {
 		common.SysError("failed to get rankings snapshot: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 

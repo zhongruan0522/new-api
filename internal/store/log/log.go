@@ -7,6 +7,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	logger "github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/NookMux/NookMux/internal/store/usedata"
@@ -244,7 +245,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		logger.LogError(c, "failed to record log: "+err.Error())
 	}
 	if common.DataExportEnabled {
-		common.RelayGo(func() {
+		runtime.RelayGo(func() {
 			usedatastore.LogQuotaErrorData(userId, username, modelName, common.GetTimestamp())
 		})
 	}
@@ -308,7 +309,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		Other:             otherStr,
 	}
 	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		err := dbstore.LOG_DB.Create(log).Error
 		if err != nil {
 			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))

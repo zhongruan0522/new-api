@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	notify "github.com/NookMux/NookMux/internal/infra/notify"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -647,7 +648,7 @@ func PostConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, quota 
 }
 
 func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQuota int) {
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		userSetting := relayInfo.UserSetting
 		threshold := common.QuotaRemindThreshold
 		if userSetting.QuotaWarningThreshold != 0 {

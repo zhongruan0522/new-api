@@ -14,9 +14,10 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/image/webp"
 )
@@ -26,7 +27,7 @@ import (
 
 // getContextCacheKey 生成 context 缓存的 key
 func getContextCacheKey(url string) string {
-	return fmt.Sprintf("file_cache_%s", common.GenerateHMAC(url))
+	return fmt.Sprintf("file_cache_%s", security.GenerateHMAC(url))
 }
 
 // LoadFileSource 加载文件源数据
@@ -107,7 +108,7 @@ func registerSourceForCleanup(c *gin.Context, source *shared.FileSource) {
 		return
 	}
 
-	key := string(constant.ContextKeyFileSourcesToCleanup)
+	key := string(common.ContextKeyFileSourcesToCleanup)
 	var sources []*shared.FileSource
 	if existing, exists := c.Get(key); exists {
 		sources = existing.([]*shared.FileSource)
@@ -120,7 +121,7 @@ func registerSourceForCleanup(c *gin.Context, source *shared.FileSource) {
 // CleanupFileSources 清理请求中所有注册的 FileSource
 // 应在请求结束时调用（通常由中间件自动调用）
 func CleanupFileSources(c *gin.Context) {
-	key := string(constant.ContextKeyFileSourcesToCleanup)
+	key := string(common.ContextKeyFileSourcesToCleanup)
 	if sources, exists := c.Get(key); exists {
 		for _, source := range sources.([]*shared.FileSource) {
 			if cache := source.GetCache(); cache != nil {
@@ -134,7 +135,7 @@ func CleanupFileSources(c *gin.Context) {
 // loadFromURL 从 URL 加载文件
 func loadFromURL(c *gin.Context, url string, reason ...string) (*shared.CachedFileData, error) {
 	// 下载文件
-	var maxFileSize = constant.MaxFileDownloadMB * 1024 * 1024
+	var maxFileSize = shared.MaxFileDownloadMB * 1024 * 1024
 
 	if common.DebugEnabled {
 		log.LogDebug(c, "loadFromURL: initiating download")
@@ -158,7 +159,7 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*shared.CachedFi
 		return nil, fmt.Errorf("failed to read file content: %w", err)
 	}
 	if len(fileBytes) > maxFileSize {
-		return nil, fmt.Errorf("file size exceeds maximum allowed size: %dMB", constant.MaxFileDownloadMB)
+		return nil, fmt.Errorf("file size exceeds maximum allowed size: %dMB", shared.MaxFileDownloadMB)
 	}
 
 	// 转换为 base64
@@ -182,9 +183,9 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*shared.CachedFi
 			cachedData = shared.NewDiskCachedData(diskPath, mimeType, int64(len(fileBytes)))
 			cachedData.DiskSize = base64Size
 			cachedData.OnClose = func(size int64) {
-				common.DecrementDiskFiles(size)
+				cache.DecrementDiskFiles(size)
 			}
-			common.IncrementDiskFiles(base64Size)
+			cache.IncrementDiskFiles(base64Size)
 			if common.DebugEnabled {
 				log.LogDebug(c, fmt.Sprintf("File cached to disk: %s, size: %d bytes", diskPath, base64Size))
 			}
@@ -215,12 +216,12 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*shared.CachedFi
 
 // shouldUseDiskCache 判断是否应该使用磁盘缓存
 func shouldUseDiskCache(dataSize int64) bool {
-	return common.ShouldUseDiskCache(dataSize)
+	return cache.ShouldUseDiskCache(dataSize)
 }
 
 // writeToDiskCache 将数据写入磁盘缓存
 func writeToDiskCache(base64Data string) (string, error) {
-	return common.WriteDiskCacheFileString(common.DiskCacheTypeFile, base64Data)
+	return cache.WriteDiskCacheFileString(cache.DiskCacheTypeFile, base64Data)
 }
 
 // smartDetectMimeType 智能检测 MIME 类型
@@ -338,9 +339,9 @@ func loadFromBase64(base64String string, providedMimeType string) (*shared.Cache
 			cachedData = shared.NewDiskCachedData(diskPath, mimeType, int64(len(decodedData)))
 			cachedData.DiskSize = base64Size
 			cachedData.OnClose = func(size int64) {
-				common.DecrementDiskFiles(size)
+				cache.DecrementDiskFiles(size)
 			}
-			common.IncrementDiskFiles(base64Size)
+			cache.IncrementDiskFiles(base64Size)
 		}
 	} else {
 		cachedData = shared.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))

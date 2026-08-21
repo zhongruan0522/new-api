@@ -8,8 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/common"
-
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,7 +67,7 @@ func verifyStoredAssetSignature(c *gin.Context, scope string, id string) (exp in
 		return 0, now, false
 	}
 
-	expected := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	expected := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
 	if subtle.ConstantTimeCompare([]byte(expected), []byte(sig)) != 1 {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "invalid signature",

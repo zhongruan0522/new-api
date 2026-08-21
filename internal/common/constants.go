@@ -107,7 +107,6 @@ var GetActiveConnectionsFunc func() int64
 
 var IsMasterNode bool
 
-var requestInterval int
 var RequestInterval time.Duration
 
 var SyncFrequency int // unit is second

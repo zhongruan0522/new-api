@@ -12,7 +12,6 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel/openai"
@@ -22,6 +21,7 @@ import (
 
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -1194,7 +1194,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 
 		if len(geminiResponse.Candidates) == 0 && geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
-			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
+			httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 		}
 
 		// 统计图片数量
@@ -1348,7 +1348,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := helper.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1381,14 +1381,14 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 
 		var newAPIError *shared.NookMuxError
 		if geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
-			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
+			httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 			newAPIError = shared.NewOpenAIError(
 				errors.New("request blocked by Gemini API: "+*geminiResponse.PromptFeedback.BlockReason),
 				shared.ErrorCodePromptBlocked,
 				http.StatusBadRequest,
 			)
 		} else {
-			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "gemini_empty_candidates")
+			httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, "gemini_empty_candidates")
 			newAPIError = shared.NewOpenAIError(
 				errors.New("empty response from Gemini API"),
 				shared.ErrorCodeEmptyResponse,
@@ -1442,7 +1442,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, readErr := common.ReadEmbeddingResponseBody(resp.Body)
+	responseBody, readErr := helper.ReadEmbeddingResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, shared.NewOpenAIError(readErr, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1487,7 +1487,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, readErr := common.ReadMediaResponseBody(resp.Body)
+	responseBody, readErr := helper.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, shared.NewOpenAIError(readErr, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1606,13 +1606,13 @@ func FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL string, headers http
 		}
 
 		if response.StatusCode != http.StatusOK {
-			body, _ := common.ReadErrorResponseBody(response.Body)
+			body, _ := helper.ReadErrorResponseBody(response.Body)
 			response.Body.Close()
 			cancel()
 			return nil, fmt.Errorf("服务器返回错误 %d: %s", response.StatusCode, string(body))
 		}
 
-		body, err := common.ReadModelListResponseBody(response.Body)
+		body, err := helper.ReadModelListResponseBody(response.Body)
 		response.Body.Close()
 		cancel()
 		if err != nil {

@@ -1,5 +1,7 @@
 package common
 
+import ()
+
 import "github.com/NookMux/NookMux/internal/domain/channel/constant"
 
 // GetEndpointTypesByChannelType 获取渠道最优先端点类型（所有的渠道都支持 OpenAI 端点）

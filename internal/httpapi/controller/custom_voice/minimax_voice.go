@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/minimax_voice"
@@ -45,7 +46,7 @@ func GetMiniMaxVoices(c *gin.Context) {
 	result, err := minimaxvoicestore.ListMiniMaxVoices(params)
 	if err != nil {
 		common.SysError("list minimax voices failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -74,14 +75,14 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	}
 	req.VoiceId = strings.TrimSpace(req.VoiceId)
 	if req.VoiceId == "" {
-		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceIDRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceIDRequired)
 		return
 	}
 	if req.Type == "" {
 		req.Type = minimaxvoicestore.MiniMaxVoiceTypeCreated
 	}
 	if !isValidVoiceType(req.Type) {
-		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
 		return
 	}
 
@@ -89,11 +90,11 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	exists, err := minimaxvoicestore.IsMiniMaxVoiceIdExists(req.VoiceId)
 	if err != nil {
 		common.SysError("check minimax voice id exists failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if exists {
-		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 		return
 	}
 
@@ -110,11 +111,11 @@ func CreateMiniMaxVoice(c *gin.Context) {
 	if err := minimaxvoicestore.InsertMiniMaxVoice(voice); err != nil {
 		// 唯一约束冲突也归一为不合规。
 		if isVoiceDupErr(err) {
-			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
+			httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		common.SysError("insert minimax voice failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -147,7 +148,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		return
 	}
 	if req.Type != "" && !isValidVoiceType(req.Type) {
-		common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidType)
 		return
 	}
 
@@ -158,7 +159,7 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 			return
 		}
 		common.SysError("get minimax voice by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -168,11 +169,11 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 		exists, derr := minimaxvoicestore.IsMiniMaxVoiceIdExists(newVoiceId)
 		if derr != nil {
 			common.SysError("check minimax voice id exists failed: " + derr.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		if exists {
-			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
+			httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		before.VoiceId = newVoiceId
@@ -188,11 +189,11 @@ func UpdateMiniMaxVoice(c *gin.Context) {
 	before.UpdatedAt = time.Now().Unix()
 	if err := minimaxvoicestore.UpdateMiniMaxVoice(before); err != nil {
 		if isVoiceDupErr(err) {
-			common.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
+			httpapi.ApiErrorI18n(c, i18n.MsgMiniMaxVoiceInvalidID)
 			return
 		}
 		common.SysError("update minimax voice failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
@@ -226,12 +227,12 @@ func DeleteMiniMaxVoice(c *gin.Context) {
 			return
 		}
 		common.SysError("get minimax voice by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if err := minimaxvoicestore.DeleteMiniMaxVoiceById(id); err != nil {
 		common.SysError("delete minimax voice by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(

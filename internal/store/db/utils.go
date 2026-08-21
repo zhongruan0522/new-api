@@ -3,6 +3,8 @@ package dbstore
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"gorm.io/gorm"
 	"sync"
 	"time"
@@ -79,7 +81,7 @@ func RegisterBatchFlushers(f BatchFlushers) {
 }
 
 func InitBatchUpdater() {
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		for {
 			time.Sleep(time.Duration(common.BatchUpdateInterval) * time.Second)
 			BatchUpdate()
@@ -221,5 +223,5 @@ func RecordExist(err error) (bool, error) {
 }
 
 func ShouldUpdateRedis(fromDB bool, err error) bool {
-	return common.RedisEnabled && fromDB && err == nil
+	return redis.RedisEnabled && fromDB && err == nil
 }

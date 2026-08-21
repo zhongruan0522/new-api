@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
 
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +33,7 @@ func buildStoredAssetURLWithTTL(c *gin.Context, routeType string, scope string, 
 	}
 
 	exp := time.Now().Add(ttl).Unix()
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
 	path := fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", routeType, url.PathEscape(id), exp, sig)
 
 	base := strings.TrimRight(strings.TrimSpace(system.ServerAddress), "/")

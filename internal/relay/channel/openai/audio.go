@@ -7,13 +7,13 @@ import (
 	"net/http"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 
 	sensitive "github.com/NookMux/NookMux/internal/domain/sensitive"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -55,9 +55,9 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 			return true
 		})
 	} else {
-		common.SetContextKey(c, constant.ContextKeyLocalCountTokens, true)
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		// 读取响应体到缓冲区
-		bodyBytes, err := common.ReadMediaResponseBody(resp.Body)
+		bodyBytes, err := helper.ReadMediaResponseBody(resp.Body)
 		if err != nil {
 			log.LogError(c, fmt.Sprintf("failed to read TTS response body: %v", err))
 			c.Writer.WriteHeaderNow()
@@ -117,7 +117,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*shared.NookMuxError, *shared.Usage) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := helper.ReadResponseBody(resp.Body)
 	if err != nil {
 		return shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
 	}

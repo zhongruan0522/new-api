@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -76,7 +77,7 @@ func RecordAudit(c *gin.Context, module, actionType, description string, before,
 		AfterData:   afterStr,
 	}
 
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		if err := auditstore.CreateAuditLog(auditLog); err != nil {
 			common.SysError(fmt.Sprintf("failed to record audit log (module=%s, action=%s): %s", module, actionType, err.Error()))
 		}

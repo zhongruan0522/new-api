@@ -18,7 +18,7 @@
 | `ticket/` | 工单领域服务。 |
 | `sensitive/` | 敏感词匹配（`AcSearch` / `SundaySearch`），调用方 relay 与渠道自动禁用。 |
 | `group/` | 用户分组与分组倍率解析。 |
-| `shared/` | **过渡性收容包**：原 `dto/`+`types/` 中暂无明确归属的协议 DTO 与共享类型。 |
+| `shared/` | **过渡性收容包**：原 `dto/`+`types/` 中暂无明确归属的协议 DTO 与共享类型；另含自原 `internal/constant` 并入的运行时限值变量（`env.go`）、缓存键格式（`cache_key.go`）与 `Setup`。 |
 
 ## `shared/` 的纪律：只出不进
 
@@ -38,9 +38,12 @@
   和对 infra 的依赖必须保持无环。当前既定方向：
   `billing → {channel, infra/notify, infra/tokenizer, infra/httpclient}`、
   `channel → {sensitive, group, infra/notify}`。新增依赖前先确认不成环。
-- `domain/shared/` 目前依赖 `internal/common` 与 `internal/infra/log`（原 dto/types 的既有
-  依赖），这是 `internal/constant` 四个跨领域文件暂缓并入 shared 的原因（详见
-  `internal/constant/README.md`）；阶段 4 拆解 `common/` 时需消解此依赖。
+- `domain/shared/` 依赖 `internal/common` 与 `internal/infra/log`（原 dto/types 的既有
+  单向依赖）。原 `internal/constant` 四个跨领域文件已在阶段 4 解散并入：运行时限值
+  （`env.go`）、缓存键（`cache_key.go`）、`Setup` 落 `shared/`，`ContextKey` 注册表因被
+  domain/store/infra/relay 全层引用且 `shared → common → shared` 会成环，落
+  `internal/common/context_key.go`（详见根 AGENTS 与 `internal/common/AGENTS.md`）。
+  `common` 不再 import `shared`，该方向必须保持。
 
 ## 检查清单
 

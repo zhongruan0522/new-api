@@ -1,11 +1,11 @@
 package billingcontroller
 
 import (
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -86,7 +86,7 @@ func ResetModelRatio(c *gin.Context) {
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置模型倍率", nil, nil)
-	common.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPricingResetModelRatioSuccess, nil)
 }
 
 // ResetToolBillingRules restores tool_billing_setting.rules to the built-in
@@ -103,5 +103,5 @@ func ResetToolBillingRules(c *gin.Context) {
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleOption, auditstore.AuditActionUpdate, "重置工具计费规则", nil, nil)
-	common.ApiSuccessI18n(c, i18n.MsgPricingResetToolBillingRulesSuccess, nil)
+	httpapi.ApiSuccessI18n(c, i18n.MsgPricingResetToolBillingRulesSuccess, nil)
 }

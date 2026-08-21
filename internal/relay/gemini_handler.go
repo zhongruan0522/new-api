@@ -14,6 +14,8 @@ import (
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,12 +61,12 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *sha
 
 	var requestBody io.Reader
 	if info.ChannelSetting.PassThroughBodyEnabled {
-		storage, err := common.GetBodyStorage(c)
+		storage, err := httpapi.GetBodyStorage(c)
 		if err != nil {
 			return shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}
 		info.UpstreamRequestBodySize = storage.Size()
-		requestBody = common.ReaderOnly(storage)
+		requestBody = cache.ReaderOnly(storage)
 	} else {
 		// 使用 ConvertGeminiRequest 转换请求格式
 		convertedRequest, err := adaptor.ConvertGeminiRequest(c, info, request)
@@ -144,7 +146,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 
 	if isBatch {
 		batchRequest := &shared.GeminiBatchEmbeddingRequest{}
-		err = common.UnmarshalBodyReusable(c, batchRequest)
+		err = httpapi.UnmarshalBodyReusable(c, batchRequest)
 		if err != nil {
 			return shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 		}
@@ -158,7 +160,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 		}
 	} else {
 		singleRequest := &shared.GeminiEmbeddingRequest{}
-		err = common.UnmarshalBodyReusable(c, singleRequest)
+		err = httpapi.UnmarshalBodyReusable(c, singleRequest)
 		if err != nil {
 			return shared.NewError(err, shared.ErrorCodeInvalidRequest, shared.ErrOptionWithSkipRetry())
 		}

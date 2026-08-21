@@ -3,6 +3,7 @@ package userstore
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/glebarez/sqlite"
@@ -14,7 +15,7 @@ func setupUserCacheInvalidationTestDB(t *testing.T) {
 	t.Helper()
 
 	oldDB := dbstore.DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	t.Cleanup(func() {
 		if dbstore.DB != nil {
@@ -23,7 +24,7 @@ func setupUserCacheInvalidationTestDB(t *testing.T) {
 			}
 		}
 		dbstore.DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
 
@@ -35,7 +36,7 @@ func setupUserCacheInvalidationTestDB(t *testing.T) {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
 	dbstore.DB = db
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/console"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -33,12 +34,12 @@ func GetAllLogs(c *gin.Context) {
 	logs, total, err := logstore.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.SysError("failed to get all logs: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetUserLogs(c *gin.Context) {
@@ -82,13 +83,13 @@ func GetUserLogs(c *gin.Context) {
 	logs, total, err := logstore.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.SysError("failed to get user logs: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	filterHiddenUsageLogFields(logs)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 // filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的详情弹窗独有字段数据。
@@ -255,7 +256,7 @@ func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 func GetLogByKey(c *gin.Context) {
 	tokenId := c.GetInt("token_id")
 	if tokenId == 0 {
-		common.ApiErrorI18n(c, i18n.MsgInvalidToken)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidToken)
 		return
 	}
 
@@ -269,7 +270,7 @@ func GetLogByKey(c *gin.Context) {
 		logs, err := logstore.GetLogByTokenId(tokenId)
 		if err != nil {
 			common.SysError("failed to get log by token id: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
@@ -301,13 +302,13 @@ func GetLogByKey(c *gin.Context) {
 	})
 	if err != nil {
 		common.SysError("failed to get logs by token id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	filterHiddenUsageLogFields(logs)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetLogsStat(c *gin.Context) {
@@ -340,14 +341,14 @@ func GetLogsStat(c *gin.Context) {
 		}
 		if err != nil {
 			common.SysError("failed to get quota stat: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
 		rpm, tpm, err := logstore.QueryRpmTpm(filter)
 		if err != nil {
 			common.SysError("failed to query rpm tpm: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = logstore.Stat{
@@ -361,7 +362,7 @@ func GetLogsStat(c *gin.Context) {
 		stat, err := logstore.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.SysError("failed to sum used quota: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -408,14 +409,14 @@ func GetLogsSelfStat(c *gin.Context) {
 		qStat, err := usedatastore.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
 			common.SysError("failed to get quota stat by user id: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒）
 		rpm, tpm, err := logstore.QueryRpmTpm(filter)
 		if err != nil {
 			common.SysError("failed to query rpm tpm: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = logstore.Stat{
@@ -429,7 +430,7 @@ func GetLogsSelfStat(c *gin.Context) {
 		stat, err := logstore.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.SysError("failed to sum used quota: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		statData = stat
@@ -499,11 +500,11 @@ func DeleteHistoryLogs(c *gin.Context) {
 	cleanAuditLogs := c.Query("clean_audit_logs") == "true" || c.Query("clean_audit_logs") == "1"
 
 	if endTimestamp == 0 {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if !cleanLogs && !cleanStoredImages && !cleanStoredVideos && !cleanAuditLogs {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 
@@ -560,7 +561,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 
 	if firstErr != nil {
 		common.SysError("failed to delete history logs: " + firstErr.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -10,7 +10,6 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
@@ -22,6 +21,7 @@ import (
 
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
@@ -46,7 +46,7 @@ func maybeMarkClaudeRefusal(c *gin.Context, stopReason string) {
 		return
 	}
 	if strings.EqualFold(stopReason, "refusal") {
-		common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "claude_stop_reason=refusal")
+		httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, "claude_stop_reason=refusal")
 	}
 }
 
@@ -1233,7 +1233,7 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 		ResponseText: strings.Builder{},
 		Usage:        &shared.Usage{},
 	}
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := helper.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}

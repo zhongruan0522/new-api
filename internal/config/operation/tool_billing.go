@@ -48,9 +48,9 @@ type ToolBillingRule struct {
 	// Conditions 是该规则的匹配条件列表。
 	// 常见 field: "model", "provider", "quality", "size" 以及任意自定义属性。
 	// model_filter 的旧前缀通配符语义通过 regex 模式表达。
-	Conditions []common.Condition `json:"conditions,omitempty"`
+	Conditions []Condition `json:"conditions,omitempty"`
 	// Logic 控制 conditions 之间的 AND/OR 关系，默认 AND。
-	Logic common.ConditionLogic `json:"logic,omitempty"`
+	Logic ConditionLogic `json:"logic,omitempty"`
 	// Whether this rule is enabled
 	Enabled bool `json:"enabled"`
 }
@@ -78,11 +78,11 @@ func defaultToolBillingRules() []ToolBillingRule {
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
 			Price:       0.01,
-			Conditions: []common.Condition{
-				{Field: "model", Mode: common.ConditionModeRegex, Value: "^(o3|o4|gpt-5)"},
-				{Field: "provider", Mode: common.ConditionModeEq, Value: "openai"},
+			Conditions: []Condition{
+				{Field: "model", Mode: ConditionModeRegex, Value: "^(o3|o4|gpt-5)"},
+				{Field: "provider", Mode: ConditionModeEq, Value: "openai"},
 			},
-			Logic:   common.ConditionLogicAnd,
+			Logic:   ConditionLogicAnd,
 			Enabled: true,
 		},
 		{
@@ -91,11 +91,11 @@ func defaultToolBillingRules() []ToolBillingRule {
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
 			Price:       0.025,
-			Conditions: []common.Condition{
-				{Field: "model", Mode: common.ConditionModeRegex, Value: "^(gpt-4o|gpt-4\\.1)"},
-				{Field: "provider", Mode: common.ConditionModeEq, Value: "openai"},
+			Conditions: []Condition{
+				{Field: "model", Mode: ConditionModeRegex, Value: "^(gpt-4o|gpt-4\\.1)"},
+				{Field: "provider", Mode: ConditionModeEq, Value: "openai"},
 			},
-			Logic:   common.ConditionLogicAnd,
+			Logic:   ConditionLogicAnd,
 			Enabled: true,
 		},
 		{
@@ -104,10 +104,10 @@ func defaultToolBillingRules() []ToolBillingRule {
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
 			Price:       0.01,
-			Conditions: []common.Condition{
-				{Field: "provider", Mode: common.ConditionModeEq, Value: "claude"},
+			Conditions: []Condition{
+				{Field: "provider", Mode: ConditionModeEq, Value: "claude"},
 			},
-			Logic:   common.ConditionLogicAnd,
+			Logic:   ConditionLogicAnd,
 			Enabled: true,
 		},
 		{
@@ -116,10 +116,10 @@ func defaultToolBillingRules() []ToolBillingRule {
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
 			Price:       0.01,
-			Conditions: []common.Condition{
-				{Field: "provider", Mode: common.ConditionModeEq, Value: "gemini"},
+			Conditions: []Condition{
+				{Field: "provider", Mode: ConditionModeEq, Value: "gemini"},
 			},
-			Logic:   common.ConditionLogicAnd,
+			Logic:   ConditionLogicAnd,
 			Enabled: true,
 		},
 		// --- Image Generation (price = USD per call) ---
@@ -144,11 +144,11 @@ func imageGenRule(quality, size string, price float64) ToolBillingRule {
 		ToolType:    "image_generation",
 		BillingMode: ToolBillingModePerCall,
 		Price:       price,
-		Conditions: []common.Condition{
-			{Field: "quality", Mode: common.ConditionModeEq, Value: quality},
-			{Field: "size", Mode: common.ConditionModeEq, Value: size},
+		Conditions: []Condition{
+			{Field: "quality", Mode: ConditionModeEq, Value: quality},
+			{Field: "size", Mode: ConditionModeEq, Value: size},
 		},
-		Logic:   common.ConditionLogicAnd,
+		Logic:   ConditionLogicAnd,
 		Enabled: true,
 	}
 }
@@ -174,7 +174,7 @@ func GetToolBillingPrice(toolType string, attrs map[string]string) (float64, boo
 		if rule.ToolType != toolType {
 			continue
 		}
-		ok, err := common.EvaluateConditions(rule.Conditions, attrs, rule.Logic)
+		ok, err := EvaluateConditions(rule.Conditions, attrs, rule.Logic)
 		if err != nil {
 			common.SysError(fmt.Sprintf("tool billing rule %s evaluation failed: %v", rule.ID, err))
 			continue
@@ -252,7 +252,7 @@ func ValidateToolBillingRules(jsonStr string) error {
 			if strings.TrimSpace(cond.Field) != cond.Field {
 				return fmt.Errorf("rule %d (%s): condition %d field cannot contain leading or trailing whitespace", i, rule.ID, j)
 			}
-			mode := common.ConditionMode(strings.ToLower(string(cond.Mode)))
+			mode := ConditionMode(strings.ToLower(string(cond.Mode)))
 			if cond.Mode == "" {
 				return fmt.Errorf("rule %d (%s): condition %d has empty mode", i, rule.ID, j)
 			}
@@ -262,7 +262,7 @@ func ValidateToolBillingRules(jsonStr string) error {
 			if !isValidConditionMode(mode) {
 				return fmt.Errorf("rule %d (%s): condition %d has unsupported mode %q", i, rule.ID, j, cond.Mode)
 			}
-			if mode == common.ConditionModeRegex {
+			if mode == ConditionModeRegex {
 				v, ok := cond.Value.(string)
 				if !ok {
 					return fmt.Errorf("rule %d (%s): condition %d regex value must be a string", i, rule.ID, j)
@@ -285,7 +285,7 @@ func ValidateToolBillingRules(jsonStr string) error {
 	return nil
 }
 
-func isValidConditionLogic(logic common.ConditionLogic) bool {
+func isValidConditionLogic(logic ConditionLogic) bool {
 	if logic == "" {
 		return true
 	}
@@ -293,28 +293,28 @@ func isValidConditionLogic(logic common.ConditionLogic) bool {
 	if trimmed != string(logic) {
 		return false
 	}
-	switch common.ConditionLogic(strings.ToUpper(trimmed)) {
-	case common.ConditionLogicAnd, common.ConditionLogicOr:
+	switch ConditionLogic(strings.ToUpper(trimmed)) {
+	case ConditionLogicAnd, ConditionLogicOr:
 		return true
 	}
 	return false
 }
 
-func isValidConditionMode(mode common.ConditionMode) bool {
+func isValidConditionMode(mode ConditionMode) bool {
 	switch mode {
-	case common.ConditionModeEq, common.ConditionModeNeq,
-		common.ConditionModePrefix, common.ConditionModeSuffix,
-		common.ConditionModeContains, common.ConditionModeRegex,
-		common.ConditionModeGt, common.ConditionModeGte,
-		common.ConditionModeLt, common.ConditionModeLte:
+	case ConditionModeEq, ConditionModeNeq,
+		ConditionModePrefix, ConditionModeSuffix,
+		ConditionModeContains, ConditionModeRegex,
+		ConditionModeGt, ConditionModeGte,
+		ConditionModeLt, ConditionModeLte:
 		return true
 	}
 	return false
 }
 
-func isNumericConditionMode(mode common.ConditionMode) bool {
+func isNumericConditionMode(mode ConditionMode) bool {
 	switch mode {
-	case common.ConditionModeGt, common.ConditionModeGte, common.ConditionModeLt, common.ConditionModeLte:
+	case ConditionModeGt, ConditionModeGte, ConditionModeLt, ConditionModeLte:
 		return true
 	}
 	return false
@@ -392,15 +392,15 @@ func MigrateLegacyRules(jsonStr string) (string, bool, error) {
 
 // migrateLegacyRule 将一条旧格式规则转换为新 conditions 格式。
 func migrateLegacyRule(legacy toolBillingLegacyRule, current ToolBillingRule) ToolBillingRule {
-	var conds []common.Condition
+	var conds []Condition
 
 	// model_filter → regex condition
 	if legacy.ModelFilter != "" {
 		regexPattern := modelFilterToRegex(legacy.ModelFilter)
 		if regexPattern != "" {
-			conds = append(conds, common.Condition{
+			conds = append(conds, Condition{
 				Field: "model",
-				Mode:  common.ConditionModeRegex,
+				Mode:  ConditionModeRegex,
 				Value: regexPattern,
 			})
 		}
@@ -408,33 +408,33 @@ func migrateLegacyRule(legacy toolBillingLegacyRule, current ToolBillingRule) To
 
 	// provider → eq condition
 	if legacy.Provider != "" {
-		conds = append(conds, common.Condition{
+		conds = append(conds, Condition{
 			Field: "provider",
-			Mode:  common.ConditionModeEq,
+			Mode:  ConditionModeEq,
 			Value: legacy.Provider,
 		})
 	}
 
 	// quality → eq condition
 	if legacy.Quality != "" {
-		conds = append(conds, common.Condition{
+		conds = append(conds, Condition{
 			Field: "quality",
-			Mode:  common.ConditionModeEq,
+			Mode:  ConditionModeEq,
 			Value: legacy.Quality,
 		})
 	}
 
 	// size → eq condition
 	if legacy.Size != "" {
-		conds = append(conds, common.Condition{
+		conds = append(conds, Condition{
 			Field: "size",
-			Mode:  common.ConditionModeEq,
+			Mode:  ConditionModeEq,
 			Value: legacy.Size,
 		})
 	}
 
 	current.Conditions = conds
-	current.Logic = common.ConditionLogicAnd
+	current.Logic = ConditionLogicAnd
 	return current
 }
 

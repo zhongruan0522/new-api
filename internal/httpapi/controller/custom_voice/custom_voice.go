@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/model"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	customvoice "github.com/NookMux/NookMux/internal/infra/custom_voice"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -29,7 +29,7 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 	// 文件从 multipart form 读取。
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgCustomVoiceUploadAudioRequired)
+		httpapi.ApiErrorI18n(c, i18n.MsgCustomVoiceUploadAudioRequired)
 		return
 	}
 

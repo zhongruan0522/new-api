@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/samber/lo"
@@ -149,7 +150,7 @@ func getChannelWithRelayFormat(group string, model string, priorityIndex int, pr
 	if err != nil {
 		return nil, err
 	}
-	if common.UsingSQLite || common.UsingPostgreSQL {
+	if infradb.UsingSQLite || infradb.UsingPostgreSQL {
 		err = channelQuery.Order("weight DESC").Find(&abilities).Error
 	} else {
 		err = channelQuery.Order("weight DESC").Find(&abilities).Error
@@ -338,7 +339,7 @@ func FixAbility() (int, int, error) {
 	defer fixLock.Unlock()
 
 	// truncate abilities table
-	if common.UsingSQLite {
+	if infradb.UsingSQLite {
 		err := dbstore.DB.Exec("DELETE FROM abilities").Error
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Delete abilities failed: %s", err.Error()))

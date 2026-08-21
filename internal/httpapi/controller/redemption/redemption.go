@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db"
@@ -30,13 +31,13 @@ func GetAllRedemptions(c *gin.Context) {
 	redemptions, total, err := redemptionstore.GetAllRedemptions(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to get all redemptions: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	maskRedemptionKeys(redemptions)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func SearchRedemptions(c *gin.Context) {
@@ -45,25 +46,25 @@ func SearchRedemptions(c *gin.Context) {
 	redemptions, total, err := redemptionstore.SearchRedemptions(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("failed to search redemptions: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	maskRedemptionKeys(redemptions)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetRedemption(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	redemption, err := redemptionstore.GetRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	redemption.Key = ""
@@ -80,13 +81,13 @@ func GetRedemptionKey(c *gin.Context) {
 	userId := c.GetInt("id")
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	redemption, err := redemptionstore.GetRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	userstore.RecordLog(userId, logstore.LogTypeSystem, fmt.Sprintf("查看兑换码密钥 (兑换码ID: %d)", id))
@@ -103,21 +104,21 @@ func AddRedemption(c *gin.Context) {
 	redemption := redemptionstore.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if utf8.RuneCountInString(redemption.Name) == 0 || utf8.RuneCountInString(redemption.Name) > 20 {
-		common.ApiErrorI18n(c, i18n.MsgRedemptionNameLength)
+		httpapi.ApiErrorI18n(c, i18n.MsgRedemptionNameLength)
 		return
 	}
 	if redemption.Count <= 0 {
-		common.ApiErrorI18n(c, i18n.MsgRedemptionCountPositive)
+		httpapi.ApiErrorI18n(c, i18n.MsgRedemptionCountPositive)
 		return
 	}
 	// 单次请求上限 100 条，防止大量并发写入导致数据库过载。
 	// 如需创建更多兑换码，由前端分批调用本接口实现。
 	if redemption.Count > 100 {
-		common.ApiErrorI18n(c, i18n.MsgRedemptionCountMax)
+		httpapi.ApiErrorI18n(c, i18n.MsgRedemptionCountMax)
 		return
 	}
 	if valid, msg := validateExpiredTime(c, redemption.ExpiredTime); !valid {
@@ -166,7 +167,7 @@ func DeleteRedemption(c *gin.Context) {
 	err := redemptionstore.DeleteRedemptionById(id)
 	if err != nil {
 		common.SysError("failed to delete redemption: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
@@ -181,13 +182,13 @@ func UpdateRedemption(c *gin.Context) {
 	redemption := redemptionstore.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	cleanRedemption, err := redemptionstore.GetRedemptionById(redemption.Id)
 	if err != nil {
 		common.SysError("failed to get redemption by id: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 保存更新前快照用于审计差异对比
@@ -208,7 +209,7 @@ func UpdateRedemption(c *gin.Context) {
 	err = cleanRedemption.Update()
 	if err != nil {
 		common.SysError("failed to update redemption: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
@@ -226,7 +227,7 @@ func DeleteInvalidRedemption(c *gin.Context) {
 	rows, err := redemptionstore.DeleteInvalidRedemptions()
 	if err != nil {
 		common.SysError("failed to delete invalid redemptions: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleRedemption, auditstore.AuditActionDelete, "删除无效兑换码", nil, nil)

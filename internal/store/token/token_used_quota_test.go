@@ -3,6 +3,7 @@ package tokenstore
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -13,7 +14,7 @@ func setupTokenUsedQuotaTestDB(t *testing.T) func() {
 	t.Helper()
 
 	oldDB := dbstore.DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldBatchUpdateEnabled := common.BatchUpdateEnabled
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -25,12 +26,12 @@ func setupTokenUsedQuotaTestDB(t *testing.T) func() {
 	}
 
 	dbstore.DB = db
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.BatchUpdateEnabled = false
 
 	return func() {
 		dbstore.DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.BatchUpdateEnabled = oldBatchUpdateEnabled
 	}
 }

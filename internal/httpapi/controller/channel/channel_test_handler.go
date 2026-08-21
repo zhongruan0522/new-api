@@ -8,15 +8,16 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	relaycontroller "github.com/NookMux/NookMux/internal/httpapi/controller/relay"
 	"github.com/NookMux/NookMux/internal/httpapi/middleware"
 	"github.com/NookMux/NookMux/internal/i18n"
 	domainnotify "github.com/NookMux/NookMux/internal/infra/notify"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/relay"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -1492,7 +1493,7 @@ func writeChannelTestJSON(c *gin.Context, success bool, message string, errorCod
 func TestChannel(c *gin.Context) {
 	channelId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := channelstore.CacheGetChannel(channelId)
@@ -1500,7 +1501,7 @@ func TestChannel(c *gin.Context) {
 		channel, err = channelstore.GetChannelById(channelId, true)
 		if err != nil {
 			common.SysError("failed to get channel by id: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 	}
@@ -1511,7 +1512,7 @@ func TestChannel(c *gin.Context) {
 	testUserID, err := resolveChannelTestUserID(c)
 	if err != nil {
 		common.SysError("failed to resolve channel test user: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	tik := time.Now()
@@ -1559,7 +1560,7 @@ func testAllChannels(c *gin.Context, notify bool) error {
 	if disableThreshold == 0 {
 		disableThreshold = 10000000 // a impossible value
 	}
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		// 使用 defer 确保无论如何都会重置运行状态，防止死锁
 		defer func() {
 			testAllChannelsLock.Lock()
@@ -1595,12 +1596,12 @@ func testAllChannels(c *gin.Context, notify bool) error {
 
 			// disable channel
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
-				relaycontroller.ProcessChannelError(result.context, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+				relaycontroller.ProcessChannelError(result.context, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, httpapi.GetContextKeyString(result.context, common.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 			}
 
 			// enable channel
 			if !isChannelEnabled && domainchannel.ShouldEnableChannel(newAPIError, channel.Status) {
-				domainchannel.EnableChannel(channel.Id, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.Name)
+				domainchannel.EnableChannel(channel.Id, httpapi.GetContextKeyString(result.context, common.ContextKeyChannelKey), channel.Name)
 			}
 
 			channel.UpdateResponseTime(milliseconds)
@@ -1618,7 +1619,7 @@ func TestAllChannels(c *gin.Context) {
 	err := testAllChannels(c, true)
 	if err != nil {
 		common.SysError("failed to test all channels: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -2,15 +2,16 @@ package tokenstore
 
 import (
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"time"
 )
 
 func cacheSetToken(token Token) error {
-	key := common.GenerateHMAC(token.Key)
+	key := security.GenerateHMAC(token.Key)
 	token.Clean()
-	err := common.RedisHSetObj(fmt.Sprintf("token:%s", key), &token, time.Duration(common.RedisKeyCacheSeconds())*time.Second)
+	err := redis.RedisHSetObj(fmt.Sprintf("token:%s", key), &token, time.Duration(redis.RedisKeyCacheSeconds())*time.Second)
 	if err != nil {
 		return err
 	}
@@ -18,8 +19,8 @@ func cacheSetToken(token Token) error {
 }
 
 func cacheDeleteToken(key string) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisDelKey(fmt.Sprintf("token:%s", key))
+	key = security.GenerateHMAC(key)
+	err := redis.RedisDelKey(fmt.Sprintf("token:%s", key))
 	if err != nil {
 		return err
 	}
@@ -27,8 +28,8 @@ func cacheDeleteToken(key string) error {
 }
 
 func cacheIncrTokenQuota(key string, increment int64) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFiledRemainQuota, increment)
+	key = security.GenerateHMAC(key)
+	err := redis.RedisHIncrBy(fmt.Sprintf("token:%s", key), shared.TokenFiledRemainQuota, increment)
 	if err != nil {
 		return err
 	}
@@ -40,8 +41,8 @@ func cacheDecrTokenQuota(key string, decrement int64) error {
 }
 
 func cacheIncrTokenUsedQuota(key string, increment int64) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldUsedQuota, increment)
+	key = security.GenerateHMAC(key)
+	err := redis.RedisHIncrBy(fmt.Sprintf("token:%s", key), shared.TokenFieldUsedQuota, increment)
 	if err != nil {
 		return err
 	}
@@ -49,8 +50,8 @@ func cacheIncrTokenUsedQuota(key string, increment int64) error {
 }
 
 func cacheIncrWindowUsedQuota(key string, increment int64) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldWindowUsedQuota, increment)
+	key = security.GenerateHMAC(key)
+	err := redis.RedisHIncrBy(fmt.Sprintf("token:%s", key), shared.TokenFieldWindowUsedQuota, increment)
 	if err != nil {
 		return err
 	}
@@ -58,8 +59,8 @@ func cacheIncrWindowUsedQuota(key string, increment int64) error {
 }
 
 func cacheIncrCycleUsedQuota(key string, increment int64) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldCycleUsedQuota, increment)
+	key = security.GenerateHMAC(key)
+	err := redis.RedisHIncrBy(fmt.Sprintf("token:%s", key), shared.TokenFieldCycleUsedQuota, increment)
 	if err != nil {
 		return err
 	}
@@ -68,12 +69,12 @@ func cacheIncrCycleUsedQuota(key string, increment int64) error {
 
 // CacheGetTokenByKey 从缓存中获取 token，如果缓存中不存在，则从数据库中获取
 func cacheGetTokenByKey(key string) (*Token, error) {
-	hmacKey := common.GenerateHMAC(key)
-	if !common.RedisEnabled {
+	hmacKey := security.GenerateHMAC(key)
+	if !redis.RedisEnabled {
 		return nil, fmt.Errorf("redis is not enabled")
 	}
 	var token Token
-	err := common.RedisHGetObj(fmt.Sprintf("token:%s", hmacKey), &token)
+	err := redis.RedisHGetObj(fmt.Sprintf("token:%s", hmacKey), &token)
 	if err != nil {
 		return nil, err
 	}

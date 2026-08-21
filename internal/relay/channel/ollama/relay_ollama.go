@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/common"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
@@ -51,12 +51,12 @@ func FetchOllamaModels(baseURL, apiKey, proxyURL string) ([]OllamaModel, error) 
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := common.ReadErrorResponseBody(response.Body)
+		body, _ := helper.ReadErrorResponseBody(response.Body)
 		return nil, fmt.Errorf("服务器返回错误 %d: %s", response.StatusCode, string(body))
 	}
 
 	var listResponse OllamaOpenAIModelListResponse
-	body, err := common.ReadModelListResponseBody(response.Body)
+	body, err := helper.ReadModelListResponseBody(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("读取响应失败: %v", err)
 	}
@@ -136,7 +136,7 @@ func PullOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := common.ReadErrorResponseBody(response.Body)
+		body, _ := helper.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("拉取模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -175,7 +175,7 @@ func PullOllamaModelStream(baseURL, apiKey, proxyURL, modelName string, progress
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := common.ReadErrorResponseBody(response.Body)
+		body, _ := helper.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("拉取模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -249,7 +249,7 @@ func DeleteOllamaModel(baseURL, apiKey, proxyURL, modelName string) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := common.ReadErrorResponseBody(response.Body)
+		body, _ := helper.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("删除模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -283,7 +283,7 @@ func FetchOllamaVersion(baseURL, apiKey, proxyURL string) (string, error) {
 	}
 	defer response.Body.Close()
 
-	body, err := common.ReadModelListResponseBody(response.Body)
+	body, err := helper.ReadModelListResponseBody(response.Body)
 	if err != nil {
 		return "", fmt.Errorf("读取响应失败: %v", err)
 	}

@@ -3,6 +3,7 @@ package dbmigrate
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -16,19 +17,19 @@ func openDBByType(dsn string, dbType string) (*gorm.DB, error) {
 		return nil, errors.New("DSN 不能为空")
 	}
 	switch dbType {
-	case common.DatabaseTypePostgreSQL:
+	case db.DatabaseTypePostgreSQL:
 		return gorm.Open(postgres.New(postgres.Config{
 			DSN:                  dsn,
 			PreferSimpleProtocol: true,
 		}), &gorm.Config{
 			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})
-	case common.DatabaseTypeMySQL:
+	case db.DatabaseTypeMySQL:
 		dsn = ensureMySQLParseTime(dsn)
 		return gorm.Open(mysql.Open(dsn), &gorm.Config{
 			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})
-	case common.DatabaseTypeSQLite:
+	case db.DatabaseTypeSQLite:
 		return gorm.Open(sqlite.Open(dsn), &gorm.Config{
 			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})

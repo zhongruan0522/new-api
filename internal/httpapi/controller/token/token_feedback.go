@@ -2,18 +2,18 @@ package tokencontroller
 
 import (
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/gin-gonic/gin"
 )
 
 func GetTokenForFeedback(c *gin.Context) (*tokenstore.Token, error) {
-	token, err := tokenstore.GetTokenByKey(common.GetContextKeyString(c, constant.ContextKeyTokenKey), false)
+	token, err := tokenstore.GetTokenByKey(httpapi.GetContextKeyString(c, common.ContextKeyTokenKey), false)
 	if err != nil {
 		return nil, err
 	}
 
-	quotaType := common.GetContextKeyInt(c, constant.ContextKeyTokenQuotaType)
+	quotaType := httpapi.GetContextKeyInt(c, common.ContextKeyTokenQuotaType)
 	if quotaType == 0 && !token.UnlimitedQuota {
 		quotaType = token.QuotaType
 		if quotaType == 0 {
@@ -21,7 +21,7 @@ func GetTokenForFeedback(c *gin.Context) (*tokenstore.Token, error) {
 		}
 	}
 	if quotaType == 2 || quotaType == 3 {
-		return tokenstore.GetTokenById(common.GetContextKeyInt(c, constant.ContextKeyTokenId))
+		return tokenstore.GetTokenById(httpapi.GetContextKeyInt(c, common.ContextKeyTokenId))
 	}
 	return token, nil
 }

@@ -12,7 +12,9 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/pkg/cachex"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/hot"
@@ -86,9 +88,9 @@ func getChannelAffinityCache() *cachex.HybridCache[int] {
 
 		channelAffinityCache = cachex.NewHybridCache[int](cachex.HybridCacheConfig[int]{
 			Namespace: cachex.Namespace(channelAffinityCacheNamespace),
-			Redis:     common.RDB,
+			Redis:     redis.RDB,
 			RedisEnabled: func() bool {
-				return common.RedisEnabled && common.RDB != nil
+				return redis.RedisEnabled && redis.RDB != nil
 			},
 			RedisCodec: cachex.IntCodec{},
 			Memory: func() *hot.HotCache[string, int] {
@@ -295,7 +297,7 @@ func extractChannelAffinityValue(c *gin.Context, src operation.ChannelAffinityKe
 		if src.Path == "" {
 			return ""
 		}
-		body, err := common.GetRequestBody(c)
+		body, err := httpapi.GetRequestBody(c)
 		if err != nil || len(body) == 0 {
 			return ""
 		}
@@ -812,9 +814,9 @@ func getChannelAffinityUsageCacheStatsCache() *cachex.HybridCache[ChannelAffinit
 
 		channelAffinityUsageCacheStatsCache = cachex.NewHybridCache[ChannelAffinityUsageCacheCounters](cachex.HybridCacheConfig[ChannelAffinityUsageCacheCounters]{
 			Namespace: cachex.Namespace(channelAffinityUsageCacheStatsNamespace),
-			Redis:     common.RDB,
+			Redis:     redis.RDB,
 			RedisEnabled: func() bool {
-				return common.RedisEnabled && common.RDB != nil
+				return redis.RedisEnabled && redis.RDB != nil
 			},
 			RedisCodec: cachex.JSONCodec[ChannelAffinityUsageCacheCounters]{},
 			Memory: func() *hot.HotCache[string, ChannelAffinityUsageCacheCounters] {

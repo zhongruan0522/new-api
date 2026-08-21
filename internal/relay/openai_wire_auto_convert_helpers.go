@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/gin-gonic/gin"
@@ -55,24 +55,24 @@ type openAIWireConversionOptions struct {
 }
 
 func takeRequestBodySnapshot(c *gin.Context) (requestBodySnapshot, error) {
-	body, err := common.GetRequestBody(c)
+	body, err := httpapi.GetRequestBody(c)
 	if err != nil {
 		return requestBodySnapshot{}, err
 	}
-	storage, _ := c.Get(common.KeyBodyStorage)
+	storage, _ := c.Get(httpapi.KeyBodyStorage)
 	return requestBodySnapshot{body: body, storage: storage}, nil
 }
 
 func (s requestBodySnapshot) restore(c *gin.Context) {
-	c.Set(common.KeyRequestBody, s.body)
-	c.Set(common.KeyBodyStorage, s.storage)
+	c.Set(httpapi.KeyRequestBody, s.body)
+	c.Set(httpapi.KeyBodyStorage, s.storage)
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(s.body))
 	c.Request.ContentLength = int64(len(s.body))
 }
 
 func setTemporaryRequestBody(c *gin.Context, body []byte) {
-	c.Set(common.KeyBodyStorage, nil)
-	c.Set(common.KeyRequestBody, body)
+	c.Set(httpapi.KeyBodyStorage, nil)
+	c.Set(httpapi.KeyRequestBody, body)
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 	c.Request.ContentLength = int64(len(body))
 }

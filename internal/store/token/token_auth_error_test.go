@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/token"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -16,17 +18,17 @@ func setupTokenAuthErrorTestDB(t *testing.T) {
 	t.Helper()
 
 	oldDB := dbstore.DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
-	oldUsingSQLite := common.UsingSQLite
-	oldUsingPostgreSQL := common.UsingPostgreSQL
-	oldUsingMySQL := common.UsingMySQL
+	oldUsingSQLite := infradb.UsingSQLite
+	oldUsingPostgreSQL := infradb.UsingPostgreSQL
+	oldUsingMySQL := infradb.UsingMySQL
 
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = false
-	common.UsingSQLite = true
-	common.UsingPostgreSQL = false
-	common.UsingMySQL = false
+	infradb.UsingSQLite = true
+	infradb.UsingPostgreSQL = false
+	infradb.UsingMySQL = false
 	dbstore.InitCol()
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -43,11 +45,11 @@ func setupTokenAuthErrorTestDB(t *testing.T) {
 			_ = sqlDB.Close()
 		}
 		dbstore.DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
-		common.UsingSQLite = oldUsingSQLite
-		common.UsingPostgreSQL = oldUsingPostgreSQL
-		common.UsingMySQL = oldUsingMySQL
+		infradb.UsingSQLite = oldUsingSQLite
+		infradb.UsingPostgreSQL = oldUsingPostgreSQL
+		infradb.UsingMySQL = oldUsingMySQL
 		dbstore.InitCol()
 	})
 }

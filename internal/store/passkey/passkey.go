@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
@@ -161,7 +162,7 @@ func GetPasskeysByUserID(userID int) ([]*PasskeyCredential, error) {
 	}
 	var credentials []*PasskeyCredential
 	query := dbstore.DB.Where("user_id = ?", userID)
-	if common.UsingMySQL {
+	if infradb.UsingMySQL {
 		query = query.Order("IFNULL(last_used_at, '1970-01-01') DESC, created_at DESC")
 	} else {
 		query = query.Order("last_used_at DESC NULLS LAST, created_at DESC")

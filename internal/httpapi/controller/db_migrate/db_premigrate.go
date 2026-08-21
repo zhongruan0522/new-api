@@ -3,6 +3,7 @@ package dbmigratecontroller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/db/migrate"
@@ -23,10 +24,10 @@ func GetDBPreMigrateInfo(c *gin.Context) {
 	info, err := dbmigrate.GetDBPreMigrateInfo()
 	if err != nil {
 		common.SysError("failed to get db pre migrate info: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	common.ApiSuccess(c, info)
+	httpapi.ApiSuccess(c, info)
 }
 
 func StartDBPreMigrate(c *gin.Context) {
@@ -47,11 +48,11 @@ func StartDBPreMigrate(c *gin.Context) {
 	})
 	if err != nil {
 		common.SysError("failed to start db pre migrate: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleDB, auditstore.AuditActionUpdate, "启动数据库预迁移", nil, req)
-	common.ApiSuccess(c, gin.H{"job_id": jobID})
+	httpapi.ApiSuccess(c, gin.H{"job_id": jobID})
 }
 
 func GetDBPreMigrateJob(c *gin.Context) {
@@ -72,5 +73,5 @@ func GetDBPreMigrateJob(c *gin.Context) {
 		})
 		return
 	}
-	common.ApiSuccess(c, &job)
+	httpapi.ApiSuccess(c, &job)
 }

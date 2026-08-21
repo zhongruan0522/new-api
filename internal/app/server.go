@@ -7,6 +7,9 @@ import (
 	"github.com/NookMux/NookMux/internal/httpapi/controller/channel"
 	"github.com/NookMux/NookMux/internal/httpapi/middleware"
 	"github.com/NookMux/NookMux/internal/httpapi/router"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -44,7 +47,7 @@ func Run() int {
 		}
 	}()
 
-	if common.RedisEnabled {
+	if redis.RedisEnabled {
 		// for compatibility with old versions
 		common.MemoryCacheEnabled = true
 	}
@@ -101,19 +104,19 @@ func Run() int {
 	}
 
 	if os.Getenv("ENABLE_PPROF") == "true" {
-		go common.EnablePprofServer()
-		go common.Monitor()
+		go runtime.EnablePprofServer()
+		go runtime.Monitor()
 		common.SysLog("pprof enabled")
 	}
 
-	err = common.StartPyroScope()
+	err = runtime.StartPyroScope()
 	if err != nil {
 		common.SysError(fmt.Sprintf("start pyroscope error : %v", err))
 	}
 
 	// Initialize HTTP server
 	server := gin.New()
-	common.SetupGinTrustedProxies(server)
+	security.SetupGinTrustedProxies(server)
 	server.Use(gin.CustomRecovery(func(c *gin.Context, err any) {
 		common.SysLog(fmt.Sprintf("panic detected: %v", err))
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -149,7 +152,7 @@ func Run() int {
 	})
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = strconv.Itoa(*common.Port)
+		port = strconv.Itoa(*Port)
 	}
 
 	// Log startup success message

@@ -1,7 +1,7 @@
 package dbmigrate
 
 import (
-	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/checkin"
@@ -26,16 +26,16 @@ import (
 
 func autoMigrateTargetMainSchema(db *gorm.DB) error {
 	// 同 dbmigrate.cleanupLegacyUniqueIndexes 的说明，pre-migrate 路径也需要清理
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		dbstore.CleanupLegacyUniqueConstraints(db, "prefill_groups", "name", []string{"uni_prefill_groups_name", "idx_prefill_groups_name"})
 		dbstore.CleanupLegacyUniqueConstraints(db, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
 		dbstore.CleanupLegacyUniqueConstraints(db, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
 		dbstore.CleanupLegacyUniqueConstraints(db, "passkey_credentials", "user_id", []string{"uni_passkey_credentials_user_id", "idx_passkey_credentials_user_id"})
 	}
-	if common.UsingSQLite {
+	if infradb.UsingSQLite {
 		dbstore.CleanupLegacyUniqueConstraints(db, "passkey_credentials", "user_id", []string{"uni_passkey_credentials_user_id", "idx_passkey_credentials_user_id"})
 	}
-	if common.UsingMySQL {
+	if infradb.UsingMySQL {
 		dbstore.CleanupLegacyUniqueConstraints(db, "passkey_credentials", "user_id", []string{"uni_passkey_credentials_user_id", "idx_passkey_credentials_user_id"})
 	}
 	if err := db.AutoMigrate(

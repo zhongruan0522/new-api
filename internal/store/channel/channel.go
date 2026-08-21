@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/samber/lo"
@@ -77,7 +78,7 @@ func NormalizeChannelGroupFilter(group string) string {
 }
 
 func channelGroupFilterCondition() string {
-	if common.UsingMySQL {
+	if infradb.UsingMySQL {
 		return `CONCAT(',', ` + dbstore.CommonGroupCol + `, ',') LIKE ? ESCAPE '!'`
 	}
 	return `(',' || ` + dbstore.CommonGroupCol + ` || ',') LIKE ? ESCAPE '!'`
@@ -389,13 +390,13 @@ func buildSearchChannelsQuery(keyword string, group string, model string, idFilt
 	modelsCol := "`models`"
 
 	// 如果是 PostgreSQL，使用双引号
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		modelsCol = `"models"`
 	}
 
 	baseURLCol := "`base_url`"
 	// 如果是 PostgreSQL，使用双引号
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		baseURLCol = `"base_url"`
 	}
 
@@ -965,7 +966,7 @@ func GetPaginatedTags(offset int, limit int) ([]*string, error) {
 func GetPaginatedChannelTags(query *gorm.DB, offset int, limit int) ([]*string, error) {
 	var tags []*string
 	query = query.Select("DISTINCT tag").Where("tag is not null AND tag != ''")
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		query = query.Order("tag asc")
 	} else {
 		query = query.Order("LOWER(tag) asc")
@@ -979,13 +980,13 @@ func SearchTags(keyword string, group string, model string, idSort bool, idFilte
 	modelsCol := "`models`"
 
 	// 如果是 PostgreSQL，使用双引号
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		modelsCol = `"models"`
 	}
 
 	baseURLCol := "`base_url`"
 	// 如果是 PostgreSQL，使用双引号
-	if common.UsingPostgreSQL {
+	if infradb.UsingPostgreSQL {
 		baseURLCol = `"base_url"`
 	}
 

@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/common"
-
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +21,7 @@ func newStoredAssetSignatureContext(rawURL string) (*gin.Context, *httptest.Resp
 
 func TestVerifyStoredAssetSignatureRejectsPermanentSignature(t *testing.T) {
 	id := "asset-1"
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s", "stored_video", id))
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s", "stored_video", id))
 	c, recorder := newStoredAssetSignatureContext("/mcp/video/" + id + "?sig=" + sig)
 
 	_, _, ok := verifyStoredAssetSignature(c, "stored_video", id)
@@ -37,7 +36,7 @@ func TestVerifyStoredAssetSignatureRejectsPermanentSignature(t *testing.T) {
 func TestVerifyStoredAssetSignatureRejectsExpiredSignature(t *testing.T) {
 	id := "asset-2"
 	exp := time.Now().Add(-time.Minute).Unix()
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", "stored_image", id, exp))
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", "stored_image", id, exp))
 	c, recorder := newStoredAssetSignatureContext(fmt.Sprintf("/mcp/image/%s?exp=%d&sig=%s", id, exp, sig))
 
 	_, _, ok := verifyStoredAssetSignature(c, "stored_image", id)
@@ -52,7 +51,7 @@ func TestVerifyStoredAssetSignatureRejectsExpiredSignature(t *testing.T) {
 func TestVerifyStoredAssetSignatureAcceptsTimeBoundSignature(t *testing.T) {
 	id := "asset-3"
 	exp := time.Now().Add(time.Hour).Unix()
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", "stored_video", id, exp))
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", "stored_video", id, exp))
 	c, recorder := newStoredAssetSignatureContext(fmt.Sprintf("/mcp/video/%s?exp=%d&sig=%s", id, exp, sig))
 
 	gotExp, _, ok := verifyStoredAssetSignature(c, "stored_video", id)

@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/store/channel"
@@ -287,23 +288,23 @@ func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float6
 func UpdateChannelBalance(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelIDFormatError, map[string]any{"Error": err.Error()})
 		return
 	}
 	channel, err := channelstore.CacheGetChannel(id)
 	if err != nil {
 		common.SysError("failed to cache get channel: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if channel.ChannelInfo.IsMultiKey {
-		common.ApiErrorI18n(c, i18n.MsgChannelMultiKeyBalanceUnsupported)
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelMultiKeyBalanceUnsupported)
 		return
 	}
 	balance, err := updateChannelBalance(c, channel)
 	if err != nil {
 		common.SysError("failed to update channel balance: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -348,7 +349,7 @@ func UpdateAllChannelsBalance(c *gin.Context) {
 	err := updateAllChannelsBalance()
 	if err != nil {
 		common.SysError("failed to update all channels balance: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

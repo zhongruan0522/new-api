@@ -2,8 +2,8 @@ package usercontroller
 
 import (
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/httpapi/controller/testsupport"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-contrib/sessions"
@@ -21,7 +21,7 @@ func TestEmailBindUsesPostJsonBody(t *testing.T) {
 
 	user := testsupport.CreateSecureVerificationTestUser(t, 1, "email-bind-token")
 	email := fmt.Sprintf("email-bind-%d@example.com", user.Id)
-	common.RegisterVerificationCodeWithKey(email, "123456", common.EmailVerificationPurpose)
+	security.RegisterVerificationCodeWithKey(email, "123456", security.EmailVerificationPurpose)
 
 	router := gin.New()
 	router.Use(sessions.Sessions("session", cookie.NewStore([]byte("test-secret"))))

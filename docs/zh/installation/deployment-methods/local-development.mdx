@@ -122,10 +122,10 @@ NookMux/
 ├─ internal/httpapi/       # HTTP 边界聚合：router + middleware + controller（按资源子包）
 ├─ internal/store/         # 持久层：GORM 模型、迁移、缓存、数据库访问（按资源子包）
 ├─ internal/domain/        # 领域层：计费、渠道、审计、排行榜、工单、敏感词、分组等领域服务
-├─ internal/infra/         # 基础设施层：httpclient、media、tokenizer、notify、payment、passkey、custom_voice
+├─ internal/infra/         # 基础设施层：db、redis、cache、email、security、runtime、log、httpclient、media、tokenizer、notify、payment、passkey、custom_voice
 ├─ internal/relay/         # AI 协议转换与供应商适配
 ├─ internal/config/        # 系统、运营、模型、倍率等配置（原 setting/）
-├─ internal/common/        # 全局工具、环境变量、缓存、静态资源服务
+├─ internal/common/        # 业务全局变量与零碎工具内核（ContextKey 注册表、SysLog、GetEnvOrDefault 等）
 ├─ internal/i18n/          # 后端响应消息翻译
 ├─ pkg/                    # 可独立复用的无业务依赖基础库（jsonx、cachex）
 ├─ Dockerfile              # 镜像构建，要求 web/dist/index.html 已存在

@@ -2,8 +2,8 @@ package checkinstore
 
 import (
 	"errors"
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"gorm.io/gorm"
@@ -83,7 +83,7 @@ func UserCheckin(userId int) (*Checkin, error) {
 	}
 
 	// 根据数据库类型选择不同的策略
-	if common.UsingSQLite {
+	if infradb.UsingSQLite {
 		// SQLite 不支持嵌套事务，使用顺序操作 + 手动回滚
 		return userCheckinWithoutTransaction(checkin, userId, quotaAwarded)
 	}

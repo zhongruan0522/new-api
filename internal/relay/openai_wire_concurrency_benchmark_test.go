@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel/openai"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
+	"github.com/NookMux/NookMux/internal/common"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -124,13 +124,13 @@ func BenchmarkOpenAIStreamRelayConcurrent128(b *testing.B) {
 				}
 				c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
 				c.Request.Header.Set("Content-Type", "application/json")
-				c.Set(string(constant.ContextKeyChannelType), channelconstant.ChannelTypeOpenAI)
-				c.Set(string(constant.ContextKeyChannelId), 1)
-				c.Set(string(constant.ContextKeyChannelBaseUrl), upstream.URL)
-				c.Set(string(constant.ContextKeyChannelKey), "test-key")
-				c.Set(string(constant.ContextKeyOriginalModel), "gpt-bench")
-				c.Set(string(constant.ContextKeyChannelSetting), shared.ChannelSettings{})
-				c.Set(string(constant.ContextKeyChannelOtherSetting), shared.ChannelOtherSettings{})
+				c.Set(string(common.ContextKeyChannelType), channelconstant.ChannelTypeOpenAI)
+				c.Set(string(common.ContextKeyChannelId), 1)
+				c.Set(string(common.ContextKeyChannelBaseUrl), upstream.URL)
+				c.Set(string(common.ContextKeyChannelKey), "test-key")
+				c.Set(string(common.ContextKeyOriginalModel), "gpt-bench")
+				c.Set(string(common.ContextKeyChannelSetting), shared.ChannelSettings{})
+				c.Set(string(common.ContextKeyChannelOtherSetting), shared.ChannelOtherSettings{})
 
 				info, err := relaycommon.GenRelayInfo(c, relayconstant.RelayFormatOpenAI, request, nil)
 				if err != nil {

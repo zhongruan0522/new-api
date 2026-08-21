@@ -6,8 +6,11 @@ import (
 	_ "github.com/NookMux/NookMux/internal/config/performance"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/NookMux/NookMux/internal/store/db/migrate"
 	"github.com/NookMux/NookMux/internal/store/option"
@@ -27,7 +30,7 @@ func Bootstrap() error {
 	}
 
 	// 加载环境变量
-	common.InitEnv()
+	InitEnv()
 
 	log.SetupLogger()
 
@@ -57,7 +60,7 @@ func Bootstrap() error {
 	}
 
 	// 清理旧的磁盘缓存文件
-	common.CleanupOldCacheFiles()
+	cache.CleanupOldCacheFiles()
 
 	// 初始化模型
 	pricingstore.GetPricing()
@@ -69,13 +72,13 @@ func Bootstrap() error {
 	}
 
 	// Initialize Redis
-	err = common.InitRedisClient()
+	err = redis.InitRedisClient()
 	if err != nil {
 		return err
 	}
 
 	// 启动系统监控
-	common.StartSystemMonitor()
+	runtime.StartSystemMonitor()
 
 	// Initialize i18n
 	err = i18n.Init()

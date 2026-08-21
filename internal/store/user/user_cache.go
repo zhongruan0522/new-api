@@ -3,8 +3,10 @@ package userstore
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -24,12 +26,12 @@ type UserBase struct {
 }
 
 func (user *UserBase) WriteContext(c *gin.Context) {
-	common.SetContextKey(c, constant.ContextKeyUserGroup, user.Group)
-	common.SetContextKey(c, constant.ContextKeyUserQuota, user.Quota)
-	common.SetContextKey(c, constant.ContextKeyUserStatus, user.Status)
-	common.SetContextKey(c, constant.ContextKeyUserEmail, user.Email)
-	common.SetContextKey(c, constant.ContextKeyUserName, user.Username)
-	common.SetContextKey(c, constant.ContextKeyUserSetting, user.GetSetting())
+	httpapi.SetContextKey(c, common.ContextKeyUserGroup, user.Group)
+	httpapi.SetContextKey(c, common.ContextKeyUserQuota, user.Quota)
+	httpapi.SetContextKey(c, common.ContextKeyUserStatus, user.Status)
+	httpapi.SetContextKey(c, common.ContextKeyUserEmail, user.Email)
+	httpapi.SetContextKey(c, common.ContextKeyUserName, user.Username)
+	httpapi.SetContextKey(c, common.ContextKeyUserSetting, user.GetSetting())
 }
 
 func (user *UserBase) GetSetting() shared.UserSetting {
@@ -50,10 +52,10 @@ func getUserCacheKey(userId int) string {
 
 // invalidateUserCache clears user cache
 func invalidateUserCache(userId int) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisDelKey(getUserCacheKey(userId))
+	return redis.RedisDelKey(getUserCacheKey(userId))
 }
 
 // InvalidateUserCache clears the Redis user cache for security-sensitive updates.
@@ -63,14 +65,14 @@ func InvalidateUserCache(userId int) error {
 
 // updateUserCache updates all user cache fields using hash
 func updateUserCache(user User) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
 
-	return common.RedisHSetObj(
+	return redis.RedisHSetObj(
 		getUserCacheKey(user.Id),
 		user.ToBaseUser(),
-		time.Duration(common.RedisKeyCacheSeconds())*time.Second,
+		time.Duration(redis.RedisKeyCacheSeconds())*time.Second,
 	)
 }
 
@@ -81,7 +83,7 @@ func GetUserCache(userId int) (userCache *UserBase, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) && user != nil {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := updateUserCache(*user); err != nil {
 					common.SysLog("failed to update user status cache: " + err.Error())
 				}
@@ -118,12 +120,12 @@ func GetUserCache(userId int) (userCache *UserBase, err error) {
 }
 
 func cacheGetUserBase(userId int) (*UserBase, error) {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil, fmt.Errorf("redis is not enabled")
 	}
 	var userCache UserBase
 	// Try getting from Redis first
-	err := common.RedisHGetObj(getUserCacheKey(userId), &userCache)
+	err := redis.RedisHGetObj(getUserCacheKey(userId), &userCache)
 	if err != nil {
 		return nil, err
 	}
@@ -132,10 +134,10 @@ func cacheGetUserBase(userId int) (*UserBase, error) {
 
 // Add atomic quota operations using hash fields
 func CacheIncrUserQuota(userId int, delta int64) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisHIncrBy(getUserCacheKey(userId), "Quota", delta)
+	return redis.RedisHIncrBy(getUserCacheKey(userId), "Quota", delta)
 }
 
 func cacheDecrUserQuota(userId int, delta int64) error {
@@ -177,17 +179,17 @@ func getUserSettingCache(userId int) (shared.UserSetting, error) {
 
 // New functions for individual field updates
 func updateUserQuotaCache(userId int, quota int) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisHSetField(getUserCacheKey(userId), "Quota", fmt.Sprintf("%d", quota))
+	return redis.RedisHSetField(getUserCacheKey(userId), "Quota", fmt.Sprintf("%d", quota))
 }
 
 func updateUserGroupCache(userId int, group string) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisHSetField(getUserCacheKey(userId), "Group", group)
+	return redis.RedisHSetField(getUserCacheKey(userId), "Group", group)
 }
 
 func UpdateUserGroupCache(userId int, group string) error {
@@ -195,15 +197,15 @@ func UpdateUserGroupCache(userId int, group string) error {
 }
 
 func updateUserNameCache(userId int, username string) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisHSetField(getUserCacheKey(userId), "Username", username)
+	return redis.RedisHSetField(getUserCacheKey(userId), "Username", username)
 }
 
 func updateUserSettingCache(userId int, setting string) error {
-	if !common.RedisEnabled {
+	if !redis.RedisEnabled {
 		return nil
 	}
-	return common.RedisHSetField(getUserCacheKey(userId), "Setting", setting)
+	return redis.RedisHSetField(getUserCacheKey(userId), "Setting", setting)
 }

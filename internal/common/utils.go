@@ -3,7 +3,6 @@ package common
 import (
 	crand "crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -19,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -290,12 +290,12 @@ func GetPointer[T any](v T) *T {
 
 func Any2Type[T any](data any) (T, error) {
 	var zero T
-	bytes, err := json.Marshal(data)
+	bytes, err := jsonx.Marshal(data)
 	if err != nil {
 		return zero, err
 	}
 	var res T
-	err = json.Unmarshal(bytes, &res)
+	err = jsonx.Unmarshal(bytes, &res)
 	if err != nil {
 		return zero, err
 	}

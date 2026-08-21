@@ -3,6 +3,7 @@ package dbmigrate
 import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/google/uuid"
 	"strings"
 	"sync"
@@ -99,7 +100,7 @@ func validateDBSameTypeMigrateDirection(sourceType string, targetType string) er
 		return errors.New("同类型迁移要求源数据库与目标数据库类型一致")
 	}
 	switch sourceType {
-	case common.DatabaseTypeMySQL, common.DatabaseTypePostgreSQL:
+	case db.DatabaseTypeMySQL, db.DatabaseTypePostgreSQL:
 		return nil
 	default:
 		return errors.New("同类型迁移仅支持 MySQL -> MySQL 和 PostgreSQL -> PostgreSQL")

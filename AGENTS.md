@@ -56,15 +56,16 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 主要结构:
 
 - `cmd/server/`: 进程入口，只处理退出码并调用 `internal/app.Run()`。
-- `internal/app/`: 启动资源初始化、Gin 装配、路由挂载和分析脚本注入。
-- `internal/httpapi/`: HTTP 边界聚合层（阶段 5.4 起）：`router/`（API、relay、dashboard、web 静态路由）、`middleware/`（认证、限速、日志、分发、安全校验）、`controller/`（HTTP 边界、请求校验、响应组织，按资源拆子包：`channel/`、`user/`、`token/`、`billing/`、`relay/` 等，包名带 `controller` 后缀；`testsupport/` 为测试共享 fixture，仅 `_test.go` 可导入）。
+- `internal/app/`: 启动资源初始化、Gin 装配、路由挂载和分析脚本注入；`env.go` 承载启动
+  flag 与 `InitEnv` 环境装配（阶段 4 自 `common/init.go` 迁入）。
+- `internal/httpapi/`: HTTP 边界聚合层（阶段 5.4 起）：根包为 gin 边界工具（`ApiError*` 响应族、`GetRequestBody`/`UnmarshalBodyReusable` 请求体读取、`SetContextKey`/`GetContextKey*` 上下文键助手，阶段 4 自 `common/gin.go` 迁入，仅依赖 `infra/cache`、`domain/shared`、`internal/common`（ContextKey）与 `pkg/jsonx`）；`router/`（API、relay、dashboard、web 静态路由）、`middleware/`（认证、限速、日志、分发、安全校验）、`controller/`（HTTP 边界、请求校验、响应组织，按资源拆子包：`channel/`、`user/`、`token/`、`billing/`、`relay/` 等，包名带 `controller` 后缀；`testsupport/` 为测试共享 fixture，仅 `_test.go` 可导入）。
 - `internal/domain/`: 领域层（阶段 5.1/5.3 落地）：`billing/`（计费核心服务 + `contract/` 契约叶子包 + `plan_quota/` 套餐配额）、`channel/`（渠道服务与自动禁用，含 `constant/`）、`audit/`（RecordAudit 入口）、`rankings/`、`ticket/`、`sensitive/`（敏感词匹配）、`group/`（分组倍率）、`shared/`（原 `dto/`+`types/` 合并的过渡收容包，只出不进）。
-- `internal/infra/`: 基础设施层（阶段 5.3 起）：`log/`（日志）、`httpclient/`（通用 HTTP 传输层与 SSRF 复查、代理客户端构造）、`media/`（文件/图片/音频解码下载）、`tokenizer/`（token 计数与估算）、`notify/`（用户通知：邮件/webhook/bark/gotify 与频控）、`payment/`（epay 回调地址、stripe 集成与订单锁）、`passkey/`、`custom_voice/`。
+- `internal/infra/`: 基础设施层（阶段 5.3/4 起）：`db/`（数据库类型与连接状态变量）、`redis/`（Redis 客户端与读写族）、`cache/`（磁盘缓存、请求体存储、Redis 限流器）、`email/`（SMTP 发送）、`security/`（SSRF/IP/URL/哈希/TOTP/验证码/受信代理）、`runtime/`（系统监控、pprof、pyroscope、有界 goroutine 池）、`log/`（业务日志）、`httpclient/`（通用 HTTP 传输层与 SSRF 复查、代理客户端构造）、`media/`（文件/图片/音频解码下载）、`tokenizer/`（token 计数与估算）、`notify/`（用户通知：邮件/webhook/bark/gotify 与频控）、`payment/`（epay 回调地址、stripe 集成与订单锁）、`passkey/`、`custom_voice/`。
 - `internal/store/`: 持久层（原 `model/`，阶段 5.2 按资源拆）：GORM 模型、迁移、缓存、数据库访问；子包按资源垂直拆分（`db/`、`channel/`、`user/`、`token/`、`log/` 等，包名带 `store` 后缀）。
 - `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
-- `internal/common/`: 缓存、环境变量、静态文件服务、安全工具等全局共享业务工具（JSON 包装已迁至 `pkg/jsonx`）。
-- `internal/relay/`: AI 请求中继、协议转换、供应商适配；`helper/` 含协议转换（Claude/Gemini ↔ OpenAI）、relay 错误包装与响应透传工具（阶段 5.3 自原 `service/` 并入）。
-- `internal/oauth/`、`internal/constant/`: OAuth 供应商、跨领域全局常量（渠道域常量已迁 `domain/channel/constant/`，`FinishReason`/`RelayFormat` 已迁 `relay/constant/`）。
+- `internal/common/`: 业务全局变量与零碎工具内核（阶段 4 拆解后）：全局开关/限流/SMTP/OAuth 变量、`ContextKey` 注册表、`SysLog` 族输出、`GetEnvOrDefault*`、模型/端点与字符串工具；基础设施能力已迁 `internal/infra/`，HTTP 边界工具已迁 `internal/httpapi/` 根包（JSON 包装此前已迁至 `pkg/jsonx`）。
+- `internal/relay/`: AI 请求中继、协议转换、供应商适配；`helper/` 含协议转换（Claude/Gemini ↔ OpenAI）、relay 错误包装、响应透传工具（阶段 5.3 自原 `service/` 并入）与上游响应体限额读取（阶段 4 自 `common/response.go` 迁入）。
+- `internal/oauth/`: OAuth 供应商（原 `internal/constant/` 跨领域常量包已于阶段 4 解散：`ContextKey` 归 `internal/common`，运行时限值/缓存键/Setup 归 `internal/domain/shared/`；渠道域常量在 `domain/channel/constant/`，`FinishReason`/`RelayFormat` 在 `relay/constant/`）。
 - `internal/i18n/`: 后端 API 响应消息多语言翻译。
 - `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild；`web/embed.go` 是 `web/dist` 的 Go embed 声明载体，经 `internal/app/webdist` 暴露给启动装配层。

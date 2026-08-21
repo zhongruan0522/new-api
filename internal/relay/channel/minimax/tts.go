@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
+	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -123,7 +123,7 @@ func sanitizeTTSProviderName(message string, info *relaycommon.RelayInfo) string
 
 func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *shared.NookMuxError) {
 	defer resp.Body.Close()
-	body, readErr := common.ReadMediaResponseBody(resp.Body)
+	body, readErr := helper.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, shared.NewErrorWithStatusCode(
 			fmt.Errorf("failed to read upstream response: %w", readErr),

@@ -4,12 +4,12 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
 )
@@ -93,13 +93,13 @@ func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, m
 
 	adminInfo := make(map[string]interface{})
 	adminInfo["use_channel"] = ctx.GetStringSlice("use_channel")
-	isMultiKey := common.GetContextKeyBool(ctx, constant.ContextKeyChannelIsMultiKey)
+	isMultiKey := httpapi.GetContextKeyBool(ctx, common.ContextKeyChannelIsMultiKey)
 	if isMultiKey {
 		adminInfo["is_multi_key"] = true
-		adminInfo["multi_key_index"] = common.GetContextKeyInt(ctx, constant.ContextKeyChannelMultiKeyIndex)
+		adminInfo["multi_key_index"] = httpapi.GetContextKeyInt(ctx, common.ContextKeyChannelMultiKeyIndex)
 	}
 
-	isLocalCountTokens := common.GetContextKeyBool(ctx, constant.ContextKeyLocalCountTokens)
+	isLocalCountTokens := httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens)
 	if isLocalCountTokens {
 		adminInfo["local_count_tokens"] = isLocalCountTokens
 	}

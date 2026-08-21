@@ -3,7 +3,6 @@ package zhipu_4v
 import (
 	"net/http"
 
-	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -49,7 +48,7 @@ type openAIImageData struct {
 func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadMediaResponseBody(resp.Body)
+	responseBody, err := helper.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}

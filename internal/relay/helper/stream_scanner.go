@@ -11,10 +11,10 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,8 +48,8 @@ var scannerBufferPool = sync.Pool{
 }
 
 func getScannerBufferSize() int {
-	if constant.StreamScannerMaxBufferMB > 0 {
-		return constant.StreamScannerMaxBufferMB << 20
+	if shared.StreamScannerMaxBufferMB > 0 {
+		return shared.StreamScannerMaxBufferMB << 20
 	}
 	return DefaultMaxScannerBufferSize
 }
@@ -67,7 +67,7 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 		}
 	}()
 
-	streamingTimeout := time.Duration(constant.StreamingTimeout) * time.Second
+	streamingTimeout := time.Duration(shared.StreamingTimeout) * time.Second
 	if streamingTimeout <= 0 {
 		streamingTimeout = time.Duration(common.RelayTimeout) * time.Second
 	}

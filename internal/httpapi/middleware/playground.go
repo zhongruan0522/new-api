@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,10 +21,10 @@ func PlaygroundRequestContext() func(c *gin.Context) {
 		}
 
 		playgroundRequest := &shared.PlayGroundRequest{}
-		if err := common.UnmarshalBodyReusable(c, playgroundRequest); err != nil {
+		if err := httpapi.UnmarshalBodyReusable(c, playgroundRequest); err != nil {
 			statusCode := http.StatusBadRequest
 			errorCode := shared.ErrorCodeInvalidRequest
-			if common.IsRequestBodyTooLargeError(err) {
+			if cache.IsRequestBodyTooLargeError(err) {
 				statusCode = http.StatusRequestEntityTooLarge
 				errorCode = shared.ErrorCodeReadRequestBodyFailed
 			}
@@ -37,17 +38,17 @@ func PlaygroundRequestContext() func(c *gin.Context) {
 			return
 		}
 
-		userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+		userGroup := httpapi.GetContextKeyString(c, common.ContextKeyUserGroup)
 		if userGroup == "" {
-			userGroup = common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+			userGroup = httpapi.GetContextKeyString(c, common.ContextKeyUsingGroup)
 		}
 		if !domaingroup.GroupInUserUsableGroups(userGroup, selectedGroup) && selectedGroup != userGroup {
 			abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组", shared.ErrorCodeAccessDenied)
 			return
 		}
 
-		common.SetContextKey(c, constant.ContextKeyUsingGroup, selectedGroup)
-		common.SetContextKey(c, constant.ContextKeyTokenGroup, selectedGroup)
+		httpapi.SetContextKey(c, common.ContextKeyUsingGroup, selectedGroup)
+		httpapi.SetContextKey(c, common.ContextKeyTokenGroup, selectedGroup)
 		c.Next()
 	}
 }

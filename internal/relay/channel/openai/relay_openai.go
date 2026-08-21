@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
@@ -18,6 +17,7 @@ import (
 
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -193,7 +193,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 
 	for _, choice := range simpleResponse.Choices {
 		if choice.FinishReason == relayconstant.FinishReasonContentFilter {
-			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "openai_finish_reason=content_filter")
+			httpapi.SetContextKey(c, common.ContextKeyAdminRejectReason, "openai_finish_reason=content_filter")
 			break
 		}
 	}
@@ -479,7 +479,7 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *share
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
 	defer helper.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadMediaResponseBody(resp.Body)
+	responseBody, err := helper.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -525,9 +525,9 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 
 func readOpenAIResponseBody(info *relaycommon.RelayInfo, body io.Reader) ([]byte, error) {
 	if info != nil && info.RelayMode == relayconstant.RelayModeEmbeddings {
-		return common.ReadEmbeddingResponseBody(body)
+		return helper.ReadEmbeddingResponseBody(body)
 	}
-	return common.ReadResponseBody(body)
+	return helper.ReadResponseBody(body)
 }
 
 func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *shared.Usage, responseBody []byte) {

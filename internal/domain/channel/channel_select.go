@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/constant"
 	group "github.com/NookMux/NookMux/internal/domain/group"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -83,7 +83,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, s
 	var channel *channelstore.Channel
 	var err error
 	selectGroup := param.TokenGroup
-	userGroup := common.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
+	userGroup := httpapi.GetContextKeyString(param.Ctx, common.ContextKeyUserGroup)
 	preferredAPIType := relayconstant.RelayFormatToPreferredAPIType(param.RelayFormat)
 
 	if param.TokenGroup == "auto" {
@@ -95,9 +95,9 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, s
 		// startGroupIndex: the group index to start searching from
 		// startGroupIndex: 开始搜索的分组索引
 		startGroupIndex := 0
-		crossGroupRetry := common.GetContextKeyBool(param.Ctx, constant.ContextKeyTokenCrossGroupRetry)
+		crossGroupRetry := httpapi.GetContextKeyBool(param.Ctx, common.ContextKeyTokenCrossGroupRetry)
 
-		if lastGroupIndex, exists := common.GetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex); exists {
+		if lastGroupIndex, exists := httpapi.GetContextKey(param.Ctx, common.ContextKeyAutoGroupIndex); exists {
 			if idx, ok := lastGroupIndex.(int); ok {
 				startGroupIndex = idx
 			}
@@ -130,14 +130,14 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, s
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
 				log.LogDebug(param.Ctx, "No available channel in group %s for model %s at priorityIndex %d, trying next group", autoGroup, param.ModelName, priorityIndex)
 				// 重置状态以尝试下一个分组
-				common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex, i+1)
-				common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupRetryIndex, 0)
+				httpapi.SetContextKey(param.Ctx, common.ContextKeyAutoGroupIndex, i+1)
+				httpapi.SetContextKey(param.Ctx, common.ContextKeyAutoGroupRetryIndex, 0)
 				// Reset retry counter so outer loop can continue for next group
 				// 重置重试计数器，以便外层循环可以为下一个分组继续
 				param.SetRetry(0)
 				continue
 			}
-			common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroup, autoGroup)
+			httpapi.SetContextKey(param.Ctx, common.ContextKeyAutoGroup, autoGroup)
 			selectGroup = autoGroup
 			log.LogDebug(param.Ctx, "Auto selected group: %s", autoGroup)
 
@@ -159,7 +159,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, s
 				// 当前分组已用完所有重试次数，准备切换到下一个分组
 				// 本次请求仍使用当前分组，但下次重试将使用下一个分组
 				log.LogDebug(param.Ctx, "Current group %s retries exhausted (priorityRetry=%d >= maxRetries=%d), preparing switch to next group for next retry", autoGroup, priorityRetry, maxRetriesForGroup)
-				common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex, i+1)
+				httpapi.SetContextKey(param.Ctx, common.ContextKeyAutoGroupIndex, i+1)
 				// Reset retry counter so outer loop can continue for next group
 				// 重置重试计数器，以便外层循环可以为下一个分组继续
 				param.SetRetry(0)
@@ -167,7 +167,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*channelstore.Channel, s
 			} else {
 				// Stay in current group, save current state
 				// 保持在当前分组，保存当前状态
-				common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex, i)
+				httpapi.SetContextKey(param.Ctx, common.ContextKeyAutoGroupIndex, i)
 			}
 			break
 		}

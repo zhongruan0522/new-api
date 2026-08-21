@@ -10,11 +10,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	constant2 "github.com/NookMux/NookMux/internal/relay/constant"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	"github.com/gin-gonic/gin"
 )
@@ -83,11 +83,11 @@ func getImageToken(c *gin.Context, fileMeta *shared.FileMeta, model string, stre
 	}
 
 	// Whether to count image tokens at all
-	if !constant.GetMediaToken {
+	if !shared.GetMediaToken {
 		return 3 * baseTokens, nil
 	}
 
-	if !constant.GetMediaTokenNotStream && !stream {
+	if !shared.GetMediaTokenNotStream && !stream {
 		return 3 * baseTokens, nil
 	}
 	// Normalize detail
@@ -182,7 +182,7 @@ func getImageToken(c *gin.Context, fileMeta *shared.FileMeta, model string, stre
 
 func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *relaycommon.RelayInfo) (int, error) {
 	// 是否统计token
-	if !constant.CountToken {
+	if !shared.CountToken {
 		return 0, nil
 	}
 
@@ -194,7 +194,7 @@ func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *rel
 		return 0, nil
 	}
 	if info.RelayMode == constant2.RelayModeAudioTranscription || info.RelayMode == constant2.RelayModeAudioTranslation {
-		multiForm, err := common.ParseMultipartFormReusable(c)
+		multiForm, err := httpapi.ParseMultipartFormReusable(c)
 		if err != nil {
 			return 0, fmt.Errorf("error parsing multipart form: %v", err)
 		}
@@ -218,7 +218,7 @@ func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *rel
 		return totalAudioToken, nil
 	}
 
-	model := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
+	model := httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel)
 	tkm := 0
 
 	if meta.TokenType == shared.TokenTypeTextNumber {
@@ -241,12 +241,12 @@ func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *rel
 	}
 
 	// 是否本地计算媒体token数量
-	if !constant.GetMediaToken {
+	if !shared.GetMediaToken {
 		shouldFetchFiles = false
 	}
 
 	// 是否在非流模式下本地计算媒体token数量
-	if !constant.GetMediaTokenNotStream && !info.IsStream {
+	if !shared.GetMediaTokenNotStream && !info.IsStream {
 		shouldFetchFiles = false
 	}
 
@@ -296,7 +296,7 @@ func EstimateRequestToken(c *gin.Context, meta *shared.TokenCountMeta, info *rel
 		}
 	}
 
-	common.SetContextKey(c, constant.ContextKeyPromptTokens, tkm)
+	httpapi.SetContextKey(c, common.ContextKeyPromptTokens, tkm)
 	return tkm, nil
 }
 

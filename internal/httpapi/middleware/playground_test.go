@@ -8,8 +8,9 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
-	"github.com/NookMux/NookMux/internal/constant"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,7 +52,7 @@ func TestPlaygroundRequestContextRejectsAccessTokenBeforeNext(t *testing.T) {
 func TestPlaygroundSelectedGroupAppliesBeforeModelRateLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldRateLimitEnabled := config.ModelRequestRateLimitEnabled
 	oldDuration := config.ModelRequestRateLimitDurationMinutes
 	oldTotalCount := config.ModelRequestRateLimitCount
@@ -60,7 +61,7 @@ func TestPlaygroundSelectedGroupAppliesBeforeModelRateLimit(t *testing.T) {
 	oldGroupLimits := config.ModelRequestRateLimitGroup
 	config.ModelRequestRateLimitMutex.RUnlock()
 
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	config.ModelRequestRateLimitEnabled = true
 	config.ModelRequestRateLimitDurationMinutes = 1
 	config.ModelRequestRateLimitCount = 0
@@ -73,7 +74,7 @@ func TestPlaygroundSelectedGroupAppliesBeforeModelRateLimit(t *testing.T) {
 	inMemoryRateLimiter = common.InMemoryRateLimiter{}
 
 	t.Cleanup(func() {
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		config.ModelRequestRateLimitEnabled = oldRateLimitEnabled
 		config.ModelRequestRateLimitDurationMinutes = oldDuration
 		config.ModelRequestRateLimitCount = oldTotalCount
@@ -88,15 +89,15 @@ func TestPlaygroundSelectedGroupAppliesBeforeModelRateLimit(t *testing.T) {
 	router.POST("/pg/chat/completions",
 		func(c *gin.Context) {
 			c.Set("id", 42)
-			common.SetContextKey(c, constant.ContextKeyUserGroup, "default")
-			common.SetContextKey(c, constant.ContextKeyUsingGroup, "default")
+			httpapi.SetContextKey(c, common.ContextKeyUserGroup, "default")
+			httpapi.SetContextKey(c, common.ContextKeyUsingGroup, "default")
 			c.Next()
 		},
 		PlaygroundRequestContext(),
 		ModelRequestRateLimit(),
 		func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
-				"group": common.GetContextKeyString(c, constant.ContextKeyTokenGroup),
+				"group": httpapi.GetContextKeyString(c, common.ContextKeyTokenGroup),
 			})
 		},
 	)

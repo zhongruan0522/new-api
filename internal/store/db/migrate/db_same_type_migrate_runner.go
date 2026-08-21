@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -243,7 +243,7 @@ func runSameTypeCopyStep(ctx context.Context, job *DBSameTypeMigrateJob, step db
 }
 
 func fixSameTypeTargetAutoIncrement(job *DBSameTypeMigrateJob, targetType string, mainDB *gorm.DB, logDB *gorm.DB, logDBNeedClose bool, includeLogs bool) error {
-	if targetType != common.DatabaseTypePostgreSQL {
+	if targetType != infradb.DatabaseTypePostgreSQL {
 		return nil
 	}
 

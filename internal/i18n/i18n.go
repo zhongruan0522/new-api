@@ -10,7 +10,7 @@ import (
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 
-	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/httpapi"
 )
 
 const (
@@ -50,8 +50,8 @@ func Init() error {
 		localizers[LangZh] = i18n.NewLocalizer(bundle, LangZh)
 		localizers[LangEn] = i18n.NewLocalizer(bundle, LangEn)
 
-		// Set the TranslateMessage function in common package
-		common.TranslateMessage = T
+		// Set the TranslateMessage function in the httpapi package
+		httpapi.TranslateMessage = T
 	})
 	return initErr
 }

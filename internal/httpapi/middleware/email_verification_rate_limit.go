@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +20,7 @@ const (
 
 func redisEmailVerificationRateLimiter(c *gin.Context) {
 	ctx := context.Background()
-	rdb := common.RDB
+	rdb := redis.RDB
 	key := "emailVerification:" + EmailVerificationRateLimitMark + ":" + c.ClientIP()
 
 	count, err := rdb.Incr(ctx, key).Result()
@@ -71,7 +72,7 @@ func memoryEmailVerificationRateLimiter(c *gin.Context) {
 
 func EmailVerificationRateLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if common.RedisEnabled {
+		if redis.RedisEnabled {
 			redisEmailVerificationRateLimiter(c)
 		} else {
 			inMemoryRateLimiter.Init(common.RateLimitKeyExpirationDuration)

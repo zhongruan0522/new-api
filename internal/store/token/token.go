@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
@@ -253,7 +255,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			return token, dbstore.ErrTokenInvalid
 		}
 		if token.ExpiredTime != -1 && token.ExpiredTime < common.GetTimestamp() {
-			if !common.RedisEnabled {
+			if !redis.RedisEnabled {
 				token.Status = common.TokenStatusExpired
 				err := token.SelectUpdate()
 				if err != nil {
@@ -286,7 +288,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			// 不做额度检查
 		case 1: // 永久限额:
 			if token.RemainQuota <= 0 {
-				if !common.RedisEnabled {
+				if !redis.RedisEnabled {
 					token.Status = common.TokenStatusExhausted
 					err := token.SelectUpdate()
 					if err != nil {
@@ -380,7 +382,7 @@ func GetTokenById(id int) (*Token, error) {
 	var err error = nil
 	err = dbstore.DB.First(&token, "id = ?", id).Error
 	if dbstore.ShouldUpdateRedis(true, err) {
-		common.RelayGo(func() {
+		runtime.RelayGo(func() {
 			if err := cacheSetToken(token); err != nil {
 				common.SysLog("failed to update user status cache: " + err.Error())
 			}
@@ -393,14 +395,14 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if dbstore.ShouldUpdateRedis(fromDB, err) && token != nil {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				if err := cacheSetToken(*token); err != nil {
 					common.SysLog("failed to update user status cache: " + err.Error())
 				}
 			})
 		}
 	}()
-	if !fromDB && common.RedisEnabled {
+	if !fromDB && redis.RedisEnabled {
 		// Try Redis first
 		token, err := cacheGetTokenByKey(key)
 		if err == nil {
@@ -451,7 +453,7 @@ func (token *Token) Update() (err error) {
 func (token *Token) SelectUpdate() (err error) {
 	defer func() {
 		if dbstore.ShouldUpdateRedis(true, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				err := cacheSetToken(*token)
 				if err != nil {
 					common.SysLog("failed to update token cache: " + err.Error())
@@ -466,7 +468,7 @@ func (token *Token) SelectUpdate() (err error) {
 func (token *Token) Delete() (err error) {
 	defer func() {
 		if dbstore.ShouldUpdateRedis(true, err) {
-			common.RelayGo(func() {
+			runtime.RelayGo(func() {
 				err := cacheDeleteToken(token.Key)
 				if err != nil {
 					common.SysLog("failed to delete token cache: " + err.Error())
@@ -525,8 +527,8 @@ func IncreaseTokenQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			if cacheErr := cacheIncrTokenQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase token quota: " + cacheErr.Error())
 			}
@@ -557,8 +559,8 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			if cacheErr := cacheDecrTokenQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to decrease token quota: " + cacheErr.Error())
 			}
@@ -589,8 +591,8 @@ func UpdateTokenUsedQuota(id int, key string, delta int) error {
 	if delta == 0 {
 		return nil
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			if cacheErr := cacheIncrTokenUsedQuota(key, int64(delta)); cacheErr != nil {
 				common.SysLog("failed to update token used quota: " + cacheErr.Error())
 			}
@@ -621,8 +623,8 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 	if err != nil {
 		return err
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			err := cacheIncrWindowUsedQuota(key, -int64(quota))
 			if err != nil {
 				common.SysLog("failed to increase window quota: " + err.Error())
@@ -641,8 +643,8 @@ func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 	if err != nil {
 		return err
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			if cacheErr := cacheIncrWindowUsedQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase window used quota: " + cacheErr.Error())
 			}
@@ -685,8 +687,8 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 	if err != nil {
 		return err
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			err := cacheIncrCycleUsedQuota(key, -int64(quota))
 			if err != nil {
 				common.SysLog("failed to increase cycle quota: " + err.Error())
@@ -705,8 +707,8 @@ func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 	if err != nil {
 		return err
 	}
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			if cacheErr := cacheIncrCycleUsedQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase cycle used quota: " + cacheErr.Error())
 			}
@@ -814,7 +816,7 @@ func ResetTokenKey(id int, userId int) (newKey string, err error) {
 	token.Key = newKey
 
 	// 在锁内同步完成旧缓存删除 + 新缓存写入，确保任意时刻只有一个有效 key
-	if common.RedisEnabled {
+	if redis.RedisEnabled {
 		if delErr := cacheDeleteToken(oldKey); delErr != nil {
 			common.SysError("failed to delete old token cache after reset key: " + delErr.Error())
 		}
@@ -848,8 +850,8 @@ func BatchDeleteTokens(ids []int, userId int) (int, error) {
 		return 0, err
 	}
 
-	if common.RedisEnabled {
-		common.RelayGo(func() {
+	if redis.RedisEnabled {
+		runtime.RelayGo(func() {
 			for _, t := range tokens {
 				_ = cacheDeleteToken(t.Key)
 			}
@@ -860,7 +862,7 @@ func BatchDeleteTokens(ids []int, userId int) (int, error) {
 }
 
 func InvalidateUserTokensCache(userId int) error {
-	if userId == 0 || !common.RedisEnabled {
+	if userId == 0 || !redis.RedisEnabled {
 		return nil
 	}
 

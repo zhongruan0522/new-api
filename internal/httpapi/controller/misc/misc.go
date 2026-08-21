@@ -9,9 +9,12 @@ import (
 	"github.com/NookMux/NookMux/internal/config/dashboard"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/system"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/httpapi/middleware"
 	"github.com/NookMux/NookMux/internal/i18n"
+	infraemail "github.com/NookMux/NookMux/internal/infra/email"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -92,7 +95,7 @@ func GetStatus(c *gin.Context) {
 		"passkey_allow_insecure":    passkeySetting.AllowInsecureOrigin,
 		"passkey_user_verification": passkeySetting.UserVerification,
 		"passkey_attachment":        passkeySetting.AttachmentPreference,
-		"setup":                     constant.Setup,
+		"setup":                     shared.Setup,
 		"user_agreement_enabled":    legalSetting.UserAgreement != "",
 		"privacy_policy_enabled":    legalSetting.PrivacyPolicy != "",
 		"checkin_enabled":           operation.GetCheckinSetting().Enabled,
@@ -264,13 +267,13 @@ func GetHomePageContent(c *gin.Context) {
 
 func SendEmailVerification(c *gin.Context) {
 	email := c.Query("email")
-	if err := common.Validate.Var(email, "required,email"); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+	if err := security.Validate.Var(email, "required,email"); err != nil {
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
-		common.ApiErrorI18n(c, i18n.MsgSettingEmailInvalid)
+		httpapi.ApiErrorI18n(c, i18n.MsgSettingEmailInvalid)
 		return
 	}
 	localPart := parts[0]
@@ -294,25 +297,25 @@ func SendEmailVerification(c *gin.Context) {
 	if common.EmailAliasRestrictionEnabled {
 		containsSpecialSymbols := strings.Contains(localPart, "+") || strings.Contains(localPart, ".")
 		if containsSpecialSymbols {
-			common.ApiErrorI18n(c, i18n.MsgMiscEmailAliasRejected)
+			httpapi.ApiErrorI18n(c, i18n.MsgMiscEmailAliasRejected)
 			return
 		}
 	}
 
 	if userstore.IsEmailAlreadyTaken(email) {
-		common.ApiErrorI18n(c, i18n.MsgMiscEmailTaken)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiscEmailTaken)
 		return
 	}
-	code := common.GenerateVerificationCode(6)
-	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
+	code := security.GenerateVerificationCode(6)
+	security.RegisterVerificationCodeWithKey(email, code, security.EmailVerificationPurpose)
 	subject := fmt.Sprintf("%s邮箱验证邮件", common.SystemName)
 	content := fmt.Sprintf("<p>您好，你正在进行%s邮箱验证。</p>"+
 		"<p>您的验证码为: <strong>%s</strong></p>"+
-		"<p>验证码 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, code, common.VerificationValidMinutes)
-	err := common.SendEmail(subject, email, content)
+		"<p>验证码 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, code, security.VerificationValidMinutes)
+	err := infraemail.SendEmail(subject, email, content)
 	if err != nil {
 		common.SysError(fmt.Sprintf("failed to send email verification to %s: %v", email, err))
-		common.ApiErrorI18n(c, i18n.MsgMiscEmailSendFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiscEmailSendFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -323,20 +326,20 @@ func SendEmailVerification(c *gin.Context) {
 
 func SendPasswordResetEmail(c *gin.Context) {
 	email := c.Query("email")
-	if err := common.Validate.Var(email, "required,email"); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+	if err := security.Validate.Var(email, "required,email"); err != nil {
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	if userstore.IsEmailAlreadyTaken(email) {
-		code := common.GenerateVerificationCode(0)
-		common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
+		code := security.GenerateVerificationCode(0)
+		security.RegisterVerificationCodeWithKey(email, code, security.PasswordResetPurpose)
 		link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", system.ServerAddress, email, code)
 		subject := fmt.Sprintf("%s密码重置", common.SystemName)
 		content := fmt.Sprintf("<p>您好，你正在进行%s密码重置。</p>"+
 			"<p>点击 <a href='%s'>此处</a> 进行密码重置。</p>"+
 			"<p>如果链接无法点击，请尝试点击下面的链接或将其复制到浏览器中打开：<br> %s </p>"+
-			"<p>重置链接 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, link, link, common.VerificationValidMinutes)
-		if err := common.SendEmail(subject, email, content); err != nil {
+			"<p>重置链接 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, link, link, security.VerificationValidMinutes)
+		if err := infraemail.SendEmail(subject, email, content); err != nil {
 			common.SysError(fmt.Sprintf("failed to send password reset email to %s: %v", email, err))
 		}
 	}
@@ -355,21 +358,21 @@ func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
 	err := jsonx.DecodeJson(c.Request.Body, &req)
 	if err != nil || req.Email == "" || req.Token == "" {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
-	if !common.VerifyCodeWithKey(req.Email, req.Token, common.PasswordResetPurpose) {
-		common.ApiErrorI18n(c, i18n.MsgMiscPasswordResetLinkInvalid)
+	if !security.VerifyCodeWithKey(req.Email, req.Token, security.PasswordResetPurpose) {
+		httpapi.ApiErrorI18n(c, i18n.MsgMiscPasswordResetLinkInvalid)
 		return
 	}
-	password := common.GenerateVerificationCode(12)
+	password := security.GenerateVerificationCode(12)
 	err = userstore.ResetUserPasswordByEmail(req.Email, password)
 	if err != nil {
 		common.SysError("reset user password by email failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	common.DeleteKey(req.Email, common.PasswordResetPurpose)
+	security.DeleteKey(req.Email, security.PasswordResetPurpose)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -399,7 +402,7 @@ func GetUsageLogFieldsVisible(c *gin.Context) {
 	fieldsMap, err := console.GetUsageLogFieldsVisible()
 	if err != nil {
 		common.SysError("failed to parse usage_log_fields setting: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgMiscUsageLogFieldsParseFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgMiscUsageLogFieldsParseFailed)
 		return
 	}
 

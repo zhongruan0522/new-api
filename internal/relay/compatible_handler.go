@@ -8,10 +8,11 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
-	"github.com/NookMux/NookMux/internal/constant"
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -61,10 +62,10 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 	// Channel-level multimodal handling for text-only upstream models.
 	if mediaMode != shared.ImageAutoConvertToURLModeOff {
 		storedURLBySHA := make(map[string]string)
-		imageMaxBytes := int64(constant.MaxImageUploadMB) * 1024 * 1024
-		videoMaxBytes := int64(constant.MaxVideoUploadMB) * 1024 * 1024
-		imagePoolMaxBytes := int64(constant.StoredImagePoolMB) * 1024 * 1024
-		videoPoolMaxBytes := int64(constant.StoredVideoPoolMB) * 1024 * 1024
+		imageMaxBytes := int64(shared.MaxImageUploadMB) * 1024 * 1024
+		videoMaxBytes := int64(shared.MaxVideoUploadMB) * 1024 * 1024
+		imagePoolMaxBytes := int64(shared.StoredImagePoolMB) * 1024 * 1024
+		videoPoolMaxBytes := int64(shared.StoredVideoPoolMB) * 1024 * 1024
 		// 跟踪本次请求中新增存储的图片/视频数量（去重命中不计入）
 		newImageCount := 0
 		newVideoCount := 0
@@ -207,7 +208,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 		request.StreamOptions = nil
 	} else {
 		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
-		if constant.ForceStreamOption {
+		if shared.ForceStreamOption {
 			request.StreamOptions = &shared.StreamOptions{
 				IncludeUsage: true,
 			}
@@ -231,7 +232,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 	var requestBody io.Reader
 
 	if passThroughBody {
-		storage, err := common.GetBodyStorage(c)
+		storage, err := httpapi.GetBodyStorage(c)
 		if err != nil {
 			return shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 		}
@@ -241,7 +242,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *share
 			_, _ = storage.Seek(0, io.SeekStart)
 		}
 		info.UpstreamRequestBodySize = storage.Size()
-		requestBody = common.ReaderOnly(storage)
+		requestBody = cache.ReaderOnly(storage)
 	} else {
 		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 		if err != nil {
@@ -339,7 +340,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		domainchannel.ObserveChannelAffinityUsageCacheFromContext(ctx, usage)
 	}
 
-	adminRejectReason := common.GetContextKeyString(ctx, constant.ContextKeyAdminRejectReason)
+	adminRejectReason := httpapi.GetContextKeyString(ctx, common.ContextKeyAdminRejectReason)
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens

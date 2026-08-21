@@ -3,7 +3,7 @@ package dbstore
 import (
 	"database/sql"
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"gorm.io/gorm"
 )
 
@@ -22,9 +22,9 @@ func (id dbIdentity) String() string {
 // getDBIdentity 通过数据库连接获取唯一标识
 func GetDBIdentity(db *gorm.DB, dbType string) (dbIdentity, error) {
 	switch dbType {
-	case common.DatabaseTypePostgreSQL:
+	case infradb.DatabaseTypePostgreSQL:
 		return getPostgresIdentity(db)
-	case common.DatabaseTypeMySQL:
+	case infradb.DatabaseTypeMySQL:
 		return getMySQLIdentity(db)
 	default:
 		return dbIdentity{}, fmt.Errorf("不支持的数据库类型：%s", dbType)

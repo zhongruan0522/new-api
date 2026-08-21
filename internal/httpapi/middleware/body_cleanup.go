@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +14,7 @@ func BodyStorageCleanup() gin.HandlerFunc {
 		c.Next()
 
 		// 请求结束后清理存储
-		common.CleanupBodyStorage(c)
+		httpapi.CleanupBodyStorage(c)
 
 		// 清理文件缓存（URL 下载的文件等）
 		media.CleanupFileSources(c)

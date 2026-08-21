@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/user"
 	"gorm.io/gorm"
@@ -125,8 +126,8 @@ func (t *TwoFA) IncrementFailedAttempts() error {
 	t.FailedAttempts++
 
 	// 检查是否需要锁定
-	if t.FailedAttempts >= common.MaxFailAttempts {
-		lockUntil := time.Now().Add(time.Duration(common.LockoutDuration) * time.Second)
+	if t.FailedAttempts >= security.MaxFailAttempts {
+		lockUntil := time.Now().Add(time.Duration(security.LockoutDuration) * time.Second)
 		t.LockedUntil = &lockUntil
 	}
 
@@ -151,7 +152,7 @@ func CreateBackupCodes(userId int, codes []string) error {
 
 		// 创建新的备用码记录
 		for _, code := range codes {
-			hashedCode, err := common.HashBackupCode(code)
+			hashedCode, err := security.HashBackupCode(code)
 			if err != nil {
 				return err
 			}
@@ -173,11 +174,11 @@ func CreateBackupCodes(userId int, codes []string) error {
 
 // ValidateBackupCode 验证并使用备用码
 func ValidateBackupCode(userId int, code string) (bool, error) {
-	if !common.ValidateBackupCode(code) {
+	if !security.ValidateBackupCode(code) {
 		return false, errors.New("验证码或备用码不正确")
 	}
 
-	normalizedCode := common.NormalizeBackupCode(code)
+	normalizedCode := security.NormalizeBackupCode(code)
 
 	// 查找未使用的备用码
 	var backupCodes []TwoFABackupCode
@@ -187,7 +188,7 @@ func ValidateBackupCode(userId int, code string) (bool, error) {
 
 	// 验证备用码
 	for _, bc := range backupCodes {
-		if common.ValidatePasswordAndHash(normalizedCode, bc.CodeHash) {
+		if security.ValidatePasswordAndHash(normalizedCode, bc.CodeHash) {
 			// 标记为已使用
 			now := time.Now()
 			bc.IsUsed = true
@@ -241,7 +242,7 @@ func (t *TwoFA) ValidateTOTPAndUpdateUsage(code string) (bool, error) {
 	}
 
 	// 验证TOTP码
-	if !common.ValidateTOTPCode(t.Secret, code) {
+	if !security.ValidateTOTPCode(t.Secret, code) {
 		// 增加失败次数
 		if err := t.IncrementFailedAttempts(); err != nil {
 			common.SysLog("更新2FA失败次数失败: " + err.Error())

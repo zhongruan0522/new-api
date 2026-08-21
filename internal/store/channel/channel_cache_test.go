@@ -5,6 +5,8 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -17,21 +19,21 @@ func setupChannelCacheTestDB(t *testing.T) {
 	t.Helper()
 
 	oldDB := dbstore.DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	oldBatchUpdateEnabled := common.BatchUpdateEnabled
-	oldUsingSQLite := common.UsingSQLite
-	oldUsingPostgreSQL := common.UsingPostgreSQL
-	oldUsingMySQL := common.UsingMySQL
+	oldUsingSQLite := infradb.UsingSQLite
+	oldUsingPostgreSQL := infradb.UsingPostgreSQL
+	oldUsingMySQL := infradb.UsingMySQL
 	oldGroup2Model2Channels := group2model2channels
 	oldChannelsIDM := channelsIDM
 
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = true
 	common.BatchUpdateEnabled = false
-	common.UsingSQLite = true
-	common.UsingPostgreSQL = false
-	common.UsingMySQL = false
+	infradb.UsingSQLite = true
+	infradb.UsingPostgreSQL = false
+	infradb.UsingMySQL = false
 	dbstore.InitCol()
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -51,12 +53,12 @@ func setupChannelCacheTestDB(t *testing.T) {
 			_ = sqlDB.Close()
 		}
 		dbstore.DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 		common.BatchUpdateEnabled = oldBatchUpdateEnabled
-		common.UsingSQLite = oldUsingSQLite
-		common.UsingPostgreSQL = oldUsingPostgreSQL
-		common.UsingMySQL = oldUsingMySQL
+		infradb.UsingSQLite = oldUsingSQLite
+		infradb.UsingPostgreSQL = oldUsingPostgreSQL
+		infradb.UsingMySQL = oldUsingMySQL
 		dbstore.InitCol()
 		group2model2channels = oldGroup2Model2Channels
 		channelsIDM = oldChannelsIDM

@@ -3,6 +3,7 @@ package logstore_test
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/user"
@@ -20,7 +21,7 @@ func setupLogAdminInfoTestDB(t *testing.T) {
 
 	oldDB := dbstore.DB
 	oldLogDB := dbstore.LOG_DB
-	oldRedisEnabled := common.RedisEnabled
+	oldRedisEnabled := redis.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -32,7 +33,7 @@ func setupLogAdminInfoTestDB(t *testing.T) {
 	}
 	dbstore.DB = db
 	dbstore.LOG_DB = db
-	common.RedisEnabled = false
+	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = false
 
 	t.Cleanup(func() {
@@ -41,7 +42,7 @@ func setupLogAdminInfoTestDB(t *testing.T) {
 		}
 		dbstore.DB = oldDB
 		dbstore.LOG_DB = oldLogDB
-		common.RedisEnabled = oldRedisEnabled
+		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
 }

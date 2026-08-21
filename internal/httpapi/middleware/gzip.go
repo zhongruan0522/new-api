@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/andybalholm/brotli"
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +28,7 @@ func DecompressRequestMiddleware() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		maxMB := constant.MaxRequestBodyMB
+		maxMB := shared.MaxRequestBodyMB
 		if maxMB <= 0 {
 			maxMB = 32
 		}

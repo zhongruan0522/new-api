@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,11 +29,16 @@ var logCount int
 var setupLogLock sync.Mutex
 var setupLogWorking bool
 
+// Dir 是日志文件目录，由 app.InitEnv 在 flag.Parse 后注入（--log-dir flag
+// 归 app 层持有；本包不得反向 import app，否则与启动装配成环）。
+// 为空时 SetupLogger 不落盘，仅写 stdout/stderr。
+var Dir string
+
 func SetupLogger() {
 	defer func() {
 		setupLogWorking = false
 	}()
-	if *common.LogDir != "" {
+	if Dir != "" {
 		ok := setupLogLock.TryLock()
 		if !ok {
 			log.Println("setup log is already working")
@@ -42,7 +47,7 @@ func SetupLogger() {
 		defer func() {
 			setupLogLock.Unlock()
 		}()
-		logPath := filepath.Join(*common.LogDir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102150405")))
+		logPath := filepath.Join(Dir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102150405")))
 		fd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatal("failed to open log file")
@@ -78,7 +83,7 @@ func logHelper(ctx context.Context, level string, msg string) {
 	if level == loggerINFO {
 		writer = gin.DefaultWriter
 	}
-	id := ctx.Value(constant.ContextKeyRequestId)
+	id := ctx.Value(common.ContextKeyRequestId)
 	if id == nil {
 		id = "SYSTEM"
 	}
@@ -88,7 +93,7 @@ func logHelper(ctx context.Context, level string, msg string) {
 	if logCount > maxLogCount && !setupLogWorking {
 		logCount = 0
 		setupLogWorking = true
-		common.RelayGo(func() {
+		runtime.RelayGo(func() {
 			SetupLogger()
 		})
 	}

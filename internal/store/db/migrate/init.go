@@ -3,6 +3,7 @@ package dbmigrate
 import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/checkin"
@@ -39,7 +40,7 @@ func InitDB() (err error) {
 		}
 		dbstore.DB = dbHandle
 		// MySQL charset/collation startup check: ensure Chinese-capable charset
-		if common.UsingMySQL {
+		if infradb.UsingMySQL {
 			if err := dbstore.CheckMySQLChineseSupport(dbstore.DB); err != nil {
 				panic(err)
 			}
@@ -55,7 +56,7 @@ func InitDB() (err error) {
 		if !common.IsMasterNode {
 			return nil
 		}
-		if common.UsingMySQL {
+		if infradb.UsingMySQL {
 			//_, _ = sqlDB.Exec("ALTER TABLE channels MODIFY model_mapping TEXT;") // TODO: delete this line when most users have upgraded
 		}
 		common.SysLog("database migration started")
@@ -83,7 +84,7 @@ func InitLogDB() (err error) {
 		}
 		dbstore.LOG_DB = dbHandle
 		// If log DB is MySQL, also ensure Chinese-capable charset
-		if common.LogSqlType == common.DatabaseTypeMySQL {
+		if infradb.LogSqlType == infradb.DatabaseTypeMySQL {
 			if err := dbstore.CheckMySQLChineseSupport(dbstore.LOG_DB); err != nil {
 				panic(err)
 			}
@@ -190,7 +191,7 @@ func migrateLOGDB() error {
 //
 // 此函数在 AutoMigrate 之前执行，动态查询并删除所有相关的旧 UNIQUE 约束和索引。
 func cleanupLegacyUniqueIndexes() {
-	if !common.UsingPostgreSQL {
+	if !infradb.UsingPostgreSQL {
 		return
 	}
 	// PrefillGroup: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"
@@ -210,7 +211,7 @@ func cleanupLegacyUniqueIndexes() {
 //
 // 幂等：只对实际类型为 json/jsonb 的列执行 ALTER，列已是 text 时跳过。
 func cleanupLegacyChannelJSONColumns() {
-	if !common.UsingPostgreSQL {
+	if !infradb.UsingPostgreSQL {
 		return
 	}
 	// 当前模型中这些字段都是 TEXT 存储意图（gorm:"type:text" 或无 JSON 类型）
@@ -274,7 +275,7 @@ func alterChannelColumnToTextIfJSON(dbHandle *gorm.DB, tableName string, columnN
 //
 // 幂等：列类型已经是 text 时跳过。
 func migrateTokenModelLimitsToText() error {
-	if !common.UsingPostgreSQL {
+	if !infradb.UsingPostgreSQL {
 		return nil
 	}
 	var dataType string

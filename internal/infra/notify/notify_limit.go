@@ -2,8 +2,9 @@ package notify
 
 import (
 	"fmt"
-	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -21,13 +22,13 @@ type limitCount struct {
 }
 
 func getDuration() time.Duration {
-	minute := constant.NotificationLimitDurationMinute
+	minute := shared.NotificationLimitDurationMinute
 	return time.Duration(minute) * time.Minute
 }
 
 // startCleanupTask starts a background task to clean up expired entries
 func startCleanupTask() {
-	common.RelayGo(func() {
+	runtime.RelayGo(func() {
 		for {
 			time.Sleep(time.Hour)
 			now := time.Now()
@@ -46,7 +47,7 @@ func startCleanupTask() {
 // CheckNotificationLimit checks if the user has exceeded their notification limit
 // Returns true if the user can send notification, false if limit exceeded
 func CheckNotificationLimit(userId int, notifyType string) (bool, error) {
-	if common.RedisEnabled {
+	if redis.RedisEnabled {
 		return checkRedisLimit(userId, notifyType)
 	}
 	return checkMemoryLimit(userId, notifyType)
@@ -56,19 +57,19 @@ func checkRedisLimit(userId int, notifyType string) (bool, error) {
 	key := fmt.Sprintf("notify_limit:%d:%s:%s", userId, notifyType, time.Now().Format("2006010215"))
 
 	// Get current count
-	count, err := common.RedisGet(key)
+	count, err := redis.RedisGet(key)
 	if err != nil && err.Error() != "redis: nil" {
 		return false, fmt.Errorf("failed to get notification count: %w", err)
 	}
 
 	// If key doesn't exist, initialize it
 	if count == "" {
-		err = common.RedisSet(key, "1", getDuration())
+		err = redis.RedisSet(key, "1", getDuration())
 		return true, err
 	}
 
 	currentCount, _ := strconv.Atoi(count)
-	limit := constant.NotifyLimitCount
+	limit := shared.NotifyLimitCount
 
 	// Check if limit is already reached
 	if currentCount >= limit {
@@ -76,7 +77,7 @@ func checkRedisLimit(userId int, notifyType string) (bool, error) {
 	}
 
 	// Only increment if under limit
-	err = common.RedisIncr(key, 1)
+	err = redis.RedisIncr(key, 1)
 	if err != nil {
 		return false, fmt.Errorf("failed to increment notification count: %w", err)
 	}
@@ -107,7 +108,7 @@ func checkMemoryLimit(userId int, notifyType string) (bool, error) {
 	currentLimit.Count++
 
 	// Check against limits
-	limit := constant.NotifyLimitCount
+	limit := shared.NotifyLimitCount
 
 	// Store updated count
 	notifyLimitStore.Store(key, currentLimit)

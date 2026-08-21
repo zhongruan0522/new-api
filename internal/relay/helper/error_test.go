@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
@@ -99,10 +98,10 @@ func TestRelayErrorHandlerKeepsStructuredErrorMessage(t *testing.T) {
 }
 
 func TestRelayErrorHandlerCapsAndClosesOversizedBody(t *testing.T) {
-	oldMaxErrorResponseBodyMB := constant.MaxErrorResponseBodyMB
-	constant.MaxErrorResponseBodyMB = 1
+	oldMaxErrorResponseBodyMB := shared.MaxErrorResponseBodyMB
+	shared.MaxErrorResponseBodyMB = 1
 	t.Cleanup(func() {
-		constant.MaxErrorResponseBodyMB = oldMaxErrorResponseBodyMB
+		shared.MaxErrorResponseBodyMB = oldMaxErrorResponseBodyMB
 	})
 
 	body := strings.NewReader(strings.Repeat("x", (1<<20)+1))

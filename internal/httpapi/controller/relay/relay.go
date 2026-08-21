@@ -7,14 +7,16 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	"github.com/NookMux/NookMux/internal/constant"
 	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	sensitive "github.com/NookMux/NookMux/internal/domain/sensitive"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/httpapi/middleware"
 	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/cache"
 	"github.com/NookMux/NookMux/internal/infra/log"
+	"github.com/NookMux/NookMux/internal/infra/runtime"
 	tokenizer "github.com/NookMux/NookMux/internal/infra/tokenizer"
 	"github.com/NookMux/NookMux/internal/relay"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -67,8 +69,8 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *shared.Noo
 func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 
 	requestId := c.GetString(common.RequestIdKey)
-	//group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
-	//originalModel := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
+	//group := httpapi.GetContextKeyString(c, common.ContextKeyUsingGroup)
+	//originalModel := httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel)
 
 	var (
 		newAPIError *shared.NookMuxError
@@ -89,8 +91,8 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 		if newAPIError != nil {
 			log.LogError(c, fmt.Sprintf("relay error: %s", common.LocalLogPreview(newAPIError.Error())))
 			newAPIError.SetExemptStrings(
-				common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
-				common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
+				httpapi.GetContextKeyString(c, common.ContextKeyOriginalModel),
+				httpapi.GetContextKeyString(c, common.ContextKeyUsingGroup),
 			)
 			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 			switch relayFormat {
@@ -112,7 +114,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 	request, err := helper.GetAndValidateRequest(c, relayFormat)
 	if err != nil {
 		// Map "request body too large" to 413 so clients can handle it correctly
-		if common.IsRequestBodyTooLargeError(err) || errors.Is(err, common.ErrRequestBodyTooLarge) {
+		if cache.IsRequestBodyTooLargeError(err) || errors.Is(err, cache.ErrRequestBodyTooLarge) {
 			newAPIError = shared.NewErrorWithStatusCode(err, shared.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, shared.ErrOptionWithSkipRetry())
 		} else {
 			newAPIError = shared.NewError(err, shared.ErrorCodeInvalidRequest)
@@ -127,7 +129,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 	}
 
 	needSensitiveCheck := config.ShouldCheckPromptSensitive()
-	needCountToken := constant.CountToken
+	needCountToken := shared.CountToken
 	// Avoid building huge CombineText (strings.Join) when token counting and sensitive check are both disabled.
 	var meta *shared.TokenCountMeta
 	if needSensitiveCheck || needCountToken {
@@ -159,7 +161,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 		return
 	}
 
-	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
+	// httpapi.SetContextKey(c, common.ContextKeyTokenCountMeta, meta)
 
 	if priceData.FreeModel {
 		log.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
@@ -219,10 +221,10 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 
 		addUsedChannel(c, channel.Id)
 		lastFailedChannelId = channel.Id
-		requestBody, bodyErr := common.GetRequestBody(c)
+		requestBody, bodyErr := httpapi.GetRequestBody(c)
 		if bodyErr != nil {
 			// Ensure consistent 413 for oversized bodies even when error occurs later (e.g., retry path)
-			if common.IsRequestBodyTooLargeError(bodyErr) || errors.Is(bodyErr, common.ErrRequestBodyTooLarge) {
+			if cache.IsRequestBodyTooLargeError(bodyErr) || errors.Is(bodyErr, cache.ErrRequestBodyTooLarge) {
 				newAPIError = shared.NewErrorWithStatusCode(bodyErr, shared.ErrorCodeReadRequestBodyFailed, http.StatusRequestEntityTooLarge, shared.ErrOptionWithSkipRetry())
 			} else {
 				newAPIError = shared.NewErrorWithStatusCode(bodyErr, shared.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
@@ -248,7 +250,7 @@ func Relay(c *gin.Context, relayFormat relayconstant.RelayFormat) {
 
 		newAPIError = billing.NormalizeViolationFeeError(newAPIError)
 
-		channelWillBeDisabled := ProcessChannelError(c, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		channelWillBeDisabled := ProcessChannelError(c, *domainchannel.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, httpapi.GetContextKeyString(c, common.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 		allowFailedChannelFallback = !channelWillBeDisabled
 
 		if !shouldRetry(c, newAPIError, maxRetry-retryParam.GetRetry()) {
@@ -405,12 +407,12 @@ func ProcessChannelError(c *gin.Context, channelError domainchannel.ChannelError
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
 	channelWillBeDisabled := domainchannel.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan
 	if channelWillBeDisabled {
-		common.RelayGo(func() {
+		runtime.RelayGo(func() {
 			domainchannel.DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}
 
-	if constant.ErrorLogEnabled && shared.IsRecordErrorLog(err) {
+	if shared.ErrorLogEnabled && shared.IsRecordErrorLog(err) {
 		// 保存错误日志到mysql中
 		userId := c.GetInt("id")
 		tokenName := c.GetString("token_name")
@@ -430,14 +432,14 @@ func ProcessChannelError(c *gin.Context, channelError domainchannel.ChannelError
 		other["channel_type"] = c.GetInt("channel_type")
 		adminInfo := make(map[string]interface{})
 		adminInfo["use_channel"] = c.GetStringSlice("use_channel")
-		isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
+		isMultiKey := httpapi.GetContextKeyBool(c, common.ContextKeyChannelIsMultiKey)
 		if isMultiKey {
 			adminInfo["is_multi_key"] = true
-			adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
+			adminInfo["multi_key_index"] = httpapi.GetContextKeyInt(c, common.ContextKeyChannelMultiKeyIndex)
 		}
 		domainchannel.AppendChannelAffinityAdminInfo(c, adminInfo)
 		other["admin_info"] = adminInfo
-		startTime := common.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
+		startTime := httpapi.GetContextKeyTime(c, common.ContextKeyRequestStartTime)
 		if startTime.IsZero() {
 			startTime = time.Now()
 		}

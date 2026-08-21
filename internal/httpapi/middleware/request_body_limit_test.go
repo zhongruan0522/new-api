@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/gin-gonic/gin"
 )
 
 func TestAnonymousRequestBodyLimitRejectsOversizedBody(t *testing.T) {
-	oldLimit := constant.AnonymousRequestBodyLimitKB
-	constant.AnonymousRequestBodyLimitKB = 1
+	oldLimit := shared.AnonymousRequestBodyLimitKB
+	shared.AnonymousRequestBodyLimitKB = 1
 	t.Cleanup(func() {
-		constant.AnonymousRequestBodyLimitKB = oldLimit
+		shared.AnonymousRequestBodyLimitKB = oldLimit
 	})
 
 	router := gin.New()
@@ -34,10 +34,10 @@ func TestAnonymousRequestBodyLimitRejectsOversizedBody(t *testing.T) {
 }
 
 func TestAnonymousRequestBodyLimitPreservesAcceptedBody(t *testing.T) {
-	oldLimit := constant.AnonymousRequestBodyLimitKB
-	constant.AnonymousRequestBodyLimitKB = 1
+	oldLimit := shared.AnonymousRequestBodyLimitKB
+	shared.AnonymousRequestBodyLimitKB = 1
 	t.Cleanup(func() {
-		constant.AnonymousRequestBodyLimitKB = oldLimit
+		shared.AnonymousRequestBodyLimitKB = oldLimit
 	})
 
 	router := gin.New()
@@ -63,10 +63,10 @@ func TestAnonymousRequestBodyLimitPreservesAcceptedBody(t *testing.T) {
 }
 
 func TestAnonymousRequestBodyLimitCanBeDisabled(t *testing.T) {
-	oldLimit := constant.AnonymousRequestBodyLimitKB
-	constant.AnonymousRequestBodyLimitKB = 0
+	oldLimit := shared.AnonymousRequestBodyLimitKB
+	shared.AnonymousRequestBodyLimitKB = 0
 	t.Cleanup(func() {
-		constant.AnonymousRequestBodyLimitKB = oldLimit
+		shared.AnonymousRequestBodyLimitKB = oldLimit
 	})
 
 	router := gin.New()

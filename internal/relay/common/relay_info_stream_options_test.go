@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/NookMux/NookMux/internal/constant"
+	"github.com/NookMux/NookMux/internal/common"
 	channelconstant "github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +28,7 @@ func TestGenRelayInfoOpenAI_StreamOptionsByChannelType(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(recorder)
 			c.Request = httptest.NewRequest("POST", "/v1/chat/completions", nil)
-			c.Set(string(constant.ContextKeyChannelType), tc.channel)
+			c.Set(string(common.ContextKeyChannelType), tc.channel)
 
 			info := GenRelayInfoOpenAI(c, nil)
 			info.InitChannelMeta(c)

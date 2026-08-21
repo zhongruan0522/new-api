@@ -2,7 +2,7 @@
 
 `pkg/` 存放可独立复用、无业务依赖的基础库。进入门槛是依赖核查通过：
 包内任何文件（含测试）不得 import `internal/` 下任何业务包（含
-`internal/common`、`internal/constant`、`internal/domain/` 等）或其他业务代码。
+`internal/common`、`internal/domain/` 等）或其他业务代码。
 
 ## 现有包
 
@@ -19,7 +19,7 @@
   标准库，若引用业务包内定义的函数/变量/错误值（如磁盘缓存配置、`SysError`、
   `ErrRequestBodyTooLarge`），也不得进 `pkg/`。先例见
   [docs/PRD/prd-architecture-migration.md](../docs/PRD/prd-architecture-migration.md)
-  阶段 2 对 `internal/common/body_storage.go` 的核查结论（暂留，随阶段 4 迁
+  阶段 2 对 `internal/common/body_storage.go` 的核查结论（暂留，阶段 4 已随迁
   `internal/infra/cache/`）。
 - 禁止为通过核查而在迁移时改写业务逻辑（依赖注入等重构不在 `pkg/` 抽离范围内）。
 
@@ -27,4 +27,4 @@
 
 - `go build ./... && go test ./pkg/...`
 - `go list -deps ./pkg/...` 输出不出现 `github.com/NookMux/NookMux/` 前缀下的
-  `internal/` 任何路径（含 `constant`、`domain`、`common`）。
+  `internal/` 任何路径（含 `domain`、`common`、`infra`）。

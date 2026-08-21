@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	passkeysvc "github.com/NookMux/NookMux/internal/infra/passkey"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/NookMux/NookMux/internal/store/passkey"
 	"github.com/NookMux/NookMux/internal/store/twofa"
@@ -56,19 +58,19 @@ func UniversalVerify(c *gin.Context) {
 
 	var req UniversalVerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 
 	// 获取用户信息
 	user := &userstore.User{Id: userId}
 	if err := user.FillUserById(); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
 		return
 	}
 
 	if user.Status != common.UserStatusEnabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
 		return
 	}
 
@@ -80,7 +82,7 @@ func UniversalVerify(c *gin.Context) {
 	hasPasskey := passkeyErr == nil && passkey != nil
 
 	if !has2FA && !hasPasskey {
-		common.ApiErrorI18n(c, i18n.MsgSecureVerifyNoMethod)
+		httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyNoMethod)
 		return
 	}
 
@@ -92,11 +94,11 @@ func UniversalVerify(c *gin.Context) {
 	switch req.Method {
 	case "2fa":
 		if !has2FA {
-			common.ApiErrorI18n(c, i18n.MsgSecureVerifyTwoFANotEnabled)
+			httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyTwoFANotEnabled)
 			return
 		}
 		if req.Code == "" {
-			common.ApiErrorI18n(c, i18n.MsgSecureVerifyCodeRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyCodeRequired)
 			return
 		}
 		verified = validateTwoFactorAuth(twoFA, req.Code)
@@ -104,34 +106,34 @@ func UniversalVerify(c *gin.Context) {
 
 	case "passkey":
 		if !hasPasskey {
-			common.ApiErrorI18n(c, i18n.MsgSecureVerifyPasskeyNotEnabled)
+			httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyPasskeyNotEnabled)
 			return
 		}
 		verified, err = consumePasskeyReady(c, userId)
 		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgSecureVerifyInvalidPasskeyState)
+			httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyInvalidPasskeyState)
 			return
 		}
 		if !verified {
-			common.ApiErrorI18n(c, i18n.MsgSecureVerifyPasskeyRequired)
+			httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyPasskeyRequired)
 			return
 		}
 		verifyMethod = "Passkey"
 
 	default:
-		common.ApiErrorI18n(c, i18n.MsgSecureVerifyUnsupportedMethod, map[string]any{"Method": req.Method})
+		httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyUnsupportedMethod, map[string]any{"Method": req.Method})
 		return
 	}
 
 	if !verified {
-		common.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
 		return
 	}
 
 	// 验证成功，在 session 中记录时间戳并绑定当前用户
 	now, err := setSecureVerificationSession(c, userId, req.Method)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
 		return
 	}
 
@@ -212,7 +214,7 @@ func HasSecureVerificationMethodForUser(c *gin.Context, userId int, method strin
 // validateTwoFactorAuth 统一的2FA验证函数
 func validateTwoFactorAuth(twoFA *twofastore.TwoFA, code string) bool {
 	// 尝试验证TOTP
-	if cleanCode, err := common.ValidateNumericCode(code); err == nil {
+	if cleanCode, err := security.ValidateNumericCode(code); err == nil {
 		if isValid, _ := twoFA.ValidateTOTPAndUpdateUsage(cleanCode); isValid {
 			return true
 		}
@@ -261,7 +263,7 @@ func consumePasskeyReady(c *gin.Context, userId int) (bool, error) {
 // 整合了 begin 和 finish 流程
 func PasskeyVerifyForSecure(c *gin.Context) {
 	if !system.GetPasskeySettings().Enabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyLoginDisabled)
 		return
 	}
 
@@ -276,37 +278,37 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 
 	user := &userstore.User{Id: userId}
 	if err := user.FillUserById(); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUserInfoFailed)
 		return
 	}
 
 	if user.Status != common.UserStatusEnabled {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyUserDisabled)
 		return
 	}
 
 	credential, err := passkeystore.GetPasskeyByUserID(userId)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyNotBound)
 		return
 	}
 
 	wa, err := passkeysvc.BuildWebAuthn(c.Request)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
 		return
 	}
 
 	waUser := passkeysvc.NewWebAuthnUser(user, credential)
 	sessionData, err := passkeysvc.PopSessionData(c, passkeysvc.VerifySessionKey)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeyInvalidSession)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeyInvalidSession)
 		return
 	}
 
 	_, err = wa.FinishLogin(waUser, *sessionData, c.Request)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgSecureVerifyFailed)
 		return
 	}
 
@@ -315,14 +317,14 @@ func PasskeyVerifyForSecure(c *gin.Context) {
 	credential.LastUsedAt = &usedAt
 	if err := passkeystore.UpsertPasskeyCredential(credential); err != nil {
 		common.SysError("upsert passkey credential failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 
 	// 验证成功，设置 session
 	_, err = PasskeyVerifyAndMarkReadySession(c, userId)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgPasskeySaveVerifyFailed)
 		return
 	}
 

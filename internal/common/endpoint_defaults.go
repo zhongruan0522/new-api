@@ -1,5 +1,7 @@
 package common
 
+import ()
+
 import "github.com/NookMux/NookMux/internal/domain/channel/constant"
 
 // EndpointInfo 描述单个端点的默认请求信息

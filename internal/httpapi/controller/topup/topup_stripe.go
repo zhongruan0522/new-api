@@ -12,6 +12,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config"
 	"github.com/NookMux/NookMux/internal/i18n"
 	payment "github.com/NookMux/NookMux/internal/infra/payment"
+	"github.com/NookMux/NookMux/internal/infra/security"
 	topupstore "github.com/NookMux/NookMux/internal/store/topup"
 	userstore "github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
@@ -72,12 +73,12 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 		return
 	}
 
-	if req.SuccessURL != "" && common.ValidateRedirectURL(req.SuccessURL) != nil {
+	if req.SuccessURL != "" && security.ValidateRedirectURL(req.SuccessURL) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgTopupSuccessUrlUntrusted), "data": nil})
 		return
 	}
 
-	if req.CancelURL != "" && common.ValidateRedirectURL(req.CancelURL) != nil {
+	if req.CancelURL != "" && security.ValidateRedirectURL(req.CancelURL) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": i18n.T(c, i18n.MsgTopupCancelUrlUntrusted), "data": nil})
 		return
 	}

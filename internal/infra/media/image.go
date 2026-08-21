@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/constant"
 
+	"github.com/NookMux/NookMux/internal/domain/shared"
 	"golang.org/x/image/webp"
 )
 
@@ -82,7 +82,7 @@ func GetImageFromUrl(url string) (mimeType string, data string, err error) {
 	if contentType != "application/octet-stream" && !strings.HasPrefix(contentType, "image/") {
 		return "", "", fmt.Errorf("invalid content type: %s, required image/*", contentType)
 	}
-	maxImageSize := int64(constant.MaxFileDownloadMB * 1024 * 1024)
+	maxImageSize := int64(shared.MaxFileDownloadMB * 1024 * 1024)
 
 	// Check Content-Length if available
 	if resp.ContentLength > maxImageSize {

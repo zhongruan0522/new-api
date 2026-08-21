@@ -3,6 +3,7 @@ package tokencontroller
 import (
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/token"
@@ -39,13 +40,13 @@ func GetAllTokens(c *gin.Context) {
 	tokens, err := tokenstore.GetAllUserTokens(userId, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("get all user tokens failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	total, _ := tokenstore.CountUserTokens(userId)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func SearchTokens(c *gin.Context) {
@@ -69,25 +70,25 @@ func SearchTokens(c *gin.Context) {
 	tokens, total, err := tokenstore.SearchUserTokens(userId, keyword, token, group, status, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.SysError("search user tokens failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
-	common.ApiSuccess(c, pageInfo)
+	httpapi.ApiSuccess(c, pageInfo)
 }
 
 func GetToken(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	token, err := tokenstore.GetTokenByIds(id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -100,14 +101,14 @@ func GetToken(c *gin.Context) {
 func GetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	token, err := tokenstore.GetTokenByIds(id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -125,7 +126,7 @@ func GetTokenStatus(c *gin.Context) {
 	token, err := tokenstore.GetTokenByIds(tokenId, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	snapshot := token.GetQuotaSnapshot()
@@ -163,7 +164,7 @@ func GetTokenUsage(c *gin.Context) {
 	token, err := GetTokenForFeedback(c)
 	if err != nil {
 		common.SysError("failed to get token by key: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgTokenGetInfoFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenGetInfoFailed)
 		return
 	}
 	snapshot := token.GetQuotaSnapshot()
@@ -231,11 +232,11 @@ func AddToken(c *gin.Context) {
 	token := tokenstore.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
-		common.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
 	}
 
@@ -252,52 +253,52 @@ func AddToken(c *gin.Context) {
 	case 1: // 永久限额
 		token.UnlimitedQuota = false
 		if token.RemainQuota < 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
 			return
 		}
 		maxQuotaValue := common.QuotaUpperLimit(1000000000)
 		if token.RemainQuota > maxQuotaValue {
-			common.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
 			return
 		}
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	default:
-		common.ApiErrorI18n(c, i18n.MsgTokenInvalidQuotaType)
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenInvalidQuotaType)
 		return
 	}
 
@@ -305,7 +306,7 @@ func AddToken(c *gin.Context) {
 	count, err := tokenstore.CountUserTokens(c.GetInt("id"))
 	if err != nil {
 		common.SysError("count user tokens failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	if int(count) >= maxUserTokens {
@@ -317,7 +318,7 @@ func AddToken(c *gin.Context) {
 	}
 	key, err := common.GenerateKey()
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgTokenGenerateFailed)
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenGenerateFailed)
 		common.SysLog("failed to generate token key: " + err.Error())
 		return
 	}
@@ -351,7 +352,7 @@ func AddToken(c *gin.Context) {
 	err = cleanToken.Insert()
 	if err != nil {
 		common.SysError("insert token failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
@@ -370,7 +371,7 @@ func DeleteToken(c *gin.Context) {
 	err := tokenstore.DeleteTokenById(id, userId)
 	if err != nil {
 		common.SysError("delete token by id failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
@@ -386,11 +387,11 @@ func UpdateToken(c *gin.Context) {
 	token := tokenstore.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidRequestBody)
 		return
 	}
 	if len(token.Name) > 50 {
-		common.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
 	}
 
@@ -407,48 +408,48 @@ func UpdateToken(c *gin.Context) {
 	case 1: // 永久限额
 		token.UnlimitedQuota = false
 		if token.RemainQuota < 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
 			return
 		}
 		maxQuotaValue := common.QuotaUpperLimit(1000000000)
 		if token.RemainQuota > maxQuotaValue {
-			common.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
 			return
 		}
 	case 2: // 时段限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 	case 3: // 时段+周期限额
 		token.UnlimitedQuota = false
 		if token.WindowHours < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowHoursMin)
 			return
 		}
 		if token.WindowQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowQuotaPositive)
 			return
 		}
 		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
-			common.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenWindowStartRange)
 			return
 		}
 		if token.CycleDays < 1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenCycleDaysMin)
 			return
 		}
 		if token.CycleQuota <= 0 {
-			common.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenCycleQuotaPositive)
 			return
 		}
 	}
@@ -456,18 +457,18 @@ func UpdateToken(c *gin.Context) {
 	cleanToken, err := tokenstore.GetTokenByIds(token.Id, userId)
 	if err != nil {
 		common.SysError("get token by ids failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	// 保存更新前快照用于审计差异对比
 	originToken := *cleanToken
 	if token.Status == common.TokenStatusEnabled {
 		if cleanToken.Status == common.TokenStatusExpired && cleanToken.ExpiredTime <= common.GetTimestamp() && cleanToken.ExpiredTime != -1 {
-			common.ApiErrorI18n(c, i18n.MsgTokenExpiredCannotEnable)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenExpiredCannotEnable)
 			return
 		}
 		if cleanToken.Status == common.TokenStatusExhausted && cleanToken.RemainQuota <= 0 && !cleanToken.UnlimitedQuota {
-			common.ApiErrorI18n(c, i18n.MsgTokenExhaustedCannotEable)
+			httpapi.ApiErrorI18n(c, i18n.MsgTokenExhaustedCannotEable)
 			return
 		}
 	}
@@ -512,7 +513,7 @@ func UpdateToken(c *gin.Context) {
 	err = cleanToken.Update()
 	if err != nil {
 		common.SysError("update token failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
@@ -530,14 +531,14 @@ type TokenBatch struct {
 func DeleteTokenBatch(c *gin.Context) {
 	tokenBatch := TokenBatch{}
 	if err := c.ShouldBindJSON(&tokenBatch); err != nil || len(tokenBatch.Ids) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	count, err := tokenstore.BatchDeleteTokens(tokenBatch.Ids, userId)
 	if err != nil {
 		common.SysError("batch delete tokens failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
@@ -551,7 +552,7 @@ func DeleteTokenBatch(c *gin.Context) {
 func GetTokenKeysBatch(c *gin.Context) {
 	tokenBatch := TokenBatch{}
 	if err := c.ShouldBindJSON(&tokenBatch); err != nil || len(tokenBatch.Ids) == 0 {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
@@ -560,7 +561,7 @@ func GetTokenKeysBatch(c *gin.Context) {
 		token, err := tokenstore.GetTokenByIds(id, userId)
 		if err != nil {
 			common.SysError("get token by ids failed: " + err.Error())
-			common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 			return
 		}
 		keys[id] = token.GetFullKey()
@@ -577,14 +578,14 @@ func GetTokenKeysBatch(c *gin.Context) {
 func ResetTokenKey(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	userId := c.GetInt("id")
 	newKey, err := tokenstore.ResetTokenKey(id, userId)
 	if err != nil {
 		common.SysError("reset token key failed: " + err.Error())
-		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
 	audit.RecordAudit(c, auditstore.AuditModuleToken, auditstore.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
