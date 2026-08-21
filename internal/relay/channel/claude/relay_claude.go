@@ -16,6 +16,8 @@ import (
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/relay/reasonmap"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
+	"github.com/NookMux/NookMux/internal/relay/wire/stream"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -749,7 +751,7 @@ type ClaudeResponseInfo struct {
 	ResponseText              strings.Builder
 	Usage                     *shared.Usage
 	Done                      bool
-	ResponsesStreamConverter  relaycommon.OpenAIWireStreamConverter
+	ResponsesStreamConverter  stream.OpenAIWireStreamConverter
 	ResponsesCompletedEmitted bool
 }
 
@@ -1081,9 +1083,9 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 	}
 }
 
-func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) relaycommon.OpenAIWireStreamConverter {
+func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) stream.OpenAIWireStreamConverter {
 	if claudeInfo.ResponsesStreamConverter == nil {
-		claudeInfo.ResponsesStreamConverter = relaycommon.NewChatToResponsesStreamConverter(info.OpenAIResponsesToolContext)
+		claudeInfo.ResponsesStreamConverter = stream.NewChatToResponsesStreamConverter(info.OpenAIResponsesToolContext)
 	}
 	return claudeInfo.ResponsesStreamConverter
 }
@@ -1194,7 +1196,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
-		responsesResp, convErr := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
+		responsesResp, convErr := convert.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
 		if convErr != nil {
 			return shared.NewError(convErr, shared.ErrorCodeBadResponseBody)
 		}

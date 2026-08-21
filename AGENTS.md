@@ -64,7 +64,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `internal/store/`: 持久层（原 `model/`，阶段 5.2 按资源拆）：GORM 模型、迁移、缓存、数据库访问；子包按资源垂直拆分（`db/`、`channel/`、`user/`、`token/`、`log/` 等，包名带 `store` 后缀）。
 - `internal/config/`: 系统、运营、模型、倍率、性能、审计等配置（原 `setting/`；ConfigManager 在 `internal/config/manager/`）。
 - `internal/common/`: 业务全局变量与零碎工具内核（阶段 4 拆解后）：全局开关/限流/SMTP/OAuth 变量、`ContextKey` 注册表、`SysLog` 族输出、`GetEnvOrDefault*`、模型/端点与字符串工具；基础设施能力已迁 `internal/infra/`，HTTP 边界工具已迁 `internal/httpapi/` 根包（JSON 包装此前已迁至 `pkg/jsonx`）。
-- `internal/relay/`: AI 请求中继、协议转换、供应商适配；`helper/` 含协议转换（Claude/Gemini ↔ OpenAI）、relay 错误包装、响应透传工具（阶段 5.3 自原 `service/` 并入）与上游响应体限额读取（阶段 4 自 `common/response.go` 迁入）。
+- `internal/relay/`: AI 请求中继、协议转换、供应商适配；`relay.go` 为对外门面（re-export 各子包入口），`core/` 承载 adaptor 调度与 websocket 中继，`wire/`（含 `wire/convert/`、`wire/stream/`）承载 OpenAI wire 协议族转换（阶段 5.5 自 relay 顶层与 `relay/common/` 收口），`handler/` 承载各模态 handler；`helper/` 含协议转换（Claude/Gemini ↔ OpenAI）、relay 错误包装、响应透传工具（阶段 5.3 自原 `service/` 并入）与上游响应体限额读取（阶段 4 自 `common/response.go` 迁入）。
 - `internal/oauth/`: OAuth 供应商（原 `internal/constant/` 跨领域常量包已于阶段 4 解散：`ContextKey` 归 `internal/common`，运行时限值/缓存键/Setup 归 `internal/domain/shared/`；渠道域常量在 `domain/channel/constant/`，`FinishReason`/`RelayFormat` 在 `relay/constant/`）。
 - `internal/i18n/`: 后端 API 响应消息多语言翻译。
 - `pkg/`: 可独立复用且无业务依赖的基础库（`jsonx`、`cachex`），进入前必须通过依赖核查，详见 [pkg/AGENTS.md](pkg/AGENTS.md)。

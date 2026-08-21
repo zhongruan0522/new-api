@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/relay/channel"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
 
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
@@ -92,7 +93,7 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.OpenAIResponsesRequest) (any, error) {
-	chatReq, toolContext, err := relaycommon.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&request)
+	chatReq, toolContext, err := convert.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&request)
 	if err != nil {
 		return nil, err
 	}

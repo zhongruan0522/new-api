@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -33,7 +34,7 @@ func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, 
 	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	usage := shared.Usage{}
-	relaycommon.ApplyResponsesUsageToChatUsage(&usage, compactResp.Usage)
+	convert.ApplyResponsesUsageToChatUsage(&usage, compactResp.Usage)
 
 	return &usage, nil
 }

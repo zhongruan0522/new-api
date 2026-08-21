@@ -9,6 +9,8 @@ import (
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
+	"github.com/NookMux/NookMux/internal/relay/wire/stream"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -43,7 +45,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	// compute usage
 	usage := shared.Usage{}
-	relaycommon.ApplyResponsesUsageToChatUsage(&usage, responsesResponse.Usage)
+	convert.ApplyResponsesUsageToChatUsage(&usage, responsesResponse.Usage)
 
 	if info != nil && info.RelayFormat == relayconstant.RelayFormatClaude {
 		responseBody, err = convertResponsesBodyToClaudeBody(&responsesResponse, &usage, info)
@@ -92,10 +94,10 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 
 	var usage = &shared.Usage{}
 	var responseTextBuilder strings.Builder
-	var responsesToChat relaycommon.OpenAIWireStreamConverter
+	var responsesToChat stream.OpenAIWireStreamConverter
 	var streamApiErr *shared.NookMuxError
 	if info.RelayFormat == relayconstant.RelayFormatClaude {
-		responsesToChat = relaycommon.NewResponsesToChatStreamConverter(false)
+		responsesToChat = stream.NewResponsesToChatStreamConverter(false)
 	}
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
@@ -121,7 +123,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			case "response.completed":
 				if streamResponse.Response != nil {
 					if streamResponse.Response.Usage != nil {
-						relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
+						convert.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
 						if info.RelayFormat == relayconstant.RelayFormatClaude && info.ClaudeConvertInfo != nil {
 							info.ClaudeConvertInfo.Usage = usage
 						}
@@ -196,7 +198,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 }
 
 func convertResponsesBodyToClaudeBody(responsesResponse *shared.OpenAIResponsesResponse, usage *shared.Usage, info *relaycommon.RelayInfo) ([]byte, error) {
-	chatResponse, err := relaycommon.ConvertResponsesResponseToChatCompletionResponse(responsesResponse)
+	chatResponse, err := convert.ConvertResponsesResponseToChatCompletionResponse(responsesResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +209,7 @@ func convertResponsesBodyToClaudeBody(responsesResponse *shared.OpenAIResponsesR
 	return jsonx.Marshal(claudeResp)
 }
 
-func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, converter relaycommon.OpenAIWireStreamConverter, data string) error {
+func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, converter stream.OpenAIWireStreamConverter, data string) error {
 	if converter == nil {
 		return fmt.Errorf("responses to chat stream converter is nil")
 	}
@@ -217,7 +219,7 @@ func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, c
 	var streamResponse shared.ResponsesStreamResponse
 	if err := jsonx.UnmarshalJsonStr(data, &streamResponse); err == nil && streamResponse.Response != nil && streamResponse.Response.Usage != nil {
 		usage := &shared.Usage{}
-		relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
+		convert.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
 		info.ClaudeConvertInfo.Usage = usage
 	}
 	out, err := converter.ConvertFrame("", data, "data: "+data+"\n\n")

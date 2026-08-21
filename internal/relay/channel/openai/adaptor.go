@@ -19,6 +19,7 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/common_handler"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
 	"github.com/NookMux/NookMux/internal/store/minimax_voice"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -91,7 +92,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 		if !ok {
 			return nil, fmt.Errorf("invalid normalized chat request type, got %T", chatRequest)
 		}
-		responsesRequest, err := relaycommon.ConvertChatCompletionsRequestToResponsesRequest(normalizedChatRequest)
+		responsesRequest, err := convert.ConvertChatCompletionsRequestToResponsesRequest(normalizedChatRequest)
 		if err != nil {
 			return nil, err
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -154,7 +155,7 @@ type RelayInfo struct {
 	// OpenAIResponsesToolContext carries per-request Responses tool proxy
 	// metadata across multi-hop conversions such as Responses -> Chat -> Claude
 	// and Claude -> Chat -> Responses.
-	OpenAIResponsesToolContext *OpenAIWireToolContext
+	OpenAIResponsesToolContext *convert.OpenAIWireToolContext
 	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
 	FinalRequestRelayFormat relayconstant.RelayFormat
 

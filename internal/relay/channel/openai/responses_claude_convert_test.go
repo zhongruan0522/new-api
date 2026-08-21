@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/relay/wire/stream"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -152,7 +153,7 @@ func TestWriteResponsesStreamAsClaudeEmitsClaudeEvents(t *testing.T) {
 		RelayFormat: relayconstant.RelayFormatClaude,
 		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "gpt-5"},
 	}
-	converter := relaycommon.NewResponsesToChatStreamConverter(false)
+	converter := stream.NewResponsesToChatStreamConverter(false)
 
 	textEvent, err := jsonx.Marshal(shared.ResponsesStreamResponse{
 		Type:  "response.output_text.delta",
