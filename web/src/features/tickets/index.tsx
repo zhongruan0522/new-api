@@ -838,7 +838,7 @@ export function Tickets() {
                       setPage((current) => Math.max(1, current - 1))
                     }
                   >
-                    {t('common.fields.previous')}
+                    {t('common.actions.previous')}
                   </Button>
                   <span className='text-muted-foreground min-w-16 text-center'>
                     {page} / {totalPages}
@@ -850,7 +850,7 @@ export function Tickets() {
                       setPage((current) => Math.min(totalPages, current + 1))
                     }
                   >
-                    {t('common.fields.next')}
+                    {t('common.actions.next')}
                   </Button>
                 </div>
               </div>

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Trash2, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -499,11 +499,19 @@ export function ModelRatioVisualEditor({
 
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
+  const selectedMode = selectedName
+    ? filteredRows.find((row) => row.name === selectedName)?.mode
+    : undefined
+  const followedKeyRef = useRef('')
 
   // 当选中模型因定价模式切换导致排序变化、落到当前可视页之外时，
   // 自动将分页指针跳到该模型所在的页，保持编辑连续性。
+  // 仅在选中模型或其计费模式变化时触发一次，避免覆盖用户随后的手动翻页。
   useEffect(() => {
     if (!selectedName) return
+    const key = `${selectedName}:${selectedMode ?? ''}`
+    if (followedKeyRef.current === key) return
+    followedKeyRef.current = key
     const targetIndex = filteredRows.findIndex(
       (row) => row.name === selectedName
     )
@@ -512,7 +520,7 @@ export function ModelRatioVisualEditor({
     if (targetPage !== safePageIndex) {
       setPageIndex(targetPage)
     }
-  }, [filteredRows, selectedName, pageSize, safePageIndex])
+  }, [filteredRows, safePageIndex, selectedMode, selectedName, pageSize])
 
   const pageRows = filteredRows.slice(
     safePageIndex * pageSize,
@@ -922,7 +930,7 @@ export function ModelRatioVisualEditor({
                     setPageIndex(() => Math.max(0, safePageIndex - 1))
                   }
                 >
-                  {t('common.fields.previous')}
+                  {t('common.actions.previous')}
                 </Button>
                 <span className='text-muted-foreground text-xs'>
                   {safePageIndex + 1} / {pageCount}
@@ -938,7 +946,7 @@ export function ModelRatioVisualEditor({
                     )
                   }
                 >
-                  {t('common.fields.next')}
+                  {t('common.actions.next')}
                 </Button>
               </div>
             </div>

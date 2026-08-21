@@ -564,7 +564,7 @@ export function JsonArrayEditor({
                   }
                   disabled={disabled || safePageIndex === 0}
                 >
-                  {t('common.fields.previous')}
+                  {t('common.actions.previous')}
                 </Button>
                 <span>
                   {safePageIndex + 1} / {pageCount}
@@ -580,7 +580,7 @@ export function JsonArrayEditor({
                   }
                   disabled={disabled || safePageIndex >= pageCount - 1}
                 >
-                  {t('common.fields.next')}
+                  {t('common.actions.next')}
                 </Button>
               </div>
             </div>

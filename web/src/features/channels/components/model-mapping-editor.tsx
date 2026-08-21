@@ -642,7 +642,7 @@ export function ModelMappingEditor({
                     setPageIndex(() => Math.max(0, safePageIndex - 1))
                   }
                 >
-                  {t('common.fields.previous')}
+                  {t('common.actions.previous')}
                 </Button>
                 <span className='text-muted-foreground text-xs'>
                   {safePageIndex + 1} / {pageCount}
@@ -658,7 +658,7 @@ export function ModelMappingEditor({
                     )
                   }
                 >
-                  {t('common.fields.next')}
+                  {t('common.actions.next')}
                 </Button>
               </div>
             </div>

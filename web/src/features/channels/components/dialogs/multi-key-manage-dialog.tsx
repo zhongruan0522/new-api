@@ -433,7 +433,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || isLoading}
                   >
-                    {t('common.fields.previous')}
+                    {t('common.actions.previous')}
                   </Button>
                   <Button
                     variant='outline'
@@ -441,7 +441,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages || isLoading}
                   >
-                    {t('common.fields.next')}
+                    {t('common.actions.next')}
                   </Button>
                 </div>
               </div>

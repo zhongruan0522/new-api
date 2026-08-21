@@ -107,7 +107,7 @@ function PaginationPrevious({
         data-icon='inline-start'
       />
       <span className='hidden sm:block'>
-        {text ?? t('common.fields.previous')}
+        {text ?? t('common.actions.previous')}
       </span>
     </PaginationLink>
   )
@@ -127,7 +127,7 @@ function PaginationNext({
       className={cn('pr-1.5!', className)}
       {...props}
     >
-      <span className='hidden sm:block'>{text ?? t('common.fields.next')}</span>
+      <span className='hidden sm:block'>{text ?? t('common.actions.next')}</span>
       <HugeiconsIcon
         icon={ArrowRight01Icon}
         strokeWidth={2}
