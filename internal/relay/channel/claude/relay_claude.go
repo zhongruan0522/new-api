@@ -1196,7 +1196,9 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
-		responsesResp, convErr := convert.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
+		cv := convert.NewConverter(shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses)
+		cv.ToolContext = info.OpenAIResponsesToolContext
+		responsesResp, convErr := cv.ConvertChatToResponsesResponse(openaiResponse)
 		if convErr != nil {
 			return shared.NewError(convErr, shared.ErrorCodeBadResponseBody)
 		}

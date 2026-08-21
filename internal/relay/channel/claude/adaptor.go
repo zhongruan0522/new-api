@@ -93,12 +93,13 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request shared.OpenAIResponsesRequest) (any, error) {
-	chatReq, toolContext, err := convert.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&request)
+	cv := convert.NewConverter(shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses)
+	chatReq, err := cv.ConvertResponsesToChatRequest(&request)
 	if err != nil {
 		return nil, err
 	}
 	if info != nil {
-		info.OpenAIResponsesToolContext = toolContext
+		info.OpenAIResponsesToolContext = cv.ToolContext
 		relaycommon.AppendRequestConversionFromRequest(info, chatReq)
 		if info.ClaudeConvertInfo == nil {
 			info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}

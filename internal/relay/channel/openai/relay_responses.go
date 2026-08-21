@@ -198,7 +198,8 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 }
 
 func convertResponsesBodyToClaudeBody(responsesResponse *shared.OpenAIResponsesResponse, usage *shared.Usage, info *relaycommon.RelayInfo) ([]byte, error) {
-	chatResponse, err := convert.ConvertResponsesResponseToChatCompletionResponse(responsesResponse)
+	cv := convert.NewConverter(shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat)
+	chatResponse, err := cv.ConvertResponsesToChatResponse(responsesResponse)
 	if err != nil {
 		return nil, err
 	}

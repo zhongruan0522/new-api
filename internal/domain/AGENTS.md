@@ -8,7 +8,7 @@
 
 | 子包 | 内容 |
 |---|---|
-| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`pricing.go`（上下文阶梯计价）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
+| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`usage.go`（`CalculateUsage` 通用文本路径 usage 计算 + `ApplyQuota` 落账，阶段 6 自 relay/handler 下沉）、`pricing.go`（上下文阶梯计价）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
 | `billing/contract/` | 计费契约叶子包：`PriceData`、`GroupRatioInfo`、`ContextPricing*`。供 config/ratio、store/pricing、relay 引用（见"依赖方向约束"）。 |
 | `billing/plan_quota/` | 供应商套餐配额（GLM / Kimi / MiniMax）拉取与归一化。 |
 | `channel/` | 渠道域服务：自动禁用/启用、加权随机选择与重试、渠道亲和性缓存；含 `channel_error.go`（`ChannelError`）。 |
@@ -35,8 +35,8 @@
   一旦引入业务 import 就会与领域服务成环。这是契约从 `billing/` 根包下沉到
   `billing/contract/` 的原因（阶段 5.3，`billing` 服务依赖 store/config）。
 - 领域服务包（`billing/`、`channel/` 等）可以依赖 store、config、infra，但领域包之间
-  和对 infra 的依赖必须保持无环。当前既定方向：
-  `billing → {channel, infra/notify, infra/tokenizer, infra/httpclient}`、
+  和对 infra 的依赖必须保持无环。当前既定方向（按 `go list` 实测）：
+  `billing → {channel, channel/constant, shared, contract, i18n, infra/log, infra/notify, infra/runtime, infra/tokenizer, httpapi根, config/model|ratio|system|operation, relay/common, relay/constant, store/*}`、
   `channel → {sensitive, group, infra/notify}`。新增依赖前先确认不成环。
 - `domain/shared/` 依赖 `internal/common` 与 `internal/infra/log`（原 dto/types 的既有
   单向依赖）。原 `internal/constant` 四个跨领域文件已在阶段 4 解散并入：运行时限值

@@ -51,11 +51,6 @@ type requestBodySnapshot struct {
 	storage any
 }
 
-type openAIWireConversionOptions struct {
-	ChatIncludeUsage bool
-	ToolContext      *convert.OpenAIWireToolContext
-}
-
 func takeRequestBodySnapshot(c *gin.Context) (requestBodySnapshot, error) {
 	body, err := httpapi.GetRequestBody(c)
 	if err != nil {
@@ -79,7 +74,7 @@ func setTemporaryRequestBody(c *gin.Context, body []byte) {
 	c.Request.ContentLength = int64(len(body))
 }
 
-func writeConvertedNonStreamResponse(c *gin.Context, captured *stream.CaptureWriter, upstream shared.OpenAIWireAPI, downstream shared.OpenAIWireAPI, opts openAIWireConversionOptions) error {
+func writeConvertedNonStreamResponse(c *gin.Context, captured *stream.CaptureWriter, cv *convert.Converter) error {
 	if captured == nil {
 		return fmt.Errorf("captured writer is nil")
 	}
@@ -88,7 +83,7 @@ func writeConvertedNonStreamResponse(c *gin.Context, captured *stream.CaptureWri
 		return fmt.Errorf("empty upstream response body")
 	}
 
-	converted, err := convertNonStreamBody(body, upstream, downstream, opts)
+	converted, err := convertNonStreamBody(body, cv)
 	if err != nil {
 		return err
 	}
@@ -99,30 +94,30 @@ func writeConvertedNonStreamResponse(c *gin.Context, captured *stream.CaptureWri
 	return err
 }
 
-func convertNonStreamBody(body []byte, upstream shared.OpenAIWireAPI, downstream shared.OpenAIWireAPI, opts openAIWireConversionOptions) ([]byte, error) {
+func convertNonStreamBody(body []byte, cv *convert.Converter) ([]byte, error) {
 	switch {
-	case upstream == shared.OpenAIWireAPIResponses && downstream == shared.OpenAIWireAPIChat:
+	case cv.Upstream == shared.OpenAIWireAPIResponses && cv.Downstream == shared.OpenAIWireAPIChat:
 		var resp shared.OpenAIResponsesResponse
 		if err := jsonx.Unmarshal(body, &resp); err != nil {
 			return nil, fmt.Errorf("unmarshal responses response failed: %w", err)
 		}
-		chatResp, err := convert.ConvertResponsesResponseToChatCompletionResponse(&resp)
+		chatResp, err := cv.ConvertResponsesToChatResponse(&resp)
 		if err != nil {
 			return nil, err
 		}
 		return jsonx.Marshal(chatResp)
-	case upstream == shared.OpenAIWireAPIChat && downstream == shared.OpenAIWireAPIResponses:
+	case cv.Upstream == shared.OpenAIWireAPIChat && cv.Downstream == shared.OpenAIWireAPIResponses:
 		var chatResp shared.OpenAITextResponse
 		if err := jsonx.Unmarshal(body, &chatResp); err != nil {
 			return nil, fmt.Errorf("unmarshal chat completion response failed: %w", err)
 		}
-		resp, err := convert.ConvertChatCompletionResponseToResponsesResponseWithToolContext(&chatResp, opts.ToolContext)
+		resp, err := cv.ConvertChatToResponsesResponse(&chatResp)
 		if err != nil {
 			return nil, err
 		}
 		return jsonx.Marshal(resp)
 	default:
-		return nil, fmt.Errorf("unsupported non-stream conversion: %s -> %s", upstream, downstream)
+		return nil, fmt.Errorf("unsupported non-stream conversion: %s -> %s", cv.Upstream, cv.Downstream)
 	}
 }
 

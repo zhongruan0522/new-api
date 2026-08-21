@@ -76,7 +76,8 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 		)
 	}
 
-	responsesReq, err := convert.ConvertChatCompletionsRequestToResponsesRequest(chatReq)
+	cv := convert.NewConverter(shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat)
+	responsesReq, err := cv.ConvertChatToResponsesRequest(chatReq)
 	if err != nil {
 		return shared.NewErrorWithStatusCode(err, shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
@@ -86,6 +87,7 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	if chatReq.StreamOptions != nil {
 		includeUsage = chatReq.StreamOptions.IncludeUsage
 	}
+	cv.ChatIncludeUsage = includeUsage
 
 	snapshot := takeRelayInfoSnapshot(info)
 	defer snapshot.restore(info)
@@ -109,9 +111,9 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if responsesReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat, openAIWireConversionOptions{ChatIncludeUsage: includeUsage}, handler.ResponsesHelper)
+		return streamUpstreamWithWireConversion(c, info, cv, handler.ResponsesHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat, openAIWireConversionOptions{}, handler.ResponsesHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, cv, handler.ResponsesHelper)
 }
 
 func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *shared.NookMuxError {
@@ -125,7 +127,8 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 		)
 	}
 
-	chatReq, toolContext, err := convert.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq)
+	cv := convert.NewConverter(shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses)
+	chatReq, err := cv.ConvertResponsesToChatRequest(responsesReq)
 	if err != nil {
 		return shared.NewErrorWithStatusCode(err, shared.ErrorCodeInvalidRequest, http.StatusBadRequest, shared.ErrOptionWithSkipRetry())
 	}
@@ -156,9 +159,9 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if chatReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, handler.TextHelper)
+		return streamUpstreamWithWireConversion(c, info, cv, handler.TextHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, shared.OpenAIWireAPIChat, shared.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, handler.TextHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, cv, handler.TextHelper)
 }
 
 type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *shared.NookMuxError
@@ -166,13 +169,14 @@ type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *shared.NookMux
 func streamUpstreamWithWireConversion(
 	c *gin.Context,
 	info *relaycommon.RelayInfo,
-	upstream shared.OpenAIWireAPI,
-	downstream shared.OpenAIWireAPI,
-	opts openAIWireConversionOptions,
+	cv *convert.Converter,
 	fn upstreamHelperFn,
 ) *shared.NookMuxError {
 	base := c.Writer
-	writer, err := stream.NewStreamWriter(base, upstream, downstream, stream.StreamOptions(opts))
+	writer, err := stream.NewStreamWriter(base, cv.Upstream, cv.Downstream, stream.StreamOptions{
+		ToolContext:      cv.ToolContext,
+		ChatIncludeUsage: cv.ChatIncludeUsage,
+	})
 	if err != nil {
 		return shared.NewError(err, shared.ErrorCodeBadResponse, shared.ErrOptionWithSkipRetry())
 	}
@@ -192,9 +196,7 @@ func streamUpstreamWithWireConversion(
 func nonStreamUpstreamWithWireConversion(
 	c *gin.Context,
 	info *relaycommon.RelayInfo,
-	upstream shared.OpenAIWireAPI,
-	downstream shared.OpenAIWireAPI,
-	opts openAIWireConversionOptions,
+	cv *convert.Converter,
 	fn upstreamHelperFn,
 ) *shared.NookMuxError {
 	base := c.Writer
@@ -207,7 +209,7 @@ func nonStreamUpstreamWithWireConversion(
 		return newAPIError
 	}
 
-	if err := writeConvertedNonStreamResponse(c, capture, upstream, downstream, opts); err != nil {
+	if err := writeConvertedNonStreamResponse(c, capture, cv); err != nil {
 		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
 	return nil

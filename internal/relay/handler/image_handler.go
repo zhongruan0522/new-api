@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
+	billing "github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -138,7 +139,11 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 		logContent = append(logContent, fmt.Sprintf("生成数量 %d", request.N))
 	}
 
-	if apiErr := postConsumeQuota(c, info, usage.(*shared.Usage), logContent...); apiErr != nil {
+	settlement, apiErr := billing.CalculateUsage(c, info, usage.(*shared.Usage), logContent...)
+	if apiErr != nil {
+		return apiErr
+	}
+	if apiErr := billing.ApplyQuota(c, info, settlement); apiErr != nil {
 		return apiErr
 	}
 	return nil

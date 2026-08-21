@@ -164,7 +164,13 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 			info.PriceData = originPriceData
 			return shared.NewError(err, shared.ErrorCodeModelPriceError, shared.ErrOptionWithSkipRetry())
 		}
-		if apiErr := postConsumeQuota(c, info, usageDto); apiErr != nil {
+		settlement, apiErr := billing.CalculateUsage(c, info, usageDto)
+		if apiErr != nil {
+			info.OriginModelName = originModelName
+			info.PriceData = originPriceData
+			return apiErr
+		}
+		if apiErr := billing.ApplyQuota(c, info, settlement); apiErr != nil {
 			info.OriginModelName = originModelName
 			info.PriceData = originPriceData
 			return apiErr
@@ -180,7 +186,11 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 			return apiErr
 		}
 	} else {
-		if apiErr := postConsumeQuota(c, info, usageDto); apiErr != nil {
+		settlement, apiErr := billing.CalculateUsage(c, info, usageDto)
+		if apiErr != nil {
+			return apiErr
+		}
+		if apiErr := billing.ApplyQuota(c, info, settlement); apiErr != nil {
 			return apiErr
 		}
 	}

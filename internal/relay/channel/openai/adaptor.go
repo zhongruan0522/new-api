@@ -92,7 +92,8 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 		if !ok {
 			return nil, fmt.Errorf("invalid normalized chat request type, got %T", chatRequest)
 		}
-		responsesRequest, err := convert.ConvertChatCompletionsRequestToResponsesRequest(normalizedChatRequest)
+		cv := convert.NewConverter(shared.OpenAIWireAPIResponses, shared.OpenAIWireAPIChat)
+		responsesRequest, err := cv.ConvertChatToResponsesRequest(normalizedChatRequest)
 		if err != nil {
 			return nil, err
 		}

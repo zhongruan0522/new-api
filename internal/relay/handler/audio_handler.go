@@ -78,7 +78,11 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 			return apiErr
 		}
 	} else {
-		if apiErr := postConsumeQuota(c, info, usage.(*shared.Usage)); apiErr != nil {
+		settlement, apiErr := billing.CalculateUsage(c, info, usage.(*shared.Usage))
+		if apiErr != nil {
+			return apiErr
+		}
+		if apiErr := billing.ApplyQuota(c, info, settlement); apiErr != nil {
 			return apiErr
 		}
 	}
