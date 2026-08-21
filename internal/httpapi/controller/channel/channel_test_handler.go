@@ -411,7 +411,7 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 			newAPIError: shared.NewError(err, shared.ErrorCodeConvertRequestFailed),
 		}
 	}
-	jsonData, err := json.Marshal(convertedRequest)
+	jsonData, err := jsonx.Marshal(convertedRequest)
 	if err != nil {
 		return testResult{
 			context:     c,

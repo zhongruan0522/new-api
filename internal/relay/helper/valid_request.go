@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -13,6 +12,7 @@ import (
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
 	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -168,7 +168,7 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*shared.Image
 			imageRequest.Quality = formData.Get("quality")
 			imageRequest.Size = formData.Get("size")
 			if imageValue := formData.Get("image"); imageValue != "" {
-				imageRequest.Image, _ = json.Marshal(imageValue)
+				imageRequest.Image, _ = jsonx.Marshal(imageValue)
 			}
 
 			if imageRequest.Model == "gpt-image-1" {

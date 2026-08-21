@@ -1,7 +1,6 @@
 package modelcontroller
 
 import (
-	"encoding/json"
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
@@ -11,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/NookMux/NookMux/internal/store/vendor_meta"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"sort"
 	"strconv"
@@ -220,7 +220,7 @@ func enrichModels(models []*vendormetastore.Model) {
 			mm := models[idx]
 			if mm.Endpoints == "" {
 				eps := pricingstore.GetModelSupportEndpointTypes(mm.ModelName)
-				if b, err := json.Marshal(eps); err == nil {
+				if b, err := jsonx.Marshal(eps); err == nil {
 					mm.Endpoints = string(b)
 				}
 			}
@@ -310,7 +310,7 @@ func enrichModels(models []*vendormetastore.Model) {
 			for et := range es {
 				eps = append(eps, et)
 			}
-			if b, err := json.Marshal(eps); err == nil {
+			if b, err := jsonx.Marshal(eps); err == nil {
 				mm.Endpoints = string(b)
 			}
 		}

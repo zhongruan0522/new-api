@@ -1032,7 +1032,7 @@ func stopReasonOpenAI2Claude(reason string) string {
 }
 
 func toJSONString(v interface{}) string {
-	b, err := json.Marshal(v)
+	b, err := jsonx.Marshal(v)
 	if err != nil {
 		return "{}"
 	}
@@ -1438,7 +1438,7 @@ func StreamResponseOpenAI2Gemini(openAIResponse *shared.ChatCompletionsStreamRes
 			}
 
 			aggregatedArgs := strings.TrimSpace(argsState[toolIndex])
-			shouldFlush := aggregatedArgs == "" || json.Valid([]byte(aggregatedArgs))
+			shouldFlush := aggregatedArgs == "" || jsonx.Valid([]byte(aggregatedArgs))
 			if choice.FinishReason != nil && *choice.FinishReason == "tool_calls" {
 				shouldFlush = true
 			}

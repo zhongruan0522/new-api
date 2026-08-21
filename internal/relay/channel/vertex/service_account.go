@@ -3,7 +3,6 @@ package vertex
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 
 	"fmt"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"time"
 )
 
@@ -129,7 +129,7 @@ func exchangeJwtForAccessToken(signedJWT string, info *relaycommon.RelayInfo) (s
 	defer resp.Body.Close()
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := jsonx.DecodeJson(resp.Body, &result); err != nil {
 		return "", err
 	}
 
@@ -172,7 +172,7 @@ func exchangeJwtForAccessTokenWithProxy(signedJWT string, proxy string) (string,
 	defer resp.Body.Close()
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := jsonx.DecodeJson(resp.Body, &result); err != nil {
 		return "", err
 	}
 

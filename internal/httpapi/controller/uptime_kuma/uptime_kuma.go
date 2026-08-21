@@ -2,7 +2,6 @@ package uptimekumacontroller
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/config/console"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
@@ -51,7 +51,7 @@ func getAndDecode(ctx context.Context, client *http.Client, url string, dest int
 		return errors.New("non-200 status")
 	}
 
-	return json.NewDecoder(resp.Body).Decode(dest)
+	return jsonx.DecodeJson(resp.Body, dest)
 }
 
 func fetchGroupData(ctx context.Context, client *http.Client, groupConfig map[string]interface{}) UptimeGroupResult {

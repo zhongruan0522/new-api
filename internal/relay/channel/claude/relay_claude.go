@@ -2,7 +2,6 @@ package claude
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -301,7 +300,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 
 			// 解析 UserLocation JSON
 			var userLocationMap map[string]interface{}
-			if err := json.Unmarshal(textRequest.WebSearchOptions.UserLocation, &userLocationMap); err == nil {
+			if err := jsonx.Unmarshal(textRequest.WebSearchOptions.UserLocation, &userLocationMap); err == nil {
 				// 检查是否有 approximate 字段
 				if approximateData, ok := userLocationMap["approximate"].(map[string]interface{}); ok {
 					if timezone, ok := approximateData["timezone"].(string); ok && timezone != "" {
@@ -560,7 +559,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 					for _, toolCall := range message.ParseToolCalls() {
 						inputObj := make(map[string]any)
 						if args := toolCall.Function.Arguments; args != "" {
-							if err := json.Unmarshal([]byte(args), &inputObj); err != nil {
+							if err := jsonx.Unmarshal([]byte(args), &inputObj); err != nil {
 								common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
 							}
 						}
@@ -699,7 +698,7 @@ func ResponseClaude2OpenAI(claudeResponse *shared.ClaudeResponse) *shared.OpenAI
 	for _, message := range claudeResponse.Content {
 		switch message.Type {
 		case "tool_use":
-			args, _ := json.Marshal(message.Input)
+			args, _ := jsonx.Marshal(message.Input)
 			tools = append(tools, shared.ToolCallResponse{
 				ID:   message.Id,
 				Type: "function", // compatible with other OpenAI derivative applications
@@ -1188,7 +1187,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
-		responseData, err = json.Marshal(openaiResponse)
+		responseData, err = jsonx.Marshal(openaiResponse)
 		if err != nil {
 			return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"gorm.io/gorm"
 )
 
@@ -43,7 +44,7 @@ func (j *JSONValue) Scan(value interface{}) error {
 		return nil
 	default:
 		// 其他类型尝试序列化为 JSON
-		b, err := json.Marshal(v)
+		b, err := jsonx.Marshal(v)
 		if err != nil {
 			return err
 		}

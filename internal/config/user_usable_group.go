@@ -1,10 +1,10 @@
 package config
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 var userUsableGroups = map[string]string{
@@ -28,7 +28,7 @@ func UserUsableGroups2JSONString() string {
 	userUsableGroupsMutex.RLock()
 	defer userUsableGroupsMutex.RUnlock()
 
-	jsonBytes, err := json.Marshal(userUsableGroups)
+	jsonBytes, err := jsonx.Marshal(userUsableGroups)
 	if err != nil {
 		common.SysLog("error marshalling user groups: " + err.Error())
 	}
@@ -40,7 +40,7 @@ func UpdateUserUsableGroupsByJSONString(jsonStr string) error {
 	defer userUsableGroupsMutex.Unlock()
 
 	userUsableGroups = make(map[string]string)
-	return json.Unmarshal([]byte(jsonStr), &userUsableGroups)
+	return jsonx.Unmarshal([]byte(jsonStr), &userUsableGroups)
 }
 
 func GetUsableGroupDescription(groupName string) string {

@@ -3,12 +3,12 @@ package oauth
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -56,7 +56,7 @@ func (p *GitHubProvider) ExchangeToken(ctx context.Context, code string, c *gin.
 		"client_secret": common.GitHubClientSecret,
 		"code":          code,
 	}
-	jsonData, err := json.Marshal(values)
+	jsonData, err := jsonx.Marshal(values)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (p *GitHubProvider) ExchangeToken(ctx context.Context, code string, c *gin.
 	log.LogDebug(ctx, "[OAuth-GitHub] ExchangeToken response status: %d", res.StatusCode)
 
 	var oAuthResponse gitHubOAuthResponse
-	err = json.NewDecoder(res.Body).Decode(&oAuthResponse)
+	err = jsonx.DecodeJson(res.Body, &oAuthResponse)
 	if err != nil {
 		log.LogError(ctx, fmt.Sprintf("[OAuth-GitHub] ExchangeToken decode error: %s", err.Error()))
 		return nil, err
@@ -134,7 +134,7 @@ func (p *GitHubProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*O
 	}
 
 	var githubUser gitHubUser
-	err = json.NewDecoder(res.Body).Decode(&githubUser)
+	err = jsonx.DecodeJson(res.Body, &githubUser)
 	if err != nil {
 		log.LogError(ctx, fmt.Sprintf("[OAuth-GitHub] GetUserInfo decode error: %s", err.Error()))
 		return nil, err

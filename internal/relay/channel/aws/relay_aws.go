@@ -2,7 +2,6 @@ package aws
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -309,7 +308,7 @@ func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) 
 		} `json:"usage"`
 	}
 
-	if err := json.Unmarshal(awsResp.Body, &novaResp); err != nil {
+	if err := jsonx.Unmarshal(awsResp.Body, &novaResp); err != nil {
 		return shared.NewError(errors.Wrap(err, "unmarshal nova response"), shared.ErrorCodeBadResponseBody), nil
 	}
 

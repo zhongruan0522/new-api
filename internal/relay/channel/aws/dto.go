@@ -43,7 +43,7 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
 	if len(anthropicBetaValues) > 0 {
 		tempArray := strings.Split(anthropicBetaValues, ",")
 		if len(tempArray) > 0 {
-			betaJson, err := json.Marshal(tempArray)
+			betaJson, err := jsonx.Marshal(tempArray)
 			if err != nil {
 				return nil, err
 			}

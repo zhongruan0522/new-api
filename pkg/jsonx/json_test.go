@@ -74,6 +74,29 @@ func TestDecodeJson(t *testing.T) {
 	}
 }
 
+func TestValid(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want bool
+	}{
+		{`{"a":1}`, true},
+		{`[1,2,3]`, true},
+		{`"text"`, true},
+		{`42`, true},
+		{`null`, true},
+		{``, false},
+		{`{invalid`, false},
+		{`{"a":}`, false},
+		{`[1,2,`, false},
+		{`nul`, false},
+	}
+	for _, c := range cases {
+		if got := Valid([]byte(c.raw)); got != c.want {
+			t.Errorf("Valid(%q) = %v, want %v", c.raw, got, c.want)
+		}
+	}
+}
+
 func TestGetJsonType(t *testing.T) {
 	cases := []struct {
 		raw  string

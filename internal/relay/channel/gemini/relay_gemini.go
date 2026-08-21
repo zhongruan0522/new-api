@@ -325,10 +325,10 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 			contentStr := message.StringContent()
 
 			// 1. 尝试解析为 JSON 对象
-			if err := json.Unmarshal([]byte(contentStr), &contentMap); err != nil {
+			if err := jsonx.Unmarshal([]byte(contentStr), &contentMap); err != nil {
 				// 2. 如果失败，尝试解析为 JSON 数组
 				var contentSlice []interface{}
-				if err := json.Unmarshal([]byte(contentStr), &contentSlice); err == nil {
+				if err := jsonx.Unmarshal([]byte(contentStr), &contentSlice); err == nil {
 					// 如果是数组，包装成对象
 					contentMap = map[string]interface{}{"result": contentSlice}
 				} else {
@@ -370,7 +370,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest shared.GeneralOpenAIRequest
 			for _, call := range message.ParseToolCalls() {
 				args := map[string]interface{}{}
 				if call.Function.Arguments != "" {
-					if json.Unmarshal([]byte(call.Function.Arguments), &args) != nil {
+					if jsonx.Unmarshal([]byte(call.Function.Arguments), &args) != nil {
 						return nil, fmt.Errorf("invalid arguments for function %s, args: %s", call.Function.Name, call.Function.Arguments)
 					}
 				}

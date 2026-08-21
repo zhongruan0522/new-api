@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +48,7 @@ func TurnstileCheck() gin.HandlerFunc {
 			}
 			defer rawRes.Body.Close()
 			var res turnstileCheckResponse
-			err = json.NewDecoder(rawRes.Body).Decode(&res)
+			err = jsonx.DecodeJson(rawRes.Body, &res)
 			if err != nil {
 				common.SysLog(err.Error())
 				c.JSON(http.StatusOK, gin.H{

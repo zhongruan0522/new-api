@@ -1,12 +1,12 @@
 package ratio
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/manager"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 var defaultGroupRatio = map[string]float64{
@@ -112,7 +112,7 @@ func UpdateGroupGroupRatioByJSONString(jsonStr string) error {
 
 func CheckGroupRatio(jsonStr string) error {
 	checkGroupRatio := make(map[string]float64)
-	err := json.Unmarshal([]byte(jsonStr), &checkGroupRatio)
+	err := jsonx.Unmarshal([]byte(jsonStr), &checkGroupRatio)
 	if err != nil {
 		return err
 	}

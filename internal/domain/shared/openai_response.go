@@ -3,6 +3,8 @@ package shared
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 const (
@@ -142,7 +144,7 @@ func (t ToolCallResponse) MarshalJSON() ([]byte, error) {
 	} else {
 		out.Function = &t.Function
 	}
-	return json.Marshal(out)
+	return jsonx.Marshal(out)
 }
 
 func (c *ToolCallResponse) SetIndex(i int) {

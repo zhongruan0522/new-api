@@ -1,7 +1,6 @@
 package channelcontroller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
@@ -12,6 +11,7 @@ import (
 	"github.com/NookMux/NookMux/internal/i18n"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/store/channel"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 	"io"
@@ -134,7 +134,7 @@ func updateChannelSiliconFlowBalance(channel *channelstore.Channel) (float64, er
 		return 0, err
 	}
 	response := SiliconFlowUsageResponse{}
-	err = json.Unmarshal(body, &response)
+	err = jsonx.Unmarshal(body, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -156,7 +156,7 @@ func updateChannelDeepSeekBalance(channel *channelstore.Channel) (float64, error
 		return 0, err
 	}
 	response := DeepSeekUsageResponse{}
-	err = json.Unmarshal(body, &response)
+	err = jsonx.Unmarshal(body, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -185,7 +185,7 @@ func updateChannelOpenRouterBalance(channel *channelstore.Channel) (float64, err
 		return 0, err
 	}
 	response := OpenRouterCreditResponse{}
-	err = json.Unmarshal(body, &response)
+	err = jsonx.Unmarshal(body, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -215,7 +215,7 @@ func updateChannelMoonshotBalance(channel *channelstore.Channel) (float64, error
 	}
 
 	response := MoonshotBalanceResponse{}
-	err = json.Unmarshal(body, &response)
+	err = jsonx.Unmarshal(body, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -260,7 +260,7 @@ func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float6
 		return 0, err
 	}
 	subscription := OpenAISubscriptionResponse{}
-	err = json.Unmarshal(body, &subscription)
+	err = jsonx.Unmarshal(body, &subscription)
 	if err != nil {
 		return 0, err
 	}
@@ -276,7 +276,7 @@ func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float6
 		return 0, err
 	}
 	usage := OpenAIUsageResponse{}
-	err = json.Unmarshal(body, &usage)
+	err = jsonx.Unmarshal(body, &usage)
 	if err != nil {
 		return 0, err
 	}

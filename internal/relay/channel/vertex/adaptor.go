@@ -2,7 +2,6 @@ package vertex
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -246,7 +245,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		}
 		if len(request.ExtraBody) > 0 {
 			var extra map[string]any
-			if err := json.Unmarshal(request.ExtraBody, &extra); err == nil {
+			if err := jsonx.Unmarshal(request.ExtraBody, &extra); err == nil {
 				if n, ok := extra["n"].(float64); ok && n > 0 {
 					imgReq.N = uint(n)
 				}

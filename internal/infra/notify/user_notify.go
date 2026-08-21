@@ -2,7 +2,6 @@ package notify
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/system"
@@ -11,6 +10,7 @@ import (
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	media "github.com/NookMux/NookMux/internal/infra/media"
 	"github.com/NookMux/NookMux/internal/store/user"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"net/http"
 	"net/url"
 	"strings"
@@ -185,7 +185,7 @@ func sendGotifyNotify(gotifyUrl string, gotifyToken string, priority int, data s
 	}
 
 	// 序列化为 JSON
-	payloadBytes, err := json.Marshal(payload)
+	payloadBytes, err := jsonx.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal gotify payload: %v", err)
 	}

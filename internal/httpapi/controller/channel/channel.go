@@ -94,7 +94,7 @@ func normalizeModelID(raw any) string {
 	case nil:
 		return ""
 	default:
-		if bytes, err := json.Marshal(raw); err == nil {
+		if bytes, err := jsonx.Marshal(raw); err == nil {
 			return strings.Trim(string(bytes), `"`)
 		}
 		return ""
@@ -487,7 +487,7 @@ func FetchUpstreamModels(c *gin.Context) {
 		} `json:"data"`
 	}
 
-	if err = json.Unmarshal(body, &result); err != nil {
+	if err = jsonx.Unmarshal(body, &result); err != nil {
 		httpapi.ApiErrorI18n(c, i18n.MsgChannelParseResponseFailed, map[string]any{"Error": err.Error()})
 		return
 	}
@@ -807,7 +807,7 @@ func getVertexArrayKeys(c *gin.Context, keys string) ([]string, error) {
 		case string:
 			keyStr = strings.TrimSpace(v)
 		default:
-			bytes, err := json.Marshal(v)
+			bytes, err := jsonx.Marshal(v)
 			if err != nil {
 				return nil, fmt.Errorf("%s", i18n.T(c, i18n.MsgChannelVertexKeyJSONEncodeFailed, map[string]any{"Error": err.Error()}))
 			}
@@ -1022,7 +1022,7 @@ func EditTagChannels(c *gin.Context) {
 	}
 	if channelTag.ParamOverride != nil {
 		trimmed := strings.TrimSpace(*channelTag.ParamOverride)
-		if trimmed != "" && !json.Valid([]byte(trimmed)) {
+		if trimmed != "" && !jsonx.Valid([]byte(trimmed)) {
 			httpapi.ApiErrorI18n(c, i18n.MsgChannelParamOverrideJSONInvalid)
 			return
 		}
@@ -1030,7 +1030,7 @@ func EditTagChannels(c *gin.Context) {
 	}
 	if channelTag.HeaderOverride != nil {
 		trimmed := strings.TrimSpace(*channelTag.HeaderOverride)
-		if trimmed != "" && !json.Valid([]byte(trimmed)) {
+		if trimmed != "" && !jsonx.Valid([]byte(trimmed)) {
 			httpapi.ApiErrorI18n(c, i18n.MsgChannelHeaderOverrideJSONInvalid)
 			return
 		}
@@ -1162,7 +1162,7 @@ func UpdateChannel(c *gin.Context) {
 				if strings.HasPrefix(strings.TrimSpace(originChannel.Key), "[") {
 					// JSON数组格式
 					var arr []json.RawMessage
-					if err := json.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
+					if err := jsonx.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
 						existingKeys = make([]string, len(arr))
 						for i, v := range arr {
 							existingKeys[i] = string(v)
@@ -2140,7 +2140,7 @@ func OllamaPullModelStream(c *gin.Context) {
 
 	// 创建进度回调函数
 	progressCallback := func(progress ollama.OllamaPullResponse) {
-		data, _ := json.Marshal(progress)
+		data, _ := jsonx.Marshal(progress)
 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(data))
 		c.Writer.Flush()
 	}
@@ -2149,12 +2149,12 @@ func OllamaPullModelStream(c *gin.Context) {
 	err = ollama.PullOllamaModelStream(baseURL, key, channel.GetSetting().Proxy, req.ModelName, progressCallback)
 
 	if err != nil {
-		errorData, _ := json.Marshal(gin.H{
+		errorData, _ := jsonx.Marshal(gin.H{
 			"error": err.Error(),
 		})
 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(errorData))
 	} else {
-		successData, _ := json.Marshal(gin.H{
+		successData, _ := jsonx.Marshal(gin.H{
 			"message": i18n.T(c, i18n.MsgChannelPullModelSuccess, map[string]any{"Model": req.ModelName}),
 		})
 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(successData))

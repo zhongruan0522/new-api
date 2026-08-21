@@ -3,11 +3,11 @@
 package optioncontroller
 
 import (
-	"encoding/json"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/option"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -30,11 +30,11 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// 处理 APIInfo
 	if v := valMap["ApiInfo"]; v != "" {
 		var arr []map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
+		if err := jsonx.Unmarshal([]byte(v), &arr); err == nil {
 			if len(arr) > 50 {
 				arr = arr[:50]
 			}
-			bytes, _ := json.Marshal(arr)
+			bytes, _ := jsonx.Marshal(arr)
 			optionstore.UpdateOption("console.api_info", string(bytes))
 		}
 		optionstore.UpdateOption("ApiInfo", "")
@@ -47,7 +47,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// FAQ 转换
 	if v := valMap["FAQ"]; v != "" {
 		var arr []map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
+		if err := jsonx.Unmarshal([]byte(v), &arr); err == nil {
 			out := []map[string]interface{}{}
 			for _, item := range arr {
 				q, _ := item["question"].(string)
@@ -65,7 +65,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 			if len(out) > 50 {
 				out = out[:50]
 			}
-			bytes, _ := json.Marshal(out)
+			bytes, _ := jsonx.Marshal(out)
 			optionstore.UpdateOption("console.faq", string(bytes))
 		}
 		optionstore.UpdateOption("FAQ", "")
@@ -84,7 +84,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 				"description":  "",
 			},
 		}
-		bytes, _ := json.Marshal(groups)
+		bytes, _ := jsonx.Marshal(groups)
 		optionstore.UpdateOption("console.uptime_kuma_groups", string(bytes))
 	}
 	// 清空旧键内容

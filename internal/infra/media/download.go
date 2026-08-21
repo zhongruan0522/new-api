@@ -11,6 +11,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/system"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/infra/security"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // WorkerRequest Worker请求的数据结构
@@ -43,7 +44,7 @@ func DoWorkerRequest(req *WorkerRequest) (*http.Response, error) {
 	}
 
 	// 序列化worker请求数据
-	workerPayload, err := json.Marshal(req)
+	workerPayload, err := jsonx.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal worker payload: %v", err)
 	}

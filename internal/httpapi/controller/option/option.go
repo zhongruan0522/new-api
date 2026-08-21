@@ -541,7 +541,7 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		}
 
 		rawValue := json.RawMessage(strings.TrimSpace(req.Value))
-		if len(rawValue) == 0 || !json.Valid(rawValue) {
+		if len(rawValue) == 0 || !jsonx.Valid(rawValue) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": i18n.T(c, i18n.MsgOptionMapValueJSONRequired),

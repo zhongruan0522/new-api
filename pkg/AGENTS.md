@@ -7,9 +7,9 @@
 ## 现有包
 
 - `jsonx/`: JSON 序列化/反序列化包装函数（`Marshal` / `Unmarshal` /
-  `UnmarshalJsonStr` / `DecodeJson` / `GetJsonType`）及零拷贝 `StringToByteSlice`。
+  `UnmarshalJsonStr` / `DecodeJson` / `Valid` / `GetJsonType`）及零拷贝 `StringToByteSlice`。
   全仓 JSON 调用统一走 `jsonx`，业务代码不直接调用 `encoding/json` 的
-  marshal/unmarshal/decode。
+  marshal/unmarshal/decode/valid。
 - `cachex/`: 底层缓存原语。当前唯一调用方是 `internal/domain/channel/channel_affinity.go`（阶段 5.3 迁入），
   依赖干净故保留在 `pkg/`；一旦长出业务依赖即降级 `internal/`。
 

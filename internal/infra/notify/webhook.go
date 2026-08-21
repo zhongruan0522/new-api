@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	media "github.com/NookMux/NookMux/internal/infra/media"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // WebhookPayload webhook 通知的负载数据
@@ -50,7 +50,7 @@ func SendWebhookNotify(webhookURL string, secret string, data shared.Notify) err
 	}
 
 	// 序列化负载
-	payloadBytes, err := json.Marshal(payload)
+	payloadBytes, err := jsonx.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal webhook payload: %v", err)
 	}

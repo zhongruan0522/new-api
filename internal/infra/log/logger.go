@@ -2,7 +2,6 @@ package log
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/infra/runtime"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -111,7 +111,7 @@ func FormatQuota(quota int) string {
 
 // LogJson 仅供测试使用 only for test
 func LogJson(ctx context.Context, msg string, obj any) {
-	jsonStr, err := json.Marshal(obj)
+	jsonStr, err := jsonx.Marshal(obj)
 	if err != nil {
 		LogError(ctx, fmt.Sprintf("json marshal failed: %s", err.Error()))
 		return
