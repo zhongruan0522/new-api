@@ -13,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/internal/relay/channel"
+	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	"github.com/NookMux/NookMux/internal/relay/channel/openrouter"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/common_handler"
@@ -44,6 +45,10 @@ func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *shared.ClaudeRequest) (any, error) {
+	// OpenRouter 原生提供 Anthropic Messages 兼容端点（/api/v1/messages），Claude 请求直接透传，不做格式转换。
+	if info.ChannelType == channelconstant.ChannelTypeOpenRouter {
+		return request, nil
+	}
 	//if !strings.Contains(request.Model, "claude") {
 	//	return nil, fmt.Errorf("you are using openai channel type with path /v1/messages, only claude model supported convert, but got %s", request.Model)
 	//}
@@ -172,6 +177,14 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		url = strings.Replace(url, "{model}", info.UpstreamModelName, -1)
 		return url, nil
 	default:
+		if info.RelayFormat == relayconstant.RelayFormatClaude && info.ChannelType == channelconstant.ChannelTypeOpenRouter {
+			// OpenRouter 原生 Anthropic Messages 端点。
+			baseURL := strings.TrimRight(info.ChannelBaseUrl, "/")
+			if baseURL == "" {
+				baseURL = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeOpenRouter]
+			}
+			return fmt.Sprintf("%s/v1/messages", baseURL), nil
+		}
 		if (info.RelayFormat == relayconstant.RelayFormatClaude || info.RelayFormat == relayconstant.RelayFormatGemini) &&
 			info.RelayMode != relayconstant.RelayModeResponses &&
 			info.RelayMode != relayconstant.RelayModeResponsesCompact {
@@ -201,6 +214,21 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 				break
 			}
 		}
+	}
+	if info.RelayFormat == relayconstant.RelayFormatClaude && info.ChannelType == channelconstant.ChannelTypeOpenRouter {
+		// OpenRouter 的 Anthropic 兼容端点使用 Bearer 认证；x-api-key 会被
+		// OpenRouter 解释为直连 Anthropic 凭据，不能携带。
+		header.Del("x-api-key")
+		if !hasAuthOverride {
+			header.Set("Authorization", fmt.Sprintf("Bearer %s", info.ApiKey))
+		}
+		anthropicVersion := c.Request.Header.Get("anthropic-version")
+		if anthropicVersion == "" {
+			anthropicVersion = "2023-06-01"
+		}
+		header.Set("anthropic-version", anthropicVersion)
+		claude.CommonClaudeHeadersOperation(c, header, info)
+		return nil
 	}
 	if info.RelayMode == relayconstant.RelayModeRealtime {
 		swp := c.Request.Header.Get("Sec-WebSocket-Protocol")
@@ -630,6 +658,12 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *shared.NookMuxError) {
+	if info.RelayFormat == relayconstant.RelayFormatClaude && info.ChannelType == channelconstant.ChannelTypeOpenRouter {
+		// OpenRouter 原生 Claude 响应（含流式事件与 usage 语义）由 claude adaptor 处理。
+		delegate := &claude.Adaptor{}
+		delegate.Init(info)
+		return delegate.DoResponse(c, resp, info)
+	}
 	switch info.RelayMode {
 	case relayconstant.RelayModeRealtime:
 		err, usage = OpenaiRealtimeHandler(c, info)

@@ -23,7 +23,12 @@ func GetEndpointTypesByChannelType(channelType int, modelName string) []constant
 			constant.EndpointTypeAnthropic,
 		}
 	case constant.ChannelTypeOpenRouter:
-		endpointTypes = []constant.EndpointType{constant.EndpointTypeOpenAI}
+		// OpenRouter 原生提供 OpenAI Chat、OpenAI Responses 与 Anthropic Messages 兼容端点。
+		endpointTypes = []constant.EndpointType{
+			constant.EndpointTypeOpenAI,
+			constant.EndpointTypeOpenAIResponse,
+			constant.EndpointTypeAnthropic,
+		}
 	default:
 		if IsOpenAIResponseOnlyModel(modelName) {
 			endpointTypes = []constant.EndpointType{constant.EndpointTypeOpenAIResponse}
