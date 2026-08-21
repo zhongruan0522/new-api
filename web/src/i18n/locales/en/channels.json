@@ -333,6 +333,7 @@
   "channels.fields.noMatchingRules": "No matching rules",
   "channels.titles.noModelsAvailable": "No models available",
   "channels.tips.noModelsFetchedYet": "No models fetched yet.",
+  "channels.tips.noModelsMatchSearch": "No models match the search keyword.",
   "channels.titles.noModelsSelected": "No models selected",
   "channels.titles.noModelsToAdd": "No models to add",
   "channels.titles.noModelsToCopy": "No models to copy",

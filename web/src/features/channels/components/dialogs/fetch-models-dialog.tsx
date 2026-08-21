@@ -70,6 +70,8 @@ type FetchModelsDialogProps = {
   channelName?: string | null
 }
 
+type ModelsTabValue = 'new' | 'existing' | 'removed'
+
 export function FetchModelsDialog({
   open,
   onOpenChange,
@@ -89,6 +91,7 @@ export function FetchModelsDialog({
   const [fetchedModels, setFetchedModels] = useState<string[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>([])
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [activeTab, setActiveTab] = useState<ModelsTabValue>('new')
 
   // Parse existing models
   const existingModels = useMemo(
@@ -135,6 +138,22 @@ export function FetchModelsDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeChannel?.id, customFetcher])
 
+  // 关键词过滤会同时改变 new/existing/removed 三个页签的数量；Tabs 必须保持受控，
+  // 否则 Base UI 在页签瞬时全部禁用/消失时会把非受控值提交为 null 且不再自愈，
+  // 表现为勾选清单永久空白、只能重新获取。这里在每次拉取成功后显式重置目标页签。
+  const resetTabForFetchedModels = (normalized: string[]) => {
+    const fetchedSet = new Set(normalized)
+    const hasNew = normalized.some((m) => !classificationSet.has(m))
+    if (hasNew) {
+      setActiveTab('new')
+      return
+    }
+    const hasRemoved = existingModels.some(
+      (m) => !fetchedSet.has(normalizeModelName(m))
+    )
+    setActiveTab(hasRemoved ? 'removed' : 'existing')
+  }
+
   const handleFetchModels = async () => {
     if (!activeChannel && !customFetcher) return
 
@@ -145,6 +164,7 @@ export function FetchModelsDialog({
         const normalized = normalizeModelNameList(list)
         setFetchedModels(normalized)
         setSelectedModels(existingModels)
+        resetTabForFetchedModels(normalized)
         toast.success(
           t('channels.titles.fetchedCountModels', { count: normalized.length })
         )
@@ -155,6 +175,7 @@ export function FetchModelsDialog({
           const normalized = normalizeModelNameList(list)
           setFetchedModels(normalized)
           setSelectedModels(existingModels)
+          resetTabForFetchedModels(normalized)
           toast.success(
             t('channels.titles.fetchedCountModels', {
               count: normalized.length,
@@ -220,6 +241,7 @@ export function FetchModelsDialog({
     setFetchedModels([])
     setSelectedModels([])
     setSearchKeyword('')
+    setActiveTab('new')
     onOpenChange(false)
   }
 
@@ -284,6 +306,14 @@ export function FetchModelsDialog({
 
   const newModelsByCategory = categorizeModels(newModels)
   const existingModelsByCategory = categorizeModels(existingFilteredModels)
+
+  // 已移除页签会随关键词过滤出现/消失，受控值需要回退到仍然存在的页签
+  const tabValue: ModelsTabValue =
+    activeTab === 'removed' && removedModels.length === 0
+      ? newModels.length > 0
+        ? 'new'
+        : 'existing'
+      : activeTab
 
   // 厂商分类按 a-z 排序，Other 放最后，便于查找
   const getSortedCategoryEntries = (
@@ -387,7 +417,7 @@ export function FetchModelsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='max-w-3xl'>
+      <DialogContent className='max-h-[90vh] sm:max-w-5xl'>
         <DialogHeader>
           <DialogTitle>{t('channels.titles.fetchModels')}</DialogTitle>
           <DialogDescription>
@@ -441,28 +471,21 @@ export function FetchModelsDialog({
               </div>
 
               {/* Tabs for New vs Existing vs Removed */}
+              {/* 页签保持受控：不能用 key/defaultValue 让组件随过滤结果重挂载，
+                  否则关键词导致的数量抖动会重置甚至丢失选中页签。 */}
               <Tabs
-                key={`${activeChannel?.id ?? 'custom'}-${fetchedModels.length}-${removedModels.length}`}
-                defaultValue={
-                  newModels.length > 0
-                    ? 'new'
-                    : removedModels.length > 0
-                      ? 'removed'
-                      : 'existing'
-                }
+                value={tabValue}
+                onValueChange={(value) => setActiveTab(value as ModelsTabValue)}
               >
                 <TabsList
                   className={`grid w-full ${removedModels.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}
                 >
-                  <TabsTrigger value='new' disabled={newModels.length === 0}>
+                  <TabsTrigger value='new'>
                     {t('channels.titles.newModelsCount', {
                       count: newModels.length,
                     })}
                   </TabsTrigger>
-                  <TabsTrigger
-                    value='existing'
-                    disabled={existingFilteredModels.length === 0}
-                  >
+                  <TabsTrigger value='existing'>
                     {t('channels.titles.existingModelsCount', {
                       count: existingFilteredModels.length,
                     })}
@@ -478,28 +501,40 @@ export function FetchModelsDialog({
 
                 <TabsContent
                   value='new'
-                  className='max-h-96 space-y-2 overflow-y-auto'
+                  className='max-h-[calc(90vh-18rem)] space-y-2 overflow-y-auto'
                 >
-                  {getSortedCategoryEntries(newModelsByCategory).map(
-                    ([category, models]) =>
-                      renderModelCategory(category, models)
+                  {newModels.length === 0 ? (
+                    <p className='text-muted-foreground py-8 text-center text-sm'>
+                      {t('channels.tips.noModelsMatchSearch')}
+                    </p>
+                  ) : (
+                    getSortedCategoryEntries(newModelsByCategory).map(
+                      ([category, models]) =>
+                        renderModelCategory(category, models)
+                    )
                   )}
                 </TabsContent>
 
                 <TabsContent
                   value='existing'
-                  className='max-h-96 space-y-2 overflow-y-auto'
+                  className='max-h-[calc(90vh-18rem)] space-y-2 overflow-y-auto'
                 >
-                  {getSortedCategoryEntries(existingModelsByCategory).map(
-                    ([category, models]) =>
-                      renderModelCategory(category, models)
+                  {existingFilteredModels.length === 0 ? (
+                    <p className='text-muted-foreground py-8 text-center text-sm'>
+                      {t('channels.tips.noModelsMatchSearch')}
+                    </p>
+                  ) : (
+                    getSortedCategoryEntries(existingModelsByCategory).map(
+                      ([category, models]) =>
+                        renderModelCategory(category, models)
+                    )
                   )}
                 </TabsContent>
 
                 {removedModels.length > 0 && (
                   <TabsContent
                     value='removed'
-                    className='max-h-96 space-y-2 overflow-y-auto'
+                    className='max-h-[calc(90vh-18rem)] space-y-2 overflow-y-auto'
                   >
                     <p className='text-muted-foreground text-xs'>
                       {t(

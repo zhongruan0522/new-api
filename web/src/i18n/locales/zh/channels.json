@@ -333,6 +333,7 @@
   "channels.fields.noMatchingRules": "没有匹配的规则",
   "channels.titles.noModelsAvailable": "没有可用的模型",
   "channels.tips.noModelsFetchedYet": "尚未获取模型。",
+  "channels.tips.noModelsMatchSearch": "没有匹配搜索关键词的模型。",
   "channels.titles.noModelsSelected": "未选择模型",
   "channels.titles.noModelsToAdd": "无待新增模型",
   "channels.titles.noModelsToCopy": "没有模型可复制",
