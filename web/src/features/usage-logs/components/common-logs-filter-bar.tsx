@@ -369,7 +369,7 @@ export function CommonLogsFilterBar<TData>(
     <>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder='auditLogs.fields.ip'
+          placeholder={t('usageLogs.fields.ipAddress')}
           autoComplete='systemSettings.fields.offda7a68'
           value={filters.ip || ''}
           onChange={(e) => handleChange('ip', e.target.value)}
