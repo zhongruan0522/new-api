@@ -135,7 +135,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 		return errors.New("未提供支付单号")
 	}
 
-	var quota float64
+	var quotaToAdd int
 	topUp := &TopUp{}
 
 	refCol := "`trade_no`"
@@ -156,6 +156,19 @@ func Recharge(referenceId string, customerId string) (err error) {
 			return err
 		}
 
+		// 额度换算走带范围检查的 decimal 路径：超界（如 32 位构建下大额充值）
+		// 显式报错回滚，不截断入账，也避免 float 参数在 PostgreSQL 22P02 /
+		// SQLite REAL 化的兼容问题。
+		quotaDecimal := decimal.NewFromFloat(topUp.Money).Mul(decimal.NewFromFloat(common.QuotaPerUnit))
+		var cerr error
+		quotaToAdd, cerr = common.DecimalToInt(quotaDecimal)
+		if cerr != nil {
+			return fmt.Errorf("充值额度超出平台 int 可表示范围（money=%.2f）: %w", topUp.Money, cerr)
+		}
+		if quotaToAdd <= 0 {
+			return errors.New("无效的充值额度")
+		}
+
 		// Atomic status flip: only succeed if the order is still pending.
 		// This is the authoritative guard against concurrent callbacks
 		// double-crediting the same order.
@@ -172,8 +185,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 			return ErrTopUpStatusInvalid
 		}
 
-		quota = topUp.Money * common.QuotaPerUnit
-		err = tx.Model(&userstore.User{}).Where("id = ?", topUp.UserId).Updates(map[string]interface{}{"stripe_customer": customerId, "quota": gorm.Expr("quota + ?", quota)}).Error
+		err = tx.Model(&userstore.User{}).Where("id = ?", topUp.UserId).Updates(map[string]interface{}{"stripe_customer": customerId, "quota": gorm.Expr("quota + ?", quotaToAdd)}).Error
 		if err != nil {
 			return err
 		}
@@ -192,7 +204,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	userstore.RecordLog(topUp.UserId, logstore.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", log.FormatQuota(int(quota)), topUp.Amount))
+	userstore.RecordLog(topUp.UserId, logstore.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", log.FormatQuota(quotaToAdd), topUp.Amount))
 
 	return nil
 }
@@ -222,7 +234,12 @@ func CompleteEpayTopUp(tradeNo string, paymentMethod string, paidMoney string) e
 
 		dAmount := decimal.NewFromInt(topUp.Amount)
 		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
+		var cerr error
+		quotaToAdd, cerr = common.DecimalToInt(dAmount.Mul(dQuotaPerUnit))
+		if cerr != nil {
+			// 32 位构建下大额充值会超出 int 表示范围（回绕后静默少入账），显式报错回滚。
+			return fmt.Errorf("充值额度超出平台 int 可表示范围（amount=%d）: %w", topUp.Amount, cerr)
+		}
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
 		}
@@ -445,13 +462,18 @@ func ManualCompleteTopUp(tradeNo string) error {
 		// 计算应充值额度：
 		// - Stripe 订单：Money 代表经分组倍率换算后的美元数量，直接 * QuotaPerUnit
 		// - 其他订单（如易支付）：Amount 为美元数量，* QuotaPerUnit
-		if topUp.PaymentMethod == "stripe" {
-			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit).IntPart())
+		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+		var quotaDecimal decimal.Decimal
+		if topUp.PaymentMethod == PaymentMethodStripe {
+			quotaDecimal = decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit)
 		} else {
-			dAmount := decimal.NewFromInt(topUp.Amount)
-			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
+			quotaDecimal = decimal.NewFromInt(topUp.Amount).Mul(dQuotaPerUnit)
+		}
+		var cerr error
+		quotaToAdd, cerr = common.DecimalToInt(quotaDecimal)
+		if cerr != nil {
+			// 32 位构建下大额充值会超出 int 表示范围（回绕后静默少入账），显式报错回滚。
+			return fmt.Errorf("充值额度超出平台 int 可表示范围（money=%.2f, amount=%d）: %w", topUp.Money, topUp.Amount, cerr)
 		}
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
