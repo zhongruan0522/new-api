@@ -83,6 +83,10 @@ type GeneralOpenAIRequest struct {
 	// OpenRouter Params
 	Usage     json.RawMessage `json:"usage,omitempty"`
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
+	// Provider carries OpenRouter's provider routing preferences supplied by
+	// the client. It is only meaningful for OpenRouter channels; relay strips
+	// it for every other channel type.
+	Provider json.RawMessage `json:"provider,omitempty"`
 	// Ali Qwen Params (passthrough)
 	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
 	EnableThinking         json.RawMessage `json:"enable_thinking,omitempty"`
@@ -855,6 +859,9 @@ type OpenAIResponsesRequest struct {
 	Prompt               json.RawMessage `json:"prompt,omitempty"`
 	// passthrough
 	EnableThinking json.RawMessage `json:"enable_thinking,omitempty"`
+	// Provider carries OpenRouter's provider routing preferences supplied by
+	// the client; stripped for non-OpenRouter channels at relay time.
+	Provider json.RawMessage `json:"provider,omitempty"`
 	// perplexity
 	Preset json.RawMessage `json:"preset,omitempty"`
 }

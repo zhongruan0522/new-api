@@ -29,6 +29,7 @@ import type {
   CopyChannelParams,
   CopyChannelResponse,
   FetchModelsResponse,
+  FetchProvidersResponse,
   GetChannelResponse,
   GetChannelsParams,
   GetChannelsResponse,
@@ -232,6 +233,16 @@ export async function fetchUpstreamModels(
   id: number
 ): Promise<FetchModelsResponse> {
   const res = await api.get(`/api/channel/fetch_models/${id}`)
+  return res.data
+}
+
+/**
+ * Fetch OpenRouter provider list through an existing channel (uses its proxy)
+ */
+export async function fetchUpstreamProviders(
+  id: number
+): Promise<FetchProvidersResponse> {
+  const res = await api.get(`/api/channel/fetch_providers/${id}`)
   return res.data
 }
 
@@ -578,6 +589,18 @@ export async function fetchModels(data: {
   key: string
 }): Promise<FetchModelsResponse> {
   const res = await api.post('/api/channel/fetch_models', data)
+  return res.data
+}
+
+/**
+ * Fetch OpenRouter provider list from a custom base URL (create-mode preview,
+ * before the channel row exists)
+ */
+export async function fetchProviders(data: {
+  base_url: string
+  type: number
+}): Promise<FetchProvidersResponse> {
+  const res = await api.post('/api/channel/fetch_providers', data)
   return res.data
 }
 

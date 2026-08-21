@@ -1073,6 +1073,36 @@ func (channel *Channel) ValidateSettings() error {
 				}
 			}
 		}
+
+		if otherSettings.OpenRouterRouting != nil {
+			if channel.Type != constant.ChannelTypeOpenRouter {
+				return fmt.Errorf("channel other setting \"openrouter_routing\" 仅支持 OpenRouter 渠道")
+			}
+			if err := otherSettings.OpenRouterRouting.Validate(); err != nil {
+				return err
+			}
+			// 拒绝 openrouter_routing 内的未知字段：拼写错误的配置若被静默
+			// 丢弃，会出现"保存成功但运行时永不生效"的隐形失效。
+			var routingRaw map[string]json.RawMessage
+			if err := jsonx.Unmarshal(rawMap["openrouter_routing"], &routingRaw); err != nil {
+				return fmt.Errorf("channel other setting \"openrouter_routing\" 必须是对象: %w", err)
+			}
+			for key := range routingRaw {
+				if !shared.KnownOpenRouterRoutingKeys[key] {
+					return fmt.Errorf("channel other setting \"openrouter_routing.%s\" 不是有效字段，请检查拼写", key)
+				}
+			}
+			if sortRaw, ok := routingRaw["sort"]; ok {
+				var sortRawMap map[string]json.RawMessage
+				if err := jsonx.Unmarshal(sortRaw, &sortRawMap); err == nil {
+					for key := range sortRawMap {
+						if key != "by" && key != "partition" {
+							return fmt.Errorf("channel other setting \"openrouter_routing.sort.%s\" 不是有效字段，请检查拼写", key)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// 校验 param_override / header_override：非空时必须是合法 JSON，避免在数据库边界报 SQLSTATE 22P02

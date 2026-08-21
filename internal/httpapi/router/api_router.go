@@ -218,6 +218,8 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/fix", channelcontroller.FixChannelsAbilities)
 			channelRoute.GET("/fetch_models/:id", middleware.RootAuth(), channelcontroller.FetchUpstreamModels)
 			channelRoute.POST("/fetch_models", middleware.RootAuth(), channelcontroller.FetchModels)
+			channelRoute.GET("/fetch_providers/:id", middleware.RootAuth(), channelcontroller.FetchUpstreamProviders)
+			channelRoute.POST("/fetch_providers", middleware.RootAuth(), channelcontroller.FetchProviders)
 			channelRoute.POST("/ollama/pull", channelcontroller.OllamaPullModel)
 			channelRoute.POST("/ollama/pull/stream", channelcontroller.OllamaPullModelStream)
 			channelRoute.DELETE("/ollama/delete", channelcontroller.OllamaDeleteModel)

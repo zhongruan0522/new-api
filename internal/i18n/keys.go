@@ -232,6 +232,8 @@ const (
 	MsgChannelOllamaVersionFailed              = "channel.ollama_version_failed"
 	MsgChannelInvalidRequest                   = "channel.invalid_request"
 	MsgChannelFetchModelsFailed                = "channel.fetch_models_failed"
+	MsgChannelFetchProvidersFailed             = "channel.fetch_providers_failed"
+	MsgChannelProvidersOpenRouterOnly          = "channel.providers_openrouter_only"
 	MsgChannelInvalidID                        = "channel.invalid_id"
 	MsgChannelInvalidRequestParameters         = "channel.invalid_request_parameters"
 	MsgChannelIdAndModelRequired               = "channel.id_and_model_required"

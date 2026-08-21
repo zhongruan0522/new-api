@@ -326,6 +326,16 @@ export const FIELD_DESCRIPTIONS = {
   MULTI_KEY_MODE: 'common.tips.howToSelectKeysRandomOrSequentialPolling',
   BATCH_ADD: 'common.actions.createMultipleChannelsFromMultipleKeys',
   OPENAI_ORG: 'common.tips.openAiOrganizationIdOptional',
+  OR_ALLOW_FALLBACKS: 'channels.tips.orAllowFallbacksDescription',
+  OR_REQUIRE_PARAMETERS: 'channels.tips.orRequireParametersDescription',
+  OR_DATA_COLLECTION: 'channels.tips.orDataCollectionDescription',
+  OR_QUANTIZATIONS: 'channels.tips.orQuantizationsDescription',
+  OR_ORDER: 'channels.tips.orOrderDescription',
+  OR_ONLY: 'channels.tips.orOnlyDescription',
+  OR_IGNORE: 'channels.tips.orIgnoreDescription',
+  OR_SORT: 'channels.tips.orSortDescription',
+  OR_PREF_MIN_THROUGHPUT: 'channels.tips.orPrefMinThroughputDescription',
+  OR_PREF_MAX_LATENCY: 'channels.tips.orPrefMaxLatencyDescription',
 } as const
 
 // ============================================================================

@@ -29,6 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
+  ChevronDown,
   HelpCircle,
   Loader2,
   Sparkles,
@@ -87,6 +88,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -108,6 +114,7 @@ import {
 import {
   createChannel,
   fetchModels,
+  fetchProviders,
   getAllModels,
   getChannel,
   getChannelKey,
@@ -151,6 +158,10 @@ import {
 } from '../../lib/status-code-risk-guard'
 import type { Channel, ProxyTestResultData } from '../../types'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
+import {
+  ProviderPickerDialog,
+  type ProviderPickerMode,
+} from '../dialogs/provider-picker-dialog'
 import {
   MissingModelsConfirmationDialog,
   type MissingModelsAction,
@@ -239,6 +250,29 @@ function SubHeading({ title, icon }: { title: string; icon?: ReactNode }) {
   )
 }
 
+// OpenRouter quantization levels accepted by the provider routing object.
+const OPENROUTER_QUANTIZATION_OPTIONS = [
+  'int4',
+  'int8',
+  'fp4',
+  'mxfp4',
+  'nvfp4',
+  'fp6',
+  'fp8',
+  'mxfp8',
+  'fp16',
+  'bf16',
+  'fp32',
+  'unknown',
+].map((value) => ({ value, label: value }))
+
+function parseOpenRouterSlugList(value: string): string[] {
+  return value
+    .split(',')
+    .map((slug) => slug.trim())
+    .filter(Boolean)
+}
+
 export function ChannelMutateDrawer({
   open,
   onOpenChange,
@@ -267,6 +301,8 @@ export function ChannelMutateDrawer({
     ((action: MissingModelsAction) => void) | null
   >(null)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
+  const [providerPickerField, setProviderPickerField] =
+    useState<ProviderPickerMode | null>(null)
   const [proxyTestLoading, setProxyTestLoading] = useState(false)
   const [proxyTestResult, setProxyTestResult] =
     useState<ProxyTestResultData | null>(null)
@@ -672,6 +708,19 @@ export function ChannelMutateDrawer({
     }
     throw new Error(response.message || 'No models fetched from upstream')
   }, [form])
+
+  const createModeProviderFetcher = useCallback(async () => {
+    const response = await fetchProviders({
+      type: form.getValues('type'),
+      base_url: form.getValues('base_url') || '',
+    })
+    if (response.success && response.data) {
+      return response.data
+    }
+    throw new Error(
+      response.message || t('channels.errors.fetchProvidersFailed')
+    )
+  }, [form, t])
 
   // Handle adding custom models
   const handleAddCustomModels = useCallback(() => {
@@ -2241,6 +2290,592 @@ export function ChannelMutateDrawer({
                     />
                   </div>
 
+                  {/* ── Provider Strategy (OpenRouter only) ── */}
+                  {currentType === 20 && (
+                    <div className='flex flex-col gap-4 border-t pt-4'>
+                      <SubHeading
+                        title={t('channels.fields.providerStrategy')}
+                        icon={<Boxes className='h-3.5 w-3.5' />}
+                      />
+                      <p className='text-muted-foreground text-xs'>
+                        {t('channels.tips.providerStrategyDescription')}
+                      </p>
+
+                      <div className='grid gap-4 sm:grid-cols-2'>
+                        <FormField
+                          control={form.control}
+                          name='or_allow_fallbacks'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orAllowFallbacks')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='true'>
+                                      {t('channels.fields.orTriStateAllow')}
+                                    </SelectItem>
+                                    <SelectItem value='false'>
+                                      {t('channels.fields.orTriStateDeny')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_ALLOW_FALLBACKS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_require_parameters'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orRequireParameters')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='true'>
+                                      {t('channels.fields.orTriStateRequireOn')}
+                                    </SelectItem>
+                                    <SelectItem value='false'>
+                                      {t('channels.fields.orTriStateRequireOff')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_REQUIRE_PARAMETERS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_data_collection'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orDataCollection')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='deny'>
+                                      {t('channels.fields.orDataCollectionDeny')}
+                                    </SelectItem>
+                                    <SelectItem value='allow'>
+                                      {t('channels.fields.orDataCollectionAllow')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_DATA_COLLECTION)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_quantizations'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orQuantizations')}
+                              </FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={OPENROUTER_QUANTIZATION_OPTIONS}
+                                  selected={parseOpenRouterSlugList(field.value || '')}
+                                  onChange={(values) =>
+                                    field.onChange(values.join(', '))
+                                  }
+                                  placeholder={t(
+                                    'channels.placeholders.orQuantizations'
+                                  )}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_QUANTIZATIONS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {(
+                        [
+                          {
+                            name: 'or_order' as const,
+                            mode: 'order' as const,
+                            labelKey: 'channels.fields.orOrder',
+                            description: 'OR_ORDER' as const,
+                          },
+                          {
+                            name: 'or_only' as const,
+                            mode: 'only' as const,
+                            labelKey: 'channels.fields.orOnly',
+                            description: 'OR_ONLY' as const,
+                          },
+                          {
+                            name: 'or_ignore' as const,
+                            mode: 'ignore' as const,
+                            labelKey: 'channels.fields.orIgnore',
+                            description: 'OR_IGNORE' as const,
+                          },
+                        ]
+                      ).map(({ name, mode, labelKey, description }) => (
+                        <FormField
+                          key={name}
+                          control={form.control}
+                          name={name}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t(labelKey)}</FormLabel>
+                              <div className='flex gap-2'>
+                                <FormControl>
+                                  <Input
+                                    placeholder={t(
+                                      'channels.placeholders.orProviderSlugs'
+                                    )}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <Button
+                                  type='button'
+                                  variant='outline'
+                                  onClick={() => setProviderPickerField(mode)}
+                                >
+                                  {t('channels.actions.pickProviders')}
+                                </Button>
+                              </div>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS[description])}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+
+                      <Collapsible>
+                        <CollapsibleTrigger className='text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs'>
+                          <ChevronDown className='h-3.5 w-3.5' />
+                          {t('channels.titles.orAdvancedPreferences')}
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className='space-y-4 pt-4'>
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            <FormField
+                              control={form.control}
+                              name='or_sort'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orSort')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='price'>
+                                          {t('channels.fields.orSortPrice')}
+                                        </SelectItem>
+                                        <SelectItem value='throughput'>
+                                          {t('channels.fields.orSortThroughput')}
+                                        </SelectItem>
+                                        <SelectItem value='latency'>
+                                          {t('channels.fields.orSortLatency')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_sort_partition'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orSortPartition')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                    disabled={!form.watch('or_sort')}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orSortPartitionModel'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value='model'>
+                                          {t('channels.fields.orSortPartitionModel')}
+                                        </SelectItem>
+                                        <SelectItem value='none'>
+                                          {t('channels.fields.orSortPartitionNone')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_SORT)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_pref_min_throughput'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orPrefMinThroughput')}
+                                  </FormLabel>
+                                  <div className='flex gap-2'>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        placeholder='50'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormField
+                                      control={form.control}
+                                      name='or_pref_min_throughput_percentile'
+                                      render={({
+                                        field: percentileField,
+                                      }) => (
+                                        <FormItem className='w-28 space-y-0'>
+                                          <FormLabel className='sr-only'>
+                                            {t('channels.fields.orPercentile')}
+                                          </FormLabel>
+                                          <FormControl>
+                                            <Select
+                                              value={percentileField.value || ''}
+                                              onValueChange={
+                                                percentileField.onChange
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder='p50' />
+                                              </SelectTrigger>
+                                              <SelectContent
+                                                alignItemWithTrigger={false}
+                                              >
+                                                <SelectGroup>
+                                                  {[
+                                                    'p50',
+                                                    'p75',
+                                                    'p90',
+                                                    'p99',
+                                                  ].map((percentile) => (
+                                                    <SelectItem
+                                                      key={percentile}
+                                                      value={percentile}
+                                                    >
+                                                      {percentile}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_PREF_MIN_THROUGHPUT)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_pref_max_latency'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orPrefMaxLatency')}
+                                  </FormLabel>
+                                  <div className='flex gap-2'>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        step='0.1'
+                                        placeholder='2.5'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormField
+                                      control={form.control}
+                                      name='or_pref_max_latency_percentile'
+                                      render={({
+                                        field: percentileField,
+                                      }) => (
+                                        <FormItem className='w-28 space-y-0'>
+                                          <FormLabel className='sr-only'>
+                                            {t('channels.fields.orPercentile')}
+                                          </FormLabel>
+                                          <FormControl>
+                                            <Select
+                                              value={percentileField.value || ''}
+                                              onValueChange={
+                                                percentileField.onChange
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder='p50' />
+                                              </SelectTrigger>
+                                              <SelectContent
+                                                alignItemWithTrigger={false}
+                                              >
+                                                <SelectGroup>
+                                                  {[
+                                                    'p50',
+                                                    'p75',
+                                                    'p90',
+                                                    'p99',
+                                                  ].map((percentile) => (
+                                                    <SelectItem
+                                                      key={percentile}
+                                                      value={percentile}
+                                                    >
+                                                      {percentile}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_PREF_MAX_LATENCY)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            {(
+                              [
+                                [
+                                  'or_max_price_prompt',
+                                  'channels.fields.orMaxPricePrompt',
+                                ],
+                                [
+                                  'or_max_price_completion',
+                                  'channels.fields.orMaxPriceCompletion',
+                                ],
+                                [
+                                  'or_max_price_request',
+                                  'channels.fields.orMaxPriceRequest',
+                                ],
+                                [
+                                  'or_max_price_image',
+                                  'channels.fields.orMaxPriceImage',
+                                ],
+                              ] as const
+                            ).map(([name, labelKey]) => (
+                              <FormField
+                                key={name}
+                                control={form.control}
+                                name={name}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>{t(labelKey)}</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        step='0.01'
+                                        placeholder='0'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ))}
+                          </div>
+
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            <FormField
+                              control={form.control}
+                              name='or_zdr'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t('channels.fields.orZdr')}</FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='true'>
+                                          {t('channels.fields.orTriStateRequireOn')}
+                                        </SelectItem>
+                                        <SelectItem value='false'>
+                                          {t('channels.fields.orTriStateRequireOff')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_enforce_distillable_text'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orEnforceDistillableText')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='true'>
+                                          {t('channels.fields.orTriStateRequireOn')}
+                                        </SelectItem>
+                                        <SelectItem value='false'>
+                                          {t('channels.fields.orTriStateRequireOff')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                  )}
+
                   <div className='flex flex-col gap-4 border-t pt-4'>
                     <SubHeading
                       title={t('channels.fields.overrideRules')}
@@ -2950,6 +3585,33 @@ export function ChannelMutateDrawer({
             ? parseModelsString(form.getValues('models') || '')
             : undefined
         }
+      />
+
+      <ProviderPickerDialog
+        open={providerPickerField !== null}
+        onOpenChange={(open) => {
+          if (!open) setProviderPickerField(null)
+        }}
+        mode={providerPickerField ?? 'order'}
+        value={
+          form.watch(
+            providerPickerField === 'only'
+              ? 'or_only'
+              : providerPickerField === 'ignore'
+                ? 'or_ignore'
+                : 'or_order'
+          ) || ''
+        }
+        onConfirm={(value) => {
+          if (providerPickerField === 'only') {
+            form.setValue('or_only', value, { shouldDirty: true })
+          } else if (providerPickerField === 'ignore') {
+            form.setValue('or_ignore', value, { shouldDirty: true })
+          } else {
+            form.setValue('or_order', value, { shouldDirty: true })
+          }
+        }}
+        customFetcher={!isEditing ? createModeProviderFetcher : undefined}
       />
 
       <SecureVerificationDialog

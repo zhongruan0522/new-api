@@ -163,6 +163,19 @@ export interface FetchModelsResponse {
   data?: unknown[]
 }
 
+export interface OpenRouterProviderInfo {
+  slug: string
+  name: string
+  headquarters?: string
+  privacy_policy_url?: string
+}
+
+export interface FetchProvidersResponse {
+  success: boolean
+  message?: string
+  data?: OpenRouterProviderInfo[]
+}
+
 export type ProxyTestStatus = 'success' | 'invalid' | 'failed'
 
 export interface ProxyTestResultData {

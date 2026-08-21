@@ -48,6 +48,7 @@ func newResponsesRequestFromChat(chatReq *shared.GeneralOpenAIRequest, input jso
 		Stream:           chatReq.Stream,
 		Temperature:      chatReq.Temperature,
 		TopLogprobs:      chatReq.TopLogProbs,
+		Provider:         chatReq.Provider,
 		SafetyIdentifier: chatReq.SafetyIdentifier,
 		ServiceTier:      "",
 		User:             chatReq.User,

@@ -66,6 +66,31 @@ export const channelFormSchema = z.object({
   aws_key_type: z.enum(['ak_sk', 'api_key']).optional(), // AWS specific
   azure_responses_version: z.string().optional(), // Azure specific
   image_auto_convert_to_url_mode: z.enum(['off', 'mcp']).optional(),
+  // OpenRouter provider routing preferences (stored in settings JSON).
+  // Tri-state booleans use '' (unset / follow client), 'true', 'false'.
+  or_order: z.string().optional(), // comma-separated provider slugs, ordered
+  or_only: z.string().optional(),
+  or_ignore: z.string().optional(),
+  or_allow_fallbacks: z.enum(['', 'true', 'false']).optional(),
+  or_require_parameters: z.enum(['', 'true', 'false']).optional(),
+  or_data_collection: z.enum(['', 'allow', 'deny']).optional(),
+  or_zdr: z.enum(['', 'true', 'false']).optional(),
+  or_enforce_distillable_text: z.enum(['', 'true', 'false']).optional(),
+  or_quantizations: z.string().optional(), // comma-separated
+  or_sort: z.enum(['', 'price', 'throughput', 'latency']).optional(),
+  or_sort_partition: z.enum(['', 'model', 'none']).optional(),
+  or_pref_min_throughput: z.string().optional(),
+  or_pref_min_throughput_percentile: z
+    .enum(['', 'p50', 'p75', 'p90', 'p99'])
+    .optional(),
+  or_pref_max_latency: z.string().optional(),
+  or_pref_max_latency_percentile: z
+    .enum(['', 'p50', 'p75', 'p90', 'p99'])
+    .optional(),
+  or_max_price_prompt: z.string().optional(),
+  or_max_price_completion: z.string().optional(),
+  or_max_price_request: z.string().optional(),
+  or_max_price_image: z.string().optional(),
   // Field passthrough controls (stored in settings JSON)
   allow_cache_control: z.boolean().optional(), // Anthropic cache_control
   allow_speed: z.boolean().optional(), // Anthropic speed
@@ -73,7 +98,49 @@ export const channelFormSchema = z.object({
   disable_store: z.boolean().optional(), // OpenAI only
   allow_safety_identifier: z.boolean().optional(), // OpenAI only
   claude_beta_query: z.boolean().optional(), // Anthropic: beta query passthrough
+}).superRefine((value, ctx) => {
+  for (const field of OPENROUTER_NUMERIC_FIELDS) {
+    const trimmed = (value[field] || '').trim()
+    if (trimmed === '') continue
+    const num = Number(trimmed)
+    if (!(Number.isFinite(num) && num >= 0)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [field],
+        message: 'Must be a number >= 0',
+      })
+    }
+  }
+  for (const [numberField, percentileField] of OPENROUTER_PERCENTILE_PAIRS) {
+    if (!value[percentileField]) continue
+    const trimmed = (value[numberField] || '').trim()
+    const num = trimmed === '' ? Number.NaN : Number(trimmed)
+    if (!(Number.isFinite(num) && num >= 0)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [numberField],
+        message: 'A percentile selection requires a numeric value',
+      })
+    }
+  }
 })
+
+// OpenRouter routing numeric fields: non-empty values must be finite numbers
+// >= 0, and selecting a percentile requires its paired number, so incomplete
+// input fails loudly instead of being silently dropped from the payload.
+const OPENROUTER_NUMERIC_FIELDS = [
+  'or_pref_min_throughput',
+  'or_pref_max_latency',
+  'or_max_price_prompt',
+  'or_max_price_completion',
+  'or_max_price_request',
+  'or_max_price_image',
+] as const
+
+const OPENROUTER_PERCENTILE_PAIRS = [
+  ['or_pref_min_throughput', 'or_pref_min_throughput_percentile'],
+  ['or_pref_max_latency', 'or_pref_max_latency_percentile'],
+] as const
 
 export type ChannelFormValues = z.infer<typeof channelFormSchema>
 
@@ -119,6 +186,26 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   aws_key_type: 'ak_sk',
   azure_responses_version: '',
   image_auto_convert_to_url_mode: 'off',
+  // OpenRouter provider routing preferences
+  or_order: '',
+  or_only: '',
+  or_ignore: '',
+  or_allow_fallbacks: '',
+  or_require_parameters: '',
+  or_data_collection: '',
+  or_zdr: '',
+  or_enforce_distillable_text: '',
+  or_quantizations: '',
+  or_sort: '',
+  or_sort_partition: '',
+  or_pref_min_throughput: '',
+  or_pref_min_throughput_percentile: '',
+  or_pref_max_latency: '',
+  or_pref_max_latency_percentile: '',
+  or_max_price_prompt: '',
+  or_max_price_completion: '',
+  or_max_price_request: '',
+  or_max_price_image: '',
   // Field passthrough controls
   allow_cache_control: false,
   allow_speed: false,
@@ -131,6 +218,242 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
 // ============================================================================
 // Transform Functions
 // ============================================================================
+
+/** Split a comma-separated slug list into trimmed, de-duplicated entries. */
+function parseSlugList(value: string | undefined): string[] {
+  return Array.from(
+    new Set(
+      (value || '')
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    )
+  )
+}
+
+/** Parse an optional non-negative numeric form field; blank → undefined. */
+function parseOptionalNumber(value: string | undefined): number | undefined {
+  const trimmed = (value || '').trim()
+  if (trimmed === '') return undefined
+  const num = Number(trimmed)
+  return Number.isFinite(num) ? num : undefined
+}
+
+type OpenRouterRoutingForm = Pick<
+  ChannelFormValues,
+  | 'or_order'
+  | 'or_only'
+  | 'or_ignore'
+  | 'or_allow_fallbacks'
+  | 'or_require_parameters'
+  | 'or_data_collection'
+  | 'or_zdr'
+  | 'or_enforce_distillable_text'
+  | 'or_quantizations'
+  | 'or_sort'
+  | 'or_sort_partition'
+  | 'or_pref_min_throughput'
+  | 'or_pref_min_throughput_percentile'
+  | 'or_pref_max_latency'
+  | 'or_pref_max_latency_percentile'
+  | 'or_max_price_prompt'
+  | 'or_max_price_completion'
+  | 'or_max_price_request'
+  | 'or_max_price_image'
+>
+
+const EMPTY_OPENROUTER_ROUTING_FORM: OpenRouterRoutingForm = {
+  or_order: '',
+  or_only: '',
+  or_ignore: '',
+  or_allow_fallbacks: '',
+  or_require_parameters: '',
+  or_data_collection: '',
+  or_zdr: '',
+  or_enforce_distillable_text: '',
+  or_quantizations: '',
+  or_sort: '',
+  or_sort_partition: '',
+  or_pref_min_throughput: '',
+  or_pref_min_throughput_percentile: '',
+  or_pref_max_latency: '',
+  or_pref_max_latency_percentile: '',
+  or_max_price_prompt: '',
+  or_max_price_completion: '',
+  or_max_price_request: '',
+  or_max_price_image: '',
+}
+
+function triStateToBoolean(value: string | undefined): boolean | undefined {
+  if (value === 'true') return true
+  if (value === 'false') return false
+  return undefined
+}
+
+/** Map a stored boolean back to the '' / 'true' / 'false' tri-state form value. */
+function booleanToTriState(value: unknown): '' | 'true' | 'false' {
+  if (value === true) return 'true'
+  if (value === false) return 'false'
+  return ''
+}
+
+/** Return the stored value when it is one of the allowed enum members, else ''. */
+function pickEnum<T extends string>(
+  value: unknown,
+  allowed: readonly T[]
+): T | '' {
+  if (typeof value === 'string' && (allowed as readonly string[]).includes(value)) {
+    return value as T
+  }
+  return ''
+}
+
+/** Read an OpenRouter threshold that may be a bare number or {pXX: value}. */
+function parseThresholdField(
+  threshold: unknown
+): { value: string; percentile: string } {
+  if (typeof threshold === 'number') {
+    return { value: String(threshold), percentile: '' }
+  }
+  if (threshold && typeof threshold === 'object') {
+    const entries = Object.entries(threshold as Record<string, unknown>)
+    if (entries.length === 1) {
+      const [percentile, raw] = entries[0]
+      if (typeof raw === 'number') {
+        return { value: String(raw), percentile }
+      }
+    }
+  }
+  return { value: '', percentile: '' }
+}
+
+/** Map a stored openrouter_routing object back to form fields. */
+function parseOpenRouterRoutingToForm(
+  routing: unknown
+): OpenRouterRoutingForm {
+  if (!routing || typeof routing !== 'object') {
+    return { ...EMPTY_OPENROUTER_ROUTING_FORM }
+  }
+  const raw = routing as Record<string, unknown>
+  const slugList = (value: unknown): string =>
+    Array.isArray(value)
+      ? value.filter((entry): entry is string => typeof entry === 'string').join(', ')
+      : ''
+  const minThroughput = parseThresholdField(raw.preferred_min_throughput)
+  const maxLatency = parseThresholdField(raw.preferred_max_latency)
+  const maxPrice =
+    raw.max_price && typeof raw.max_price === 'object'
+      ? (raw.max_price as Record<string, unknown>)
+      : {}
+  const numberToString = (value: unknown): string =>
+    typeof value === 'number' ? String(value) : ''
+
+  return {
+    or_order: slugList(raw.order),
+    or_only: slugList(raw.only),
+    or_ignore: slugList(raw.ignore),
+    or_allow_fallbacks: booleanToTriState(raw.allow_fallbacks),
+    or_require_parameters: booleanToTriState(raw.require_parameters),
+    or_data_collection:
+      raw.data_collection === 'allow' || raw.data_collection === 'deny'
+        ? raw.data_collection
+        : '',
+    or_zdr: booleanToTriState(raw.zdr),
+    or_enforce_distillable_text: booleanToTriState(raw.enforce_distillable_text),
+    or_quantizations: slugList(raw.quantizations),
+    or_sort:
+      raw.sort && typeof raw.sort === 'object'
+        ? pickEnum((raw.sort as Record<string, unknown>).by, [
+            'price',
+            'throughput',
+            'latency',
+          ] as const)
+        : '',
+    or_sort_partition:
+      raw.sort && typeof raw.sort === 'object'
+        ? pickEnum((raw.sort as Record<string, unknown>).partition, [
+            'model',
+            'none',
+          ] as const)
+        : '',
+    or_pref_min_throughput: minThroughput.value,
+    or_pref_min_throughput_percentile: pickEnum(
+      minThroughput.percentile,
+      ['p50', 'p75', 'p90', 'p99'] as const
+    ),
+    or_pref_max_latency: maxLatency.value,
+    or_pref_max_latency_percentile: pickEnum(
+      maxLatency.percentile,
+      ['p50', 'p75', 'p90', 'p99'] as const
+    ),
+    or_max_price_prompt: numberToString(maxPrice.prompt),
+    or_max_price_completion: numberToString(maxPrice.completion),
+    or_max_price_request: numberToString(maxPrice.request),
+    or_max_price_image: numberToString(maxPrice.image),
+  }
+}
+
+/** Build the openrouter_routing settings object; undefined when nothing is configured. */
+function buildOpenRouterRouting(
+  formData: ChannelFormValues
+): Record<string, unknown> | undefined {
+  const routing: Record<string, unknown> = {}
+
+  const order = parseSlugList(formData.or_order)
+  if (order.length > 0) routing.order = order
+  const only = parseSlugList(formData.or_only)
+  if (only.length > 0) routing.only = only
+  const ignore = parseSlugList(formData.or_ignore)
+  if (ignore.length > 0) routing.ignore = ignore
+
+  const allowFallbacks = triStateToBoolean(formData.or_allow_fallbacks)
+  if (allowFallbacks !== undefined) routing.allow_fallbacks = allowFallbacks
+  const requireParameters = triStateToBoolean(formData.or_require_parameters)
+  if (requireParameters !== undefined)
+    routing.require_parameters = requireParameters
+  const zdr = triStateToBoolean(formData.or_zdr)
+  if (zdr !== undefined) routing.zdr = zdr
+  const enforceDistillable = triStateToBoolean(formData.or_enforce_distillable_text)
+  if (enforceDistillable !== undefined)
+    routing.enforce_distillable_text = enforceDistillable
+
+  if (formData.or_data_collection) routing.data_collection = formData.or_data_collection
+
+  const quantizations = parseSlugList(formData.or_quantizations)
+  if (quantizations.length > 0) routing.quantizations = quantizations
+
+  if (formData.or_sort) {
+    const sort: Record<string, unknown> = { by: formData.or_sort }
+    if (formData.or_sort_partition) sort.partition = formData.or_sort_partition
+    routing.sort = sort
+  }
+
+  const minThroughput = parseOptionalNumber(formData.or_pref_min_throughput)
+  if (minThroughput !== undefined) {
+    routing.preferred_min_throughput = formData.or_pref_min_throughput_percentile
+      ? { [formData.or_pref_min_throughput_percentile]: minThroughput }
+      : minThroughput
+  }
+  const maxLatency = parseOptionalNumber(formData.or_pref_max_latency)
+  if (maxLatency !== undefined) {
+    routing.preferred_max_latency = formData.or_pref_max_latency_percentile
+      ? { [formData.or_pref_max_latency_percentile]: maxLatency }
+      : maxLatency
+  }
+
+  const maxPrice: Record<string, number> = {}
+  const prompt = parseOptionalNumber(formData.or_max_price_prompt)
+  if (prompt !== undefined) maxPrice.prompt = prompt
+  const completion = parseOptionalNumber(formData.or_max_price_completion)
+  if (completion !== undefined) maxPrice.completion = completion
+  const request = parseOptionalNumber(formData.or_max_price_request)
+  if (request !== undefined) maxPrice.request = request
+  const image = parseOptionalNumber(formData.or_max_price_image)
+  if (image !== undefined) maxPrice.image = image
+  if (Object.keys(maxPrice).length > 0) routing.max_price = maxPrice
+
+  return Object.keys(routing).length > 0 ? routing : undefined
+}
 
 /**
  * Transform Channel from API to Form default values
@@ -180,6 +503,9 @@ export function transformChannelToFormDefaults(
   let disableStore = false
   let allowSafetyIdentifier = false
   let claudeBetaQuery = false
+  let openRouterRoutingForm: OpenRouterRoutingForm = {
+    ...EMPTY_OPENROUTER_ROUTING_FORM,
+  }
 
   if (channel.settings) {
     try {
@@ -199,6 +525,9 @@ export function transformChannelToFormDefaults(
       disableStore = parsed.disable_store === true
       allowSafetyIdentifier = parsed.allow_safety_identifier === true
       claudeBetaQuery = parsed.claude_beta_query === true
+      openRouterRoutingForm = parseOpenRouterRoutingToForm(
+        parsed.openrouter_routing
+      )
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to parse channel settings:', error)
@@ -245,6 +574,8 @@ export function transformChannelToFormDefaults(
     disable_store: disableStore,
     claude_beta_query: claudeBetaQuery,
     allow_safety_identifier: allowSafetyIdentifier,
+    // OpenRouter provider routing preferences
+    ...openRouterRoutingForm,
   }
 }
 
@@ -298,6 +629,20 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
     settingsObj.openrouter_enterprise = formData.is_enterprise_account === true
   } else if ('openrouter_enterprise' in settingsObj) {
     delete settingsObj.openrouter_enterprise
+  }
+
+  // Add provider routing preferences for OpenRouter (type 20). Any configured
+  // field overrides the same-named client field at relay time; an empty
+  // configuration removes the key entirely (no intervention).
+  if (formData.type === 20) {
+    const routing = buildOpenRouterRouting(formData)
+    if (routing) {
+      settingsObj.openrouter_routing = routing
+    } else {
+      delete settingsObj.openrouter_routing
+    }
+  } else if ('openrouter_routing' in settingsObj) {
+    delete settingsObj.openrouter_routing
   }
 
   // Add aws_key_type for AWS channels (type 33)

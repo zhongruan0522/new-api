@@ -211,6 +211,9 @@ type ClaudeRequest struct {
 	Thinking          *Thinking       `json:"thinking,omitempty"`
 	McpServers        json.RawMessage `json:"mcp_servers,omitempty"`
 	Metadata          json.RawMessage `json:"metadata,omitempty"`
+	// Provider carries OpenRouter's provider routing preferences supplied by
+	// the client; stripped for non-OpenRouter channels at relay time.
+	Provider json.RawMessage `json:"provider,omitempty"`
 	// 服务层级字段，用于指定 API 服务等级。允许透传可能导致实际计费高于预期，默认应过滤
 	ServiceTier string `json:"service_tier,omitempty"`
 }
