@@ -26,16 +26,19 @@
 - OpenCode
 - Codex
 - Cursor
+- CodeBuddy
+- ZCode
 
 ### 当前使用的 AI 模型
 
-- Zhipu/GLM-5.2[Max]
+> 关于模型，实际格式为`供应商/模型[思维强度/是否开启思考]`
+
 - Zhipu/GLM-5.3[Max]
 - Zhipu/GLM-5V-Turbo[Thinking]
 - OpenAI/GPT-5.4[Xhigh]
 - OpenAI/GPT-5.5[high]
 - OpenAI/GPT-5.5[Xhigh]
-- OpenAI/GPT-5.6-Sol/Luna[Max]
+- OpenAI/GPT-5.6-系列[Sol/Luna]-[Max]
 
 ### 历史使用模型
 
@@ -43,8 +46,9 @@
 - Zhipu/GLM-5-Turbo[Thinking]
 - Zhipu/GLM-5[Thinking]
 - Zhipu/GLM-5.1[Thinking]
+- Zhipu/GLM-5.2[Max]
 
-> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax-M3`、`Kimi-K2.6`、`Kimi-K3`、`DeepSeek-V4-Flash`
+> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax/Minimax-M3`、`Kimi/Kimi-K2.6`、`Kimi/Kimi-K3`、`CodeBuddy/DeepSeek-V4-Flash`、`OpenRouter/Ox Alpha`
 
 </details>
 
