@@ -255,6 +255,11 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("relay_mode", relayMode)
 	}
+	// 令牌级入站模型重定向：在路径压缩后缀（responses/compact）套用之前执行，
+	// 使映射查找基于客户端原始模型名，重定向目标再自然携带压缩后缀。
+	if err := applyTokenModelMapping(c, &modelRequest); err != nil {
+		return nil, false, err
+	}
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/responses/compact") && modelRequest.Model != "" {
 		modelRequest.Model = ratio.WithCompactModelSuffix(modelRequest.Model)
 	}

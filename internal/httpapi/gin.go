@@ -79,6 +79,38 @@ func GetRequestBody(c *gin.Context) ([]byte, error) {
 	return body, nil
 }
 
+// SetRequestBody 用新的字节数据替换请求体缓存，并重置 c.Request.Body 与
+// Content-Length，使后续 UnmarshalBodyReusable / GetRequestBody 读取到新内容。
+// 用于入站请求体改写（如令牌级模型重定向）。旧的存储会被关闭以释放内存/磁盘记账。
+func SetRequestBody(c *gin.Context, body []byte) error {
+	storage, err := cache.CreateBodyStorage(body)
+	if err != nil {
+		return err
+	}
+	if old, exists := c.Get(KeyBodyStorage); exists && old != nil {
+		if bs, ok := old.(cache.BodyStorage); ok {
+			bs.Close()
+		}
+	}
+	c.Set(KeyBodyStorage, storage)
+	// 与 GetRequestBody 保持一致：仅内存存储保留 legacy 字节缓存，磁盘存储不驻留全量字节。
+	if !storage.IsDisk() {
+		c.Set(KeyRequestBody, body)
+	} else {
+		c.Set(KeyRequestBody, nil)
+	}
+	if storage.IsDisk() {
+		if _, err := storage.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		c.Request.Body = io.NopCloser(storage)
+	} else {
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+	}
+	c.Request.ContentLength = int64(len(body))
+	return nil
+}
+
 // GetBodyStorage 获取请求体存储对象（用于需要多次读取的场景）
 func GetBodyStorage(c *gin.Context) (cache.BodyStorage, error) {
 	// 检查是否已有存储

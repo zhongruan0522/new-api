@@ -1,12 +1,15 @@
 package tokencontroller
 
 import (
+	"errors"
+	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
 	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/store/audit"
 	"github.com/NookMux/NookMux/internal/store/token"
+	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -15,6 +18,44 @@ import (
 
 // maxUserTokens 每用户最大令牌数量（硬编码）
 const maxUserTokens = 1000
+
+// validateTokenModelMapping 校验令牌级模型重定向配置：
+// 空值合法（未配置）；非空时必须是 JSON 对象且键值均为非空字符串，不允许嵌套。
+func validateTokenModelMapping(mapping *string) error {
+	if mapping == nil {
+		return nil
+	}
+	mappingStr := strings.TrimSpace(*mapping)
+	if mappingStr == "" {
+		return nil
+	}
+	modelMap := make(map[string]string)
+	if err := jsonx.Unmarshal([]byte(mappingStr), &modelMap); err != nil {
+		return errors.New("invalid json")
+	}
+	for from, to := range modelMap {
+		if strings.TrimSpace(from) == "" {
+			return errors.New("empty source model")
+		}
+		if strings.TrimSpace(to) == "" {
+			return fmt.Errorf("empty target model for %s", from)
+		}
+	}
+	return nil
+}
+
+// normalizeTokenModelMapping 返回规整后的 model_mapping 指针：
+// 空白输入归一为 NULL 存储，避免表中残留空串与 NULL 两种"未配置"形态。
+func normalizeTokenModelMapping(mapping *string) *string {
+	if mapping == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*mapping)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
 
 // buildMaskedTokenResponse 返回 key 已脱敏的 token 副本，避免列表/详情接口泄露真实密钥。
 func buildMaskedTokenResponse(token *tokenstore.Token) *tokenstore.Token {
@@ -239,6 +280,11 @@ func AddToken(c *gin.Context) {
 		httpapi.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
 	}
+	if err := validateTokenModelMapping(token.ModelMapping); err != nil {
+		common.SysError("invalid token model_mapping: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenInvalidModelMapping)
+		return
+	}
 
 	// 根据 quota_type 验证额度参数
 	quotaType := token.QuotaType
@@ -335,6 +381,7 @@ func AddToken(c *gin.Context) {
 		UnlimitedQuota:     token.UnlimitedQuota,
 		ModelLimitsEnabled: token.ModelLimitsEnabled,
 		ModelLimits:        token.ModelLimits,
+		ModelMapping:       normalizeTokenModelMapping(token.ModelMapping),
 		AllowIps:           token.AllowIps,
 		Group:              token.Group,
 		CrossGroupRetry:    token.CrossGroupRetry,
@@ -392,6 +439,11 @@ func UpdateToken(c *gin.Context) {
 	}
 	if len(token.Name) > 50 {
 		httpapi.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
+		return
+	}
+	if err := validateTokenModelMapping(token.ModelMapping); err != nil {
+		common.SysError("invalid token model_mapping: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgTokenInvalidModelMapping)
 		return
 	}
 
@@ -488,6 +540,7 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
 		cleanToken.ModelLimitsEnabled = token.ModelLimitsEnabled
 		cleanToken.ModelLimits = token.ModelLimits
+		cleanToken.ModelMapping = normalizeTokenModelMapping(token.ModelMapping)
 		cleanToken.AllowIps = token.AllowIps
 		cleanToken.Group = token.Group
 		cleanToken.CrossGroupRetry = token.CrossGroupRetry

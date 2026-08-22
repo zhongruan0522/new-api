@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { z } from 'zod'
 import type { TFunction } from 'i18next'
 import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
+import { validateModelMappingJson } from '@/features/channels/lib/model-mapping-validation'
 import { DEFAULT_GROUP } from '../constants'
 import { type ApiKeyFormData, type ApiKey } from '../types'
 
@@ -40,12 +41,25 @@ export function getApiKeyFormSchema(t: TFunction) {
       cycle_days: z.number().optional(),
       cycle_quota_dollars: z.number().optional(),
       model_limits: z.array(z.string()),
+      model_mapping: z.string().optional(),
       allow_ips: z.string().optional(),
       group: z.string().optional(),
       cross_group_retry: z.boolean().optional(),
       tokenCount: z.number().min(1).optional(),
     })
     .superRefine((data, ctx) => {
+      const modelMapping = (data.model_mapping || '').trim()
+      if (modelMapping) {
+        const { valid } = validateModelMappingJson(modelMapping)
+        if (!valid) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['model_mapping'],
+            message: t('keys.errors.invalidModelMapping'),
+          })
+        }
+      }
+
       if (data.quota_type === 0) {
         return
       }
@@ -120,6 +134,7 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   cycle_days: 1,
   cycle_quota_dollars: 10,
   model_limits: [],
+  model_mapping: '',
   allow_ips: '',
   group: DEFAULT_GROUP,
   cross_group_retry: true,
@@ -160,6 +175,7 @@ export function transformFormDataToPayload(
     unlimited_quota: quotaType === 0,
     model_limits_enabled: data.model_limits.length > 0,
     model_limits: data.model_limits.join(','),
+    model_mapping: (data.model_mapping || '').trim(),
     allow_ips: data.allow_ips || '',
     group: data.group || '',
     cross_group_retry: data.group === 'auto' ? !!data.cross_group_retry : false,
@@ -205,6 +221,7 @@ export function transformApiKeyToFormDefaults(
     model_limits: apiKey.model_limits
       ? apiKey.model_limits.split(',').filter(Boolean)
       : [],
+    model_mapping: apiKey.model_mapping || '',
     allow_ips: apiKey.allow_ips || '',
     group: apiKey.group || DEFAULT_GROUP,
     cross_group_retry: !!apiKey.cross_group_retry,

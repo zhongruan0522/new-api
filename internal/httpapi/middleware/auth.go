@@ -491,6 +491,10 @@ func SetupContextForToken(c *gin.Context, token *tokenstore.Token, parts ...stri
 	} else {
 		c.Set("token_model_limit_enabled", false)
 	}
+	// 令牌级模型重定向规则，由 distributor 在选路前改写请求模型。
+	if tokenModelMapping := token.GetModelMapping(); tokenModelMapping != "" {
+		httpapi.SetContextKey(c, common.ContextKeyTokenModelMapping, tokenModelMapping)
+	}
 	httpapi.SetContextKey(c, common.ContextKeyTokenGroup, token.Group)
 	httpapi.SetContextKey(c, common.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)
 	if len(parts) > 1 {
