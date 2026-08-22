@@ -137,11 +137,12 @@ export function CommonLogsFilterBar<TData>(
     navigate({
       to: '/usage-logs/$section',
       params: { section: 'common' },
-      search: {
+      search: (prev) => ({
+        ...prev,
         ...filterParams,
         type: [logType],
         page: 1,
-      },
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
@@ -156,12 +157,12 @@ export function CommonLogsFilterBar<TData>(
     navigate({
       to: '/usage-logs/$section',
       params: { section: 'common' },
-      search: {
-        page: 1,
+      search: (prev) => ({
+        ...prev,
+        ...buildSearchParams(resetFilters, 'common'),
         type: [LOG_TYPE_ALL_VALUE],
-        startTime: start.getTime(),
-        endTime: end.getTime(),
-      },
+        page: 1,
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
@@ -186,7 +187,11 @@ export function CommonLogsFilterBar<TData>(
 
   const hasTypeFilter = logType !== LOG_TYPE_ALL_VALUE
   const hasAdditionalFilters =
-    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters || hasClientExpandedFilters
+    !!filters.model ||
+    !!filters.group ||
+    hasTypeFilter ||
+    hasExpandedFilters ||
+    hasClientExpandedFilters
 
   const expandedFilterCount = [
     filters.token,
@@ -212,7 +217,8 @@ export function CommonLogsFilterBar<TData>(
     [t]
   )
   const logTypeLabel =
-    logTypeItems.find((type) => type.value === logType)?.label ?? t('pricing.fields.allTypes')
+    logTypeItems.find((type) => type.value === logType)?.label ??
+    t('pricing.fields.allTypes')
 
   const statsBar = (
     <div className='flex flex-wrap items-center gap-2'>
@@ -224,7 +230,11 @@ export function CommonLogsFilterBar<TData>(
               variant='ghost'
               size='icon'
               onClick={() => setSensitiveVisible(!sensitiveVisible)}
-              aria-label={sensitiveVisible ? t('common.fields.hide') : t('usageLogs.fields.show')}
+              aria-label={
+                sensitiveVisible
+                  ? t('common.fields.hide')
+                  : t('usageLogs.fields.show')
+              }
               className='text-muted-foreground hover:text-foreground size-7'
             />
           }
@@ -232,7 +242,9 @@ export function CommonLogsFilterBar<TData>(
           {sensitiveVisible ? <Eye /> : <EyeOff />}
         </TooltipTrigger>
         <TooltipContent>
-          {sensitiveVisible ? t('common.fields.hide') : t('usageLogs.fields.show')}
+          {sensitiveVisible
+            ? t('common.fields.hide')
+            : t('usageLogs.fields.show')}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -254,7 +266,7 @@ export function CommonLogsFilterBar<TData>(
     <LogsFilterField>
       <LogsFilterInput
         placeholder={t('models.fields.modelName')}
-        autoComplete="off"
+        autoComplete='off'
         value={filters.model || ''}
         onChange={(e) => handleChange('model', e.target.value)}
         onKeyDown={handleKeyDown}
@@ -266,7 +278,7 @@ export function CommonLogsFilterBar<TData>(
       <LogsFilterInput
         placeholder={t('common.fields.group')}
         type={sensitiveType}
-        autoComplete="off"
+        autoComplete='off'
         value={filters.group || ''}
         onChange={(e) => handleChange('group', e.target.value)}
         onKeyDown={handleKeyDown}
@@ -305,7 +317,7 @@ export function CommonLogsFilterBar<TData>(
         <LogsFilterInput
           placeholder={t('usageLogs.fields.tokenName')}
           type={sensitiveType}
-          autoComplete="systemSettings.fields.offda7a68"
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.token || ''}
           onChange={(e) => handleChange('token', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -316,7 +328,7 @@ export function CommonLogsFilterBar<TData>(
           <LogsFilterInput
             placeholder={t('auth.fields.username')}
             type={sensitiveType}
-            autoComplete="systemSettings.fields.offda7a68"
+            autoComplete='systemSettings.fields.offda7a68'
             value={filters.username || ''}
             onChange={(e) => handleChange('username', e.target.value)}
             onKeyDown={handleKeyDown}
@@ -327,7 +339,7 @@ export function CommonLogsFilterBar<TData>(
         <LogsFilterField>
           <LogsFilterInput
             placeholder={t('usageLogs.fields.channelId')}
-            autoComplete="systemSettings.fields.offda7a68"
+            autoComplete='systemSettings.fields.offda7a68'
             value={filters.channel || ''}
             onChange={(e) => handleChange('channel', e.target.value)}
             onKeyDown={handleKeyDown}
@@ -337,7 +349,7 @@ export function CommonLogsFilterBar<TData>(
       <LogsFilterField>
         <LogsFilterInput
           placeholder={t('usageLogs.fields.requestId')}
-          autoComplete="systemSettings.fields.offda7a68"
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.requestId || ''}
           onChange={(e) => handleChange('requestId', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -346,7 +358,7 @@ export function CommonLogsFilterBar<TData>(
       <LogsFilterField>
         <LogsFilterInput
           placeholder={t('usageLogs.fields.upstreamRequestId')}
-          autoComplete="systemSettings.fields.offda7a68"
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.upstreamRequestId || ''}
           onChange={(e) => handleChange('upstreamRequestId', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -358,8 +370,8 @@ export function CommonLogsFilterBar<TData>(
     <>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder="auditLogs.fields.ip"
-          autoComplete="systemSettings.fields.offda7a68"
+          placeholder={t('usageLogs.fields.ipAddress')}
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.ip || ''}
           onChange={(e) => handleChange('ip', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -367,8 +379,8 @@ export function CommonLogsFilterBar<TData>(
       </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder="User-Agent"
-          autoComplete="systemSettings.fields.offda7a68"
+          placeholder='User-Agent'
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.ua || ''}
           onChange={(e) => handleChange('ua', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -376,8 +388,8 @@ export function CommonLogsFilterBar<TData>(
       </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder="HTTP Title"
-          autoComplete="systemSettings.fields.offda7a68"
+          placeholder='HTTP Title'
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.xTitle || ''}
           onChange={(e) => handleChange('xTitle', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -385,8 +397,8 @@ export function CommonLogsFilterBar<TData>(
       </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
-          placeholder="Referer"
-          autoComplete="systemSettings.fields.offda7a68"
+          placeholder='Referer'
+          autoComplete='systemSettings.fields.offda7a68'
           value={filters.httpReferer || ''}
           onChange={(e) => handleChange('httpReferer', e.target.value)}
           onKeyDown={handleKeyDown}

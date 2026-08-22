@@ -62,9 +62,7 @@ export function AccessTokenDialog({
         <DialogHeader>
           <DialogTitle>{t('profile.fields.accessToken')}</DialogTitle>
           <DialogDescription>
-            {t(
-              "common.tips.systemAccessTokenForApiAuthenticationKeepItSecure"
-            )}
+            {t('common.tips.systemAccessTokenForApiAuthenticationKeepItSecure')}
           </DialogDescription>
         </DialogHeader>
 
@@ -114,7 +112,9 @@ export function AccessTokenDialog({
             ) : (
               <RefreshCw className='h-4 w-4' />
             )}
-            {generating ? t('channels.tips.generating') : t('profile.fields.regenerate')}
+            {generating
+              ? t('channels.tips.generating')
+              : t('profile.fields.regenerate')}
           </Button>
         </DialogFooter>
       </DialogContent>

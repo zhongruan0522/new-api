@@ -66,7 +66,8 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
         setTotal(response.data.total || 0)
       } else {
         toast.error(
-          response.message || i18next.t('wallet.errors.failedToLoadBillingHistory')
+          response.message ||
+            i18next.t('wallet.errors.failedToLoadBillingHistory')
         )
         setRecords([])
         setTotal(0)
@@ -101,7 +102,9 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
           await fetchBillingHistory()
           return true
         } else {
-          toast.error(response.message || i18next.t('wallet.errors.failedToCompleteOrder'))
+          toast.error(
+            response.message || i18next.t('wallet.errors.failedToCompleteOrder')
+          )
           return false
         }
       } catch (error) {

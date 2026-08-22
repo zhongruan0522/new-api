@@ -187,7 +187,9 @@ export function DataTableBulkActions<TData>({
               }
             >
               <X />
-              <span className='sr-only'>{t('common.actions.clearSelection')}</span>
+              <span className='sr-only'>
+                {t('common.actions.clearSelection')}
+              </span>
             </TooltipTrigger>
             <TooltipContent>
               <p>{t('common.actions.clearSelectionEscape')}</p>

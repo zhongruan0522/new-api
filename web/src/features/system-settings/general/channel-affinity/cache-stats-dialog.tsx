@@ -98,14 +98,20 @@ export function CacheStatsDialog(props: Props) {
         value: (s.using_group || props.target?.using_group || '') as string,
       })
     if (props.target?.key_hint)
-      data.push({ key: t('systemSettings.fields.keySummary'), value: props.target.key_hint })
+      data.push({
+        key: t('systemSettings.fields.keySummary'),
+        value: props.target.key_hint,
+      })
     if (s.key_fp || props.target?.key_fp)
       data.push({
         key: t('systemSettings.fields.keyFingerprint'),
         value: (s.key_fp || props.target?.key_fp || '') as string,
       })
     if (Number(s.window_seconds || 0) > 0)
-      data.push({ key: t('systemSettings.fields.ttlSeconds'), value: s.window_seconds as number })
+      data.push({
+        key: t('systemSettings.fields.ttlSeconds'),
+        value: s.window_seconds as number,
+      })
     if (total > 0)
       data.push({
         key: t('systemSettings.fields.hitRate'),
@@ -128,7 +134,8 @@ export function CacheStatsDialog(props: Props) {
       data.push({ key: 'Cached tokens', value: cachedTokens })
     if (completionTokens > 0)
       data.push({ key: 'Completion tokens', value: completionTokens })
-    if (totalTokens > 0) data.push({ key: 'common.fields.totalTokens', value: totalTokens })
+    if (totalTokens > 0)
+      data.push({ key: 'common.fields.totalTokens', value: totalTokens })
 
     return data
   }, [stats, props.target, t])
@@ -137,12 +144,12 @@ export function CacheStatsDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('systemSettings.tips.channelAffinityUpstreamCacheHit')}</DialogTitle>
+          <DialogTitle>
+            {t('systemSettings.tips.channelAffinityUpstreamCacheHit')}
+          </DialogTitle>
         </DialogHeader>
         <p className='text-muted-foreground text-xs'>
-          {t(
-            'systemSettings.tips.hitCriteriaIfCachedTokensExistInUsageIt'
-          )}
+          {t('systemSettings.tips.hitCriteriaIfCachedTokensExistInUsageIt')}
         </p>
         {loading ? (
           <div className='text-muted-foreground py-8 text-center text-sm'>

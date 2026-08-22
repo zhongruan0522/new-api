@@ -147,7 +147,9 @@ export function SyncWizardDialog({
         <div className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto'>
           <div className='space-y-3'>
             <div>
-              <Label className='text-base'>{t('models.placeholders.selectSyncSource')}</Label>
+              <Label className='text-base'>
+                {t('models.placeholders.selectSyncSource')}
+              </Label>
               <p className='text-muted-foreground text-sm'>
                 {t('models.placeholders.chooseWhereToFetchUpstreamMetadata')}
               </p>
@@ -207,7 +209,9 @@ export function SyncWizardDialog({
           </div>
 
           <div className='space-y-2'>
-            <Label className='text-base'>{t('models.placeholders.selectLanguage')}</Label>
+            <Label className='text-base'>
+              {t('models.placeholders.selectLanguage')}
+            </Label>
             <RadioGroup
               value={locale}
               onValueChange={(v) => setLocale(v as SyncLocale)}
@@ -235,9 +239,7 @@ export function SyncWizardDialog({
 
           <div className='bg-muted/50 rounded-lg border p-4'>
             <p className='text-muted-foreground text-sm'>
-              {t(
-                'models.status.syncWillFetchMissingModelsAndVendorsFromThe'
-              )}
+              {t('models.status.syncWillFetchMissingModelsAndVendorsFromThe')}
             </p>
           </div>
         </div>

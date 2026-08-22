@@ -113,9 +113,7 @@ export function DatabaseMaintenanceSection() {
         description: t(
           'systemSettings.actions.copyTheCurrentDatabaseToANewDatabaseOf'
         ),
-        help: t(
-          'systemSettings.tips.supportsSqliteToMySqlPostgreSqlMySql'
-        ),
+        help: t('systemSettings.tips.supportsSqliteToMySqlPostgreSqlMySql'),
         startLabel: t('systemSettings.actions.startDatabaseMigration'),
         confirmTitle: t('systemSettings.actions.confirmDatabaseMigration'),
         confirmDescription: t(
@@ -128,9 +126,7 @@ export function DatabaseMaintenanceSection() {
         description: t(
           'systemSettings.actions.copyTheCurrentDatabaseToAnotherDatabaseOfThe'
         ),
-        help: t(
-          'systemSettings.tips.supportsMySqlToMySqlAndPostgreSql'
-        ),
+        help: t('systemSettings.tips.supportsMySqlToMySqlAndPostgreSql'),
         startLabel: t('systemSettings.actions.startDatabaseSync'),
         confirmTitle: t('systemSettings.actions.confirmDatabaseSync'),
         confirmDescription: t(
@@ -147,9 +143,7 @@ export function DatabaseMaintenanceSection() {
         <AlertTriangle className='size-4' />
         <AlertTitle>{t('systemSettings.fields.highRiskOperation')}</AlertTitle>
         <AlertDescription>
-          {t(
-            'systemSettings.tips.databaseMigrationAndSyncRunOnTheServerAnd'
-          )}
+          {t('systemSettings.tips.databaseMigrationAndSyncRunOnTheServerAnd')}
         </AlertDescription>
       </Alert>
 
@@ -181,7 +175,10 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
     try {
       const res = await getDatabaseMigrationInfo(config.mode)
       if (!res.success) {
-        throw new Error(res.message || t('systemSettings.errors.failedToLoadDatabaseInformation'))
+        throw new Error(
+          res.message ||
+            t('systemSettings.errors.failedToLoadDatabaseInformation')
+        )
       }
       setInfo(res.data)
     } catch (error) {
@@ -202,7 +199,10 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
       try {
         const res = await getDatabaseMigrationJob(config.mode, jobId)
         if (!res.success) {
-          throw new Error(res.message || t('systemSettings.errors.failedToRefreshMigrationJob'))
+          throw new Error(
+            res.message ||
+              t('systemSettings.errors.failedToRefreshMigrationJob')
+          )
         }
         setJob(res.data)
       } catch (error) {
@@ -257,14 +257,18 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
     try {
       const res = await startDatabaseMigration(config.mode, request)
       if (!res.success || !res.data?.job_id) {
-        throw new Error(res.message || t('systemSettings.errors.failedToStartMigrationTask'))
+        throw new Error(
+          res.message || t('systemSettings.errors.failedToStartMigrationTask')
+        )
       }
       toast.success(t('systemSettings.fields.migrationTaskStarted'))
       setConfirmOpen(false)
       await refreshJob(res.data.job_id, true)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('systemSettings.errors.failedToStartMigrationTask')
+        error instanceof Error
+          ? error.message
+          : t('systemSettings.errors.failedToStartMigrationTask')
       )
     } finally {
       setIsStarting(false)
@@ -288,18 +292,30 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
 
       <p className='text-muted-foreground text-xs'>{config.help}</p>
 
-      <div className='grid gap-3 rounded-lg bg-muted/30 p-3 text-sm sm:grid-cols-3'>
+      <div className='bg-muted/30 grid gap-3 rounded-lg p-3 text-sm sm:grid-cols-3'>
         <InfoItem
           label={t('systemSettings.fields.mainDatabase')}
-          value={isLoadingInfo ? t('common.tips.loading') : formatDbType(info?.main_db_type)}
+          value={
+            isLoadingInfo
+              ? t('common.tips.loading')
+              : formatDbType(info?.main_db_type)
+          }
         />
         <InfoItem
           label={t('systemSettings.fields.logDatabase')}
-          value={isLoadingInfo ? t('common.tips.loading') : formatDbType(info?.log_db_type)}
+          value={
+            isLoadingInfo
+              ? t('common.tips.loading')
+              : formatDbType(info?.log_db_type)
+          }
         />
         <InfoItem
           label={t('systemSettings.fields.separatedLogDatabase')}
-          value={info?.log_db_is_separated ? t('systemSettings.actions.yes') : t('systemSettings.actions.no')}
+          value={
+            info?.log_db_is_separated
+              ? t('systemSettings.actions.yes')
+              : t('systemSettings.actions.no')
+          }
         />
       </div>
 
@@ -314,7 +330,10 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
             autoComplete='off'
             value={formState.targetDsn}
             onChange={(event) =>
-              setFormState((prev) => ({ ...prev, targetDsn: event.target.value }))
+              setFormState((prev) => ({
+                ...prev,
+                targetDsn: event.target.value,
+              }))
             }
             placeholder={t('systemSettings.placeholders.enterTargetSqlDsn')}
             disabled={isRunning}
@@ -336,14 +355,18 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
                 targetLogDsn: event.target.value,
               }))
             }
-            placeholder={t('systemSettings.tips.optionalLeaveEmptyToUseTargetDatabaseDsn')}
+            placeholder={t(
+              'systemSettings.tips.optionalLeaveEmptyToUseTargetDatabaseDsn'
+            )}
             disabled={isRunning || !formState.includeLogs}
           />
         </div>
 
         <SwitchRow
           label={t('systemSettings.titles.includeUsageLogs')}
-          description={t('systemSettings.actions.copyTheLogDatabaseTableInAdditionToMain')}
+          description={t(
+            'systemSettings.actions.copyTheLogDatabaseTableInAdditionToMain'
+          )}
           checked={formState.includeLogs}
           disabled={isRunning}
           onCheckedChange={(checked) =>
@@ -390,8 +413,12 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
             <AlertDialogDescription>
               {config.confirmDescription}{' '}
               {formState.force
-                ? t('systemSettings.status.forceOverwriteIsEnabledTargetDataMayBeReplaced')
-                : t('systemSettings.status.targetDatabaseShouldBeEmptyUnlessForceOverwriteIs')}
+                ? t(
+                    'systemSettings.status.forceOverwriteIsEnabledTargetDataMayBeReplaced'
+                  )
+                : t(
+                    'systemSettings.status.targetDatabaseShouldBeEmptyUnlessForceOverwriteIs'
+                  )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -399,7 +426,9 @@ function DatabaseMigrationCard({ config }: { config: MigrationCardConfig }) {
               {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleStart} disabled={isStarting}>
-              {isStarting ? t('systemSettings.tips.starting') : t('systemSettings.actions.confirmAndStart')}
+              {isStarting
+                ? t('systemSettings.tips.starting')
+                : t('systemSettings.actions.confirmAndStart')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -466,7 +495,9 @@ function JobPanel({
     <div className='space-y-3 rounded-lg border p-3'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='min-w-0'>
-          <div className='text-sm font-medium'>{t('systemSettings.fields.taskProgress')}</div>
+          <div className='text-sm font-medium'>
+            {t('systemSettings.fields.taskProgress')}
+          </div>
           <div className='text-muted-foreground text-xs break-all'>
             {t('systemSettings.fields.taskId')}: {job.id}
           </div>
@@ -476,17 +507,28 @@ function JobPanel({
 
       <Progress value={progress} />
       <div className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
-        <span>{t('systemSettings.fields.progress')}: {progress}%</span>
-        <span>{t('systemSettings.fields.currentStep')}: {job.current_step || '-'}</span>
+        <span>
+          {t('systemSettings.fields.progress')}: {progress}%
+        </span>
+        <span>
+          {t('systemSettings.fields.currentStep')}: {job.current_step || '-'}
+        </span>
         <span>
           {t('subscriptions.fields.source')}: {formatDbType(job.source_db_type)}
         </span>
         <span>
-          {t('systemSettings.fields.target')}: {formatDbType(job.target_db_type)}
+          {t('systemSettings.fields.target')}:{' '}
+          {formatDbType(job.target_db_type)}
         </span>
-        <span>{t('systemSettings.fields.startedAt')}: {formatTimestamp(job.started_at)}</span>
+        <span>
+          {t('systemSettings.fields.startedAt')}:{' '}
+          {formatTimestamp(job.started_at)}
+        </span>
         {job.finished_at ? (
-          <span>{t('systemSettings.fields.finishedAt')}: {formatTimestamp(job.finished_at)}</span>
+          <span>
+            {t('systemSettings.fields.finishedAt')}:{' '}
+            {formatTimestamp(job.finished_at)}
+          </span>
         ) : null}
       </div>
 
@@ -502,9 +544,15 @@ function JobPanel({
           <table className='w-full text-sm'>
             <thead className='bg-muted/50 text-muted-foreground'>
               <tr>
-                <th className='px-3 py-2 text-left font-medium'>{t('systemSettings.fields.table')}</th>
-                <th className='px-3 py-2 text-right font-medium'>{t('common.status.copied')}</th>
-                <th className='px-3 py-2 text-right font-medium'>{t('dashboard.fields.total')}</th>
+                <th className='px-3 py-2 text-left font-medium'>
+                  {t('systemSettings.fields.table')}
+                </th>
+                <th className='px-3 py-2 text-right font-medium'>
+                  {t('common.status.copied')}
+                </th>
+                <th className='px-3 py-2 text-right font-medium'>
+                  {t('dashboard.fields.total')}
+                </th>
               </tr>
             </thead>
             <tbody>

@@ -86,7 +86,9 @@ export function ModelBadge(props: ModelBadgeProps) {
         <div className='space-y-2'>
           <div className='flex items-start justify-between gap-3'>
             <span className='text-muted-foreground text-xs'>
-              {t('channels.fields.labelWithColon', { label: t('usageLogs.fields.requestModel') })}
+              {t('channels.fields.labelWithColon', {
+                label: t('usageLogs.fields.requestModel'),
+              })}
             </span>
             <span className='truncate font-mono text-xs font-medium'>
               {props.modelName}
@@ -94,7 +96,9 @@ export function ModelBadge(props: ModelBadgeProps) {
           </div>
           <div className='flex items-start justify-between gap-3'>
             <span className='text-muted-foreground text-xs'>
-              {t('channels.fields.labelWithColon', { label: t('usageLogs.fields.actualModel') })}
+              {t('channels.fields.labelWithColon', {
+                label: t('usageLogs.fields.actualModel'),
+              })}
             </span>
             <span className='truncate font-mono text-xs font-medium'>
               {props.actualModel}

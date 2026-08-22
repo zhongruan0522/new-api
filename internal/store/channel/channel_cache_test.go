@@ -1,0 +1,500 @@
+package channelstore
+
+import (
+	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/channel/constant"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	infradb "github.com/NookMux/NookMux/internal/infra/db"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+	"testing"
+)
+
+func setupChannelCacheTestDB(t *testing.T) {
+	t.Helper()
+
+	oldDB := dbstore.DB
+	oldRedisEnabled := redis.RedisEnabled
+	oldMemoryCacheEnabled := common.MemoryCacheEnabled
+	oldBatchUpdateEnabled := common.BatchUpdateEnabled
+	oldUsingSQLite := infradb.UsingSQLite
+	oldUsingPostgreSQL := infradb.UsingPostgreSQL
+	oldUsingMySQL := infradb.UsingMySQL
+	oldGroup2Model2Channels := group2model2channels
+	oldChannelsIDM := channelsIDM
+
+	redis.RedisEnabled = false
+	common.MemoryCacheEnabled = true
+	common.BatchUpdateEnabled = false
+	infradb.UsingSQLite = true
+	infradb.UsingPostgreSQL = false
+	infradb.UsingMySQL = false
+	dbstore.InitCol()
+
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite test db: %v", err)
+	}
+	if err := db.AutoMigrate(&Channel{}, &Ability{}); err != nil {
+		t.Fatalf("migrate sqlite test db: %v", err)
+	}
+
+	dbstore.DB = db
+	group2model2channels = nil
+	channelsIDM = nil
+
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+		dbstore.DB = oldDB
+		redis.RedisEnabled = oldRedisEnabled
+		common.MemoryCacheEnabled = oldMemoryCacheEnabled
+		common.BatchUpdateEnabled = oldBatchUpdateEnabled
+		infradb.UsingSQLite = oldUsingSQLite
+		infradb.UsingPostgreSQL = oldUsingPostgreSQL
+		infradb.UsingMySQL = oldUsingMySQL
+		dbstore.InitCol()
+		group2model2channels = oldGroup2Model2Channels
+		channelsIDM = oldChannelsIDM
+	})
+}
+
+func createChannelCacheTestChannel(t *testing.T, channel Channel) Channel {
+	t.Helper()
+
+	if channel.Type == 0 {
+		channel.Type = constant.ChannelTypeOpenAI
+	}
+	if channel.Key == "" {
+		channel.Key = "test-key"
+	}
+	if channel.Name == "" {
+		channel.Name = "test-channel"
+	}
+	if channel.Status == 0 {
+		channel.Status = common.ChannelStatusEnabled
+	}
+	if channel.Models == "" {
+		channel.Models = "claude-haiku-4-5-20251001"
+	}
+	if channel.Group == "" {
+		channel.Group = "Coding"
+	}
+	if channel.Priority == nil {
+		priority := int64(0)
+		channel.Priority = &priority
+	}
+	if channel.Weight == nil {
+		weight := uint(1)
+		channel.Weight = &weight
+	}
+
+	if err := dbstore.DB.Create(&channel).Error; err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+	if err := channel.AddAbilities(dbstore.DB); err != nil {
+		t.Fatalf("create abilities: %v", err)
+	}
+	return channel
+}
+
+func channelCacheTestSetting(t *testing.T, setting shared.ChannelSettings) *string {
+	t.Helper()
+
+	data, err := jsonx.Marshal(setting)
+	if err != nil {
+		t.Fatalf("marshal channel setting: %v", err)
+	}
+	value := string(data)
+	return &value
+}
+
+func channelCacheTestStringPtr(value string) *string {
+	return &value
+}
+
+func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-literal",
+		Group:  "vip%,default",
+		Models: "gpt-4",
+	})
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-wildcard-target",
+		Group:  "vip1,default",
+		Models: "gpt-4",
+	})
+
+	channels, err := SearchChannels("", "vip%", "", false, 0, "", "", 0, 100)
+	if err != nil {
+		t.Fatalf("SearchChannels error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Name != "percent-literal" {
+		t.Fatalf("SearchChannels returned %#v, want only literal percent group", channels)
+	}
+}
+
+func TestChannelTagQueriesApplyGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "alpha tagged", Group: "alpha", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta tagged", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta only", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("beta-only")})
+
+	total, err := CountChannelTags(ApplyChannelGroupFilter(dbstore.DB.Model(&Channel{}), "alpha"))
+	if err != nil {
+		t.Fatalf("CountChannelTags error = %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("tag total = %d, want 1", total)
+	}
+
+	tags, err := GetPaginatedChannelTags(ApplyChannelGroupFilter(dbstore.DB.Model(&Channel{}), "alpha"), 0, 20)
+	if err != nil {
+		t.Fatalf("GetPaginatedChannelTags error = %v", err)
+	}
+	if len(tags) != 1 || tags[0] == nil || *tags[0] != "shared" {
+		t.Fatalf("tags = %#v, want only shared", tags)
+	}
+
+	channels, err := GetChannelsByTagWithGroup("shared", "alpha", false, false)
+	if err != nil {
+		t.Fatalf("GetChannelsByTagWithGroup error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Group != "alpha" {
+		t.Fatalf("channels = %#v, want only alpha shared channel", channels)
+	}
+	if channels[0].Key != "" {
+		t.Fatal("expected non-selectAll tag query to omit channel key")
+	}
+}
+
+func TestApplyChannelGroupFilterNormalizesAllAndNull(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "default-channel", Group: "default"})
+	createChannelCacheTestChannel(t, Channel{Name: "vip-channel", Group: "vip"})
+
+	var count int64
+	if err := ApplyChannelGroupFilter(dbstore.DB.Model(&Channel{}), "all").Count(&count).Error; err != nil {
+		t.Fatalf("count all group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("all group count = %d, want 2", count)
+	}
+	if err := ApplyChannelGroupFilter(dbstore.DB.Model(&Channel{}), "null").Count(&count).Error; err != nil {
+		t.Fatalf("count null group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("null group count = %d, want 2", count)
+	}
+}
+
+func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	channel := createChannelCacheTestChannel(t, Channel{})
+
+	InitChannelCache()
+
+	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("initial channel selection failed: %v", err)
+	}
+	if selected == nil || selected.Id != channel.Id {
+		t.Fatalf("initial selected channel = %+v, want channel %d", selected, channel.Id)
+	}
+
+	CacheUpdateChannelStatus(channel.Id, common.ChannelStatusAutoDisabled)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("selection after disable returned error: %v", err)
+	}
+	if selected != nil {
+		t.Fatalf("selected disabled channel %+v", selected)
+	}
+
+	CacheUpdateChannelStatus(channel.Id, common.ChannelStatusEnabled)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("selection after re-enable failed: %v", err)
+	}
+	if selected == nil || selected.Id != channel.Id {
+		t.Fatalf("selected after re-enable = %+v, want channel %d", selected, channel.Id)
+	}
+	if !IsChannelEnabledForGroupModel("Coding", "claude-haiku-4-5-20251001", channel.Id) {
+		t.Fatalf("channel %d was not restored to group/model cache", channel.Id)
+	}
+}
+
+func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	channel := createChannelCacheTestChannel(t, Channel{
+		Key: "key-1\nkey-2",
+		ChannelInfo: ChannelInfo{
+			IsMultiKey:   true,
+			MultiKeySize: 2,
+		},
+	})
+
+	InitChannelCache()
+
+	if !UpdateChannelStatus(channel.Id, "key-1", common.ChannelStatusAutoDisabled, "test disable key 1") {
+		t.Fatalf("disable first key returned false")
+	}
+	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("selection after first key disable failed: %v", err)
+	}
+	if selected == nil || selected.Id != channel.Id {
+		t.Fatalf("channel should remain selectable while one key is enabled, got %+v", selected)
+	}
+
+	if !UpdateChannelStatus(channel.Id, "key-2", common.ChannelStatusAutoDisabled, "test disable key 2") {
+		t.Fatalf("disable second key returned false")
+	}
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("selection after all keys disabled returned error: %v", err)
+	}
+	if selected != nil {
+		t.Fatalf("selected channel with all keys disabled: %+v", selected)
+	}
+
+	if !UpdateChannelStatus(channel.Id, "key-1", common.ChannelStatusEnabled, "") {
+		t.Fatalf("enable first key returned false")
+	}
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
+	if err != nil {
+		t.Fatalf("selection after key re-enable failed: %v", err)
+	}
+	if selected == nil || selected.Id != channel.Id {
+		t.Fatalf("selected after key re-enable = %+v, want channel %d", selected, channel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSetting(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, shared.ChannelSettings{OpenAIWireAPI: shared.OpenAIWireAPIChat}),
+	})
+
+	InitChannelCache()
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		relayconstant.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettingWithoutCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	common.MemoryCacheEnabled = false
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, shared.ChannelSettings{OpenAIWireAPI: shared.OpenAIWireAPIChat}),
+	})
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		relayconstant.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryFallsBackToOnlyChannel(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	channel := createChannelCacheTestChannel(t, Channel{})
+	InitChannelCache()
+
+	for retry := 0; retry <= 20; retry++ {
+		excludeChannelID := 0
+		if retry%2 == 1 {
+			excludeChannelID = channel.Id
+		}
+		selected, err := GetRandomSatisfiedChannelForRetry(
+			"Coding",
+			"claude-haiku-4-5-20251001",
+			retry/2,
+			-1,
+			excludeChannelID,
+			true,
+		)
+		if err != nil {
+			t.Fatalf("retry %d channel selection failed: %v", retry, err)
+		}
+		if selected == nil || selected.Id != channel.Id {
+			t.Fatalf("retry %d selected channel = %+v, want the only eligible channel %d", retry, selected, channel.Id)
+		}
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryFallsBackToOnlyChannelWithoutCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	common.MemoryCacheEnabled = false
+
+	channel := createChannelCacheTestChannel(t, Channel{})
+
+	for retry := 0; retry <= 20; retry++ {
+		excludeChannelID := 0
+		if retry%2 == 1 {
+			excludeChannelID = channel.Id
+		}
+		selected, err := GetRandomSatisfiedChannelForRetry(
+			"Coding",
+			"claude-haiku-4-5-20251001",
+			retry/2,
+			-1,
+			excludeChannelID,
+			true,
+		)
+		if err != nil {
+			t.Fatalf("retry %d channel selection failed: %v", retry, err)
+		}
+		if selected == nil || selected.Id != channel.Id {
+			t.Fatalf("retry %d selected channel = %+v, want the only eligible channel %d", retry, selected, channel.Id)
+		}
+	}
+}
+
+func TestGetRandomSatisfiedChannelHardExclusionDoesNotFallback(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			channel := createChannelCacheTestChannel(t, Channel{})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannel(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				channel.Id,
+			)
+			if err != nil {
+				t.Fatalf("hard-exclusion selection failed: %v", err)
+			}
+			if selected != nil {
+				t.Fatalf("hard-exclusion selected channel = %+v, want nil", selected)
+			}
+		})
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryPrefersAlternativeChannel(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			failed := createChannelCacheTestChannel(t, Channel{Name: "failed"})
+			alternative := createChannelCacheTestChannel(t, Channel{Name: "alternative"})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannelForRetry(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				failed.Id,
+				true,
+			)
+			if err != nil {
+				t.Fatalf("retry channel selection failed: %v", err)
+			}
+			if selected == nil || selected.Id != alternative.Id {
+				t.Fatalf("retry selected channel = %+v, want alternative channel %d", selected, alternative.Id)
+			}
+		})
+	}
+}
+
+func TestGetRandomSatisfiedChannelRetryPrefersLowerPriorityBeforeFailedChannel(t *testing.T) {
+	for _, memoryCacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("memory_cache_%t", memoryCacheEnabled), func(t *testing.T) {
+			setupChannelCacheTestDB(t)
+			common.MemoryCacheEnabled = memoryCacheEnabled
+
+			highPriority := int64(10)
+			lowPriority := int64(0)
+			failed := createChannelCacheTestChannel(t, Channel{Name: "failed-high", Priority: &highPriority})
+			fallback := createChannelCacheTestChannel(t, Channel{Name: "fallback-low", Priority: &lowPriority})
+			if memoryCacheEnabled {
+				InitChannelCache()
+			}
+
+			selected, err := GetRandomSatisfiedChannelForRetry(
+				"Coding",
+				"claude-haiku-4-5-20251001",
+				0,
+				-1,
+				failed.Id,
+				true,
+			)
+			if err != nil {
+				t.Fatalf("retry channel selection failed: %v", err)
+			}
+			if selected == nil || selected.Id != fallback.Id {
+				t.Fatalf("retry selected channel = %+v, want lower-priority channel %d", selected, fallback.Id)
+			}
+		})
+	}
+}

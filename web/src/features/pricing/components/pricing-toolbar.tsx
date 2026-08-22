@@ -187,7 +187,11 @@ export function PricingToolbar(props: PricingToolbarProps) {
             <span className='text-foreground font-semibold tabular-nums'>
               {props.filteredCount.toLocaleString()}
             </span>
-            <span>{props.filteredCount === 1 ? t('common.fields.model') : t('channels.titles.models')}</span>
+            <span>
+              {props.filteredCount === 1
+                ? t('common.fields.model')
+                : t('channels.titles.models')}
+            </span>
             {props.hasActiveFilters && props.totalCount && (
               <span className='text-muted-foreground/60 text-xs'>
                 / {props.totalCount.toLocaleString()}
@@ -230,7 +234,10 @@ export function PricingToolbar(props: PricingToolbarProps) {
               }
             >
               <ArrowUpDown className='size-3.5' />
-              <span>{sortLabels[props.sortBy as SortOption] || t('pricing.fields.sortOrder')}</span>
+              <span>
+                {sortLabels[props.sortBy as SortOption] ||
+                  t('pricing.fields.sortOrder')}
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-44'>
               {Object.entries(sortLabels).map(([value, label]) => (
@@ -279,7 +286,9 @@ export function PricingToolbar(props: PricingToolbarProps) {
           <SheetHeader className={sideDrawerHeaderClassName()}>
             <SheetTitle>{t('dashboard.actions.filter')}</SheetTitle>
             <SheetDescription>
-              {t('pricing.actions.filterModelsByProviderGroupTypeEndpointAndTags')}
+              {t(
+                'pricing.actions.filterModelsByProviderGroupTypeEndpointAndTags'
+              )}
             </SheetDescription>
           </SheetHeader>
           <div className={sideDrawerFormClassName('gap-0')}>

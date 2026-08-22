@@ -52,7 +52,9 @@ export function PromptDialog({
         <DialogHeader>
           <DialogTitle>{t('usageLogs.titles.promptDetails')}</DialogTitle>
           <DialogDescription>
-            {t('usageLogs.actions.viewTheCompletePromptAndItsEnglishTranslation')}
+            {t(
+              'usageLogs.actions.viewTheCompletePromptAndItsEnglishTranslation'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -60,7 +62,9 @@ export function PromptDialog({
           <div className='space-y-4 py-4'>
             {/* Original Prompt */}
             <div className='space-y-2'>
-              <Label className='text-sm font-semibold'>{t('keyQuery.fields.prompt')}</Label>
+              <Label className='text-sm font-semibold'>
+                {t('keyQuery.fields.prompt')}
+              </Label>
               <div className='bg-muted/50 relative rounded-md border p-3'>
                 <Button
                   variant='ghost'

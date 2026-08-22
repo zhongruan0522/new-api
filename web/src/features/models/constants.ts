@@ -108,8 +108,14 @@ export function getDeploymentStatusOptions(t: TFunction) {
     { label: t('common.fields.running73989d'), value: 'running' },
     { label: t('common.fields.completed'), value: 'completed' },
     { label: t('channels.errors.failed'), value: 'failed' },
-    { label: t('models.fields.deploymentRequested'), value: 'deployment requested' },
-    { label: t('models.fields.terminationRequested'), value: 'termination requested' },
+    {
+      label: t('models.fields.deploymentRequested'),
+      value: 'deployment requested',
+    },
+    {
+      label: t('models.fields.terminationRequested'),
+      value: 'termination requested',
+    },
     { label: t('models.fields.destroyed'), value: 'destroyed' },
   ] as const
 }

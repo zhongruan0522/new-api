@@ -46,7 +46,7 @@ PORT=3000
 
 ### Build Frontend Assets
 
-The backend `main.go` embeds `web/dist/index.html`, so you must build the frontend at least once before running or compiling the backend:
+The backend entry point lives in `cmd/server/`, and `web/embed.go` embeds `web/dist/index.html` via Go `embed`, so you must build the frontend at least once before running or compiling the backend:
 
 ```bash
 cd web
@@ -58,13 +58,13 @@ cd ..
 ### Run the Backend
 
 ```bash
-go run main.go
+go run ./cmd/server
 ```
 
 Or build and run it:
 
 ```bash
-go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux
+go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server
 ./NookMux --port 3000 --log-dir ./logs
 ```
 
@@ -96,12 +96,12 @@ bun run build:check
 ### Backend API Only
 
 1. Run `cd web && bun install && bun run build` once to make sure `web/dist` exists.
-2. Go back to the project root and run `go run main.go`.
+2. Go back to the project root and run `go run ./cmd/server`.
 3. Visit `http://localhost:3000` or call `/api` and `/v1` directly.
 
 ### Develop Frontend and Backend Together
 
-1. Terminal A: run `go run main.go` from the project root.
+1. Terminal A: run `go run ./cmd/server` from the project root.
 2. Terminal B: run `cd web && bun run dev`.
 3. Open the frontend dev server in your browser. API requests will be proxied to the backend.
 
@@ -117,21 +117,22 @@ make test-backend
 
 ```text
 NookMux/
-├─ main.go                 # Backend entry, embeds web/dist
+├─ cmd/server/             # Backend entry point (main.go)
+├─ internal/app/           # Bootstrap, gin assembly, webdist facade
+├─ internal/httpapi/       # HTTP boundary: router + middleware + controller (per-resource subpackages)
+├─ internal/store/         # GORM models, migrations, database access (per-resource subpackages)
+├─ internal/domain/        # Domain services: billing, channel, audit, rankings, ticket, sensitive, group
+├─ internal/infra/         # Infrastructure: db, redis, cache, email, security, runtime, log, httpclient, media, tokenizer, notify, payment, passkey, custom_voice
+├─ internal/relay/         # AI protocol translation and vendor adapters
+├─ internal/config/        # System, operation, model, and ratio settings (formerly setting/)
+├─ internal/common/        # Kernel of business globals and misc utilities (ContextKey registry, SysLog, GetEnvOrDefault, etc.)
+├─ internal/i18n/          # Backend response message translations
+├─ pkg/                    # Reusable dependency-free libraries (jsonx, cachex)
 ├─ Dockerfile              # Image build, requires web/dist/index.html to exist
 ├─ docker-compose.yml      # Default SQLite + Redis deployment config
 ├─ nookmux.service         # systemd sample service
-├─ common/                 # Shared utilities, env vars, cache, static file service
-├─ router/                 # API, relay, dashboard, web static routes
-├─ controller/             # HTTP boundary, request validation, response shaping
-├─ middleware/             # Auth, rate limiting, logging, dispatch
-├─ model/                  # GORM models, migrations, database access
-├─ service/                # Business logic, external requests, audit, and more
-├─ relay/                  # AI protocol translation and vendor adapters
-├─ setting/                # System, operation, model, and ratio settings
-├─ i18n/                   # Backend response message translations
 ├─ docs/                   # Documentation
-└─ web/                    # React 19 + TypeScript + Rsbuild frontend
+└─ web/                    # React 19 + TypeScript + Rsbuild frontend; embed declaration lives in web/embed.go
 ```
 
 ## Debugging Tips
@@ -139,7 +140,7 @@ NookMux/
 ### Backend Logs
 
 ```bash
-go run main.go --log-dir ./logs
+go run ./cmd/server --log-dir ./logs
 ```
 
 ### Frontend Type Checking

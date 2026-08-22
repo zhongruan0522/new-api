@@ -45,7 +45,8 @@ export function MultiSelect({
   className,
 }: MultiSelectProps) {
   const { t } = useTranslation()
-  const resolvedPlaceholder = placeholder ?? t('common.placeholders.selectItems')
+  const resolvedPlaceholder =
+    placeholder ?? t('common.placeholders.selectItems')
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState('')

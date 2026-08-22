@@ -29,18 +29,26 @@ import type {
   CopyChannelParams,
   CopyChannelResponse,
   FetchModelsResponse,
+  FetchProvidersResponse,
   GetChannelResponse,
   GetChannelsParams,
   GetChannelsResponse,
+  GlmAccountReportResponse,
+  GlmPlanActivityResponse,
+  GlmContactResponse,
+  GlmResetCardListResponse,
+  GlmResetCardUseParams,
+  GlmResetCardUseResponse,
+  GlmRiskResponse,
+  GlmUsageParams,
   MultiKeyManageParams,
   MultiKeyStatusResponse,
   ProxyTestResponse,
-  GlmRiskResponse,
-  GlmUsageParams,
   PlanQuotaResponse,
   SearchChannelsParams,
   SearchChannelsResponse,
   TagOperationParams,
+  UpdateChannelParams,
 } from './types'
 
 // Extended API config types
@@ -139,7 +147,7 @@ export async function createChannel(
  */
 export async function updateChannel(
   id: number,
-  data: Partial<Channel>
+  data: UpdateChannelParams
 ): Promise<{ success: boolean; message?: string; data?: Channel }> {
   const res = await api.put('/api/channel/', { id, ...data })
   return res.data
@@ -214,9 +222,7 @@ export async function updateChannelBalance(
 /**
  * Test proxy connectivity by resolving the exit IP through the given proxy URL.
  */
-export async function testProxy(
-  proxy: string
-): Promise<ProxyTestResponse> {
+export async function testProxy(proxy: string): Promise<ProxyTestResponse> {
   const config: ExtendedApiConfig = { skipBusinessError: true }
   const res = await api.post('/api/channel/test_proxy', { proxy }, config)
   return res.data
@@ -229,6 +235,16 @@ export async function fetchUpstreamModels(
   id: number
 ): Promise<FetchModelsResponse> {
   const res = await api.get(`/api/channel/fetch_models/${id}`)
+  return res.data
+}
+
+/**
+ * Fetch OpenRouter provider list through an existing channel (uses its proxy)
+ */
+export async function fetchUpstreamProviders(
+  id: number
+): Promise<FetchProvidersResponse> {
+  const res = await api.get(`/api/channel/fetch_providers/${id}`)
   return res.data
 }
 
@@ -361,6 +377,80 @@ export async function getGlmRiskStatus(
     disableDuplicate: true,
   }
   const res = await api.get(`/api/channel/plan/glm/risk/${channelId}`, config)
+  return res.data
+}
+
+export async function getGlmContactInfo(
+  channelId: number
+): Promise<GlmContactResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(`/api/channel/glm/contact/${channelId}`, config)
+  return res.data
+}
+
+/**
+ * Query Zhipu GLM-4V account report (balance / recharge / gift / spend).
+ * The request is sent server-side with the channel key stored in DB;
+ * the response also carries the USD-converted balance persisted for the table.
+ */
+export async function getGlmAccountReport(
+  channelId: number
+): Promise<GlmAccountReportResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/glm/account_report/${channelId}`,
+    config
+  )
+  return res.data
+}
+
+export async function getGlmPlanActivity(
+  channelId: number
+): Promise<GlmPlanActivityResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/plan/glm/activity/${channelId}`,
+    config
+  )
+  return res.data
+}
+
+export async function getGlmResetCards(
+  channelId: number
+): Promise<GlmResetCardListResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/plan/glm/reset_cards/${channelId}`,
+    config
+  )
+  return res.data
+}
+
+export async function applyGlmResetCard(
+  channelId: number,
+  params: GlmResetCardUseParams
+): Promise<GlmResetCardUseResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.post(
+    `/api/channel/plan/glm/reset_cards/${channelId}/use`,
+    params,
+    config
+  )
   return res.data
 }
 
@@ -531,6 +621,18 @@ export async function fetchModels(data: {
   key: string
 }): Promise<FetchModelsResponse> {
   const res = await api.post('/api/channel/fetch_models', data)
+  return res.data
+}
+
+/**
+ * Fetch OpenRouter provider list from a custom base URL (create-mode preview,
+ * before the channel row exists)
+ */
+export async function fetchProviders(data: {
+  base_url: string
+  type: number
+}): Promise<FetchProvidersResponse> {
+  const res = await api.post('/api/channel/fetch_providers', data)
   return res.data
 }
 

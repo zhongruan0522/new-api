@@ -56,7 +56,9 @@ export function ResetPasswordConfirm({
 
   async function handleSubmit() {
     if (!isValidResetLink || !email || !token) {
-      toast.error(t('auth.errors.invalidResetLinkPleaseRequestANewPasswordReset'))
+      toast.error(
+        t('auth.errors.invalidResetLinkPleaseRequestANewPasswordReset')
+      )
       return
     }
 
@@ -121,7 +123,9 @@ export function ResetPasswordConfirm({
           {!isValidResetLink && (
             <Alert variant='destructive'>
               <AlertDescription>
-                {t('auth.errors.invalidResetLinkPleaseRequestANewPasswordReset896797')}
+                {t(
+                  'auth.errors.invalidResetLinkPleaseRequestANewPasswordReset896797'
+                )}
               </AlertDescription>
             </Alert>
           )}

@@ -94,7 +94,9 @@ export function SensitiveWordsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.actions.enableFiltering')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.actions.enableFiltering')}
+                    </FormLabel>
                     <FormDescription>
                       {t(
                         'systemSettings.tips.blocksMessagesWhenSensitiveKeywordsAreDetected'
@@ -117,7 +119,9 @@ export function SensitiveWordsSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.inspectUserPrompts')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.inspectUserPrompts')}
+                    </FormLabel>
                     <FormDescription>
                       {t(
                         'systemSettings.status.enabledPromptsAreScannedBeforeReachingUpstreamModels'
@@ -140,11 +144,15 @@ export function SensitiveWordsSection({
             name='SensitiveWords'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.blockedKeywords')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.blockedKeywords')}
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     rows={12}
-                    placeholder={t('systemSettings.placeholders.enterOneKeywordPerLine')}
+                    placeholder={t(
+                      'systemSettings.placeholders.enterOneKeywordPerLine'
+                    )}
                     {...field}
                   />
                 </FormControl>

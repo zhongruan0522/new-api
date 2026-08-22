@@ -51,9 +51,7 @@ interface ChannelsFilterBarProps<TData> {
   groupOptions: ChannelFilterOption[]
 }
 
-export function ChannelsFilterBar<TData>(
-  props: ChannelsFilterBarProps<TData>
-) {
+export function ChannelsFilterBar<TData>(props: ChannelsFilterBarProps<TData>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -65,12 +63,8 @@ export function ChannelsFilterBar<TData>(
   const [modelInput, setModelInput] = useState(searchParams.model ?? '')
   const [tagInput, setTagInput] = useState(searchParams.tag ?? '')
   const [typeInput, setTypeInput] = useState(searchParams.type?.[0] ?? '')
-  const [statusInput, setStatusInput] = useState(
-    searchParams.status?.[0] ?? ''
-  )
-  const [groupInput, setGroupInput] = useState(
-    searchParams.group?.[0] ?? ''
-  )
+  const [statusInput, setStatusInput] = useState(searchParams.status?.[0] ?? '')
+  const [groupInput, setGroupInput] = useState(searchParams.group?.[0] ?? '')
 
   // Sync local state when URL search params change (e.g. browser back/forward)
   useEffect(() => {

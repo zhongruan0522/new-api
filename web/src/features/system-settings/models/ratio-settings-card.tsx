@@ -617,9 +617,7 @@ export function RatioSettingsCard({
         open={toolBillingConfirmOpen}
         onOpenChange={setToolBillingConfirmOpen}
         title={t('systemSettings.actions.resetAllToolBillingRules')}
-        desc={t(
-          'systemSettings.tips.clearToolBillingRulesAndRestoreDefaults'
-        )}
+        desc={t('systemSettings.tips.clearToolBillingRulesAndRestoreDefaults')}
         destructive
         isLoading={resetToolBillingMutation.isPending}
         handleConfirm={handleConfirmResetToolBilling}

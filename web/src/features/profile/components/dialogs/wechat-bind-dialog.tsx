@@ -56,9 +56,7 @@ export function WeChatBindDialog({
           <Alert>
             <QrCode className='h-4 w-4' />
             <AlertDescription>
-              {t(
-                'profile.tips.pleaseUseWeChatSScanQrCodeFeatureTo'
-              )}
+              {t('profile.tips.pleaseUseWeChatSScanQrCodeFeatureTo')}
             </AlertDescription>
           </Alert>
 

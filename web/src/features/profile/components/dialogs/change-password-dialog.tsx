@@ -80,7 +80,9 @@ export function ChangePasswordDialog({
     }
 
     if (formData.originalPassword === formData.newPassword) {
-      toast.error(t('profile.errors.newPasswordMustBeDifferentFromCurrentPassword'))
+      toast.error(
+        t('profile.errors.newPasswordMustBeDifferentFromCurrentPassword')
+      )
       return
     }
 
@@ -105,7 +107,9 @@ export function ChangePasswordDialog({
           confirmPassword: '',
         })
       } else {
-        toast.error(response.message || t('profile.errors.failedToChangePassword'))
+        toast.error(
+          response.message || t('profile.errors.failedToChangePassword')
+        )
       }
     } catch (_error) {
       toast.error(t('profile.errors.failedToChangePassword'))
@@ -128,7 +132,9 @@ export function ChangePasswordDialog({
 
           <div className='my-6 space-y-4'>
             <div className='space-y-2'>
-              <Label htmlFor='currentPassword'>{t('profile.fields.currentPassword')}</Label>
+              <Label htmlFor='currentPassword'>
+                {t('profile.fields.currentPassword')}
+              </Label>
               <PasswordInput
                 id='currentPassword'
                 value={formData.originalPassword}
@@ -142,7 +148,9 @@ export function ChangePasswordDialog({
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='newPassword'>{t('auth.fields.newPassword')}</Label>
+              <Label htmlFor='newPassword'>
+                {t('auth.fields.newPassword')}
+              </Label>
               <PasswordInput
                 id='newPassword'
                 value={formData.newPassword}
@@ -185,7 +193,9 @@ export function ChangePasswordDialog({
             </Button>
             <Button type='submit' disabled={loading}>
               {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {loading ? t('profile.tips.changing') : t('profile.fields.changePassword')}
+              {loading
+                ? t('profile.tips.changing')
+                : t('profile.fields.changePassword')}
             </Button>
           </DialogFooter>
         </form>

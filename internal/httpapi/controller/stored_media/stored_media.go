@@ -1,0 +1,397 @@
+package storedmediacontroller
+
+import (
+	"errors"
+	"fmt"
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/system"
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/i18n"
+	"github.com/NookMux/NookMux/internal/infra/security"
+	"github.com/NookMux/NookMux/internal/store/stored_media"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type storedMediaListRow struct {
+	Id        string `json:"id"`
+	MediaType string `json:"media_type"`
+	CreatedAt int64  `json:"created_at"`
+	MimeType  string `json:"mime_type"`
+	SizeBytes int    `json:"size_bytes"`
+	Url       string `json:"url"`
+}
+
+type storedMediaDetailResponse struct {
+	Id        string `json:"id"`
+	MediaType string `json:"media_type"`
+	CreatedAt int64  `json:"created_at"`
+	MimeType  string `json:"mime_type"`
+	SizeBytes int    `json:"size_bytes"`
+	Url       string `json:"url"`
+}
+
+type storedMediaBatchItem struct {
+	Id        string `json:"id"`
+	MediaType string `json:"media_type"`
+}
+
+type storedMediaBatchRequest struct {
+	Items []storedMediaBatchItem `json:"items"`
+}
+
+const defaultStoredMediaSignedURLTTL = time.Hour
+
+func GetAllStoredMedia(c *gin.Context) {
+	pageInfo := common.GetPageQuery(c)
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	items, total, err := storedmediastore.GetAllStoredMedia(c.Request.Context(), startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.SysError("get all stored media failed: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+
+	rows := make([]storedMediaListRow, 0, len(items))
+	for i := range items {
+		rows = append(rows, storedMediaListRow{
+			Id:        items[i].Id,
+			MediaType: items[i].MediaType,
+			CreatedAt: items[i].CreatedAt,
+			MimeType:  items[i].MimeType,
+			SizeBytes: items[i].SizeBytes,
+			Url:       buildStoredMediaURL(c, items[i].MediaType, items[i].Id),
+		})
+	}
+
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(rows)
+	httpapi.ApiSuccess(c, pageInfo)
+}
+
+func GetSelfStoredMedia(c *gin.Context) {
+	pageInfo := common.GetPageQuery(c)
+	userId := c.GetInt("id")
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	items, total, err := storedmediastore.GetUserStoredMedia(c.Request.Context(), userId, startTimestamp, endTimestamp, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.SysError("get user stored media failed: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+
+	rows := make([]storedMediaListRow, 0, len(items))
+	for i := range items {
+		rows = append(rows, storedMediaListRow{
+			Id:        items[i].Id,
+			MediaType: items[i].MediaType,
+			CreatedAt: items[i].CreatedAt,
+			MimeType:  items[i].MimeType,
+			SizeBytes: items[i].SizeBytes,
+			Url:       buildStoredMediaURL(c, items[i].MediaType, items[i].Id),
+		})
+	}
+
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(rows)
+	httpapi.ApiSuccess(c, pageInfo)
+}
+
+func GetStoredMediaDetail(c *gin.Context) {
+	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
+		return
+	}
+	if mediaType != "image" && mediaType != "video" {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
+		return
+	}
+
+	userId := c.GetInt("id")
+	role := c.GetInt("role")
+	isAdminUser := role >= common.RoleAdminUser
+
+	if mediaType == "image" {
+		meta, err := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				return
+			}
+			common.SysError("get stored image meta failed: " + err.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		if !isAdminUser && meta.UserId != userId {
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			return
+		}
+
+		img, err := storedmediastore.GetStoredImageByID(c.Request.Context(), id)
+		if err != nil {
+			common.SysError("get stored image failed: " + err.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": storedMediaDetailResponse{
+				Id:        img.Id,
+				MediaType: "image",
+				CreatedAt: img.CreatedAt,
+				MimeType:  img.MimeType,
+				SizeBytes: img.SizeBytes,
+				Url:       buildStoredMediaURL(c, "image", img.Id),
+			},
+		})
+		return
+	}
+
+	meta, err := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+			return
+		}
+		common.SysError("get stored video meta failed: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	if !isAdminUser && meta.UserId != userId {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+		return
+	}
+
+	v, err := storedmediastore.GetStoredVideoByID(c.Request.Context(), id)
+	if err != nil {
+		common.SysError("get stored video failed: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": storedMediaDetailResponse{
+			Id:        v.Id,
+			MediaType: "video",
+			CreatedAt: v.CreatedAt,
+			MimeType:  v.MimeType,
+			SizeBytes: v.SizeBytes,
+			Url:       buildStoredMediaURL(c, "video", v.Id),
+		},
+	})
+}
+
+func DeleteStoredMedia(c *gin.Context) {
+	mediaType := strings.TrimSpace(strings.ToLower(c.Param("media_type")))
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaIDRequired)
+		return
+	}
+	if mediaType != "image" && mediaType != "video" {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaMediaTypeInvalid)
+		return
+	}
+
+	userId := c.GetInt("id")
+	role := c.GetInt("role")
+	isAdminUser := role >= common.RoleAdminUser
+
+	var deleted int64
+	var err error
+
+	if mediaType == "image" {
+		meta, metaErr := storedmediastore.GetStoredImageMetaByID(c.Request.Context(), id)
+		if metaErr != nil {
+			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				return
+			}
+			common.SysError("get stored image meta failed: " + metaErr.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		if !isAdminUser && meta.UserId != userId {
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			return
+		}
+		if isAdminUser {
+			deleted, err = storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, 0)
+		} else {
+			deleted, err = storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), []string{id}, userId)
+		}
+	} else {
+		meta, metaErr := storedmediastore.GetStoredVideoMetaByID(c.Request.Context(), id)
+		if metaErr != nil {
+			if errors.Is(metaErr, gorm.ErrRecordNotFound) {
+				httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNotFound)
+				return
+			}
+			common.SysError("get stored video meta failed: " + metaErr.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		if !isAdminUser && meta.UserId != userId {
+			httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaForbidden)
+			return
+		}
+		if isAdminUser {
+			deleted, err = storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, 0)
+		} else {
+			deleted, err = storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), []string{id}, userId)
+		}
+	}
+
+	if err != nil {
+		common.SysError("delete stored media failed: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    deleted,
+	})
+}
+
+func DeleteStoredMediaBatch(c *gin.Context) {
+	req := storedMediaBatchRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.Items) == 0 {
+		httpapi.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+
+	userId := c.GetInt("id")
+	role := c.GetInt("role")
+	isAdminUser := role >= common.RoleAdminUser
+
+	imageIDs := make([]string, 0, len(req.Items))
+	videoIDs := make([]string, 0, len(req.Items))
+
+	for i := range req.Items {
+		id := strings.TrimSpace(req.Items[i].Id)
+		typ := strings.TrimSpace(strings.ToLower(req.Items[i].MediaType))
+		if id == "" {
+			continue
+		}
+		switch typ {
+		case "image":
+			imageIDs = append(imageIDs, id)
+		case "video":
+			videoIDs = append(videoIDs, id)
+		default:
+			// ignore unknown types
+		}
+	}
+
+	if len(imageIDs) == 0 && len(videoIDs) == 0 {
+		httpapi.ApiErrorI18n(c, i18n.MsgStoredMediaNoValidIDs)
+		return
+	}
+
+	var totalDeleted int64 = 0
+
+	imgUser := userId
+	videoUser := userId
+	if isAdminUser {
+		imgUser = 0
+		videoUser = 0
+	}
+
+	if len(imageIDs) > 0 {
+		n, err := storedmediastore.DeleteStoredImagesByIDs(c.Request.Context(), imageIDs, imgUser)
+		if err != nil {
+			common.SysError("batch delete stored images failed: " + err.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		totalDeleted += n
+	}
+	if len(videoIDs) > 0 {
+		n, err := storedmediastore.DeleteStoredVideosByIDs(c.Request.Context(), videoIDs, videoUser)
+		if err != nil {
+			common.SysError("batch delete stored videos failed: " + err.Error())
+			httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
+			return
+		}
+		totalDeleted += n
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    totalDeleted,
+	})
+}
+
+func buildStoredMediaURL(c *gin.Context, mediaType string, id string) string {
+	mediaType = strings.TrimSpace(strings.ToLower(mediaType))
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return ""
+	}
+
+	var scope string
+	switch mediaType {
+	case "image":
+		scope = "stored_image"
+	case "video":
+		scope = "stored_video"
+	default:
+		return ""
+	}
+
+	exp := time.Now().Add(defaultStoredMediaSignedURLTTL).Unix()
+	sig := security.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	path := fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", mediaType, url.PathEscape(id), exp, sig)
+
+	base := strings.TrimRight(strings.TrimSpace(system.ServerAddress), "/")
+	if base == "" {
+		base = guessBaseURLFromRequest(c)
+	}
+	if base == "" {
+		return path
+	}
+	return base + path
+}
+
+func guessBaseURLFromRequest(c *gin.Context) string {
+	if c == nil || c.Request == nil {
+		return ""
+	}
+
+	proto := strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Proto"), ",")[0])
+	if proto == "" {
+		if c.Request.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+
+	host := strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Host"), ",")[0])
+	if host == "" {
+		host = c.Request.Host
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+
+	return proto + "://" + host
+}

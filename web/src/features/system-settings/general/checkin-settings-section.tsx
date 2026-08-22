@@ -136,7 +136,9 @@ export function CheckinSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableCheckInFeature')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableCheckInFeature')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.allowUsersToCheckInDailyForRandomQuota'
@@ -161,7 +163,9 @@ export function CheckinSettingsSection({
                 name='minQuota'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.minimumCheckInQuota')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.minimumCheckInQuota')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -172,9 +176,13 @@ export function CheckinSettingsSection({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.minimumQuotaAmountAwardedForCheckIn')}
+                      {t(
+                        'systemSettings.tips.minimumQuotaAmountAwardedForCheckIn'
+                      )}
                       {' · '}
-                      {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
+                      {t('systemSettings.fields.displayedInUnit', {
+                        unit: quotaUnitLabel,
+                      })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -186,20 +194,28 @@ export function CheckinSettingsSection({
                 name='maxQuota'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.maximumCheckInQuota')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.maximumCheckInQuota')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
                         min={0}
                         step='any'
-                        placeholder={t('systemSettings.placeholders.value10000')}
+                        placeholder={t(
+                          'systemSettings.placeholders.value10000'
+                        )}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.maximumQuotaAmountAwardedForCheckIn')}
+                      {t(
+                        'systemSettings.tips.maximumQuotaAmountAwardedForCheckIn'
+                      )}
                       {' · '}
-                      {t('systemSettings.fields.displayedInUnit', { unit: quotaUnitLabel })}
+                      {t('systemSettings.fields.displayedInUnit', {
+                        unit: quotaUnitLabel,
+                      })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

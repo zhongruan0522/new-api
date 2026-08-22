@@ -237,7 +237,9 @@ export function PaymentMethodsVisualEditor({
               }
             >
               <Lightbulb className='h-4 w-4 sm:mr-2' />
-              <span className='sm:inline'>{t('systemSettings.fields.templates')}</span>
+              <span className='sm:inline'>
+                {t('systemSettings.fields.templates')}
+              </span>
             </PopoverTrigger>
             <PopoverContent className='w-60'>
               <div className='space-y-2'>
@@ -275,7 +277,9 @@ export function PaymentMethodsVisualEditor({
             className='flex-1 sm:flex-none'
           >
             <Plus className='h-4 w-4 sm:mr-2' />
-            <span className='sm:inline'>{t('systemSettings.actions.addMethod')}</span>
+            <span className='sm:inline'>
+              {t('systemSettings.actions.addMethod')}
+            </span>
           </Button>
         </div>
       </div>
@@ -284,9 +288,7 @@ export function PaymentMethodsVisualEditor({
         <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm'>
           {searchText
             ? t('systemSettings.tips.noPaymentMethodsMatchYourSearch')
-            : t(
-                'common.tips.noPaymentMethodsConfiguredClickAddMethodOrUse'
-              )}
+            : t('common.tips.noPaymentMethodsConfiguredClickAddMethodOrUse')}
         </div>
       ) : (
         <div className='rounded-md border'>
@@ -299,7 +301,9 @@ export function PaymentMethodsVisualEditor({
                   <TableHead>{t('channels.fields.type')}</TableHead>
                   <TableHead>{t('systemSettings.fields.color')}</TableHead>
                   <TableHead>{t('systemSettings.fields.minTopUp')}</TableHead>
-                  <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
+                  <TableHead className='text-right'>
+                    {t('channels.fields.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -417,7 +421,9 @@ export function PaymentMethodsVisualEditor({
                   <div className='space-y-2 text-sm'>
                     <div className='flex items-center gap-2'>
                       <span className='text-muted-foreground min-w-20'>
-                        {t('channels.fields.labelWithColon', { label: t('systemSettings.fields.color') })}
+                        {t('channels.fields.labelWithColon', {
+                          label: t('systemSettings.fields.color'),
+                        })}
                       </span>
                       <div className='flex items-center gap-2'>
                         {colorPreview && (
@@ -434,7 +440,9 @@ export function PaymentMethodsVisualEditor({
                     {method.min_topup && (
                       <div className='flex items-center gap-2'>
                         <span className='text-muted-foreground min-w-20'>
-                          {t('channels.fields.labelWithColon', { label: t('systemSettings.fields.minTopUp') })}
+                          {t('channels.fields.labelWithColon', {
+                            label: t('systemSettings.fields.minTopUp'),
+                          })}
                         </span>
                         <span className='font-mono'>{method.min_topup}</span>
                       </div>

@@ -102,7 +102,9 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
   }
 
   return (
-    <SettingsSection title={t('systemSettings.titles.globalModelConfiguration')}>
+    <SettingsSection
+      title={t('systemSettings.titles.globalModelConfiguration')}
+    >
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
@@ -117,7 +119,9 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.keepAlivePing')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.keepAlivePing')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.status.periodicallySendPingFramesToKeepStreamingConnectionsActive'
@@ -139,7 +143,9 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
             name='general_setting.ping_interval_seconds'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.pingIntervalSeconds')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.pingIntervalSeconds')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     type='number'

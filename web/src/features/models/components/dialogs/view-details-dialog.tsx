@@ -157,7 +157,8 @@ export function ViewDetailsDialog({
             </div>
           ) : !detailsRes?.success ? (
             <div className='text-muted-foreground py-10 text-center text-sm'>
-              {detailsRes?.message || t('models.errors.failedToFetchDeploymentDetails')}
+              {detailsRes?.message ||
+                t('models.errors.failedToFetchDeploymentDetails')}
             </div>
           ) : (
             <>
@@ -235,7 +236,9 @@ export function ViewDetailsDialog({
                               {id}
                             </div>
                             <div className='text-muted-foreground text-xs'>
-                              {status ? `${t('channels.fields.status')}: ${status}` : ''}
+                              {status
+                                ? `${t('channels.fields.status')}: ${status}`
+                                : ''}
                             </div>
                           </div>
                           {url ? (

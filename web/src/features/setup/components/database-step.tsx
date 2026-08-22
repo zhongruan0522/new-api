@@ -36,14 +36,12 @@ const DATABASE_META: Record<
 > = {
   sqlite: {
     label: 'SQLite',
-    descriptionKey:
-      'common.tips.sqliteStoresAllDataInASingleFileMake',
+    descriptionKey: 'common.tips.sqliteStoresAllDataInASingleFileMake',
     variant: 'warning',
   },
   mysql: {
     label: 'MySQL',
-    descriptionKey:
-      'common.tips.mySqlIsAProductionReadyRelationalDatabaseKeep',
+    descriptionKey: 'common.tips.mySqlIsAProductionReadyRelationalDatabaseKeep',
     variant: 'success',
   },
   postgres: {
@@ -123,9 +121,7 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
             )}
             {isElectron && !electronDataDir && (
               <p className='text-muted-foreground mt-3 text-xs'>
-                {t(
-                  'setup.tips.dataIsStoredLocallyOnThisDeviceUseSystem'
-                )}
+                {t('setup.tips.dataIsStoredLocallyOnThisDeviceUseSystem')}
               </p>
             )}
           </AlertDescription>
@@ -139,9 +135,7 @@ export function DatabaseStep({ status }: DatabaseStepProps) {
             {t('setup.fields.mySqlDetected')}
           </AlertTitle>
           <AlertDescription>
-            {t(
-              'setup.tips.mySqlIsProductionReadyEnsureAutomatedBackupsAnd'
-            )}
+            {t('setup.tips.mySqlIsProductionReadyEnsureAutomatedBackupsAnd')}
           </AlertDescription>
         </Alert>
       )}

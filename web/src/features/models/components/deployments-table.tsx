@@ -72,9 +72,9 @@ export function DeploymentsTable() {
     pagination: {
       pageKey: 'dPage',
       pageSizeKey: 'dPageSize',
-     defaultPage: 1,
-     defaultPageSize: isMobile ? 10 : 20,
-   },
+      defaultPage: 1,
+      defaultPageSize: isMobile ? 10 : 20,
+    },
     globalFilter: { enabled: true, key: 'dFilter' },
     columnFilters: [
       { columnId: 'status', searchKey: 'dStatus', type: 'array' },
@@ -159,7 +159,9 @@ export function DeploymentsTable() {
         toast.error(res?.message || t('minimax.actions.deleteFailed'))
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('minimax.actions.deleteFailed'))
+      toast.error(
+        err instanceof Error ? err.message : t('minimax.actions.deleteFailed')
+      )
     } finally {
       setIsDeleting(false)
       setDeleteOpen(false)
@@ -303,17 +305,16 @@ export function DeploymentsTable() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('channels.actions.confirmDelete')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('channels.actions.confirmDelete')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t(
-                'common.errors.sureYouWantToDeleteDeploymentNameThisAction',
-                {
-                  name:
-                    deleteTarget?.container_name ||
-                    deleteTarget?.deployment_name ||
-                    deleteTarget?.id,
-                }
-              )}
+              {t('common.errors.sureYouWantToDeleteDeploymentNameThisAction', {
+                name:
+                  deleteTarget?.container_name ||
+                  deleteTarget?.deployment_name ||
+                  deleteTarget?.id,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -325,7 +326,9 @@ export function DeploymentsTable() {
               disabled={isDeleting}
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
-              {isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
+              {isDeleting
+                ? t('keys.tips.deleting')
+                : t('common.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

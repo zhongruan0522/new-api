@@ -20,8 +20,8 @@ import type { ContentSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 import { AnnouncementsSection } from './announcements-section'
 import { ApiInfoSection } from './api-info-section'
-import { DashboardSection } from './dashboard-section'
 import { DashboardConfigSection } from './dashboard-config-section'
+import { DashboardSection } from './dashboard-section'
 import { FAQSection } from './faq-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
 import { UsageLogFieldsSection } from './usage-log-fields-section'
@@ -62,9 +62,7 @@ const CONTENT_SECTIONS = [
     id: 'announcements',
     titleKey: 'dashboard.fields.announcements',
     build: (settings: ContentSettings) => (
-      <AnnouncementsSection
-        data={settings['console_setting.announcements']}
-      />
+      <AnnouncementsSection data={settings['console_setting.announcements']} />
     ),
   },
   {
@@ -85,7 +83,9 @@ const CONTENT_SECTIONS = [
     id: 'uptime-kuma',
     titleKey: 'systemSettings.fields.uptimeKuma',
     build: (settings: ContentSettings) => (
-      <UptimeKumaSection data={settings['console_setting.uptime_kuma_groups']} />
+      <UptimeKumaSection
+        data={settings['console_setting.uptime_kuma_groups']}
+      />
     ),
   },
   {

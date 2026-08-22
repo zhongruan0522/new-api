@@ -85,7 +85,9 @@ export function DeleteAccountDialog({
         clearSidebarModulesCaches()
         navigate({ to: '/sign-in' })
       } else {
-        toast.error(response.message || t('profile.errors.failedToDeleteAccount'))
+        toast.error(
+          response.message || t('profile.errors.failedToDeleteAccount')
+        )
       }
     } catch (_error) {
       toast.error(t('profile.errors.failedToDeleteAccount'))
@@ -128,7 +130,8 @@ export function DeleteAccountDialog({
 
           <div className='space-y-2'>
             <Label htmlFor='confirmation'>
-              {t('channels.fields.type')} <strong>{username}</strong> {t('profile.fields.confirm')}
+              {t('channels.fields.type')} <strong>{username}</strong>{' '}
+              {t('profile.fields.confirm')}
             </Label>
             <Input
               id='confirmation'
@@ -158,7 +161,9 @@ export function DeleteAccountDialog({
             disabled={loading || confirmation !== username}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('keys.tips.deleting') : t('profile.actions.deleteAccount')}
+            {loading
+              ? t('keys.tips.deleting')
+              : t('profile.actions.deleteAccount')}
           </Button>
         </DialogFooter>
       </DialogContent>

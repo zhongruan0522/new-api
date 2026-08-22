@@ -121,9 +121,12 @@ export function RedemptionsMutateDrawer({
           const count = result.data?.length || 0
           toast.success(
             count > 1
-              ? t('redemptionCodes.status.successfullyCreatedCountRedemptionCodes', {
-                  count,
-                })
+              ? t(
+                  'redemptionCodes.status.successfullyCreatedCountRedemptionCodes',
+                  {
+                    count,
+                  }
+                )
               : t(SUCCESS_MESSAGES.REDEMPTION_CREATED)
           )
           onOpenChange(false)
@@ -146,7 +149,9 @@ export function RedemptionsMutateDrawer({
   const quotaLabel = `${t('keys.fields.quota')} (${t(currencyLabel)})`
   const quotaPlaceholder = tokensOnly
     ? t('keys.placeholders.enterQuotaInTokens')
-    : t('keys.placeholders.enterQuotaInCurrency', { currency: t(currencyLabel) })
+    : t('keys.placeholders.enterQuotaInCurrency', {
+        currency: t(currencyLabel),
+      })
 
   return (
     <Sheet
@@ -167,7 +172,9 @@ export function RedemptionsMutateDrawer({
           </SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? t('redemptionCodes.tips.updateTheRedemptionCodeByProvidingNecessaryInfo')
+              ? t(
+                  'redemptionCodes.tips.updateTheRedemptionCodeByProvidingNecessaryInfo'
+                )
               : t(
                   'redemptionCodes.actions.addNewRedemptionCodeSByProvidingNecessaryInfo'
                 )}{' '}
@@ -188,10 +195,15 @@ export function RedemptionsMutateDrawer({
                   <FormItem>
                     <FormLabel>{t('channels.fields.name')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('keys.placeholders.enterAName')} />
+                      <Input
+                        {...field}
+                        placeholder={t('keys.placeholders.enterAName')}
+                      />
                     </FormControl>
                     <FormDescription>
-                      {t('redemptionCodes.tips.nameForThisRedemptionCode120Characters')}
+                      {t(
+                        'redemptionCodes.tips.nameForThisRedemptionCode120Characters'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -297,14 +309,18 @@ export function RedemptionsMutateDrawer({
                           type='number'
                           min='1'
                           max='100'
-                          placeholder={t('redemptionCodes.fields.numberOfCodesToCreate')}
+                          placeholder={t(
+                            'redemptionCodes.fields.numberOfCodesToCreate'
+                          )}
                           onChange={(e) =>
                             field.onChange(parseInt(e.target.value, 10) || 1)
                           }
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('redemptionCodes.actions.createMultipleRedemptionCodesAtOnce1100')}
+                        {t(
+                          'redemptionCodes.actions.createMultipleRedemptionCodesAtOnce1100'
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -319,7 +335,9 @@ export function RedemptionsMutateDrawer({
             {t('common.actions.close')}
           </SheetClose>
           <Button form='redemption-form' type='submit' disabled={isSubmitting}>
-            {isSubmitting ? t('channels.tips.saving') : t('channels.actions.saveChanges')}
+            {isSubmitting
+              ? t('channels.tips.saving')
+              : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

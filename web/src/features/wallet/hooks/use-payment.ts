@@ -95,14 +95,19 @@ export function usePayment() {
             })
 
         if (!isApiSuccess(response)) {
-          toast.error(response.message || i18next.t('subscriptions.status.paymentRequestFailed'))
+          toast.error(
+            response.message ||
+              i18next.t('subscriptions.status.paymentRequestFailed')
+          )
           return false
         }
 
         // Handle Stripe payment
         if (isStripe && response.data?.pay_link) {
           window.open(response.data.pay_link as string, '_blank')
-          toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
+          toast.success(
+            i18next.t('subscriptions.status.redirectingToPaymentPage')
+          )
           return true
         }
 
@@ -111,7 +116,9 @@ export function usePayment() {
           const url = (response as unknown as { url?: string }).url
           if (url) {
             submitPaymentForm(url, response.data)
-            toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
+            toast.success(
+              i18next.t('subscriptions.status.redirectingToPaymentPage')
+            )
             return true
           }
         }

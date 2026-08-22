@@ -177,7 +177,9 @@ export function SummaryCards() {
     statusCurrencyFlag !== undefined
       ? statusCurrencyFlag
       : currencyEnabledFromStore
-  const currencyLabel = currencyEnabled ? getCurrencyLabel() : 'rankings.fields.tokens'
+  const currencyLabel = currencyEnabled
+    ? getCurrencyLabel()
+    : 'rankings.fields.tokens'
 
   const sparklineData = useMemo(
     () =>
@@ -293,7 +295,9 @@ export function SummaryCards() {
               <div className='bg-background/60 rounded-lg px-2.5 py-2'>
                 <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
                   <Flame className='size-3 shrink-0' aria-hidden='true' />
-                  <span className='truncate'>{t('dashboard.fields.last24hUsage')}</span>
+                  <span className='truncate'>
+                    {t('dashboard.fields.last24hUsage')}
+                  </span>
                 </div>
                 <div className='text-foreground mt-1.5 truncate text-xs font-semibold tabular-nums'>
                   {formatQuota(recentUsage)}
@@ -312,7 +316,9 @@ export function SummaryCards() {
                       aria-hidden='true'
                     />
                   )}
-                  <span className='truncate'>{t('dashboard.fields.runway')}</span>
+                  <span className='truncate'>
+                    {t('dashboard.fields.runway')}
+                  </span>
                 </div>
                 <div
                   className={cn(

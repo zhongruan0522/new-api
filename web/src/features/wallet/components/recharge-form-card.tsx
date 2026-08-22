@@ -422,9 +422,7 @@ export function RechargeFormCard({
       ) : (
         <Alert>
           <AlertDescription>
-            {t(
-              'wallet.status.onlineTopupIsNotEnabledPleaseUseRedemptionCode'
-            )}
+            {t('wallet.status.onlineTopupIsNotEnabledPleaseUseRedemptionCode')}
           </AlertDescription>
         </Alert>
       )}

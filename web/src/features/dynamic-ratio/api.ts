@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { api } from '@/lib/api'
 import type {
   ApiResponse,
@@ -51,9 +50,7 @@ export async function getDynamicRatioStatus(): Promise<DynamicRatioStatus> {
   )
 }
 
-export async function setDynamicRatioEnabled(
-  enabled: boolean
-): Promise<void> {
+export async function setDynamicRatioEnabled(enabled: boolean): Promise<void> {
   const res = await api.put('/api/dynamic_ratio/enabled', { enabled })
   unwrap(res.data, 'Failed to update dynamic ratio status')
 }

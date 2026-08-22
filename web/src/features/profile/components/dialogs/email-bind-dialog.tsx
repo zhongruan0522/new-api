@@ -76,10 +76,14 @@ export function EmailBindDialog({
       const response = await sendEmailVerification(email)
 
       if (response.success) {
-        toast.success(t('profile.tips.verificationCodeSentPleaseCheckYourEmail'))
+        toast.success(
+          t('profile.tips.verificationCodeSentPleaseCheckYourEmail')
+        )
         startCountdown()
       } else {
-        toast.error(response.message || t('profile.errors.failedToSendVerificationCode'))
+        toast.error(
+          response.message || t('profile.errors.failedToSendVerificationCode')
+        )
       }
     } catch (_error) {
       toast.error(t('profile.errors.failedToSendVerificationCode'))
@@ -197,7 +201,9 @@ export function EmailBindDialog({
             disabled={loading || !email || !code}
           >
             {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {loading ? t('profile.tips.binding') : t('profile.actions.bindEmail')}
+            {loading
+              ? t('profile.tips.binding')
+              : t('profile.actions.bindEmail')}
           </Button>
         </DialogFooter>
       </DialogContent>

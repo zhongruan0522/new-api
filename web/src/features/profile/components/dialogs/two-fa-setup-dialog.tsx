@@ -97,7 +97,9 @@ export function TwoFASetupDialog({
       const response = await enable2FA(code)
 
       if (response.success) {
-        toast.success(t('profile.status.twoFactorAuthenticationEnabledSuccessfully'))
+        toast.success(
+          t('profile.status.twoFactorAuthenticationEnabledSuccessfully')
+        )
         onOpenChange(false)
         onSuccess()
         // Reset
@@ -139,9 +141,12 @@ export function TwoFASetupDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('profile.titles.setupTwoFactorAuthentication')}</DialogTitle>
+          <DialogTitle>
+            {t('profile.titles.setupTwoFactorAuthentication')}
+          </DialogTitle>
           <DialogDescription>
-            {t('profile.fields.step')} {step + 1} {t('profile.fields.value3')} {stepLabels[step]}
+            {t('profile.fields.step')} {step + 1} {t('profile.fields.value3')}{' '}
+            {stepLabels[step]}
           </DialogDescription>
         </DialogHeader>
 
@@ -233,7 +238,9 @@ export function TwoFASetupDialog({
               {step === 2 && (
                 <div className='space-y-4'>
                   <div className='space-y-2'>
-                    <Label htmlFor='code'>{t('auth.fields.verificationCode')}</Label>
+                    <Label htmlFor='code'>
+                      {t('auth.fields.verificationCode')}
+                    </Label>
                     <Input
                       id='code'
                       value={code}
@@ -243,7 +250,9 @@ export function TwoFASetupDialog({
                       disabled={loading}
                     />
                     <p className='text-muted-foreground text-xs'>
-                      {t('profile.placeholders.enterThe6DigitCodeFromYourAuthenticatorApp')}
+                      {t(
+                        'profile.placeholders.enterThe6DigitCodeFromYourAuthenticatorApp'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -275,7 +284,9 @@ export function TwoFASetupDialog({
               disabled={initializing || loading || !code}
             >
               {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {loading ? t('profile.tips.enabling') : t('profile.actions.enable2Fa')}
+              {loading
+                ? t('profile.tips.enabling')
+                : t('profile.actions.enable2Fa')}
             </Button>
           )}
         </DialogFooter>

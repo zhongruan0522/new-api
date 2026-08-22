@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import dayjs from '@/lib/dayjs'
 import {
+  formatCompactQuotaWithCurrency,
   formatCurrencyFromUSD,
   formatQuotaWithCurrency,
   getCurrencyDisplay,
@@ -67,6 +68,18 @@ export function formatQuota(quota: number): string {
     digitsLarge: 2,
     digitsSmall: 4,
     abbreviate: true,
+  })
+}
+
+/**
+ * Format quota into the configured display amount, abbreviating large
+ * values with K/M/B suffixes (e.g. "$33.68K"). Pair with a tooltip
+ * showing the exact `formatQuota()` value.
+ */
+export function formatQuotaCompact(quota: number): string {
+  return formatCompactQuotaWithCurrency(quota, {
+    digitsLarge: 2,
+    digitsSmall: 4,
   })
 }
 

@@ -134,7 +134,9 @@ export function SecureVerificationDialog({
                     </TabsTrigger>
                   )}
                   {methods.hasPasskey && methods.passkeySupported && (
-                    <TabsTrigger value='passkey'>{t('auth.fields.passkey')}</TabsTrigger>
+                    <TabsTrigger value='passkey'>
+                      {t('auth.fields.passkey')}
+                    </TabsTrigger>
                   )}
                 </TabsList>
 

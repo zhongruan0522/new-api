@@ -66,7 +66,9 @@ export function DataTableBulkActions<TData>({
       if (lines.length > 0) {
         const ok = await copyToClipboard(lines.join('\n'))
         if (ok) {
-          toast.success(t('keys.status.copiedCountKeyS', { count: lines.length }))
+          toast.success(
+            t('keys.status.copiedCountKeyS', { count: lines.length })
+          )
         } else {
           toast.error(t('keys.errors.failedToCopyKeys'))
         }
@@ -118,7 +120,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('keys.actions.deleteSelectedApiKeys')}</span>
+            <span className='sr-only'>
+              {t('keys.actions.deleteSelectedApiKeys')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('keys.actions.deleteSelectedApiKeys')}</p>

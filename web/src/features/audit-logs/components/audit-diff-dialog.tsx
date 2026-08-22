@@ -93,8 +93,14 @@ export function AuditDiffDialog({
         </DialogHeader>
 
         <div className='grid gap-3 sm:grid-cols-2'>
-          <DiffPanel title={t('auditLogs.fields.value74f396')} raw={visibleLog?.before_data} />
-          <DiffPanel title={t('auditLogs.fields.value')} raw={visibleLog?.after_data} />
+          <DiffPanel
+            title={t('auditLogs.fields.value74f396')}
+            raw={visibleLog?.before_data}
+          />
+          <DiffPanel
+            title={t('auditLogs.fields.value')}
+            raw={visibleLog?.after_data}
+          />
         </div>
       </DialogContent>
     </Dialog>

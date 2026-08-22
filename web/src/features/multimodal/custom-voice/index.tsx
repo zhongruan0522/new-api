@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { formatQuotaWithCurrency } from '@/lib/currency'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -39,8 +41,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { formatQuotaWithCurrency } from '@/lib/currency'
 import {
   confirmCustomVoice,
   extractApiErrorMessage,
@@ -102,8 +102,10 @@ export function CustomVoice() {
     },
   })
 
-  const emotionTags = voiceTags?.enabled ? voiceTags.emotion_tags ?? [] : []
-  const toneWordTags = voiceTags?.enabled ? voiceTags.tone_word_tags ?? [] : []
+  const emotionTags = voiceTags?.enabled ? (voiceTags.emotion_tags ?? []) : []
+  const toneWordTags = voiceTags?.enabled
+    ? (voiceTags.tone_word_tags ?? [])
+    : []
   const hasTags = emotionTags.length > 0 || toneWordTags.length > 0
 
   const modelOptions =
@@ -149,7 +151,9 @@ export function CustomVoice() {
         toast.error(res.message || t('multimodal.status.previewFailed'))
       }
     } catch (e) {
-      toast.error(extractApiErrorMessage(e) || t('multimodal.status.previewFailed'))
+      toast.error(
+        extractApiErrorMessage(e) || t('multimodal.status.previewFailed')
+      )
     } finally {
       setPreviewing(false)
     }
@@ -171,7 +175,9 @@ export function CustomVoice() {
         toast.error(res.message || t('multimodal.status.confirmationFailed'))
       }
     } catch (e) {
-      toast.error(extractApiErrorMessage(e) || t('multimodal.status.confirmationFailed'))
+      toast.error(
+        extractApiErrorMessage(e) || t('multimodal.status.confirmationFailed')
+      )
     } finally {
       setConfirming(false)
     }
@@ -188,11 +194,14 @@ export function CustomVoice() {
         setConfirmQuote(res.data)
         setConfirmDialogOpen(true)
       } else {
-        toast.error(res.message || t('multimodal.errors.failedToFetchPaymentPrice'))
+        toast.error(
+          res.message || t('multimodal.errors.failedToFetchPaymentPrice')
+        )
       }
     } catch (e) {
       toast.error(
-        extractApiErrorMessage(e) || t('multimodal.errors.failedToFetchPaymentPrice')
+        extractApiErrorMessage(e) ||
+          t('multimodal.errors.failedToFetchPaymentPrice')
       )
     } finally {
       setConfirmQuoteLoading(false)
@@ -215,7 +224,9 @@ export function CustomVoice() {
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-auto'>
       <div>
-        <h1 className='mb-2 text-2xl font-semibold'>{t('multimodal.fields.customVoice')}</h1>
+        <h1 className='mb-2 text-2xl font-semibold'>
+          {t('multimodal.fields.customVoice')}
+        </h1>
         <p className='text-muted-foreground'>
           {t('multimodal.tips.customizeVoiceConfigurations')}
         </p>
@@ -225,9 +236,7 @@ export function CustomVoice() {
         <CardHeader>
           <CardTitle>{t('multimodal.fields.customVoice')}</CardTitle>
           <CardDescription>
-            {t(
-              'multimodal.actions.uploadAnAudioSampleChooseATtsModelEnter'
-            )}
+            {t('multimodal.actions.uploadAnAudioSampleChooseATtsModelEnter')}
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
@@ -351,7 +360,9 @@ export function CustomVoice() {
           </div>
 
           <Button onClick={handlePreview} disabled={previewing}>
-            {previewing ? t('channels.tips.generating') : t('multimodal.fields.generatePreview')}
+            {previewing
+              ? t('channels.tips.generating')
+              : t('multimodal.fields.generatePreview')}
           </Button>
         </CardContent>
       </Card>
@@ -392,7 +403,9 @@ export function CustomVoice() {
       >
         <AlertDialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('multimodal.actions.confirmCustomization')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('multimodal.actions.confirmCustomization')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t(
                 'multimodal.tips.pleaseConfirmTheVoiceCustomizationDetailsAfterConfirmationTheFee'
@@ -402,11 +415,15 @@ export function CustomVoice() {
 
           <div className='space-y-3 rounded-lg border p-3 text-sm'>
             <div className='flex items-center justify-between gap-4'>
-              <span className='text-muted-foreground'>{t('minimax.fields.voiceId')}</span>
+              <span className='text-muted-foreground'>
+                {t('minimax.fields.voiceId')}
+              </span>
               <span className='font-medium break-all'>{confirmVoiceId}</span>
             </div>
             <div className='flex items-center justify-between gap-4'>
-              <span className='text-muted-foreground'>{t('multimodal.fields.paymentPrice')}</span>
+              <span className='text-muted-foreground'>
+                {t('multimodal.fields.paymentPrice')}
+              </span>
               <span className='font-semibold'>{formattedConfirmPrice}</span>
             </div>
           </div>
@@ -419,10 +436,10 @@ export function CustomVoice() {
               onClick={handleConfirm}
               disabled={confirming || !confirmQuote}
             >
-              {confirming && (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              )}
-              {confirming ? t('multimodal.tips.confirming') : t('common.actions.confirm')}
+              {confirming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+              {confirming
+                ? t('multimodal.tips.confirming')
+                : t('common.actions.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

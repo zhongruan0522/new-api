@@ -32,7 +32,9 @@ export async function getDashboardConfig(): Promise<DashboardConfig> {
     '/api/dashboard/config'
   )
   if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.message || i18next.t('dashboard.errors.getConfigFailed'))
+    throw new Error(
+      response.data.message || i18next.t('dashboard.errors.getConfigFailed')
+    )
   }
   return response.data.data
 }
@@ -48,7 +50,9 @@ export async function updateDashboardConfig(
     updates
   )
   if (!response.data.success) {
-    throw new Error(response.data.message || i18next.t('dashboard.errors.updateConfigFailed'))
+    throw new Error(
+      response.data.message || i18next.t('dashboard.errors.updateConfigFailed')
+    )
   }
   return response.data.data!
 }
@@ -61,7 +65,9 @@ export async function resetDashboardConfig(): Promise<DashboardConfig> {
     '/api/dashboard/config/reset'
   )
   if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.message || i18next.t('dashboard.errors.resetConfigFailed'))
+    throw new Error(
+      response.data.message || i18next.t('dashboard.errors.resetConfigFailed')
+    )
   }
   return response.data.data
 }

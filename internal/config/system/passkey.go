@@ -1,0 +1,52 @@
+package system
+
+import (
+	"net/url"
+	"strings"
+
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/manager"
+)
+
+type PasskeySettings struct {
+	Enabled              bool   `json:"enabled"`
+	RPDisplayName        string `json:"rp_display_name"`
+	RPID                 string `json:"rp_id"`
+	Origins              string `json:"origins"`
+	AllowInsecureOrigin  bool   `json:"allow_insecure_origin"`
+	UserVerification     string `json:"user_verification"`
+	AttachmentPreference string `json:"attachment_preference"`
+	MaxPasskeysPerUser   int    `json:"max_passkeys_per_user"`
+}
+
+var defaultPasskeySettings = PasskeySettings{
+	Enabled:              false,
+	RPDisplayName:        common.SystemName,
+	RPID:                 "",
+	Origins:              "",
+	AllowInsecureOrigin:  false,
+	UserVerification:     "preferred",
+	AttachmentPreference: "",
+	MaxPasskeysPerUser:   1,
+}
+
+func init() {
+	manager.GlobalConfig.Register("passkey", &defaultPasskeySettings)
+}
+
+func GetPasskeySettings() *PasskeySettings {
+	if defaultPasskeySettings.RPID == "" && ServerAddress != "" {
+		// 从ServerAddress提取域名作为RPID
+		// ServerAddress可能是 "https://newapi.pro" 这种格式
+		serverAddr := strings.TrimSpace(ServerAddress)
+		if parsed, err := url.Parse(serverAddr); err == nil && parsed.Host != "" {
+			defaultPasskeySettings.RPID = parsed.Host
+		} else {
+			defaultPasskeySettings.RPID = serverAddr
+		}
+	}
+	if defaultPasskeySettings.Origins == "" || defaultPasskeySettings.Origins == "[]" {
+		defaultPasskeySettings.Origins = ServerAddress
+	}
+	return &defaultPasskeySettings
+}

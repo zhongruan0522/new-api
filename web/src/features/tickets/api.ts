@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { api } from '@/lib/api'
 import type {
   ApiResponse,
@@ -36,7 +35,9 @@ function unwrap<T>(res: ApiResponse<T>, fallbackMessage: string): T {
   return res.data
 }
 
-export async function getTickets(params: TicketListParams): Promise<TicketPage> {
+export async function getTickets(
+  params: TicketListParams
+): Promise<TicketPage> {
   const endpoint = params.isAdmin ? '/api/ticket/admin' : '/api/ticket/'
   const res = await api.get(endpoint, {
     params: {
@@ -51,7 +52,10 @@ export async function getTickets(params: TicketListParams): Promise<TicketPage> 
 
 export async function getTicketDetail(ticketId: number): Promise<TicketDetail> {
   const res = await api.get(`/api/ticket/${ticketId}`)
-  return unwrap<TicketDetail>(res.data, 'tickets.errors.failedToLoadTicketDetail')
+  return unwrap<TicketDetail>(
+    res.data,
+    'tickets.errors.failedToLoadTicketDetail'
+  )
 }
 
 export async function createTicket(

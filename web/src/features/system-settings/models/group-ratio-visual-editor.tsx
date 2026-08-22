@@ -421,7 +421,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
         <CardHeader className={sectionHeaderClassName}>
           <CardTitle>{t('systemSettings.fields.topUpGroupRatios')}</CardTitle>
           <CardDescription>
-            {t('systemSettings.tips.multipliersForRechargePricingBasedOnUserGroups')}
+            {t(
+              'systemSettings.tips.multipliersForRechargePricingBasedOnUserGroups'
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -439,7 +441,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('models.fields.groupName')}</TableHead>
-                      <TableHead>{t('systemSettings.fields.multiplier')}</TableHead>
+                      <TableHead>
+                        {t('systemSettings.fields.multiplier')}
+                      </TableHead>
                       <TableHead className='text-right'>
                         {t('channels.fields.actions')}
                       </TableHead>
@@ -490,7 +494,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
       {/* Inter-group ratio overrides */}
       <Card className={sectionCardClassName}>
         <CardHeader className={sectionHeaderClassName}>
-          <CardTitle>{t('systemSettings.fields.interGroupRatioOverrides')}</CardTitle>
+          <CardTitle>
+            {t('systemSettings.fields.interGroupRatioOverrides')}
+          </CardTitle>
           <CardDescription>
             {t(
               'common.tips.customMultipliersWhenSpecificUserGroupsUseSpecificToken'
@@ -551,8 +557,12 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>{t('systemSettings.fields.targetGroup')}</TableHead>
-                                  <TableHead>{t('dynamicRatio.fields.ratio794f65')}</TableHead>
+                                  <TableHead>
+                                    {t('systemSettings.fields.targetGroup')}
+                                  </TableHead>
+                                  <TableHead>
+                                    {t('dynamicRatio.fields.ratio794f65')}
+                                  </TableHead>
                                   <TableHead className='text-right'>
                                     {t('channels.fields.actions')}
                                   </TableHead>
@@ -612,7 +622,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
       {/* Auto Groups */}
       <Card className={sectionCardClassName}>
         <CardHeader className={sectionHeaderClassName}>
-          <CardTitle>{t('systemSettings.fields.autoAssignmentOrder')}</CardTitle>
+          <CardTitle>
+            {t('systemSettings.fields.autoAssignmentOrder')}
+          </CardTitle>
           <CardDescription>
             {t(
               'systemSettings.tips.priorityOrderForAutomaticGroupAssignmentNewTokensRotate'
@@ -680,9 +692,13 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
       <Dialog open={autoGroupDialogOpen} onOpenChange={setAutoGroupDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('systemSettings.actions.addAutoGroup')}</DialogTitle>
+            <DialogTitle>
+              {t('systemSettings.actions.addAutoGroup')}
+            </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.actions.addAGroupIdentifierToTheAutoAssignmentList')}
+              {t(
+                'systemSettings.actions.addAGroupIdentifierToTheAutoAssignmentList'
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 py-4'>
@@ -702,7 +718,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
             >
               {t('common.actions.cancel')}
             </Button>
-            <Button onClick={handleAutoGroupSave}>{t('channels.actions.add')}</Button>
+            <Button onClick={handleAutoGroupSave}>
+              {t('channels.actions.add')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -711,9 +729,13 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
       <Dialog open={userGroupDialogOpen} onOpenChange={setUserGroupDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('systemSettings.actions.addUserGroup')}</DialogTitle>
+            <DialogTitle>
+              {t('systemSettings.actions.addUserGroup')}
+            </DialogTitle>
             <DialogDescription>
-              {t('systemSettings.actions.createANewUserGroupToConfigureRatioOverrides')}
+              {t(
+                'systemSettings.actions.createANewUserGroupToConfigureRatioOverrides'
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 py-4'>
@@ -733,7 +755,9 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
             >
               {t('common.actions.cancel')}
             </Button>
-            <Button onClick={handleUserGroupSave}>{t('channels.actions.add')}</Button>
+            <Button onClick={handleUserGroupSave}>
+              {t('channels.actions.add')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -865,12 +889,18 @@ function GroupPricingTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='min-w-40'>{t('models.fields.groupName')}</TableHead>
-                  <TableHead className='w-28'>{t('dynamicRatio.fields.ratio794f65')}</TableHead>
+                  <TableHead className='min-w-40'>
+                    {t('models.fields.groupName')}
+                  </TableHead>
+                  <TableHead className='w-28'>
+                    {t('dynamicRatio.fields.ratio794f65')}
+                  </TableHead>
                   <TableHead className='w-28 text-center'>
                     {t('systemSettings.fields.userSelectable')}
                   </TableHead>
-                  <TableHead className='min-w-56'>{t('auditLogs.tips.description')}</TableHead>
+                  <TableHead className='min-w-56'>
+                    {t('auditLogs.tips.description')}
+                  </TableHead>
                   <TableHead className='w-16 text-right'>
                     {t('channels.fields.actions')}
                   </TableHead>
@@ -883,7 +913,9 @@ function GroupPricingTable({
                       colSpan={5}
                       className='text-muted-foreground h-20 text-center text-sm'
                     >
-                      {t('systemSettings.tips.noGroupsYetAddAGroupToGetStarted')}
+                      {t(
+                        'systemSettings.tips.noGroupsYetAddAGroupToGetStarted'
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -922,7 +954,9 @@ function GroupPricingTable({
                             onCheckedChange={(checked) =>
                               updateRow(row._id, 'selectable', checked === true)
                             }
-                            aria-label={t('systemSettings.fields.userSelectable')}
+                            aria-label={t(
+                              'systemSettings.fields.userSelectable'
+                            )}
                           />
                         </div>
                       </TableCell>
@@ -930,7 +964,9 @@ function GroupPricingTable({
                         {row.selectable ? (
                           <Input
                             value={row.description}
-                            placeholder={t('systemSettings.tips.groupDescription')}
+                            placeholder={t(
+                              'systemSettings.tips.groupDescription'
+                            )}
                             onChange={(event) =>
                               updateRow(
                                 row._id,
@@ -995,7 +1031,10 @@ function SimpleGroupDialog({
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
 
-  const title = type === 'groupRatio' ? t('systemSettings.fields.groupRatio') : t('systemSettings.fields.topUpRatio')
+  const title =
+    type === 'groupRatio'
+      ? t('systemSettings.fields.groupRatio')
+      : t('systemSettings.fields.topUpRatio')
 
   useEffect(() => {
     if (!open) {
@@ -1111,7 +1150,9 @@ function GroupOverrideDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {editData ? t('systemSettings.actions.editRatioOverride') : t('systemSettings.actions.addRatioOverride')}
+            {editData
+              ? t('systemSettings.actions.editRatioOverride')
+              : t('systemSettings.actions.addRatioOverride')}
           </DialogTitle>
           <DialogDescription>
             {userGroup
@@ -1119,9 +1160,7 @@ function GroupOverrideDialog({
                   'systemSettings.actions.configureACustomRatioForUserGroupUsersWhenUsing',
                   { userGroup }
                 )
-              : t(
-                  'systemSettings.tips.configureACustomRatioForWhenUsersUseA'
-                )}
+              : t('systemSettings.tips.configureACustomRatioForWhenUsersUseA')}
           </DialogDescription>
         </DialogHeader>
         <div className='space-y-4 py-4'>
@@ -1150,10 +1189,14 @@ function GroupOverrideDialog({
               placeholder='0.9'
             />
             <p className='text-muted-foreground text-xs'>
-              {t('systemSettings.tips.multiplierAppliedWhenUserGroupUsesTargetGroup', {
-                userGroup: userGroup || t('systemSettings.fields.userGroup'),
-                targetGroup: targetGroup || t('systemSettings.fields.tokenGroup48e1a2'),
-              })}
+              {t(
+                'systemSettings.tips.multiplierAppliedWhenUserGroupUsesTargetGroup',
+                {
+                  userGroup: userGroup || t('systemSettings.fields.userGroup'),
+                  targetGroup:
+                    targetGroup || t('systemSettings.fields.tokenGroup48e1a2'),
+                }
+              )}
             </p>
           </div>
         </div>

@@ -146,9 +146,7 @@ export function RateLimitVisualEditor({
         <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center'>
           {searchText
             ? t('systemSettings.fields.noGroupsMatchYourSearch')
-            : t(
-                'common.tips.noGroupBasedRateLimitsConfiguredClickAddGroup'
-              )}
+            : t('common.tips.noGroupBasedRateLimitsConfiguredClickAddGroup')}
         </div>
       ) : (
         <div className='rounded-md border'>
@@ -159,8 +157,12 @@ export function RateLimitVisualEditor({
                 <TableHead className='text-right'>
                   {t('systemSettings.tips.maxRequestsIncludingFailures')}
                 </TableHead>
-                <TableHead className='text-right'>{t('systemSettings.status.maxSuccess')}</TableHead>
-                <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
+                <TableHead className='text-right'>
+                  {t('systemSettings.status.maxSuccess')}
+                </TableHead>
+                <TableHead className='text-right'>
+                  {t('channels.fields.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

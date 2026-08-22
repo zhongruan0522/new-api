@@ -95,7 +95,10 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
     {
       accessorKey: 'submit_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitTime')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('usageLogs.actions.submitTime')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -121,55 +124,68 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
   ]
 
   if (isAdmin) {
-    columns.push(createChannelColumn<TaskLog>({ headerLabel: t('channels.fields.channel') }), {
-      id: 'user',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('systemSettings.fields.user')} />
-      ),
-      cell: function UserCell({ row }) {
-        const { sensitiveVisible, setSelectedUserId, setUserInfoDialogOpen } =
-          useUsageLogsContext()
-        const log = row.original
-        const displayName = log.username || String(log.user_id || '?')
+    columns.push(
+      createChannelColumn<TaskLog>({
+        headerLabel: t('channels.fields.channel'),
+      }),
+      {
+        id: 'user',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title={t('systemSettings.fields.user')}
+          />
+        ),
+        cell: function UserCell({ row }) {
+          const { sensitiveVisible, setSelectedUserId, setUserInfoDialogOpen } =
+            useUsageLogsContext()
+          const log = row.original
+          const displayName = log.username || String(log.user_id || '?')
 
-        return (
-          <button
-            type='button'
-            className='flex items-center gap-1.5 text-left'
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedUserId(log.user_id)
-              setUserInfoDialogOpen(true)
-            }}
-          >
-            <Avatar className='ring-border/60 size-6 ring-1'>
-              <AvatarFallback
-                className={cn(
-                  'text-[11px] font-semibold',
-                  !sensitiveVisible && 'bg-muted text-muted-foreground'
-                )}
-                style={
-                  sensitiveVisible ? getUserAvatarStyle(displayName) : undefined
-                }
-              >
-                {sensitiveVisible ? getUserAvatarFallback(displayName) : '•'}
-              </AvatarFallback>
-            </Avatar>
-            <span className='text-muted-foreground truncate text-sm hover:underline'>
-              {sensitiveVisible ? displayName : '••••'}
-            </span>
-          </button>
-        )
-      },
-      meta: { label: t('systemSettings.fields.user'), mobileHidden: true },
-    })
+          return (
+            <button
+              type='button'
+              className='flex items-center gap-1.5 text-left'
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedUserId(log.user_id)
+                setUserInfoDialogOpen(true)
+              }}
+            >
+              <Avatar className='ring-border/60 size-6 ring-1'>
+                <AvatarFallback
+                  className={cn(
+                    'text-[11px] font-semibold',
+                    !sensitiveVisible && 'bg-muted text-muted-foreground'
+                  )}
+                  style={
+                    sensitiveVisible
+                      ? getUserAvatarStyle(displayName)
+                      : undefined
+                  }
+                >
+                  {sensitiveVisible ? getUserAvatarFallback(displayName) : '•'}
+                </AvatarFallback>
+              </Avatar>
+              <span className='text-muted-foreground truncate text-sm hover:underline'>
+                {sensitiveVisible ? displayName : '••••'}
+              </span>
+            </button>
+          )
+        },
+        meta: { label: t('systemSettings.fields.user'), mobileHidden: true },
+      }
+    )
   }
 
   columns.push(
     {
       accessorKey: 'task_id',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('systemSettings.fields.taskId')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('systemSettings.fields.taskId')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -203,7 +219,10 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
     {
       accessorKey: 'status',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.status')}
+        />
       ),
       cell: ({ row }) => {
         const status = row.getValue('status') as string
@@ -218,11 +237,16 @@ export function useTaskLogsColumns(isAdmin: boolean): ColumnDef<TaskLog>[] {
       },
       meta: { label: t('channels.fields.status') },
     },
-    createProgressColumn<TaskLog>({ headerLabel: t('systemSettings.fields.progress') }),
+    createProgressColumn<TaskLog>({
+      headerLabel: t('systemSettings.fields.progress'),
+    }),
     {
       accessorKey: 'fail_reason',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('auditLogs.titles.details')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('auditLogs.titles.details')}
+        />
       ),
       cell: function DetailsCell({ row }) {
         const log = row.original

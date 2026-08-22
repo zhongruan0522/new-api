@@ -529,7 +529,9 @@ export function ChannelAffinitySection(props: Props) {
                   <TableHead>{t('common.actions.retry')}</TableHead>
                   <TableHead>{t('systemSettings.fields.scope')}</TableHead>
                   <TableHead>{t('pricing.fields.cache')}</TableHead>
-                  <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
+                  <TableHead className='text-right'>
+                    {t('channels.fields.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -576,9 +578,11 @@ export function ChannelAffinitySection(props: Props) {
                       <TableCell>
                         {(() => {
                           const scopeItems = [
-                            rule.include_using_group && t('common.fields.group'),
+                            rule.include_using_group &&
+                              t('common.fields.group'),
                             rule.include_model_name && t('common.fields.model'),
-                            rule.include_rule_name && t('systemSettings.fields.rule'),
+                            rule.include_rule_name &&
+                              t('systemSettings.fields.rule'),
                           ].filter(Boolean) as string[]
                           if (scopeItems.length === 0) return '-'
                           return <RuleBadgeList items={scopeItems} />
@@ -597,7 +601,9 @@ export function ChannelAffinitySection(props: Props) {
                               size='icon'
                               className='h-7 w-7'
                               onClick={() => setClearRuleName(rule.name)}
-                              title={t('systemSettings.actions.clearCacheForThisRule')}
+                              title={t(
+                                'systemSettings.actions.clearCacheForThisRule'
+                              )}
                             >
                               <X className='h-3 w-3' />
                             </Button>
@@ -653,7 +659,9 @@ export function ChannelAffinitySection(props: Props) {
       <ConfirmDialog
         open={clearAllDialogOpen}
         onOpenChange={setClearAllDialogOpen}
-        title={t('systemSettings.actions.confirmClearingAllChannelAffinityCache')}
+        title={t(
+          'systemSettings.actions.confirmClearingAllChannelAffinityCache'
+        )}
         desc={t(
           'systemSettings.tips.deleteAllChannelAffinityCacheEntriesStillInMemory'
         )}
@@ -676,9 +684,7 @@ export function ChannelAffinitySection(props: Props) {
         open={fillTemplateDialogOpen}
         onOpenChange={setFillTemplateDialogOpen}
         title={t('systemSettings.actions.fillCodexCliClaudeCliTemplates')}
-        desc={t(
-          'systemSettings.tips.append2TemplateRulesCodexCliAndClaudeCli'
-        )}
+        desc={t('systemSettings.tips.append2TemplateRulesCodexCliAndClaudeCli')}
         handleConfirm={appendCliTemplates}
       />
     </>

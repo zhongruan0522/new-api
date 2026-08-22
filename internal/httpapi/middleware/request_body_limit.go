@@ -1,0 +1,48 @@
+package middleware
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+
+	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/cache"
+	"github.com/gin-gonic/gin"
+)
+
+func AnonymousRequestBodyLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		maxBytes := httpapi.GetAnonymousRequestBodyLimitBytes()
+		if maxBytes <= 0 || c.Request.Body == nil {
+			c.Next()
+			return
+		}
+
+		originalBody := c.Request.Body
+		body, err := readAnonymousRequestBody(originalBody, maxBytes)
+		_ = originalBody.Close()
+		if err != nil {
+			if cache.IsRequestBodyTooLargeError(err) {
+				c.AbortWithStatus(http.StatusRequestEntityTooLarge)
+				return
+			}
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		c.Request.ContentLength = int64(len(body))
+		c.Next()
+	}
+}
+
+func readAnonymousRequestBody(body io.Reader, maxBytes int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(body, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, cache.ErrRequestBodyTooLarge
+	}
+	return data, nil
+}

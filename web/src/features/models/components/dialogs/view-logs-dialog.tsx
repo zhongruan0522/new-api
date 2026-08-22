@@ -250,7 +250,9 @@ export function ViewLogsDialog({
             </Select>
           </div>
           <div className='space-y-1'>
-            <div className='text-muted-foreground text-xs'>{t('keyQuery.fields.stream')}</div>
+            <div className='text-muted-foreground text-xs'>
+              {t('keyQuery.fields.stream')}
+            </div>
             <Select
               items={[
                 { value: 'stdout', label: 'stdout' },
@@ -303,7 +305,9 @@ export function ViewLogsDialog({
               {t('models.errors.pleaseSelectAContainer')}
             </div>
           ) : !logsText.trim() ? (
-            <div className='py-8 text-center text-gray-400'>{t('models.titles.noLogs')}</div>
+            <div className='py-8 text-center text-gray-400'>
+              {t('models.titles.noLogs')}
+            </div>
           ) : (
             <div className='font-mono text-sm'>
               {logLines.map((line, idx) => (

@@ -301,7 +301,9 @@ export function PaymentSettingsSection({
 
           <div className='space-y-4'>
             <div>
-              <h3 className='text-lg font-medium'>{t('systemSettings.fields.epayGateway')}</h3>
+              <h3 className='text-lg font-medium'>
+                {t('systemSettings.fields.epayGateway')}
+              </h3>
               <p className='text-muted-foreground text-sm'>
                 {t('systemSettings.tips.classicPaymentGatewayConfiguration')}
               </p>
@@ -313,10 +315,14 @@ export function PaymentSettingsSection({
                 name='PayAddress'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.paymentAddress')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.paymentAddress')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlPayExampleCom')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlPayExampleCom'
+                        )}
                         {...field}
                         onChange={(event) => field.onChange(event.target.value)}
                       />
@@ -334,10 +340,14 @@ export function PaymentSettingsSection({
                 name='CustomCallbackAddress'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.callbackAddress')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.callbackAddress')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlGatewayExampleCom')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlGatewayExampleCom'
+                        )}
                         {...field}
                         onChange={(event) => field.onChange(event.target.value)}
                       />
@@ -357,7 +367,9 @@ export function PaymentSettingsSection({
                 name='EpayId'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.epayMerchantId')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.epayMerchantId')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder='10001'
@@ -376,18 +388,24 @@ export function PaymentSettingsSection({
                 name='EpayKey'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.epayMerchantKey')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.epayMerchantKey')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='password'
-                        placeholder={t('systemSettings.placeholders.enterNewKeyToUpdate')}
+                        placeholder={t(
+                          'systemSettings.placeholders.enterNewKeyToUpdate'
+                        )}
                         autoComplete='new-password'
                         {...field}
                         onChange={(event) => field.onChange(event.target.value)}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.leaveBlankUnlessRotatingTheSecret')}
+                      {t(
+                        'systemSettings.tips.leaveBlankUnlessRotatingTheSecret'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -401,7 +419,9 @@ export function PaymentSettingsSection({
                 name='Price'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.topUpPriceLocalUsd')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.topUpPriceLocalUsd')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -423,7 +443,9 @@ export function PaymentSettingsSection({
                 name='MinTopUp'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.minimumTopUpUsd')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.minimumTopUpUsd')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -447,7 +469,9 @@ export function PaymentSettingsSection({
               render={({ field }) => (
                 <FormItem>
                   <div className='mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                    <FormLabel>{t('orderQuery.fields.paymentMethod')}</FormLabel>
+                    <FormLabel>
+                      {t('orderQuery.fields.paymentMethod')}
+                    </FormLabel>
                     <Button
                       type='button'
                       variant='outline'
@@ -500,7 +524,9 @@ export function PaymentSettingsSection({
                 render={({ field }) => (
                   <FormItem>
                     <div className='mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                      <FormLabel>{t('systemSettings.fields.topUpAmountOptions')}</FormLabel>
+                      <FormLabel>
+                        {t('systemSettings.fields.topUpAmountOptions')}
+                      </FormLabel>
                       <Button
                         type='button'
                         variant='outline'
@@ -541,7 +567,9 @@ export function PaymentSettingsSection({
                       )}
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.presetRechargeAmountsAsAJsonArray')}
+                      {t(
+                        'systemSettings.tips.presetRechargeAmountsAsAJsonArray'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -554,7 +582,9 @@ export function PaymentSettingsSection({
                 render={({ field }) => (
                   <FormItem>
                     <div className='mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                      <FormLabel>{t('systemSettings.fields.amountDiscount')}</FormLabel>
+                      <FormLabel>
+                        {t('systemSettings.fields.amountDiscount')}
+                      </FormLabel>
                       <Button
                         type='button'
                         variant='outline'
@@ -595,7 +625,9 @@ export function PaymentSettingsSection({
                       )}
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.discountMapByRechargeAmountAsAJsonObject')}
+                      {t(
+                        'systemSettings.tips.discountMapByRechargeAmountAsAJsonObject'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -608,22 +640,27 @@ export function PaymentSettingsSection({
 
           <div className='space-y-4'>
             <div>
-              <h3 className='text-lg font-medium'>{t('systemSettings.fields.stripeGateway')}</h3>
+              <h3 className='text-lg font-medium'>
+                {t('systemSettings.fields.stripeGateway')}
+              </h3>
               <p className='text-muted-foreground text-sm'>
                 {t('systemSettings.tips.stripePaymentGatewayConfiguration')}
               </p>
             </div>
 
             <Alert>
-              <AlertTitle>{t('systemSettings.titles.webhookConfiguration')}</AlertTitle>
+              <AlertTitle>
+                {t('systemSettings.titles.webhookConfiguration')}
+              </AlertTitle>
               <AlertDescription>
                 <div className='space-y-1 text-sm'>
                   <div>
-                    {t('profile.fields.webhookUrl')}: <code>{stripeWebhookUrl}</code>
+                    {t('profile.fields.webhookUrl')}:{' '}
+                    <code>{stripeWebhookUrl}</code>
                   </div>
                   <div>
-                    {t('systemSettings.errors.requiredEvents')}: checkout.session.completed,
-                    checkout.session.expired
+                    {t('systemSettings.errors.requiredEvents')}:
+                    checkout.session.completed, checkout.session.expired
                   </div>
                 </div>
               </AlertDescription>
@@ -635,18 +672,24 @@ export function PaymentSettingsSection({
                 name='StripeApiSecret'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.apiSecret')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.apiSecret')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='password'
-                        placeholder={t('systemSettings.placeholders.skXxxOrRkXxx')}
+                        placeholder={t(
+                          'systemSettings.placeholders.skXxxOrRkXxx'
+                        )}
                         autoComplete='new-password'
                         {...field}
                         onChange={(event) => field.onChange(event.target.value)}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.leaveBlankUnlessRotatingTheSecret')}
+                      {t(
+                        'systemSettings.tips.leaveBlankUnlessRotatingTheSecret'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -669,7 +712,9 @@ export function PaymentSettingsSection({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.leaveBlankUnlessRotatingTheSecret')}
+                      {t(
+                        'systemSettings.tips.leaveBlankUnlessRotatingTheSecret'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -725,7 +770,9 @@ export function PaymentSettingsSection({
                 name='StripeMinTopUp'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.minimumTopUpUsd')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.minimumTopUpUsd')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -748,9 +795,13 @@ export function PaymentSettingsSection({
                 render={({ field }) => (
                   <SettingsSwitchItem>
                     <SettingsSwitchContent>
-                      <FormLabel>{t('systemSettings.fields.promotionCodes')}</FormLabel>
+                      <FormLabel>
+                        {t('systemSettings.fields.promotionCodes')}
+                      </FormLabel>
                       <FormDescription>
-                        {t('systemSettings.tips.allowUsersToEnterStripePromotionCodes')}
+                        {t(
+                          'systemSettings.tips.allowUsersToEnterStripePromotionCodes'
+                        )}
                       </FormDescription>
                     </SettingsSwitchContent>
                     <FormControl>
@@ -763,14 +814,15 @@ export function PaymentSettingsSection({
                 )}
               />
             </div>
-
           </div>
 
           <Separator />
 
           <div className='space-y-4'>
             <div>
-              <h3 className='text-lg font-medium'>{t('systemSettings.fields.cdkRedemption')}</h3>
+              <h3 className='text-lg font-medium'>
+                {t('systemSettings.fields.cdkRedemption')}
+              </h3>
             </div>
 
             <div className='grid gap-6 md:grid-cols-3'>
@@ -779,14 +831,16 @@ export function PaymentSettingsSection({
                 name='TopUpLink'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.topUpLink')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.topUpLink')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlExampleComTopup')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlExampleComTopup'
+                        )}
                         {...field}
-                        onChange={(event) =>
-                          field.onChange(event.target.value)
-                        }
+                        onChange={(event) => field.onChange(event.target.value)}
                       />
                     </FormControl>
                     <FormMessage />

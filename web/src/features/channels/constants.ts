@@ -168,14 +168,12 @@ export const MULTI_KEY_FILTER_OPTIONS = [
 ] as const
 
 export const MULTI_KEY_CONFIRM_MESSAGES = {
-  DELETE:
-    'common.errors.sureYouWantToDeleteThisKeyThisAction',
+  DELETE: 'common.errors.sureYouWantToDeleteThisKeyThisAction',
   ENABLE: 'common.actions.enableThisKey',
   DISABLE: 'common.actions.disableThisKey',
   ENABLE_ALL: 'common.tips.sureYouWantToEnableAllKeys',
   DISABLE_ALL: 'common.status.sureYouWantToDisableAllEnabledKeys',
-  DELETE_DISABLED:
-    'common.errors.sureYouWantToDeleteAllAutoDisabledKeys',
+  DELETE_DISABLED: 'common.errors.sureYouWantToDeleteAllAutoDisabledKeys',
 } as const
 
 // ============================================================================
@@ -312,11 +310,9 @@ export const FIELD_DESCRIPTIONS = {
   TYPE: 'common.tips.providerTypeOpenAiAnthropicEtc',
   BASE_URL: 'common.tips.customApiBaseUrlLeaveEmptyToUseProvider',
   KEY: 'common.fields.apiKeyFromTheProvider',
-  MODELS:
-    'common.tips.listOfModelsSupportedByThisChannelUseComma',
+  MODELS: 'common.tips.listOfModelsSupportedByThisChannelUseComma',
   GROUP: 'common.tips.userGroupsThatCanAccessThisChannel',
-  MODEL_MAPPING:
-    'common.tips.mapRequestModelNamesToActualProviderModelNames',
+  MODEL_MAPPING: 'common.tips.mapRequestModelNamesToActualProviderModelNames',
   PRIORITY: 'common.tips.higherPriorityChannelsAreSelectedFirst',
   WEIGHT: 'common.status.usedForLoadBalancingHigherWeightMoreRequests',
   TEST_MODEL: 'common.tips.modelToUseWhenTestingChannelConnectivity',
@@ -330,6 +326,16 @@ export const FIELD_DESCRIPTIONS = {
   MULTI_KEY_MODE: 'common.tips.howToSelectKeysRandomOrSequentialPolling',
   BATCH_ADD: 'common.actions.createMultipleChannelsFromMultipleKeys',
   OPENAI_ORG: 'common.tips.openAiOrganizationIdOptional',
+  OR_ALLOW_FALLBACKS: 'channels.tips.orAllowFallbacksDescription',
+  OR_REQUIRE_PARAMETERS: 'channels.tips.orRequireParametersDescription',
+  OR_DATA_COLLECTION: 'channels.tips.orDataCollectionDescription',
+  OR_QUANTIZATIONS: 'channels.tips.orQuantizationsDescription',
+  OR_ORDER: 'channels.tips.orOrderDescription',
+  OR_ONLY: 'channels.tips.orOnlyDescription',
+  OR_IGNORE: 'channels.tips.orIgnoreDescription',
+  OR_SORT: 'channels.tips.orSortDescription',
+  OR_PREF_MIN_THROUGHPUT: 'channels.tips.orPrefMinThroughputDescription',
+  OR_PREF_MAX_LATENCY: 'channels.tips.orPrefMaxLatencyDescription',
 } as const
 
 // ============================================================================

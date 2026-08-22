@@ -118,7 +118,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.passwordLogin')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.passwordLogin')}
+                  </FormLabel>
                   <FormDescription>
                     {t('systemSettings.tips.allowUsersToLogInWithPassword')}
                   </FormDescription>
@@ -139,7 +141,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.status.registrationEnabled')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.status.registrationEnabled')}
+                  </FormLabel>
                   <FormDescription>
                     {t('systemSettings.titles.allowNewUsersToRegister')}
                   </FormDescription>
@@ -160,7 +164,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.passwordRegistration')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.passwordRegistration')}
+                  </FormLabel>
                   <FormDescription>
                     {t('systemSettings.tips.allowRegistrationWithPassword')}
                   </FormDescription>
@@ -181,9 +187,13 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.emailVerification')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.emailVerification')}
+                  </FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.requireEmailVerificationForNewAccounts')}
+                    {t(
+                      'systemSettings.tips.requireEmailVerificationForNewAccounts'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -202,7 +212,9 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.emailDomainRestriction')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.emailDomainRestriction')}
+                  </FormLabel>
                   <FormDescription>
                     {t('systemSettings.tips.onlyAllowSpecificEmailDomains')}
                   </FormDescription>
@@ -223,9 +235,13 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.emailAliasRestriction')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.emailAliasRestriction')}
+                  </FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.blockEmailAliasesEGUserAliasDomainCom')}
+                    {t(
+                      'systemSettings.tips.blockEmailAliasesEGUserAliasDomainCom'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>
@@ -243,10 +259,14 @@ export function BasicAuthSection({ defaultValues }: BasicAuthSectionProps) {
             name='EmailDomainWhitelist'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.emailDomainWhitelist')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.emailDomainWhitelist')}
+                </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t('systemSettings.placeholders.exampleComCompanyCom')}
+                    placeholder={t(
+                      'systemSettings.placeholders.exampleComCompanyCom'
+                    )}
                     rows={4}
                     {...field}
                   />

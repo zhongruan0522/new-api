@@ -68,7 +68,7 @@ bun install
 bun run build
 cd ..
 
-go build -ldflags "-X 'github.com/NookMux/NookMux/common.Version=$(git rev-parse HEAD)'" -o NookMux
+go build -ldflags "-X 'github.com/NookMux/NookMux/internal/common.Version=$(git rev-parse HEAD)'" -o NookMux ./cmd/server
 ./NookMux --port 3000 --log-dir ./logs
 ```
 

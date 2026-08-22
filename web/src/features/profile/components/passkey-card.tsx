@@ -271,7 +271,8 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                       </div>
                       <div className='min-w-0 flex-1 space-y-1'>
                         <p className='truncate font-medium'>
-                          {credential.device_name || t('profile.fields.unnamedDevice')}
+                          {credential.device_name ||
+                            t('profile.fields.unnamedDevice')}
                         </p>
                         <div className='flex flex-wrap items-center gap-2 text-sm'>
                           <StatusBadge
@@ -301,7 +302,9 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                         </div>
                         <p className='text-muted-foreground text-xs'>
                           {credential.last_used_at
-                            ? t('channels.fields.labelWithColon', { label: t('keys.status.lastUsed') }) +
+                            ? t('channels.fields.labelWithColon', {
+                                label: t('keys.status.lastUsed'),
+                              }) +
                               ' ' +
                               dayjs(credential.last_used_at).fromNow()
                             : t('profile.status.notUsedYet')}
@@ -378,14 +381,16 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                 {registering && (
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 )}
-                {count === 0 ? t('profile.actions.enablePasskey') : t('profile.actions.addAnotherPasskey')}
+                {count === 0
+                  ? t('profile.actions.enablePasskey')
+                  : t('profile.actions.addAnotherPasskey')}
               </Button>
             )}
 
             {!canAddMore && count > 0 && (
               <p className='text-muted-foreground text-center text-sm'>
-                {t('profile.tips.haveReachedTheMaximumNumberOfPasskeys')} ({count}/
-                {maxPasskeys})
+                {t('profile.tips.haveReachedTheMaximumNumberOfPasskeys')} (
+                {count}/{maxPasskeys})
               </p>
             )}
 
@@ -417,7 +422,9 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-2'>
-            <Label htmlFor='device-name'>{t('profile.fields.deviceName')}</Label>
+            <Label htmlFor='device-name'>
+              {t('profile.fields.deviceName')}
+            </Label>
             <Input
               id='device-name'
               value={renameName}

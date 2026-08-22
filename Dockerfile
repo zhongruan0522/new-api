@@ -14,7 +14,7 @@ RUN go mod download
 
 COPY . .
 RUN test -f web/dist/index.html
-RUN go build -ldflags "-s -w -X 'github.com/NookMux/NookMux/common.Version=${COMMIT_HASH}'" -o NookMux
+RUN go build -ldflags "-s -w -X 'github.com/NookMux/NookMux/internal/common.Version=${COMMIT_HASH}'" -o NookMux ./cmd/server
 
 # alpine:3.21 (~3.5MB). Previous runtime used debian:bookworm-slim with libasan8
 # (AddressSanitizer runtime, ~100MB+ and adds per-allocation overhead).

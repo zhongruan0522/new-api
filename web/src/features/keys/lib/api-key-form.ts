@@ -151,7 +151,9 @@ export function transformFormDataToPayload(
   return {
     name: data.name,
     remain_quota:
-      quotaType === 1 ? parseQuotaFromDollars(data.remain_quota_dollars || 0) : 0,
+      quotaType === 1
+        ? parseQuotaFromDollars(data.remain_quota_dollars || 0)
+        : 0,
     expired_time: data.expired_time
       ? Math.floor(data.expired_time.getTime() / 1000)
       : -1,
@@ -170,7 +172,9 @@ export function transformFormDataToPayload(
     window_start_hour: quotaType >= 2 ? data.window_start_hour || 0 : 0,
     cycle_days: quotaType === 3 ? data.cycle_days || 1 : 0,
     cycle_quota:
-      quotaType === 3 ? parseQuotaFromDollars(data.cycle_quota_dollars || 0) : 0,
+      quotaType === 3
+        ? parseQuotaFromDollars(data.cycle_quota_dollars || 0)
+        : 0,
   }
 }
 

@@ -88,8 +88,7 @@ export function usePersistentColumnVisibility(
   const onColumnVisibilityChange = useCallback<OnColumnVisibilityChange>(
     (updater) => {
       setColumnVisibility((previous) => {
-        const next =
-          typeof updater === 'function' ? updater(previous) : updater
+        const next = typeof updater === 'function' ? updater(previous) : updater
         saveVisibilityState(storageKey, next)
         return next
       })

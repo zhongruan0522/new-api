@@ -86,9 +86,7 @@ export function ApiKeysResetDialog() {
           <AlertDialogTitle>{t('keys.actions.resetApiKey')}</AlertDialogTitle>
           <AlertDialogDescription>
             {newKey ? (
-              t(
-                'keys.tips.apiKeyHasBeenResetThePreviousKeyIs'
-              )
+              t('keys.tips.apiKeyHasBeenResetThePreviousKeyIs')
             ) : (
               <>
                 {t('keys.tips.resetApiKey')}{' '}
@@ -103,7 +101,9 @@ export function ApiKeysResetDialog() {
 
         {newKey && (
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>{t('keys.fields.newApiKey')}</label>
+            <label className='text-sm font-medium'>
+              {t('keys.fields.newApiKey')}
+            </label>
             <Input
               readOnly
               value={newKey}
@@ -140,7 +140,9 @@ export function ApiKeysResetDialog() {
               disabled={isResetting}
               className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
-              {isResetting ? t('keys.tips.resetting') : t('common.actions.reset')}
+              {isResetting
+                ? t('keys.tips.resetting')
+                : t('common.actions.reset')}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

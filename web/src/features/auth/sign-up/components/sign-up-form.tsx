@@ -69,7 +69,9 @@ export function SignUpForm({
   const [wechatCode, setWeChatCode] = useState('')
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
-  const legalConsentErrorMessage = t('auth.errors.pleaseAgreeToTheLegalTermsFirst')
+  const legalConsentErrorMessage = t(
+    'auth.errors.pleaseAgreeToTheLegalTermsFirst'
+  )
 
   const { status } = useStatus()
   const {
@@ -244,7 +246,10 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('auth.fields.username')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('auth.placeholders.enterYourUsername')} {...field} />
+                <Input
+                  placeholder={t('auth.placeholders.enterYourUsername')}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -260,7 +265,9 @@ export function SignUpForm({
               <FormLabel>{t('auth.fields.password')}</FormLabel>
               <FormControl>
                 <PasswordInput
-                  placeholder={t('auth.placeholders.enterPassword820Characters')}
+                  placeholder={t(
+                    'auth.placeholders.enterPassword820Characters'
+                  )}
                   {...field}
                 />
               </FormControl>
@@ -277,7 +284,10 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('auth.actions.confirmPassword')}</FormLabel>
               <FormControl>
-                <PasswordInput placeholder={t('auth.actions.confirmPassword')} {...field} />
+                <PasswordInput
+                  placeholder={t('auth.actions.confirmPassword')}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -392,9 +402,7 @@ export function SignUpForm({
             <DialogHeader className='text-left'>
               <DialogTitle>{t('auth.fields.chatSignIn')}</DialogTitle>
               <DialogDescription>
-                {t(
-                  'auth.tips.scanTheQrCodeToFollowTheOfficialAccount'
-                )}
+                {t('auth.tips.scanTheQrCodeToFollowTheOfficialAccount')}
               </DialogDescription>
             </DialogHeader>
 
@@ -413,7 +421,9 @@ export function SignUpForm({
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('auth.fields.verificationCode')}</Label>
+              <Label htmlFor='wechat-code'>
+                {t('auth.fields.verificationCode')}
+              </Label>
               <Input
                 id='wechat-code'
                 placeholder={t('auth.placeholders.enterTheVerificationCode')}

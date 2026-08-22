@@ -21,10 +21,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import {
-  formatQuota,
-  formatTimestampToDate,
-} from '@/lib/format'
+import { formatQuota, formatTimestampToDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

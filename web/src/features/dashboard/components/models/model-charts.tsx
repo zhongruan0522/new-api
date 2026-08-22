@@ -133,7 +133,10 @@ export function ModelCharts(props: ModelChartsProps) {
             {t('dashboard.titles.modelCallAnalytics')}
           </div>
           <span className='text-muted-foreground text-xs'>
-            {t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') })} {chartData.totalCountDisplay}
+            {t('channels.fields.labelWithColon', {
+              label: t('dashboard.fields.total'),
+            })}{' '}
+            {chartData.totalCountDisplay}
           </span>
         </div>
 

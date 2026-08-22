@@ -1,20 +1,19 @@
-<div align="center">
-  <img src="/web/public/logo.png" alt="NookMux" width="120" />
+# NookMux
 
-  # NookMux
+[English](README.en.md) · 简体中文
 
-  基于 [newapi](https://github.com/QuantumNous/new-api) 的自用定制版 AI API 网关 / 代理项目。
+基于 [newapi](https://github.com/QuantumNous/new-api) 的自用定制版 AI API 网关/代理项目。
 
-  本项目主要用于个人学习、研究与自用场景。使用、部署或二次分发本项目时，应遵守 AGPL-3.0 许可证、本项目及上游项目的版权声明，并自行确保不违反相关上游服务提供商的服务条款；不得将本项目用于中转、分发、倒卖厂商 Plan 或其他违反第三方服务条款的行为。
+本项目主要用于个人学习、研究与自用场景。使用、部署或二次分发本项目时，应遵守 AGPL-3.0 许可证、本项目及上游项目的版权声明，并自行确保不违反相关上游服务提供商的服务条款；不得将本项目用于中转、分发、倒卖厂商 Plan 或其他违反第三方服务条款的行为。
 
-  [Zread](https://zread.ai/NookMux/NookMux) · [DeepWiki](https://deepwiki.com/NookMux/NookMux)
-</div>
+[Zread](https://zread.ai/NookMux/NookMux) · [DeepWiki](https://deepwiki.com/NookMux/NookMux)
 
 ---
 
 > ⚠️ 本项目仅供个人学习与自用，不保证稳定性、可用性与长期维护，也不提供任何形式的技术支持。
 
-## AI Coding 说明
+<details>
+<summary>AI Coding 说明</summary>
 
 本项目在开发过程中使用了 AI 辅助编程，主要用于代码阅读、功能改造、问题排查、重构建议与文档整理。
 
@@ -27,34 +26,31 @@
 - OpenCode
 - Codex
 - Cursor
+- CodeBuddy
+- ZCode
 
-### 使用的 AI 模型
+### 当前使用的 AI 模型
 
-<details>
-<summary>Z.AI GLM</summary>
+> 关于模型，实际格式为`供应商/模型[思维强度/是否开启思考]`
 
-- GLM-5 系列  
-  - GLM-5
-  - GLM-5.1
-  - GLM-5.2
+- Zhipu/GLM-5.3[Max]
+- Zhipu/GLM-5V-Turbo[Thinking]
+- OpenAI/GPT-5.4[Xhigh]
+- OpenAI/GPT-5.5[high]
+- OpenAI/GPT-5.5[Xhigh]
+- OpenAI/GPT-5.6-系列[Sol/Luna]-[Max]
 
-- GLM-5-Turbo 系列
-  - GLM-5-Turbo
-  - GLM-5V-Turbo
+### 历史使用模型
+
+- OpenAI/GPT-5.2[Xhigh]
+- Zhipu/GLM-5-Turbo[Thinking]
+- Zhipu/GLM-5[Thinking]
+- Zhipu/GLM-5.1[Thinking]
+- Zhipu/GLM-5.2[Max]
+
+> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax/Minimax-M3`、`Kimi/Kimi-K2.6`、`Kimi/Kimi-K3`、`CodeBuddy/DeepSeek-V4-Flash`、`OpenRouter/Ox Alpha`
 
 </details>
-
-<details>
-<summary>OpenAI GPT</summary>
-
-- GPT-5 系列  
-  - GPT-5.2-Xhigh
-  - GPT-5.4-Xhigh / High
-  - GPT-5.5-High
-
-</details>
-
-> 在本项目开发完善期间，有部分模型仅使用本项目进行能力测试，并非主力开发，清单如下：`Minimax-M3`、`Kimi-K2.6`、`Kimi-K3`
 
 ## 致谢
 
@@ -63,6 +59,6 @@
 - **[newapi](https://github.com/QuantumNous/new-api)** — 本项目的上游基础项目。
 - **[MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
 - **[AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
-- **[Openafw](https://github.com/openafw/openafw)** - 本地AI流量安全过滤方案参考
-- **[zaicontrol[私有仓库]](https://github.com/zhongruan0522/zaicontrol)** - Z.AI套餐查询相关接口
-- **[cc-switch](https://github.com/farion1231/cc-switch)** - Kimi套餐查询相关接口
+- **[Openafw](https://github.com/openafw/openafw)** — 本地 AI 流量安全过滤方案参考。
+- **[zaicontrol](https://github.com/zhongruan0522/zaicontrol)（私有仓库）** — Z.AI 套餐查询相关接口。
+- **[cc-switch](https://github.com/farion1231/cc-switch)** — Kimi 套餐查询相关接口。

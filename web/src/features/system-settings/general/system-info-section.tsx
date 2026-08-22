@@ -152,10 +152,15 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                   <FormItem>
                     <FormLabel>{t('systemSettings.titles.name')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('layout.fields.newApi')} {...field} />
+                      <Input
+                        placeholder={t('layout.fields.newApi')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.nameDisplayedAcrossTheApplication')}
+                      {t(
+                        'systemSettings.tips.nameDisplayedAcrossTheApplication'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -167,7 +172,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='ServerAddress'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.serverAddress')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.serverAddress')}
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder='https://yourdomain.com' {...field} />
                     </FormControl>
@@ -186,10 +193,14 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                 name='general_setting.docs_link'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.documentationLink')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.documentationLink')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlDocsExampleCom')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlDocsExampleCom'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -209,7 +220,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     <FormLabel>{t('systemSettings.fields.logoUrl')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.urlExampleComLogoPng')}
+                        placeholder={t(
+                          'systemSettings.placeholders.urlExampleComLogoPng'
+                        )}
                         {...field}
                       />
                     </FormControl>
@@ -237,7 +250,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('systemSettings.tips.footerTextDisplayedAtTheBottomOfPages')}
+                      {t(
+                        'systemSettings.tips.footerTextDisplayedAtTheBottomOfPages'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -275,10 +290,14 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                   name='HomePageContent'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('systemSettings.fields.homePageContent')}</FormLabel>
+                      <FormLabel>
+                        {t('systemSettings.fields.homePageContent')}
+                      </FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder={t('systemSettings.tips.welcomeToOurNewApi')}
+                          placeholder={t(
+                            'systemSettings.tips.welcomeToOurNewApi'
+                          )}
                           rows={6}
                           {...field}
                         />

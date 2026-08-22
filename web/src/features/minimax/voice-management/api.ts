@@ -77,6 +77,9 @@ export async function deleteVoice(
 // 从 axios 错误对象中安全提取后端业务错误信息，避免在组件中使用 any。
 export function extractApiErrorMessage(e: unknown): string | undefined {
   if (typeof e !== 'object' || e === null) return undefined
-  const err = e as { response?: { data?: { message?: string } }; message?: string }
+  const err = e as {
+    response?: { data?: { message?: string } }
+    message?: string
+  }
   return err.response?.data?.message ?? err.message
 }

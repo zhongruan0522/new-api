@@ -309,7 +309,9 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             </span>
           )}
           <span className='text-muted-foreground text-xs font-medium'>
-            {isTokenBased ? t('pricing.fields.tokenBased') : t('pricing.fields.perRequest')}
+            {isTokenBased
+              ? t('pricing.fields.tokenBased')
+              : t('pricing.fields.perRequest')}
           </span>
           {isDynamicPricing && (
             <StatusBadge

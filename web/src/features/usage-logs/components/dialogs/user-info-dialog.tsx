@@ -55,7 +55,9 @@ export function UserInfoDialog({
         if (result.success) {
           setUserInfo(result.data || null)
         } else {
-          toast.error(result.message || t('usageLogs.errors.failedToFetchUserInformation'))
+          toast.error(
+            result.message || t('usageLogs.errors.failedToFetchUserInformation')
+          )
         }
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -107,7 +109,10 @@ export function UserInfoDialog({
           <div className='space-y-4 py-4'>
             {/* Basic Info */}
             <div className='grid grid-cols-2 gap-4'>
-              <InfoItem label={t('auth.fields.username')} value={userInfo.username} />
+              <InfoItem
+                label={t('auth.fields.username')}
+                value={userInfo.username}
+              />
               {userInfo.display_name && (
                 <InfoItem
                   label={t('usageLogs.fields.displayName')}
@@ -135,7 +140,10 @@ export function UserInfoDialog({
                 value={formatCompactNumber(userInfo.request_count)}
               />
               {userInfo.group && (
-                <InfoItem label={t('common.fields.userGroup')} value={userInfo.group} />
+                <InfoItem
+                  label={t('common.fields.userGroup')}
+                  value={userInfo.group}
+                />
               )}
             </div>
 

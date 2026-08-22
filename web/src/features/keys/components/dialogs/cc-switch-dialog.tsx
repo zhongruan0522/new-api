@@ -39,20 +39,36 @@ const APP_CONFIGS = {
     defaultName: 'My Claude',
     modelFields: [
       { key: 'model', labelKey: 'common.fields.primaryModel', required: true },
-      { key: 'haikuModel', labelKey: 'common.fields.haikuModel', required: false },
-      { key: 'sonnetModel', labelKey: 'common.fields.sonnetModel', required: false },
-      { key: 'opusModel', labelKey: 'common.fields.opusModel', required: false },
+      {
+        key: 'haikuModel',
+        labelKey: 'common.fields.haikuModel',
+        required: false,
+      },
+      {
+        key: 'sonnetModel',
+        labelKey: 'common.fields.sonnetModel',
+        required: false,
+      },
+      {
+        key: 'opusModel',
+        labelKey: 'common.fields.opusModel',
+        required: false,
+      },
     ],
   },
   codex: {
     label: 'common.fields.codex',
     defaultName: 'My Codex',
-    modelFields: [{ key: 'model', labelKey: 'common.fields.primaryModel', required: true }],
+    modelFields: [
+      { key: 'model', labelKey: 'common.fields.primaryModel', required: true },
+    ],
   },
   gemini: {
     label: 'systemSettings.fields.gemini',
     defaultName: 'My Gemini',
-    modelFields: [{ key: 'model', labelKey: 'common.fields.primaryModel', required: true }],
+    modelFields: [
+      { key: 'model', labelKey: 'common.fields.primaryModel', required: true },
+    ],
   },
 } as const
 
@@ -216,7 +232,9 @@ export function CCSwitchDialog(props: Props) {
           <Button variant='outline' onClick={() => props.onOpenChange(false)}>
             {t('common.actions.cancel')}
           </Button>
-          <Button onClick={handleSubmit}>{t('keys.actions.openCcSwitch')}</Button>
+          <Button onClick={handleSubmit}>
+            {t('keys.actions.openCcSwitch')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

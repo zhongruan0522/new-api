@@ -123,9 +123,10 @@ export function SystemBehaviorSection({
     [autoRetryStatusCodes]
   )
 
-  const baseline = useMemo(() => normalizeDefaults(defaultValues), [
-    defaultValues,
-  ])
+  const baseline = useMemo(
+    () => normalizeDefaults(defaultValues),
+    [defaultValues]
+  )
 
   const onSubmit = async (data: BehaviorFormValues) => {
     const normalized: NormalizedBehaviorValues = {
@@ -178,7 +179,9 @@ export function SystemBehaviorSection({
               render={({ field }) => (
                 <SettingsSwitchItem>
                   <SettingsSwitchContent>
-                    <FormLabel>{t('systemSettings.fields.automaticRetry')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.automaticRetry')}
+                    </FormLabel>
                     <FormDescription>
                       {t(
                         'systemSettings.actions.retryFailedRequestsOnAlternateChannelsBeforeReturningAn'
@@ -201,7 +204,9 @@ export function SystemBehaviorSection({
                 name='RetryTimes'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.actions.retryTimes')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.actions.retryTimes')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'
@@ -214,9 +219,7 @@ export function SystemBehaviorSection({
                             ? field.value
                             : ''
                         }
-                        onChange={(e) =>
-                          field.onChange(e.target.valueAsNumber)
-                        }
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
                         name={field.name}
                         onBlur={field.onBlur}
                         ref={field.ref}
@@ -238,14 +241,16 @@ export function SystemBehaviorSection({
                 name='AutomaticRetryStatusCodes'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('systemSettings.fields.autoRetryStatusCodes')}</FormLabel>
+                    <FormLabel>
+                      {t('systemSettings.fields.autoRetryStatusCodes')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('systemSettings.placeholders.eG401403429500599')}
+                        placeholder={t(
+                          'systemSettings.placeholders.eG401403429500599'
+                        )}
                         value={field.value}
-                        onChange={(event) =>
-                          field.onChange(event.target.value)
-                        }
+                        onChange={(event) => field.onChange(event.target.value)}
                         disabled={!retryEnabled}
                       />
                     </FormControl>
@@ -255,10 +260,10 @@ export function SystemBehaviorSection({
                       )}{' '}
                       {autoRetryParsed.ok &&
                         autoRetryParsed.normalized &&
-                        autoRetryParsed.normalized !==
-                          field.value.trim() && (
+                        autoRetryParsed.normalized !== field.value.trim() && (
                           <span className='text-muted-foreground'>
-                            {t('systemSettings.fields.normalized')} {autoRetryParsed.normalized}
+                            {t('systemSettings.fields.normalized')}{' '}
+                            {autoRetryParsed.normalized}
                           </span>
                         )}
                     </FormDescription>
@@ -275,9 +280,13 @@ export function SystemBehaviorSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.defaultCollapseSidebar')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.defaultCollapseSidebar')}
+                  </FormLabel>
                   <FormDescription>
-                    {t('systemSettings.tips.sidebarCollapsedByDefaultForNewUsers')}
+                    {t(
+                      'systemSettings.tips.sidebarCollapsedByDefaultForNewUsers'
+                    )}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>

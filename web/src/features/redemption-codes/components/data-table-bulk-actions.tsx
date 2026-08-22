@@ -89,9 +89,12 @@ export function DataTableBulkActions<TData>({
       if (result.success) {
         const count = result.data || 0
         toast.success(
-          t('redemptionCodes.status.successfullyDeletedCountInvalidRedemptionCodes', {
-            count,
-          })
+          t(
+            'redemptionCodes.status.successfullyDeletedCountInvalidRedemptionCodes',
+            {
+              count,
+            }
+          )
         )
         table.resetRowSelection()
         triggerRefresh()
@@ -104,7 +107,10 @@ export function DataTableBulkActions<TData>({
 
   return (
     <>
-      <BulkActionsToolbar table={table} entityName={t('redemptionCodes.fields.codes')}>
+      <BulkActionsToolbar
+        table={table}
+        entityName={t('redemptionCodes.fields.codes')}
+      >
         {/* loading 态保持 CopyButton 挂载（disabled + spinner），卸载重挂会
             丢失组件内 copiedText 状态，导致成功复制后图标不切换 */}
         <CopyButton
@@ -129,16 +135,26 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={() => setShowDeleteInvalidConfirm(true)}
                 className='size-8'
-                aria-label={t('redemptionCodes.actions.deleteInvalidRedemptionCodes')}
-                title={t('redemptionCodes.actions.deleteInvalidRedemptionCodes')}
+                aria-label={t(
+                  'redemptionCodes.actions.deleteInvalidRedemptionCodes'
+                )}
+                title={t(
+                  'redemptionCodes.actions.deleteInvalidRedemptionCodes'
+                )}
               />
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('redemptionCodes.actions.deleteInvalidCodes')}</span>
+            <span className='sr-only'>
+              {t('redemptionCodes.actions.deleteInvalidCodes')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('redemptionCodes.actions.deleteInvalidCodesUsedDisabledExpired')}</p>
+            <p>
+              {t(
+                'redemptionCodes.actions.deleteInvalidCodesUsedDisabledExpired'
+              )}
+            </p>
           </TooltipContent>
         </Tooltip>
       </BulkActionsToolbar>
@@ -153,9 +169,11 @@ export function DataTableBulkActions<TData>({
         title={t('redemptionCodes.actions.deleteInvalidRedemptionCodesfa2061')}
         desc={
           <>
-            {t('redemptionCodes.tips.deleteAll')} <strong>{t('common.status.used')}</strong>,{' '}
+            {t('redemptionCodes.tips.deleteAll')}{' '}
+            <strong>{t('common.status.used')}</strong>,{' '}
             <strong>{t('channels.status.disabled')}</strong>
-            {t('redemptionCodes.fields.value')} <strong>{t('redemptionCodes.status.expired')}</strong>{' '}
+            {t('redemptionCodes.fields.value')}{' '}
+            <strong>{t('redemptionCodes.status.expired')}</strong>{' '}
             {t('redemptionCodes.tips.codes')}
             <br />
             {t('keys.errors.actionCannotBeUndone951f49')}

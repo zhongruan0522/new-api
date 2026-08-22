@@ -42,7 +42,9 @@ export function FAQPanel() {
           {t('dashboard.fields.faq')}
         </span>
       }
-      description={t('dashboard.tips.answersForCommonAccessAndBillingQuestions')}
+      description={t(
+        'dashboard.tips.answersForCommonAccessAndBillingQuestions'
+      )}
       loading={loading}
       empty={!list.length}
       emptyMessage={t('dashboard.fields.noFaqEntriesAvailable')}

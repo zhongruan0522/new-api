@@ -84,7 +84,9 @@ export function useWaffoPancakePayment() {
               toast.error(i18next.t('wallet.errors.invalidPaymentRedirectUrl'))
               return false
             }
-            toast.success(i18next.t('subscriptions.status.redirectingToPaymentPage'))
+            toast.success(
+              i18next.t('subscriptions.status.redirectingToPaymentPage')
+            )
             window.location.href = checkoutUrl
             return true
           }

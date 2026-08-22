@@ -29,6 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
+  ChevronDown,
   HelpCircle,
   Loader2,
   Sparkles,
@@ -87,6 +88,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -108,6 +114,7 @@ import {
 import {
   createChannel,
   fetchModels,
+  fetchProviders,
   getAllModels,
   getChannel,
   getChannelKey,
@@ -151,6 +158,10 @@ import {
 } from '../../lib/status-code-risk-guard'
 import type { Channel, ProxyTestResultData } from '../../types'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
+import {
+  ProviderPickerDialog,
+  type ProviderPickerMode,
+} from '../dialogs/provider-picker-dialog'
 import {
   MissingModelsConfirmationDialog,
   type MissingModelsAction,
@@ -239,6 +250,29 @@ function SubHeading({ title, icon }: { title: string; icon?: ReactNode }) {
   )
 }
 
+// OpenRouter quantization levels accepted by the provider routing object.
+const OPENROUTER_QUANTIZATION_OPTIONS = [
+  'int4',
+  'int8',
+  'fp4',
+  'mxfp4',
+  'nvfp4',
+  'fp6',
+  'fp8',
+  'mxfp8',
+  'fp16',
+  'bf16',
+  'fp32',
+  'unknown',
+].map((value) => ({ value, label: value }))
+
+function parseOpenRouterSlugList(value: string): string[] {
+  return value
+    .split(',')
+    .map((slug) => slug.trim())
+    .filter(Boolean)
+}
+
 export function ChannelMutateDrawer({
   open,
   onOpenChange,
@@ -267,10 +301,11 @@ export function ChannelMutateDrawer({
     ((action: MissingModelsAction) => void) | null
   >(null)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
+  const [providerPickerField, setProviderPickerField] =
+    useState<ProviderPickerMode | null>(null)
   const [proxyTestLoading, setProxyTestLoading] = useState(false)
-  const [proxyTestResult, setProxyTestResult] = useState<ProxyTestResultData | null>(
-    null
-  )
+  const [proxyTestResult, setProxyTestResult] =
+    useState<ProxyTestResultData | null>(null)
 
   const isEditing = Boolean(currentRow)
   const channelId = currentRow?.id ?? null
@@ -530,12 +565,9 @@ export function ChannelMutateDrawer({
 
     // Show warning toast
     const timer = setTimeout(() => {
-      toast.warning(
-        t(
-          'channels.tips.warningBaseUrlShouldNotEndWithV1New'
-        ),
-        { duration: 5000 }
-      )
+      toast.warning(t('channels.tips.warningBaseUrlShouldNotEndWithV1New'), {
+        duration: 5000,
+      })
     }, 500)
 
     return () => clearTimeout(timer)
@@ -557,14 +589,11 @@ export function ChannelMutateDrawer({
     } else {
       form.setValue('key', result.deduplicatedText)
       toast.success(
-        t(
-          'channels.status.removedRemovedDuplicateKeySBeforeBeforeAfterAfter',
-          {
-            removed: result.removedCount,
-            before: result.beforeCount,
-            after: result.afterCount,
-          }
-        )
+        t('channels.status.removedRemovedDuplicateKeySBeforeBeforeAfterAfter', {
+          removed: result.removedCount,
+          before: result.beforeCount,
+          after: result.afterCount,
+        })
       )
     }
   }
@@ -578,7 +607,9 @@ export function ChannelMutateDrawer({
     try {
       const res = await getChannelKey(channelId)
       if (!res.success) {
-        throw new Error(res.message || t('channels.errors.failedToFetchChannelKey'))
+        throw new Error(
+          res.message || t('channels.errors.failedToFetchChannelKey')
+        )
       }
 
       const keyValue = res.data?.key ?? ''
@@ -677,6 +708,19 @@ export function ChannelMutateDrawer({
     }
     throw new Error(response.message || 'No models fetched from upstream')
   }, [form])
+
+  const createModeProviderFetcher = useCallback(async () => {
+    const response = await fetchProviders({
+      type: form.getValues('type'),
+      base_url: form.getValues('base_url') || '',
+    })
+    if (response.success && response.data) {
+      return response.data
+    }
+    throw new Error(
+      response.message || t('channels.errors.fetchProvidersFailed')
+    )
+  }, [form, t])
 
   // Handle adding custom models
   const handleAddCustomModels = useCallback(() => {
@@ -904,7 +948,11 @@ export function ChannelMutateDrawer({
       try {
         if (isEditing && currentRow) {
           // Update existing channel
-          const payload = transformFormDataToUpdatePayload(data, currentRow.id)
+          const payload = transformFormDataToUpdatePayload(
+            data,
+            currentRow.id,
+            isMultiKeyChannel
+          )
           const payloadWithKeyMode =
             isMultiKeyChannel && data.key_mode
               ? {
@@ -969,7 +1017,9 @@ export function ChannelMutateDrawer({
                 {getLobeIcon(`${getChannelTypeIcon(currentType)}.Color`, 22)}
               </span>
               <span>
-                {isEditing ? t('channels.actions.editChannel') : t('channels.actions.createChannel')}
+                {isEditing
+                  ? t('channels.actions.editChannel')
+                  : t('channels.actions.createChannel')}
                 <span className='text-muted-foreground ml-2 text-sm font-normal'>
                   {t(currentTypeLabel)}
                 </span>
@@ -978,7 +1028,7 @@ export function ChannelMutateDrawer({
             <SheetDescription>
               {isEditing
                 ? t(
-                    "common.tips.updateChannelConfigurationAndClickSaveWhenYouRe"
+                    'common.tips.updateChannelConfigurationAndClickSaveWhenYouRe'
                   )
                 : t(
                     'channels.actions.addANewChannelByProvidingTheNecessaryInformation'
@@ -1032,8 +1082,12 @@ export function ChannelMutateDrawer({
                                 field.onChange(nextType)
                               }
                             }}
-                            placeholder={t('channels.placeholders.selectChannelType')}
-                            searchPlaceholder={t('channels.actions.searchChannelType')}
+                            placeholder={t(
+                              'channels.placeholders.selectChannelType'
+                            )}
+                            searchPlaceholder={t(
+                              'channels.actions.searchChannelType'
+                            )}
                             emptyText={t('channels.tips.noChannelTypeFound')}
                           />
                         </FormControl>
@@ -1107,9 +1161,14 @@ export function ChannelMutateDrawer({
                     name='openai_organization'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('channels.fields.openAiOrganization')}</FormLabel>
+                        <FormLabel>
+                          {t('channels.fields.openAiOrganization')}
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder={t('channels.placeholders.org')} {...field} />
+                          <Input
+                            placeholder={t('channels.placeholders.org')}
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
                           {t(FIELD_DESCRIPTIONS.OPENAI_ORG)}
@@ -1143,7 +1202,9 @@ export function ChannelMutateDrawer({
                       name='base_url'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.azureOpenaiEndpoint')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.azureOpenaiEndpoint')}
+                          </FormLabel>
                           <FormControl>
                             <Input
                               placeholder={t(
@@ -1164,10 +1225,14 @@ export function ChannelMutateDrawer({
                       name='other'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.defaultApiVersion')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.defaultApiVersion')}
+                          </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder={t('channels.placeholders.eG20250401Preview')}
+                              placeholder={t(
+                                'channels.placeholders.eG20250401Preview'
+                              )}
                               {...field}
                             />
                           </FormControl>
@@ -1183,7 +1248,9 @@ export function ChannelMutateDrawer({
                       name='azure_responses_version'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.responsesApiVersion')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.responsesApiVersion')}
+                          </FormLabel>
                           <FormControl>
                             <Input
                               placeholder={t('channels.placeholders.eGPreview')}
@@ -1223,7 +1290,10 @@ export function ChannelMutateDrawer({
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('channels.placeholders.enterTheCompleteUrlSupports')} {'{'}
+                          {t(
+                            'channels.placeholders.enterTheCompleteUrlSupports'
+                          )}{' '}
+                          {'{'}
                           model
                           {'}'} {t('channels.fields.variable')}
                         </FormDescription>
@@ -1241,7 +1311,9 @@ export function ChannelMutateDrawer({
                     render={({ field }) => (
                       <FormItem className='flex items-center justify-between'>
                         <div className='space-y-0.5'>
-                          <FormLabel>{t('channels.placeholders.enterpriseAccount')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.placeholders.enterpriseAccount')}
+                          </FormLabel>
                           <FormDescription>
                             {t(
                               'channels.actions.enableIfThisIsAnOpenRouterEnterpriseAccount'
@@ -1266,14 +1338,21 @@ export function ChannelMutateDrawer({
                     name='aws_key_type'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('channels.fields.awsKeyFormat')}</FormLabel>
+                        <FormLabel>
+                          {t('channels.fields.awsKeyFormat')}
+                        </FormLabel>
                         <Select
                           items={[
                             {
                               value: 'ak_sk',
-                              label: t('channels.fields.accessKeySecretAccessKey'),
+                              label: t(
+                                'channels.fields.accessKeySecretAccessKey'
+                              ),
                             },
-                            { value: 'api_key', label: t('channels.fields.apiKey') },
+                            {
+                              value: 'api_key',
+                              label: t('channels.fields.apiKey'),
+                            },
                           ]}
                           onValueChange={field.onChange}
                           value={field.value}
@@ -1281,7 +1360,9 @@ export function ChannelMutateDrawer({
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue
-                                placeholder={t('channels.placeholders.selectKeyFormat')}
+                                placeholder={t(
+                                  'channels.placeholders.selectKeyFormat'
+                                )}
                               />
                             </SelectTrigger>
                           </FormControl>
@@ -1320,7 +1401,9 @@ export function ChannelMutateDrawer({
                         rel='noopener noreferrer'
                         className='text-primary underline'
                       >
-                        {t('channels.placeholders.urlCloudSiliconflowCnIHij0Yntz')}
+                        {t(
+                          'channels.placeholders.urlCloudSiliconflowCnIHij0Yntz'
+                        )}
                       </a>
                     </AlertDescription>
                   </Alert>
@@ -1334,11 +1417,19 @@ export function ChannelMutateDrawer({
                       name='vertex_key_type'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.vertexAiKeyFormat')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.vertexAiKeyFormat')}
+                          </FormLabel>
                           <Select
                             items={[
-                              { value: 'json', label: t('channels.fields.json') },
-                              { value: 'api_key', label: t('channels.fields.apiKey') },
+                              {
+                                value: 'json',
+                                label: t('channels.fields.json'),
+                              },
+                              {
+                                value: 'api_key',
+                                label: t('channels.fields.apiKey'),
+                              },
                             ]}
                             onValueChange={field.onChange}
                             value={field.value}
@@ -1389,7 +1480,9 @@ export function ChannelMutateDrawer({
                               e.target.value = ''
 
                               if (files.length === 0) {
-                                toast.info(t('channels.fields.pleaseUploadKeyFileS'))
+                                toast.info(
+                                  t('channels.fields.pleaseUploadKeyFileS')
+                                )
                                 return
                               }
 
@@ -1400,16 +1493,21 @@ export function ChannelMutateDrawer({
                                   keys.push(JSON.parse(txt))
                                 } catch {
                                   toast.error(
-                                    t('channels.errors.failedToParseJsonFileName', {
-                                      name: file.name,
-                                    })
+                                    t(
+                                      'channels.errors.failedToParseJsonFileName',
+                                      {
+                                        name: file.name,
+                                      }
+                                    )
                                   )
                                   return
                                 }
                               }
 
                               if (keys.length === 0) {
-                                toast.info(t('channels.fields.pleaseUploadKeyFileS'))
+                                toast.info(
+                                  t('channels.fields.pleaseUploadKeyFileS')
+                                )
                                 return
                               }
 
@@ -1423,17 +1521,24 @@ export function ChannelMutateDrawer({
                               })
 
                               toast.success(
-                                t('channels.tips.parsedCountServiceAccountFileS', {
-                                  count: keys.length,
-                                })
+                                t(
+                                  'channels.tips.parsedCountServiceAccountFileS',
+                                  {
+                                    count: keys.length,
+                                  }
+                                )
                               )
                             }}
                           />
                         </FormControl>
                         <FormDescription>
                           {isBatchMode
-                            ? t('channels.actions.uploadMultipleJsonFilesInBatchModes')
-                            : t('channels.actions.uploadASingleServiceAccountJsonFile')}
+                            ? t(
+                                'channels.actions.uploadMultipleJsonFilesInBatchModes'
+                              )
+                            : t(
+                                'channels.actions.uploadASingleServiceAccountJsonFile'
+                              )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1443,7 +1548,9 @@ export function ChannelMutateDrawer({
                       name='other'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.deploymentRegion')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.deploymentRegion')}
+                          </FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder={t(
@@ -1454,7 +1561,9 @@ export function ChannelMutateDrawer({
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('channels.placeholders.enterDeploymentRegionOrJsonMapping')}{' '}
+                            {t(
+                              'channels.placeholders.enterDeploymentRegionOrJsonMapping'
+                            )}{' '}
                             {'{'}
                             {t(
                               'common.tips.defaultUsCentral1Claude35Sonnet20240620Europe'
@@ -1557,7 +1666,9 @@ export function ChannelMutateDrawer({
                             ? t(
                                 'channels.placeholders.enterApiKeyOnePerLineFormatApikeyRegion'
                               )
-                            : t('channels.placeholders.enterApiKeyFormatApikeyRegion')
+                            : t(
+                                'channels.placeholders.enterApiKeyFormatApikeyRegion'
+                              )
                         }
                         return isBatchMode
                           ? t(
@@ -1568,13 +1679,17 @@ export function ChannelMutateDrawer({
                             )
                       }
                       if (isBatchMode) {
-                        return t('channels.placeholders.enterOneKeyPerLineForBatchCreation')
+                        return t(
+                          'channels.placeholders.enterOneKeyPerLineForBatchCreation'
+                        )
                       }
                       return t(getKeyPromptForType(currentType))
                     })()
                     return (
                       <FormItem>
-                        <FormLabel>{t('channels.fields.apiKey2019bd')}</FormLabel>
+                        <FormLabel>
+                          {t('channels.fields.apiKey2019bd')}
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder={keyPlaceholder}
@@ -1592,7 +1707,9 @@ export function ChannelMutateDrawer({
                                   )}
                                   {isMultiKeyChannel && (
                                     <span className='text-warning mt-1 block'>
-                                      {t('channels.fields.multiKeyChannelKeysWillBe')}{' '}
+                                      {t(
+                                        'channels.fields.multiKeyChannelKeysWillBe'
+                                      )}{' '}
                                       {keyMode === 'replace'
                                         ? t('channels.fields.replaced')
                                         : t('channels.fields.appended')}
@@ -1672,7 +1789,9 @@ export function ChannelMutateDrawer({
                             <Input
                               readOnly
                               value={channelKey ?? ''}
-                              placeholder={t('channels.fields.hiddenVerifyToReveal')}
+                              placeholder={t(
+                                'channels.fields.hiddenVerifyToReveal'
+                              )}
                               className='font-mono'
                             />
                           </div>
@@ -1689,7 +1808,9 @@ export function ChannelMutateDrawer({
                     name='key_mode'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('channels.fields.keyUpdateMode')}</FormLabel>
+                        <FormLabel>
+                          {t('channels.fields.keyUpdateMode')}
+                        </FormLabel>
                         <Select
                           items={[
                             {
@@ -1698,7 +1819,9 @@ export function ChannelMutateDrawer({
                             },
                             {
                               value: 'replace',
-                              label: t('channels.fields.replaceAllExistingKeys'),
+                              label: t(
+                                'channels.fields.replaceAllExistingKeys'
+                              ),
                             },
                           ]}
                           onValueChange={field.onChange}
@@ -1735,17 +1858,26 @@ export function ChannelMutateDrawer({
                   />
                 )}
 
-                {!isEditing && multiKeyMode === 'multi_to_single' && (
+                {((!isEditing && multiKeyMode === 'multi_to_single') ||
+                  (isEditing && isMultiKeyChannel)) && (
                   <FormField
                     control={form.control}
                     name='multi_key_type'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('channels.fields.multiKeyStrategy')}</FormLabel>
+                        <FormLabel>
+                          {t('channels.fields.multiKeyStrategy')}
+                        </FormLabel>
                         <Select
                           items={[
-                            { value: 'random', label: t('channels.fields.random') },
-                            { value: 'polling', label: t('channels.fields.polling') },
+                            {
+                              value: 'random',
+                              label: t('channels.fields.random'),
+                            },
+                            {
+                              value: 'polling',
+                              label: t('channels.fields.polling'),
+                            },
                           ]}
                           onValueChange={field.onChange}
                           value={field.value}
@@ -1803,7 +1935,9 @@ export function ChannelMutateDrawer({
                           options={modelOptions}
                           selected={currentModelsArray}
                           onChange={handleModelsChange}
-                          placeholder={t('channels.placeholders.selectModelsOrAddCustomOnes')}
+                          placeholder={t(
+                            'channels.placeholders.selectModelsOrAddCustomOnes'
+                          )}
                         />
                       </FormControl>
                       <FormDescription>
@@ -1894,7 +2028,9 @@ export function ChannelMutateDrawer({
                 {/* Custom Model Input */}
                 <div className='flex gap-2'>
                   <Input
-                    placeholder={t('channels.actions.addCustomModelSCommaSeparated')}
+                    placeholder={t(
+                      'channels.actions.addCustomModelSCommaSeparated'
+                    )}
                     value={customModel}
                     onChange={(e) => setCustomModel(e.target.value)}
                     onKeyDown={(e) => {
@@ -1931,7 +2067,9 @@ export function ChannelMutateDrawer({
                                 variant='ghost'
                                 size='icon-sm'
                                 className='text-muted-foreground hover:text-foreground size-auto p-0'
-                                aria-label={t('channels.fields.howModelMappingWorks')}
+                                aria-label={t(
+                                  'channels.fields.howModelMappingWorks'
+                                )}
                               />
                             }
                           >
@@ -1958,7 +2096,8 @@ export function ChannelMutateDrawer({
                               ))}
                               {remainingMappingCount > 0 && (
                                 <div className='text-[11px] opacity-70'>
-                                  +{remainingMappingCount} {t('channels.fields.moreMapping')}
+                                  +{remainingMappingCount}{' '}
+                                  {t('channels.fields.moreMapping')}
                                   {remainingMappingCount > 1 ? 's' : ''}
                                 </div>
                               )}
@@ -1984,7 +2123,9 @@ export function ChannelMutateDrawer({
                       {modelMappingGuardrail.invalidJson && (
                         <Alert variant='destructive' className='mt-3'>
                           <AlertDescription>
-                            {t('channels.errors.modelMappingMustBeAJsonObjectLike')}{' '}
+                            {t(
+                              'channels.errors.modelMappingMustBeAJsonObjectLike'
+                            )}{' '}
                             <code className='font-mono'>
                               {'{"gpt-4":"Azure-GPT4"}'}
                             </code>
@@ -2038,146 +2179,39 @@ export function ChannelMutateDrawer({
               </div>
 
               <div className='mt-5 flex flex-col gap-5'>
-                  {/* ── Routing & Overrides ── */}
-                  <div className={sideDrawerSectionClassName()}>
-                    <CardHeading
-                      title={t('channels.fields.routingOverrides')}
-                      icon={<Route className='h-4 w-4' />}
+                {/* ── Routing & Overrides ── */}
+                <div className={sideDrawerSectionClassName()}>
+                  <CardHeading
+                    title={t('channels.fields.routingOverrides')}
+                    icon={<Route className='h-4 w-4' />}
+                  />
+                  <div className='flex flex-col gap-4'>
+                    <SubHeading
+                      title={t('channels.fields.routingStrategy')}
+                      icon={<Route className='h-3.5 w-3.5' />}
                     />
-                    <div className='flex flex-col gap-4'>
-                      <SubHeading
-                        title={t('channels.fields.routingStrategy')}
-                        icon={<Route className='h-3.5 w-3.5' />}
-                      />
-                      <div className='grid gap-4 sm:grid-cols-2'>
-                        <FormField
-                          control={form.control}
-                          name='priority'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('channels.fields.priority')}</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type='number'
-                                  placeholder='0'
-                                  {...field}
-                                  onChange={(e) =>
-                                    field.onChange(Number(e.target.value))
-                                  }
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {t(FIELD_DESCRIPTIONS.PRIORITY)}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name='weight'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('channels.fields.weight')}</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type='number'
-                                  placeholder='0'
-                                  {...field}
-                                  onChange={(e) =>
-                                    field.onChange(Number(e.target.value))
-                                  }
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {t(FIELD_DESCRIPTIONS.WEIGHT)}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
+                    <div className='grid gap-4 sm:grid-cols-2'>
                       <FormField
                         control={form.control}
-                        name='test_model'
+                        name='priority'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('channels.fields.testModel')}</FormLabel>
+                            <FormLabel>
+                              {t('channels.fields.priority')}
+                            </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder={t(FIELD_PLACEHOLDERS.TEST_MODEL)}
+                                type='number'
+                                placeholder='0'
                                 {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              {t(FIELD_DESCRIPTIONS.TEST_MODEL)}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name='auto_ban'
-                        render={({ field }) => (
-                          <FormItem className='flex items-center justify-between'>
-                            <div className='space-y-0.5'>
-                              <FormLabel>{t('channels.fields.autoBan')}</FormLabel>
-                              <FormDescription>
-                                {t(FIELD_DESCRIPTIONS.AUTO_BAN)}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value === 1}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(checked ? 1 : 0)
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
                                 }
                               />
                             </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className='flex flex-col gap-4 border-t pt-4'>
-                      <SubHeading
-                        title={t('channels.fields.overrideRules')}
-                        icon={<Code className='h-3.5 w-3.5' />}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name='status_code_mapping'
-                        render={({ field }) => (
-                          <FormItem className='space-y-3'>
-                            <div className='space-y-1'>
-                              <FormLabel>{t('channels.fields.statusCodeMapping')}</FormLabel>
-                              <FormDescription>
-                                {t(
-                                  'channels.tips.mapUpstreamStatusCodesToDifferentCodes'
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <JsonEditor
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                disabled={isSubmitting}
-                                keyPlaceholder='400'
-                                valuePlaceholder='500'
-                                keyLabel='Original Code'
-                                valueLabel='Mapped Code'
-                                emptyMessage={t(
-                                  'channels.tips.noStatusCodeMappingsConfigured'
-                                )}
-                                template={{ '400': '500', '429': '503' }}
-                                valueType='string'
-                              />
-                            </FormControl>
+                            <FormDescription>
+                              {t(FIELD_DESCRIPTIONS.PRIORITY)}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2185,392 +2219,934 @@ export function ChannelMutateDrawer({
 
                       <FormField
                         control={form.control}
-                        name='param_override'
+                        name='weight'
                         render={({ field }) => (
-                          <FormItem className='space-y-3 border-t pt-4'>
-                            <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
-                              <div className='space-y-1'>
-                                <FormLabel>{t('channels.fields.parameterOverride')}</FormLabel>
-                                <FormDescription>
-                                  {t(
-                                    'channels.errors.overrideRequestParametersCannotOverrideStreamParameter'
-                                  )}
-                                </FormDescription>
-                              </div>
-                              <div className='flex flex-wrap gap-2'>
-                                <Button
-                                  type='button'
-                                  variant='outline'
-                                  size='sm'
-                                  onClick={() =>
-                                    setParamOverrideEditorOpen(true)
-                                  }
-                                >
-                                  <Wand2 className='mr-2 h-4 w-4' />
-                                  {t('channels.fields.visualEdit')}
-                                </Button>
-                                <Button
-                                  type='button'
-                                  variant='outline'
-                                  size='sm'
-                                  onClick={() => {
-                                    field.onChange(
-                                      JSON.stringify(
-                                        {
-                                          operations: [
-                                            {
-                                              path: 'temperature',
-                                              mode: 'set',
-                                              value: 0.7,
-                                              conditions: [
-                                                {
-                                                  path: 'model',
-                                                  mode: 'prefix',
-                                                  value: 'gpt',
-                                                },
-                                              ],
-                                              logic: 'AND',
-                                            },
-                                          ],
-                                        },
-                                        null,
-                                        2
-                                      )
-                                    )
-                                  }}
-                                >
-                                  <Code className='mr-2 h-4 w-4' />
-                                  {t('channels.fields.newFormatTemplate')}
-                                </Button>
-                                <Button
-                                  type='button'
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => field.onChange('')}
-                                >
-                                  {t('common.actions.clear')}
-                                </Button>
-                              </div>
-                            </div>
+                          <FormItem>
+                            <FormLabel>{t('channels.fields.weight')}</FormLabel>
                             <FormControl>
-                              <JsonEditor
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                disabled={isSubmitting}
-                                keyPlaceholder='temperature'
-                                valuePlaceholder='0.7'
-                                keyLabel='Parameter'
-                                valueLabel='Value'
-                                emptyMessage={t(
-                                  'channels.tips.noParameterOverridesConfigured'
-                                )}
-                                template={{
-                                  temperature: 0.7,
-                                  max_tokens: 2000,
-                                  top_p: 1,
-                                }}
-                                valueType='any'
+                              <Input
+                                type='number'
+                                placeholder='0'
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
                               />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name='header_override'
-                        render={({ field }) => (
-                          <FormItem className='space-y-3 border-t pt-4'>
-                            <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
-                              <div className='space-y-1'>
-                                <FormLabel>
-                                  {t('channels.fields.requestHeaderOverride')}
-                                </FormLabel>
-                                <FormDescription>
-                                  {t('channels.fields.overrideRequestHeaders')}
-                                </FormDescription>
-                              </div>
-                              <div className='flex flex-wrap gap-2'>
-                                <Button
-                                  type='button'
-                                  variant='outline'
-                                  size='sm'
-                                  onClick={() =>
-                                    field.onChange(
-                                      JSON.stringify(
-                                        {
-                                          '*': true,
-                                          're:^X-Trace-.*$': true,
-                                          'X-Foo': '{client_header:X-Foo}',
-                                          Authorization: 'Bearer {api_key}',
-                                        },
-                                        null,
-                                        2
-                                      )
-                                    )
-                                  }
-                                >
-                                  {t('common.actions.fillTemplate')}
-                                </Button>
-                                <Button
-                                  type='button'
-                                  variant='outline'
-                                  size='sm'
-                                  onClick={() =>
-                                    field.onChange(
-                                      JSON.stringify({ '*': true }, null, 2)
-                                    )
-                                  }
-                                >
-                                  {t('channels.fields.passthroughTemplate')}
-                                </Button>
-                                <Button
-                                  type='button'
-                                  variant='outline'
-                                  size='sm'
-                                  onClick={() => {
-                                    try {
-                                      const parsed = JSON.parse(
-                                        field.value || '{}'
-                                      )
-                                      field.onChange(
-                                        JSON.stringify(parsed, null, 2)
-                                      )
-                                    } catch (_e) {
-                                      /* ignore invalid JSON */
-                                    }
-                                  }}
-                                >
-                                  {t('channels.fields.format')}
-                                </Button>
-                                <Button
-                                  type='button'
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => field.onChange('')}
-                                >
-                                  {t('common.actions.clear')}
-                                </Button>
-                              </div>
-                            </div>
-                            <FormControl>
-                              <Textarea
-                                className='font-mono text-sm'
-                                rows={6}
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                disabled={isSubmitting}
-                                placeholder={t(
-                                  'channels.placeholders.enterJsonToOverrideRequestHeaders'
-                                )}
-                              />
-                            </FormControl>
-                            <FormDescription className='text-xs'>
-                              {t('channels.fields.supportedVariables')}:{' '}
-                              <code className='bg-muted rounded px-1 py-0.5'>
-                                {'{api_key}'}
-                              </code>{' '}
-                              — {t('channels.fields.channelKey')},{' '}
-                              <code className='bg-muted rounded px-1 py-0.5'>
-                                {'{client_header:NAME}'}
-                              </code>{' '}
-                              — {t('channels.fields.clientHeaderValue')}
+                            <FormDescription>
+                              {t(FIELD_DESCRIPTIONS.WEIGHT)}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name='test_model'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t('channels.fields.testModel')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t(FIELD_PLACEHOLDERS.TEST_MODEL)}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t(FIELD_DESCRIPTIONS.TEST_MODEL)}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='auto_ban'
+                      render={({ field }) => (
+                        <FormItem className='flex items-center justify-between'>
+                          <div className='space-y-0.5'>
+                            <FormLabel>
+                              {t('channels.fields.autoBan')}
+                            </FormLabel>
+                            <FormDescription>
+                              {t(FIELD_DESCRIPTIONS.AUTO_BAN)}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value === 1}
+                              onCheckedChange={(checked) =>
+                                field.onChange(checked ? 1 : 0)
+                              }
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
-                  {/* ── Extra Settings ── */}
-                  <div className={sideDrawerSectionClassName()}>
-                    <CardHeading
-                      title={t('channels.titles.channelExtraSettings')}
-                      icon={<Settings className='h-4 w-4' />}
-                    />
-                    {(currentType === 1 || currentType === 14) && (
-                      <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
-                        <SubHeading
-                          title={t('channels.tips.fieldPassthroughControls')}
-                          icon={<SlidersHorizontal className='h-3.5 w-3.5' />}
-                        />
+                  {/* ── Provider Strategy (OpenRouter only) ── */}
+                  {currentType === 20 && (
+                    <div className='flex flex-col gap-4 border-t pt-4'>
+                      <SubHeading
+                        title={t('channels.fields.providerStrategy')}
+                        icon={<Boxes className='h-3.5 w-3.5' />}
+                      />
+                      <p className='text-muted-foreground text-xs'>
+                        {t('channels.tips.providerStrategyDescription')}
+                      </p>
 
-                        <div className='divide-border space-y-0 divide-y border-y'>
-                          <FormField
-                            control={form.control}
-                            name='allow_service_tier'
-                            render={({ field }) => (
-                              <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                <div className='space-y-0.5'>
-                                  <FormLabel className='text-sm'>
-                                    {t('channels.fields.allowServiceTierPassthrough')}
-                                  </FormLabel>
-                                  <FormDescription>
-                                    {t('channels.tips.passThroughTheServiceTierField')}
-                                  </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          {currentType === 1 && (
-                            <>
-                              <FormField
-                                control={form.control}
-                                name='disable_store'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t('channels.actions.disableStorePassthrough')}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'channels.status.enabledTheStoreFieldWillBeBlocked'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name='allow_safety_identifier'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t(
-                                          'channels.tips.allowSafetyIdentifierPassthrough'
-                                        )}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'channels.tips.passThroughTheSafetyIdentifierField'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                            </>
-                          )}
-
-                          {currentType === 14 && (
-                            <>
-                              <FormField
-                                control={form.control}
-                                name='allow_cache_control'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t('channels.actions.allowCacheControlPassthrough')}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'channels.actions.passThroughClaudeCacheControlFields'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name='allow_speed'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t('channels.actions.allowSpeedPassthrough')}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t('channels.actions.passThroughClaudeSpeedField')}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name='claude_beta_query'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t(
-                                          'channels.tips.allowClaudeBetaQueryPassthrough'
-                                        )}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'channels.tips.passThroughTheAnthropicBetaHeaderForBetaFeatures'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className='divide-border space-y-0 divide-y border-y'>
-                      {currentType === 1 && (
+                      <div className='grid gap-4 sm:grid-cols-2'>
                         <FormField
                           control={form.control}
-                          name='force_format'
+                          name='or_allow_fallbacks'
                           render={({ field }) => (
-                            <FormItem className='flex items-center justify-between px-4 py-3'>
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orAllowFallbacks')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='true'>
+                                      {t('channels.fields.orTriStateAllow')}
+                                    </SelectItem>
+                                    <SelectItem value='false'>
+                                      {t('channels.fields.orTriStateDeny')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_ALLOW_FALLBACKS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_require_parameters'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orRequireParameters')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='true'>
+                                      {t('channels.fields.orTriStateRequireOn')}
+                                    </SelectItem>
+                                    <SelectItem value='false'>
+                                      {t('channels.fields.orTriStateRequireOff')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_REQUIRE_PARAMETERS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_data_collection'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orDataCollection')}
+                              </FormLabel>
+                              <Select
+                                value={field.value || ''}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder={t(
+                                        'channels.fields.orTriStateUnset'
+                                      )}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent alignItemWithTrigger={false}>
+                                  <SelectGroup>
+                                    <SelectItem value=''>
+                                      {t('channels.fields.orTriStateUnset')}
+                                    </SelectItem>
+                                    <SelectItem value='deny'>
+                                      {t('channels.fields.orDataCollectionDeny')}
+                                    </SelectItem>
+                                    <SelectItem value='allow'>
+                                      {t('channels.fields.orDataCollectionAllow')}
+                                    </SelectItem>
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_DATA_COLLECTION)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='or_quantizations'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('channels.fields.orQuantizations')}
+                              </FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={OPENROUTER_QUANTIZATION_OPTIONS}
+                                  selected={parseOpenRouterSlugList(field.value || '')}
+                                  onChange={(values) =>
+                                    field.onChange(values.join(', '))
+                                  }
+                                  placeholder={t(
+                                    'channels.placeholders.orQuantizations'
+                                  )}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS.OR_QUANTIZATIONS)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {(
+                        [
+                          {
+                            name: 'or_order' as const,
+                            mode: 'order' as const,
+                            labelKey: 'channels.fields.orOrder',
+                            description: 'OR_ORDER' as const,
+                          },
+                          {
+                            name: 'or_only' as const,
+                            mode: 'only' as const,
+                            labelKey: 'channels.fields.orOnly',
+                            description: 'OR_ONLY' as const,
+                          },
+                          {
+                            name: 'or_ignore' as const,
+                            mode: 'ignore' as const,
+                            labelKey: 'channels.fields.orIgnore',
+                            description: 'OR_IGNORE' as const,
+                          },
+                        ]
+                      ).map(({ name, mode, labelKey, description }) => (
+                        <FormField
+                          key={name}
+                          control={form.control}
+                          name={name}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t(labelKey)}</FormLabel>
+                              <div className='flex gap-2'>
+                                <FormControl>
+                                  <Input
+                                    placeholder={t(
+                                      'channels.placeholders.orProviderSlugs'
+                                    )}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <Button
+                                  type='button'
+                                  variant='outline'
+                                  onClick={() => setProviderPickerField(mode)}
+                                >
+                                  {t('channels.actions.pickProviders')}
+                                </Button>
+                              </div>
+                              <FormDescription>
+                                {t(FIELD_DESCRIPTIONS[description])}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+
+                      <Collapsible>
+                        <CollapsibleTrigger className='text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs'>
+                          <ChevronDown className='h-3.5 w-3.5' />
+                          {t('channels.titles.orAdvancedPreferences')}
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className='space-y-4 pt-4'>
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            <FormField
+                              control={form.control}
+                              name='or_sort'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orSort')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='price'>
+                                          {t('channels.fields.orSortPrice')}
+                                        </SelectItem>
+                                        <SelectItem value='throughput'>
+                                          {t('channels.fields.orSortThroughput')}
+                                        </SelectItem>
+                                        <SelectItem value='latency'>
+                                          {t('channels.fields.orSortLatency')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_sort_partition'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orSortPartition')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                    disabled={!form.watch('or_sort')}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orSortPartitionModel'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value='model'>
+                                          {t('channels.fields.orSortPartitionModel')}
+                                        </SelectItem>
+                                        <SelectItem value='none'>
+                                          {t('channels.fields.orSortPartitionNone')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_SORT)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_pref_min_throughput'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orPrefMinThroughput')}
+                                  </FormLabel>
+                                  <div className='flex gap-2'>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        placeholder='50'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormField
+                                      control={form.control}
+                                      name='or_pref_min_throughput_percentile'
+                                      render={({
+                                        field: percentileField,
+                                      }) => (
+                                        <FormItem className='w-28 space-y-0'>
+                                          <FormLabel className='sr-only'>
+                                            {t('channels.fields.orPercentile')}
+                                          </FormLabel>
+                                          <FormControl>
+                                            <Select
+                                              value={percentileField.value || ''}
+                                              onValueChange={
+                                                percentileField.onChange
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder='p50' />
+                                              </SelectTrigger>
+                                              <SelectContent
+                                                alignItemWithTrigger={false}
+                                              >
+                                                <SelectGroup>
+                                                  {[
+                                                    'p50',
+                                                    'p75',
+                                                    'p90',
+                                                    'p99',
+                                                  ].map((percentile) => (
+                                                    <SelectItem
+                                                      key={percentile}
+                                                      value={percentile}
+                                                    >
+                                                      {percentile}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_PREF_MIN_THROUGHPUT)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_pref_max_latency'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orPrefMaxLatency')}
+                                  </FormLabel>
+                                  <div className='flex gap-2'>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        step='0.1'
+                                        placeholder='2.5'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormField
+                                      control={form.control}
+                                      name='or_pref_max_latency_percentile'
+                                      render={({
+                                        field: percentileField,
+                                      }) => (
+                                        <FormItem className='w-28 space-y-0'>
+                                          <FormLabel className='sr-only'>
+                                            {t('channels.fields.orPercentile')}
+                                          </FormLabel>
+                                          <FormControl>
+                                            <Select
+                                              value={percentileField.value || ''}
+                                              onValueChange={
+                                                percentileField.onChange
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder='p50' />
+                                              </SelectTrigger>
+                                              <SelectContent
+                                                alignItemWithTrigger={false}
+                                              >
+                                                <SelectGroup>
+                                                  {[
+                                                    'p50',
+                                                    'p75',
+                                                    'p90',
+                                                    'p99',
+                                                  ].map((percentile) => (
+                                                    <SelectItem
+                                                      key={percentile}
+                                                      value={percentile}
+                                                    >
+                                                      {percentile}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormDescription>
+                                    {t(FIELD_DESCRIPTIONS.OR_PREF_MAX_LATENCY)}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            {(
+                              [
+                                [
+                                  'or_max_price_prompt',
+                                  'channels.fields.orMaxPricePrompt',
+                                ],
+                                [
+                                  'or_max_price_completion',
+                                  'channels.fields.orMaxPriceCompletion',
+                                ],
+                                [
+                                  'or_max_price_request',
+                                  'channels.fields.orMaxPriceRequest',
+                                ],
+                                [
+                                  'or_max_price_image',
+                                  'channels.fields.orMaxPriceImage',
+                                ],
+                              ] as const
+                            ).map(([name, labelKey]) => (
+                              <FormField
+                                key={name}
+                                control={form.control}
+                                name={name}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>{t(labelKey)}</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type='number'
+                                        min='0'
+                                        step='0.01'
+                                        placeholder='0'
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ))}
+                          </div>
+
+                          <div className='grid gap-4 sm:grid-cols-2'>
+                            <FormField
+                              control={form.control}
+                              name='or_zdr'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t('channels.fields.orZdr')}</FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='true'>
+                                          {t('channels.fields.orTriStateRequireOn')}
+                                        </SelectItem>
+                                        <SelectItem value='false'>
+                                          {t('channels.fields.orTriStateRequireOff')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='or_enforce_distillable_text'
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t('channels.fields.orEnforceDistillableText')}
+                                  </FormLabel>
+                                  <Select
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t(
+                                            'channels.fields.orTriStateUnset'
+                                          )}
+                                        />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent alignItemWithTrigger={false}>
+                                      <SelectGroup>
+                                        <SelectItem value=''>
+                                          {t('channels.fields.orTriStateUnset')}
+                                        </SelectItem>
+                                        <SelectItem value='true'>
+                                          {t('channels.fields.orTriStateRequireOn')}
+                                        </SelectItem>
+                                        <SelectItem value='false'>
+                                          {t('channels.fields.orTriStateRequireOff')}
+                                        </SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                  )}
+
+                  <div className='flex flex-col gap-4 border-t pt-4'>
+                    <SubHeading
+                      title={t('channels.fields.overrideRules')}
+                      icon={<Code className='h-3.5 w-3.5' />}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='status_code_mapping'
+                      render={({ field }) => (
+                        <FormItem className='space-y-3'>
+                          <div className='space-y-1'>
+                            <FormLabel>
+                              {t('channels.fields.statusCodeMapping')}
+                            </FormLabel>
+                            <FormDescription>
+                              {t(
+                                'channels.tips.mapUpstreamStatusCodesToDifferentCodes'
+                              )}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <JsonEditor
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              disabled={isSubmitting}
+                              keyPlaceholder='400'
+                              valuePlaceholder='500'
+                              keyLabel='Original Code'
+                              valueLabel='Mapped Code'
+                              emptyMessage={t(
+                                'channels.tips.noStatusCodeMappingsConfigured'
+                              )}
+                              template={{ '400': '500', '429': '503' }}
+                              valueType='string'
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='param_override'
+                      render={({ field }) => (
+                        <FormItem className='space-y-3 border-t pt-4'>
+                          <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
+                            <div className='space-y-1'>
+                              <FormLabel>
+                                {t('channels.fields.parameterOverride')}
+                              </FormLabel>
+                              <FormDescription>
+                                {t(
+                                  'channels.errors.overrideRequestParametersCannotOverrideStreamParameter'
+                                )}
+                              </FormDescription>
+                            </div>
+                            <div className='flex flex-wrap gap-2'>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setParamOverrideEditorOpen(true)}
+                              >
+                                <Wand2 className='mr-2 h-4 w-4' />
+                                {t('channels.fields.visualEdit')}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() => {
+                                  field.onChange(
+                                    JSON.stringify(
+                                      {
+                                        operations: [
+                                          {
+                                            path: 'temperature',
+                                            mode: 'set',
+                                            value: 0.7,
+                                            conditions: [
+                                              {
+                                                path: 'model',
+                                                mode: 'prefix',
+                                                value: 'gpt',
+                                              },
+                                            ],
+                                            logic: 'AND',
+                                          },
+                                        ],
+                                      },
+                                      null,
+                                      2
+                                    )
+                                  )
+                                }}
+                              >
+                                <Code className='mr-2 h-4 w-4' />
+                                {t('channels.fields.newFormatTemplate')}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='sm'
+                                onClick={() => field.onChange('')}
+                              >
+                                {t('common.actions.clear')}
+                              </Button>
+                            </div>
+                          </div>
+                          <FormControl>
+                            <JsonEditor
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              disabled={isSubmitting}
+                              keyPlaceholder='temperature'
+                              valuePlaceholder='0.7'
+                              keyLabel='Parameter'
+                              valueLabel='Value'
+                              emptyMessage={t(
+                                'channels.tips.noParameterOverridesConfigured'
+                              )}
+                              template={{
+                                temperature: 0.7,
+                                max_tokens: 2000,
+                                top_p: 1,
+                              }}
+                              valueType='any'
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='header_override'
+                      render={({ field }) => (
+                        <FormItem className='space-y-3 border-t pt-4'>
+                          <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
+                            <div className='space-y-1'>
+                              <FormLabel>
+                                {t('channels.fields.requestHeaderOverride')}
+                              </FormLabel>
+                              <FormDescription>
+                                {t('channels.fields.overrideRequestHeaders')}
+                              </FormDescription>
+                            </div>
+                            <div className='flex flex-wrap gap-2'>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() =>
+                                  field.onChange(
+                                    JSON.stringify(
+                                      {
+                                        '*': true,
+                                        're:^X-Trace-.*$': true,
+                                        'X-Foo': '{client_header:X-Foo}',
+                                        Authorization: 'Bearer {api_key}',
+                                      },
+                                      null,
+                                      2
+                                    )
+                                  )
+                                }
+                              >
+                                {t('common.actions.fillTemplate')}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() =>
+                                  field.onChange(
+                                    JSON.stringify({ '*': true }, null, 2)
+                                  )
+                                }
+                              >
+                                {t('channels.fields.passthroughTemplate')}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() => {
+                                  try {
+                                    const parsed = JSON.parse(
+                                      field.value || '{}'
+                                    )
+                                    field.onChange(
+                                      JSON.stringify(parsed, null, 2)
+                                    )
+                                  } catch (_e) {
+                                    /* ignore invalid JSON */
+                                  }
+                                }}
+                              >
+                                {t('channels.fields.format')}
+                              </Button>
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='sm'
+                                onClick={() => field.onChange('')}
+                              >
+                                {t('common.actions.clear')}
+                              </Button>
+                            </div>
+                          </div>
+                          <FormControl>
+                            <Textarea
+                              className='font-mono text-sm'
+                              rows={6}
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              disabled={isSubmitting}
+                              placeholder={t(
+                                'channels.placeholders.enterJsonToOverrideRequestHeaders'
+                              )}
+                            />
+                          </FormControl>
+                          <FormDescription className='text-xs'>
+                            {t('channels.fields.supportedVariables')}:{' '}
+                            <code className='bg-muted rounded px-1 py-0.5'>
+                              {'{api_key}'}
+                            </code>{' '}
+                            — {t('channels.fields.channelKey')},{' '}
+                            <code className='bg-muted rounded px-1 py-0.5'>
+                              {'{client_header:NAME}'}
+                            </code>{' '}
+                            — {t('channels.fields.clientHeaderValue')}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* ── Extra Settings ── */}
+                <div className={sideDrawerSectionClassName()}>
+                  <CardHeading
+                    title={t('channels.titles.channelExtraSettings')}
+                    icon={<Settings className='h-4 w-4' />}
+                  />
+                  {(currentType === 1 || currentType === 14) && (
+                    <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
+                      <SubHeading
+                        title={t('channels.tips.fieldPassthroughControls')}
+                        icon={<SlidersHorizontal className='h-3.5 w-3.5' />}
+                      />
+
+                      <div className='divide-border space-y-0 divide-y border-y'>
+                        <FormField
+                          control={form.control}
+                          name='allow_service_tier'
+                          render={({ field }) => (
+                            <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
                               <div className='space-y-0.5'>
-                                <FormLabel>{t('channels.fields.forceFormat')}</FormLabel>
+                                <FormLabel className='text-sm'>
+                                  {t(
+                                    'channels.fields.allowServiceTierPassthrough'
+                                  )}
+                                </FormLabel>
                                 <FormDescription>
                                   {t(
-                                    'channels.tips.forceFormatResponseToOpenAiStandardOpenAi'
+                                    'channels.tips.passThroughTheServiceTierField'
                                   )}
                                 </FormDescription>
                               </div>
@@ -2583,17 +3159,168 @@ export function ChannelMutateDrawer({
                             </FormItem>
                           )}
                         />
-                      )}
 
+                        {currentType === 1 && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name='disable_store'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel className='text-sm'>
+                                      {t(
+                                        'channels.actions.disableStorePassthrough'
+                                      )}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'channels.status.enabledTheStoreFieldWillBeBlocked'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='allow_safety_identifier'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel className='text-sm'>
+                                      {t(
+                                        'channels.tips.allowSafetyIdentifierPassthrough'
+                                      )}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'channels.tips.passThroughTheSafetyIdentifierField'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+
+                        {currentType === 14 && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name='allow_cache_control'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel className='text-sm'>
+                                      {t(
+                                        'channels.actions.allowCacheControlPassthrough'
+                                      )}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'channels.actions.passThroughClaudeCacheControlFields'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='allow_speed'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel className='text-sm'>
+                                      {t(
+                                        'channels.actions.allowSpeedPassthrough'
+                                      )}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'channels.actions.passThroughClaudeSpeedField'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name='claude_beta_query'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel className='text-sm'>
+                                      {t(
+                                        'channels.tips.allowClaudeBetaQueryPassthrough'
+                                      )}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'channels.tips.passThroughTheAnthropicBetaHeaderForBetaFeatures'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className='divide-border space-y-0 divide-y border-y'>
+                    {currentType === 1 && (
                       <FormField
                         control={form.control}
-                        name='pass_through_body_enabled'
+                        name='force_format'
                         render={({ field }) => (
                           <FormItem className='flex items-center justify-between px-4 py-3'>
                             <div className='space-y-0.5'>
-                              <FormLabel>{t('channels.fields.passThroughBody')}</FormLabel>
+                              <FormLabel>
+                                {t('channels.fields.forceFormat')}
+                              </FormLabel>
                               <FormDescription>
-                                {t('channels.tips.passRequestBodyDirectlyToUpstream')}
+                                {t(
+                                  'channels.tips.forceFormatResponseToOpenAiStandardOpenAi'
+                                )}
                               </FormDescription>
                             </div>
                             <FormControl>
@@ -2605,170 +3332,208 @@ export function ChannelMutateDrawer({
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name='pass_through_headers_enabled'
-                        render={({ field }) => (
-                          <FormItem className='flex items-center justify-between px-4 py-3'>
-                            <div className='space-y-0.5'>
-                              <FormLabel>{t('channels.fields.passThroughHeaders')}</FormLabel>
-                              <FormDescription>
-                                {t(
-                                  'channels.actions.passClientRequestHeadersUpstreamAndMergeThemWithHeader'
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value !== false}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {OPENAI_WIRE_API_CHANNEL_TYPES.has(currentType) && (
-                      <FormField
-                        control={form.control}
-                        name='openai_wire_api'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('channels.fields.openAiWireApi')}</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value || 'both'}
-                            >
-                              <FormControl>
-                                <SelectTrigger className='w-44'>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent alignItemWithTrigger={false}>
-                                <SelectGroup>
-                                  <SelectItem value='both'>
-                                    {t('channels.tips.bothChatCompletionsAndResponses')}
-                                  </SelectItem>
-                                  <SelectItem value='chat'>
-                                    {t('channels.fields.chatCompletions')}
-                                  </SelectItem>
-                                  <SelectItem value='responses'>
-                                    {t('channels.fields.responses')}
-                                  </SelectItem>
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              {t(
-                                'channels.actions.selectTheUpstreamOpenAiWireFormatUsedByThis'
-                              )}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     )}
 
                     <FormField
                       control={form.control}
-                      name='image_auto_convert_to_url_mode'
+                      name='pass_through_body_enabled'
+                      render={({ field }) => (
+                        <FormItem className='flex items-center justify-between px-4 py-3'>
+                          <div className='space-y-0.5'>
+                            <FormLabel>
+                              {t('channels.fields.passThroughBody')}
+                            </FormLabel>
+                            <FormDescription>
+                              {t(
+                                'channels.tips.passRequestBodyDirectlyToUpstream'
+                              )}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='pass_through_headers_enabled'
+                      render={({ field }) => (
+                        <FormItem className='flex items-center justify-between px-4 py-3'>
+                          <div className='space-y-0.5'>
+                            <FormLabel>
+                              {t('channels.fields.passThroughHeaders')}
+                            </FormLabel>
+                            <FormDescription>
+                              {t(
+                                'channels.actions.passClientRequestHeadersUpstreamAndMergeThemWithHeader'
+                              )}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value !== false}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {OPENAI_WIRE_API_CHANNEL_TYPES.has(currentType) && (
+                    <FormField
+                      control={form.control}
+                      name='openai_wire_api'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('channels.fields.multimodalConversion')}</FormLabel>
+                          <FormLabel>
+                            {t('channels.fields.openAiWireApi')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            value={field.value || 'off'}
+                            value={field.value || 'both'}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className='w-44'>
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent alignItemWithTrigger={false}>
                               <SelectGroup>
-                                <SelectItem value='off'>
-                                  {t('channels.status.disabled')}
+                                <SelectItem value='both'>
+                                  {t(
+                                    'channels.tips.bothChatCompletionsAndResponses'
+                                  )}
                                 </SelectItem>
-                                <SelectItem value='mcp'>
-                                  {t('channels.fields.mcpUrlMode')}
+                                <SelectItem value='chat'>
+                                  {t('channels.fields.chatCompletions')}
+                                </SelectItem>
+                                <SelectItem value='responses'>
+                                  {t('channels.fields.responses')}
                                 </SelectItem>
                               </SelectGroup>
                             </SelectContent>
                           </Select>
                           <FormDescription>
                             {t(
-                              'channels.tips.forTextOnlyUpstreamModelsAppendMediaUrlsToThe'
+                              'channels.actions.selectTheUpstreamOpenAiWireFormatUsedByThis'
                             )}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                  )}
 
-                    <FormField
-                      control={form.control}
-                      name='proxy'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('channels.fields.proxyAddress')}</FormLabel>
-                          <div className='flex items-start gap-[2%]'>
-                            <FormControl>
-                              <Input
-                                className='min-w-0 flex-1'
-                                placeholder={t('channels.fields.socks5UserPassHostPort')}
-                                {...field}
-                                onChange={(event) => {
-                                  field.onChange(event)
-                                  setProxyTestResult(null)
-                                }}
-                              />
-                            </FormControl>
-                            <Button
-                              type='button'
-                              variant='outline'
-                              className='w-[18%] min-w-fit'
-                              onClick={handleTestProxy}
-                              disabled={proxyTestLoading}
-                            >
-                              {proxyTestLoading ? (
-                                <Loader2 className='size-4 animate-spin' />
-                              ) : (
-                                t('channels.actions.testProxy')
-                              )}
-                            </Button>
-                          </div>
-                          {proxyTestResult && (
-                            <p
-                              className={cn(
-                                'text-xs font-medium',
-                                proxyTestResult.status === 'success' &&
-                                  'text-emerald-600 dark:text-emerald-400',
-                                proxyTestResult.status === 'invalid' &&
-                                  'text-amber-600 dark:text-amber-400',
-                                proxyTestResult.status === 'failed' &&
-                                  'text-red-600 dark:text-red-400'
-                              )}
-                            >
-                              {proxyTestResult.status === 'success'
-                                ? t('channels.status.proxyTestIpIs', {
-                                    ip: proxyTestResult.ip,
-                                  })
-                                : proxyTestResult.message}
-                            </p>
+                  <FormField
+                    control={form.control}
+                    name='image_auto_convert_to_url_mode'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('channels.fields.multimodalConversion')}
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || 'off'}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent alignItemWithTrigger={false}>
+                            <SelectGroup>
+                              <SelectItem value='off'>
+                                {t('channels.status.disabled')}
+                              </SelectItem>
+                              <SelectItem value='mcp'>
+                                {t('channels.fields.mcpUrlMode')}
+                              </SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {t(
+                            'channels.tips.forTextOnlyUpstreamModelsAppendMediaUrlsToThe'
                           )}
-                          <FormDescription>
-                            {t(
-                              'channels.tips.networkProxyForThisChannelSupportsSocks5Protocol'
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='proxy'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('channels.fields.proxyAddress')}
+                        </FormLabel>
+                        <div className='flex items-start gap-[2%]'>
+                          <FormControl>
+                            <Input
+                              className='min-w-0 flex-1'
+                              placeholder={t(
+                                'channels.fields.socks5UserPassHostPort'
+                              )}
+                              {...field}
+                              onChange={(event) => {
+                                field.onChange(event)
+                                setProxyTestResult(null)
+                              }}
+                            />
+                          </FormControl>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            className='w-[18%] min-w-fit'
+                            onClick={handleTestProxy}
+                            disabled={proxyTestLoading}
+                          >
+                            {proxyTestLoading ? (
+                              <Loader2 className='size-4 animate-spin' />
+                            ) : (
+                              t('channels.actions.testProxy')
                             )}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          </Button>
+                        </div>
+                        {proxyTestResult && (
+                          <p
+                            className={cn(
+                              'text-xs font-medium',
+                              proxyTestResult.status === 'success' &&
+                                'text-emerald-600 dark:text-emerald-400',
+                              proxyTestResult.status === 'invalid' &&
+                                'text-amber-600 dark:text-amber-400',
+                              proxyTestResult.status === 'failed' &&
+                                'text-red-600 dark:text-red-400'
+                            )}
+                          >
+                            {proxyTestResult.status === 'success'
+                              ? t('channels.status.proxyTestIpIs', {
+                                  ip: proxyTestResult.ip,
+                                })
+                              : proxyTestResult.message}
+                          </p>
+                        )}
+                        <FormDescription>
+                          {t(
+                            'channels.tips.networkProxyForThisChannelSupportsSocks5Protocol'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
+              </div>
             </form>
           </Form>
 
@@ -2782,7 +3547,9 @@ export function ChannelMutateDrawer({
               {isSubmitting && (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               )}
-              {isEditing ? t('channels.fields.updateChannel') : t('channels.actions.saveChanges')}
+              {isEditing
+                ? t('channels.fields.updateChannel')
+                : t('channels.actions.saveChanges')}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -2818,6 +3585,33 @@ export function ChannelMutateDrawer({
             ? parseModelsString(form.getValues('models') || '')
             : undefined
         }
+      />
+
+      <ProviderPickerDialog
+        open={providerPickerField !== null}
+        onOpenChange={(open) => {
+          if (!open) setProviderPickerField(null)
+        }}
+        mode={providerPickerField ?? 'order'}
+        value={
+          form.watch(
+            providerPickerField === 'only'
+              ? 'or_only'
+              : providerPickerField === 'ignore'
+                ? 'or_ignore'
+                : 'or_order'
+          ) || ''
+        }
+        onConfirm={(value) => {
+          if (providerPickerField === 'only') {
+            form.setValue('or_only', value, { shouldDirty: true })
+          } else if (providerPickerField === 'ignore') {
+            form.setValue('or_ignore', value, { shouldDirty: true })
+          } else {
+            form.setValue('or_order', value, { shouldDirty: true })
+          }
+        }}
+        customFetcher={!isEditing ? createModeProviderFetcher : undefined}
       />
 
       <SecureVerificationDialog

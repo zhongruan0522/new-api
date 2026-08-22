@@ -69,7 +69,9 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
       const normAdd = normalizeModelList(pendingAdd)
       const normRemove = normalizeModelList(pendingRemove)
       if (!record?.id || (normAdd.length === 0 && normRemove.length === 0)) {
-        toast.info(t('channels.tips.noProcessableUpstreamModelUpdatesForThisChannel'))
+        toast.info(
+          t('channels.tips.noProcessableUpstreamModelUpdatesForThisChannel')
+        )
         return
       }
       setChannel(record)
@@ -144,7 +146,9 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
           message?: string
         }
         toast.error(
-          err?.response?.data?.message || err?.message || t('channels.status.operationFailed')
+          err?.response?.data?.message ||
+            err?.message ||
+            t('channels.status.operationFailed')
         )
       } finally {
         applyRef.current = false
@@ -227,7 +231,9 @@ export function useChannelUpstreamUpdates(refresh: () => Promise<void>) {
           message?: string
         }
         toast.error(
-          err?.response?.data?.message || err?.message || t('channels.status.detectionFailed')
+          err?.response?.data?.message ||
+            err?.message ||
+            t('channels.status.detectionFailed')
         )
       } finally {
         detectRef.current = false

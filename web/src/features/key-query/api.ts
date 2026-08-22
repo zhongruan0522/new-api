@@ -49,10 +49,7 @@ function validateKey(rawKey: string): string {
   return key
 }
 
-async function fetchJson<T>(
-  url: string,
-  key: string
-): Promise<T> {
+async function fetchJson<T>(url: string, key: string): Promise<T> {
   const res = await fetch(url, {
     headers: getTokenHeaders(key),
   })
@@ -116,10 +113,7 @@ export async function fetchKeyLogs(
   const data = await fetchJson<KeyQueryLogsResponse>(url, key)
 
   if (!data?.success) {
-    throw new KeyQueryError(
-      'keyQuery.errors.failedToLoadLogs',
-      data?.message
-    )
+    throw new KeyQueryError('keyQuery.errors.failedToLoadLogs', data?.message)
   }
 
   // 后端在传入分页参数时返回 PageInfo 结构 { page, page_size, total, items }。
@@ -145,10 +139,7 @@ export async function fetchKeyLogsLegacy(
     key
   )
   if (!data?.success) {
-    throw new KeyQueryError(
-      'keyQuery.errors.failedToLoadLogs',
-      data?.message
-    )
+    throw new KeyQueryError('keyQuery.errors.failedToLoadLogs', data?.message)
   }
   return data.data ?? []
 }

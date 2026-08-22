@@ -48,7 +48,11 @@ export function CommonLogsHeaderActions() {
               variant='ghost'
               size='icon'
               onClick={() => setSensitiveVisible(!sensitiveVisible)}
-              aria-label={sensitiveVisible ? t('common.fields.hide') : t('usageLogs.fields.show')}
+              aria-label={
+                sensitiveVisible
+                  ? t('common.fields.hide')
+                  : t('usageLogs.fields.show')
+              }
               className='text-muted-foreground hover:text-foreground size-7'
             />
           }
@@ -56,7 +60,9 @@ export function CommonLogsHeaderActions() {
           {sensitiveVisible ? <Eye /> : <EyeOff />}
         </TooltipTrigger>
         <TooltipContent>
-          {sensitiveVisible ? t('common.fields.hide') : t('usageLogs.fields.show')}
+          {sensitiveVisible
+            ? t('common.fields.hide')
+            : t('usageLogs.fields.show')}
         </TooltipContent>
       </Tooltip>
     </div>

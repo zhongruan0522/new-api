@@ -156,7 +156,9 @@ export function UserSubscriptionsDialog(props: Props) {
         plan_id: Number(selectedPlanId),
       })
       if (res.success) {
-        toast.success(res.data?.message || t('subscriptions.fields.addedSuccessfully'))
+        toast.success(
+          res.data?.message || t('subscriptions.fields.addedSuccessfully')
+        )
         setSelectedPlanId('')
         await loadData()
         props.onSuccess?.()
@@ -174,7 +176,9 @@ export function UserSubscriptionsDialog(props: Props) {
       if (confirmAction.type === 'invalidate') {
         const res = await invalidateUserSubscription(confirmAction.subId)
         if (res.success) {
-          toast.success(res.data?.message || t('subscriptions.fields.invalidated'))
+          toast.success(
+            res.data?.message || t('subscriptions.fields.invalidated')
+          )
           await loadData()
           props.onSuccess?.()
         }
@@ -198,7 +202,9 @@ export function UserSubscriptionsDialog(props: Props) {
       <Sheet open={props.open} onOpenChange={props.onOpenChange}>
         <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
           <SheetHeader className={sideDrawerHeaderClassName()}>
-            <SheetTitle>{t('subscriptions.titles.userSubscriptionManagement')}</SheetTitle>
+            <SheetTitle>
+              {t('subscriptions.titles.userSubscriptionManagement')}
+            </SheetTitle>
             <SheetDescription>
               {props.user?.username || '-'} (ID: {props.user?.id || '-'})
             </SheetDescription>
@@ -222,7 +228,11 @@ export function UserSubscriptionsDialog(props: Props) {
                 onValueChange={(v) => v !== null && setSelectedPlanId(v)}
               >
                 <SelectTrigger className='flex-1'>
-                  <SelectValue placeholder={t('subscriptions.placeholders.selectSubscriptionPlan')} />
+                  <SelectValue
+                    placeholder={t(
+                      'subscriptions.placeholders.selectSubscriptionPlan'
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
@@ -251,9 +261,13 @@ export function UserSubscriptionsDialog(props: Props) {
                     <TableHead>{t('channels.fields.id')}</TableHead>
                     <TableHead>{t('subscriptions.fields.plan')}</TableHead>
                     <TableHead>{t('channels.fields.status')}</TableHead>
-                    <TableHead>{t('subscriptions.fields.validityPeriod')}</TableHead>
+                    <TableHead>
+                      {t('subscriptions.fields.validityPeriod')}
+                    </TableHead>
                     <TableHead>{t('dashboard.fields.totalQuota')}</TableHead>
-                    <TableHead className='text-right'>{t('channels.fields.actions')}</TableHead>
+                    <TableHead className='text-right'>
+                      {t('channels.fields.actions')}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -294,7 +308,8 @@ export function UserSubscriptionsDialog(props: Props) {
                                   `#${sub.plan_id}`}
                               </div>
                               <div className='text-muted-foreground text-sm'>
-                                {t('subscriptions.fields.source')}: {sub.source || '-'}
+                                {t('subscriptions.fields.source')}:{' '}
+                                {sub.source || '-'}
                               </div>
                             </div>
                           </TableCell>
@@ -304,15 +319,19 @@ export function UserSubscriptionsDialog(props: Props) {
                           <TableCell>
                             <div className='text-sm'>
                               <div>
-                                {t('subscriptions.actions.start')}: {formatTimestamp(sub.start_time)}
+                                {t('subscriptions.actions.start')}:{' '}
+                                {formatTimestamp(sub.start_time)}
                               </div>
                               <div>
-                                {t('subscriptions.fields.end')}: {formatTimestamp(sub.end_time)}
+                                {t('subscriptions.fields.end')}:{' '}
+                                {formatTimestamp(sub.end_time)}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            {total > 0 ? `${used}/${total}` : t('keyQuery.fields.unlimited')}
+                            {total > 0
+                              ? `${used}/${total}`
+                              : t('keyQuery.fields.unlimited')}
                           </TableCell>
                           <TableCell className='text-right'>
                             <div className='flex justify-end gap-1'>

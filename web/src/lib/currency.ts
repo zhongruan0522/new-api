@@ -258,6 +258,50 @@ function adjustForMinimum(
   return value
 }
 
+/**
+ * Abbreviate a non-negative number with K/M/B suffixes
+ * (e.g. 33678.86 → 33.67K). Magnitudes are truncated, not rounded, so a
+ * compact label never exceeds the exact value. Callers keep the sign so
+ * it can be placed before the currency symbol.
+ */
+function formatCompactNumeric(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1e9) return truncateToTwoDecimals(abs / 1e9) + 'B'
+  if (abs >= 1e6) return truncateToTwoDecimals(abs / 1e6) + 'M'
+  return truncateToTwoDecimals(abs / 1e3) + 'K'
+}
+
+/**
+ * Floor at two decimals. The epsilon must stay well below the gap between
+ * real values and the next integer (e.g. 999.999999999 → 99999.9999999×100
+ * scale) yet above double-precision noise on exact tenths (8.2×100 →
+ * 819.9999999999999), hence 1e-9.
+ */
+function truncateToTwoDecimals(value: number): string {
+  return removeTrailingZeros(
+    (Math.floor(value * 100 + 1e-9) / 100).toFixed(2)
+  )
+}
+
+/** Signed K/M/B abbreviation with the sign before any symbol, e.g. "-33.68K" */
+function formatSignedCompactNumeric(value: number): string {
+  return `${value < 0 ? '-' : ''}${formatCompactNumeric(value)}`
+}
+
+/** Extract the display symbol for a currency/custom meta. */
+function getDisplaySymbol(meta: DisplayMeta): string {
+  if (meta.kind === 'custom') return meta.symbol
+  if (meta.kind === 'currency') {
+    const parts = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: meta.currencyCode,
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(1)
+    return parts.find((part) => part.type === 'currency')?.value ?? ''
+  }
+  return ''
+}
+
 function formatCurrencyValue(
   value: number,
   options: Required<CurrencyFormatOptions>,
@@ -458,6 +502,51 @@ export function formatQuotaWithCurrency(
   const { config } = getCurrencyDisplay()
   const amountUSD = quota / config.quotaPerUnit
   return formatCurrencyFromUSD(amountUSD, options)
+}
+
+/**
+ * Format a USD amount with large values abbreviated to K/M/B suffixes
+ * (e.g. 33678.86 → "$33.68K", 99999983.93 → "$99.99M").
+ *
+ * Intended for dense table cells; pair with a tooltip showing the exact
+ * value from `formatCurrencyFromUSD()`. Values below 1000 keep the normal
+ * precision rules (`digitsLarge`/`digitsSmall`).
+ */
+export function formatCompactCurrencyFromUSD(
+  amountUSD: number | null | undefined,
+  options?: CurrencyFormatOptions
+): string {
+  if (amountUSD == null || Number.isNaN(amountUSD)) return '-'
+
+  const { config, meta } = getCurrencyDisplay()
+  const merged = mergeOptions(options)
+
+  if (meta.kind === 'tokens') {
+    const tokens = amountUSD * config.quotaPerUnit
+    if (Math.abs(tokens) >= 1000) return formatSignedCompactNumeric(tokens)
+    return formatNumberWithSuffix(tokens, 0, merged.digitsSmall, false)
+  }
+
+  const value = amountUSD * meta.exchangeRate
+  if (Math.abs(value) >= 1000) {
+    return `${value < 0 ? '-' : ''}${getDisplaySymbol(meta)}${formatCompactNumeric(value)}`
+  }
+  return formatCurrencyValue(value, merged, meta)
+}
+
+/**
+ * Format raw quota values (token units) like `formatQuotaWithCurrency`,
+ * but abbreviating large amounts to K/M/B suffixes.
+ */
+export function formatCompactQuotaWithCurrency(
+  quota: number | null | undefined,
+  options?: CurrencyFormatOptions
+): string {
+  if (quota == null || Number.isNaN(quota)) return '-'
+
+  const { config } = getCurrencyDisplay()
+  const amountUSD = quota / config.quotaPerUnit
+  return formatCompactCurrencyFromUSD(amountUSD, options)
 }
 
 /**

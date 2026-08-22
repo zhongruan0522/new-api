@@ -201,10 +201,14 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.rp_display_name'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.relyingPartyDisplayName')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.relyingPartyDisplayName')}
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('systemSettings.placeholders.eGNewApiConsole')}
+                    placeholder={t(
+                      'systemSettings.placeholders.eGNewApiConsole'
+                    )}
                     {...field}
                     value={field.value ?? ''}
                   />
@@ -224,7 +228,9 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.rp_id'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.relyingPartyId')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.relyingPartyId')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder={t('systemSettings.placeholders.eGExampleCom')}
@@ -247,19 +253,34 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.user_verification'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.userVerification')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.userVerification')}
+                </FormLabel>
                 <FormControl>
                   <Select
                     items={[
-                      { value: 'required', label: t('systemSettings.errors.required') },
-                      { value: 'preferred', label: t('systemSettings.tips.recommended') },
-                      { value: 'discouraged', label: t('systemSettings.fields.discouraged') },
+                      {
+                        value: 'required',
+                        label: t('systemSettings.errors.required'),
+                      },
+                      {
+                        value: 'preferred',
+                        label: t('systemSettings.tips.recommended'),
+                      },
+                      {
+                        value: 'discouraged',
+                        label: t('systemSettings.fields.discouraged'),
+                      },
                     ]}
                     value={field.value}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('systemSettings.placeholders.selectRequirement')} />
+                      <SelectValue
+                        placeholder={t(
+                          'systemSettings.placeholders.selectRequirement'
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent alignItemWithTrigger={false}>
                       <SelectGroup>
@@ -291,23 +312,35 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.attachment_preference'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.deviceTypePreference')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.deviceTypePreference')}
+                </FormLabel>
                 <FormControl>
                   <Select
                     items={[
                       { value: 'none', label: t('keyQuery.fields.unlimited') },
-                      { value: 'platform', label: t('systemSettings.fields.builtInDevice') },
-                      { value: 'cross-platform', label: t('systemSettings.fields.externalDevice') },
+                      {
+                        value: 'platform',
+                        label: t('systemSettings.fields.builtInDevice'),
+                      },
+                      {
+                        value: 'cross-platform',
+                        label: t('systemSettings.fields.externalDevice'),
+                      },
                     ]}
                     value={field.value}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('systemSettings.fields.noPreference')} />
+                      <SelectValue
+                        placeholder={t('systemSettings.fields.noPreference')}
+                      />
                     </SelectTrigger>
                     <SelectContent alignItemWithTrigger={false}>
                       <SelectGroup>
-                        <SelectItem value='none'>{t('keyQuery.fields.unlimited')}</SelectItem>
+                        <SelectItem value='none'>
+                          {t('keyQuery.fields.unlimited')}
+                        </SelectItem>
                         <SelectItem value='platform'>
                           {t('systemSettings.fields.builtInDevice')}
                         </SelectItem>
@@ -334,7 +367,9 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.allowInsecureOrigins')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.allowInsecureOrigins')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.permitPasskeyRegistrationOnNonHttpsOriginsOnlyRecommended'
@@ -356,7 +391,9 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.max_passkeys_per_user'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.maxPasskeysPerUser')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.maxPasskeysPerUser')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -384,7 +421,9 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             name='passkey.origins'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.allowedOrigins')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.allowedOrigins')}
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     rows={4}

@@ -35,8 +35,10 @@ export function formatDuration(
   }
   if (unit === 'custom') {
     const seconds = plan?.custom_seconds || 0
-    if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('dashboard.fields.days')}`
-    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('channels.fields.hours')}`
+    if (seconds >= 86400)
+      return `${Math.floor(seconds / 86400)} ${t('dashboard.fields.days')}`
+    if (seconds >= 3600)
+      return `${Math.floor(seconds / 3600)} ${t('channels.fields.hours')}`
     return `${seconds} ${t('subscriptions.fields.seconds')}`
   }
   return `${value} ${unitLabels[unit] || unit}`
@@ -52,9 +54,12 @@ export function formatResetPeriod(
   if (period === 'monthly') return t('subscriptions.fields.monthly')
   if (period === 'custom') {
     const seconds = Number(plan?.quota_reset_custom_seconds || 0)
-    if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('dashboard.fields.days')}`
-    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('channels.fields.hours')}`
-    if (seconds >= 60) return `${Math.floor(seconds / 60)} ${t('subscriptions.fields.minutes')}`
+    if (seconds >= 86400)
+      return `${Math.floor(seconds / 86400)} ${t('dashboard.fields.days')}`
+    if (seconds >= 3600)
+      return `${Math.floor(seconds / 3600)} ${t('channels.fields.hours')}`
+    if (seconds >= 60)
+      return `${Math.floor(seconds / 60)} ${t('subscriptions.fields.minutes')}`
     return `${seconds} ${t('subscriptions.fields.seconds')}`
   }
   return t('keys.fields.noReset')

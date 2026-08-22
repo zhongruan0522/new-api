@@ -29,7 +29,9 @@ function ModelsContent() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('models.fields.metadata')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>
+          {t('models.fields.metadata')}
+        </SectionPageLayout.Title>
         <SectionPageLayout.Actions>
           <ModelsPrimaryButtons />
         </SectionPageLayout.Actions>

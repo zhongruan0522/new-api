@@ -81,7 +81,8 @@ export function CopyButton({
     copiedText !== null &&
     (copiedText === value || copiedText === resolvedValueRef.current)
   const resolvedTooltip = tooltip ?? t('common.actions.copyToClipboard')
-  const resolvedSuccessTooltip = successTooltip ?? t('common.status.copiedb7c3ca')
+  const resolvedSuccessTooltip =
+    successTooltip ?? t('common.status.copiedb7c3ca')
   const resolvedAriaLabel = ariaLabel ?? resolvedTooltip
   const copiedAriaLabel = t('common.status.copied')
 

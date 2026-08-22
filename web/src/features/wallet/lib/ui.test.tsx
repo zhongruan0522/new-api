@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict'
-import { describe, test } from 'node:test'
 import { isValidElement } from 'react'
 import { CreditCard } from 'lucide-react'
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
 import { getPaymentIcon } from './ui'
 
 function elementPart<TProps>(node: unknown) {

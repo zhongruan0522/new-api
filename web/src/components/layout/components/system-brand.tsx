@@ -20,8 +20,8 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useStatus } from '@/hooks/use-status'
-import { useSystemInfo } from '@/hooks/use-system-info'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { useSystemInfo } from '@/hooks/use-system-info'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -55,7 +55,9 @@ export function SystemBrand(props: SystemBrandProps) {
   const name = status?.system_name || props.defaultName || 'New API'
   // 版本指纹走 AdminAuth 接口（useSystemInfo），非 admin 不发起请求并显示占位文案
   const version =
-    systemInfoVersion || props.defaultVersion || t('layout.fields.unknownVersion')
+    systemInfoVersion ||
+    props.defaultVersion ||
+    t('layout.fields.unknownVersion')
 
   if (variant === 'inline') {
     return (

@@ -56,7 +56,9 @@ export function StatusCodeRiskDialog({
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
   const [confirmText, setConfirmText] = useState('')
 
-  const requiredText = t('channels.fields.highRiskStatusCodeRetryConfirmationText')
+  const requiredText = t(
+    'channels.fields.highRiskStatusCodeRetryConfirmationText'
+  )
   const allChecked = checkedItems.size === CHECKLIST_KEYS.length
   const textMatches = confirmText.trim() === requiredText.trim()
   const canConfirm = allChecked && textMatches
@@ -140,7 +142,9 @@ export function StatusCodeRiskDialog({
             <Input
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={t('channels.tips.highRiskStatusCodeRetryInputPlaceholder')}
+              placeholder={t(
+                'channels.tips.highRiskStatusCodeRetryInputPlaceholder'
+              )}
             />
             {confirmText && !textMatches && (
               <p className='text-destructive text-xs'>

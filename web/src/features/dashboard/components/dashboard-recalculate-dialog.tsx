@@ -22,6 +22,7 @@ import { Calendar, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getRollingDateRange } from '@/lib/time'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,15 +33,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { DateTimePicker } from '@/components/datetime-picker'
 import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
+import { DateTimePicker } from '@/components/datetime-picker'
+import { recalculateQuotaData } from '@/features/dashboard/api'
 import { TIME_RANGE_PRESETS } from '@/features/dashboard/constants'
 import {
   buildDefaultDashboardFilters,
   getSavedChartPreferences,
 } from '@/features/dashboard/lib'
-import { recalculateQuotaData } from '@/features/dashboard/api'
 import type { DashboardFilters } from '@/features/dashboard/types'
 
 type DashboardRecalculateDialogProps = {
@@ -160,7 +160,11 @@ export function DashboardRecalculateDialog(
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button variant='outline' size='sm' className={props.triggerClassName} />
+          <Button
+            variant='outline'
+            size='sm'
+            className={props.triggerClassName}
+          />
         }
       >
         <RefreshCw className='mr-2 h-4 w-4' />
@@ -168,11 +172,11 @@ export function DashboardRecalculateDialog(
       </DialogTrigger>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>{t('dashboard.titles.recalculateDashboard')}</DialogTitle>
+          <DialogTitle>
+            {t('dashboard.titles.recalculateDashboard')}
+          </DialogTitle>
           <DialogDescription>
-            {t(
-              'dashboard.tips.reAggregateDashboardDataFromLogsForTheSelected'
-            )}
+            {t('dashboard.tips.reAggregateDashboardDataFromLogsForTheSelected')}
           </DialogDescription>
         </DialogHeader>
 
@@ -243,11 +247,17 @@ export function DashboardRecalculateDialog(
           >
             {t('common.actions.reset')}
           </Button>
-          <Button type='button' onClick={handleRecalculate} disabled={recalculating}>
+          <Button
+            type='button'
+            onClick={handleRecalculate}
+            disabled={recalculating}
+          >
             <RefreshCw
               className={cn('mr-2 h-4 w-4', recalculating && 'animate-spin')}
             />
-            {recalculating ? t('dashboard.tips.recalculating') : t('dashboard.titles.recalculateDashboard')}
+            {recalculating
+              ? t('dashboard.tips.recalculating')
+              : t('dashboard.titles.recalculateDashboard')}
           </Button>
         </DialogFooter>
       </DialogContent>

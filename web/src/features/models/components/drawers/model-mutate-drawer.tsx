@@ -243,7 +243,9 @@ export function ModelMutateDrawer({
           toast.error(response.message || t('channels.status.operationFailed'))
         }
       } catch (error: unknown) {
-        toast.error((error as Error)?.message || t('channels.status.operationFailed'))
+        toast.error(
+          (error as Error)?.message || t('channels.status.operationFailed')
+        )
       } finally {
         setIsSubmitting(false)
       }
@@ -264,14 +266,14 @@ export function ModelMutateDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEditing ? t('models.actions.editModel') : t('models.actions.createModel')}
+            {isEditing
+              ? t('models.actions.editModel')
+              : t('models.actions.createModel')}
           </SheetTitle>
           <SheetDescription>
             {isEditing
-              ? t("common.tips.updateModelConfigurationAndClickSaveWhenYouRe")
-              : t(
-                  'models.actions.addANewModelToTheSystemByProviding'
-                )}
+              ? t('common.tips.updateModelConfigurationAndClickSaveWhenYouRe')
+              : t('models.actions.addANewModelToTheSystemByProviding')}
           </SheetDescription>
         </SheetHeader>
 
@@ -370,7 +372,9 @@ export function ModelMutateDrawer({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('models.placeholders.selectVendor')} />
+                          <SelectValue
+                            placeholder={t('models.placeholders.selectVendor')}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -415,7 +419,9 @@ export function ModelMutateDrawer({
 
             {/* Matching Configuration */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('models.fields.matchingRules')}</h3>
+              <h3 className='text-sm font-semibold'>
+                {t('models.fields.matchingRules')}
+              </h3>
 
               <FormField
                 control={form.control}
@@ -462,7 +468,9 @@ export function ModelMutateDrawer({
             {/* Endpoints Configuration */}
             <SideDrawerSection>
               <div className='flex items-center justify-between'>
-                <h3 className='text-sm font-semibold'>{t('models.fields.endpoints')}</h3>
+                <h3 className='text-sm font-semibold'>
+                  {t('models.fields.endpoints')}
+                </h3>
                 <Select<string>
                   items={[
                     ...Object.keys(ENDPOINT_TEMPLATES).map((key) => ({
@@ -494,7 +502,9 @@ export function ModelMutateDrawer({
                 name='endpoints'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('models.titles.endpointConfiguration')}</FormLabel>
+                    <FormLabel>
+                      {t('models.titles.endpointConfiguration')}
+                    </FormLabel>
                     <FormControl>
                       <JsonEditor
                         value={field.value || ''}
@@ -510,7 +520,9 @@ export function ModelMutateDrawer({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('models.tips.defineApiEndpointsForThisModelJsonFormat')}
+                      {t(
+                        'models.tips.defineApiEndpointsForThisModelJsonFormat'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -520,7 +532,9 @@ export function ModelMutateDrawer({
 
             {/* Metadata Configuration */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('models.fields.modelMetadata')}</h3>
+              <h3 className='text-sm font-semibold'>
+                {t('models.fields.modelMetadata')}
+              </h3>
 
               <div className='grid gap-4 sm:grid-cols-2'>
                 <FormField
@@ -541,7 +555,9 @@ export function ModelMutateDrawer({
                         />
                       </FormControl>
                       <FormDescription>
-                        {t('models.tips.maximumInputTokensSupportedByThisModel')}
+                        {t(
+                          'models.tips.maximumInputTokensSupportedByThisModel'
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -580,7 +596,9 @@ export function ModelMutateDrawer({
                   name='knowledge_cutoff'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('models.fields.knowledgeCutoff')}</FormLabel>
+                      <FormLabel>
+                        {t('models.fields.knowledgeCutoff')}
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder='2024-10' {...field} />
                       </FormControl>
@@ -678,7 +696,9 @@ export function ModelMutateDrawer({
 
             {/* Status */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('channels.fields.status')}</h3>
+              <h3 className='text-sm font-semibold'>
+                {t('channels.fields.status')}
+              </h3>
 
               <FormField
                 control={form.control}
@@ -714,7 +734,9 @@ export function ModelMutateDrawer({
           </SheetClose>
           <Button form='model-form' type='submit' disabled={isSubmitting}>
             {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {isEditing ? t('models.fields.updateModel') : t('channels.actions.saveChanges')}
+            {isEditing
+              ? t('models.fields.updateModel')
+              : t('channels.actions.saveChanges')}
           </Button>
         </SheetFooter>
       </SheetContent>

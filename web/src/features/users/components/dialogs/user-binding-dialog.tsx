@@ -359,7 +359,9 @@ export function UserBindingDialog(props: Props) {
                       ) : (
                         <EyeOff className='h-3.5 w-3.5' />
                       )}
-                      {showBoundOnly ? t('users.fields.showAll') : t('users.fields.boundOnly')}
+                      {showBoundOnly
+                        ? t('users.fields.showAll')
+                        : t('users.fields.boundOnly')}
                     </TooltipTrigger>
                     <TooltipContent>
                       {showBoundOnly
@@ -407,7 +409,9 @@ export function UserBindingDialog(props: Props) {
                               )}
                             </div>
                             <p className='text-muted-foreground max-w-[140px] truncate text-xs'>
-                              {binding.isBound ? binding.value : t('profile.fields.notBound')}
+                              {binding.isBound
+                                ? binding.value
+                                : t('profile.fields.notBound')}
                             </p>
                           </div>
                         </div>
@@ -439,12 +443,9 @@ export function UserBindingDialog(props: Props) {
         open={!!unbindTarget}
         onOpenChange={(open) => !open && setUnbindTarget(null)}
         title={t('profile.actions.confirmUnbind')}
-        desc={t(
-          'users.tips.sureYouWantToUnbindProviderForThisUser',
-          {
-            provider: unbindTarget?.label || '',
-          }
-        )}
+        desc={t('users.tips.sureYouWantToUnbindProviderForThisUser', {
+          provider: unbindTarget?.label || '',
+        })}
         confirmText={t('profile.actions.confirmUnbind')}
         destructive
         handleConfirm={handleUnbind}

@@ -128,9 +128,13 @@ function describeCondition(
     }
     return `${fn} ${opMap[cond.mode] || '='} ${cond.value} (${tz})`
   }
-  const src = cond.source === 'header' ? t('pricing.fields.header') : t('pricing.fields.bodyParam')
+  const src =
+    cond.source === 'header'
+      ? t('pricing.fields.header')
+      : t('pricing.fields.bodyParam')
   const path = cond.path || ''
-  if (cond.mode === MATCH_EXISTS) return `${src} ${path} ${t('pricing.fields.exists')}`
+  if (cond.mode === MATCH_EXISTS)
+    return `${src} ${path} ${t('pricing.fields.exists')}`
   if (cond.mode === MATCH_CONTAINS) {
     return `${src} ${path} ${t('models.fields.contains')} "${cond.value}"`
   }

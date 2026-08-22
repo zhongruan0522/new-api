@@ -34,7 +34,9 @@ export function Home() {
     return (
       <PublicLayout showMainContainer={false}>
         <main className='flex min-h-screen items-center justify-center'>
-          <div className='text-muted-foreground'>{t('common.tips.loading')}</div>
+          <div className='text-muted-foreground'>
+            {t('common.tips.loading')}
+          </div>
         </main>
       </PublicLayout>
     )

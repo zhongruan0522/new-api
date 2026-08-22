@@ -818,7 +818,8 @@ export const PromptInputTextarea = ({
   const { t } = useTranslation()
   const controller = useOptionalPromptInputController()
   const attachments = usePromptInputAttachments()
-  const resolvedPlaceholder = placeholder ?? t('common.tips.whatWouldYouLikeToKnow')
+  const resolvedPlaceholder =
+    placeholder ?? t('common.tips.whatWouldYouLikeToKnow')
   const [isComposing, setIsComposing] = useState(false)
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {

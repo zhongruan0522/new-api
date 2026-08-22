@@ -88,7 +88,10 @@ export function useDrawingLogsColumns(
     {
       accessorKey: 'submit_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitTime')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('usageLogs.actions.submitTime')}
+        />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -114,14 +117,19 @@ export function useDrawingLogsColumns(
 
   if (isAdmin) {
     columns.push(
-      createChannelColumn<MidjourneyLog>({ headerLabel: t('channels.fields.channel') })
+      createChannelColumn<MidjourneyLog>({
+        headerLabel: t('channels.fields.channel'),
+      })
     )
   }
 
   columns.push({
     accessorKey: 'action',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('channels.fields.type')} />
+      <DataTableColumnHeader
+        column={column}
+        title={t('channels.fields.type')}
+      />
     ),
     cell: ({ row }) => {
       const action = row.getValue('action') as string
@@ -141,7 +149,10 @@ export function useDrawingLogsColumns(
   columns.push({
     accessorKey: 'mj_id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title={t('systemSettings.fields.taskId')} />
+      <DataTableColumnHeader
+        column={column}
+        title={t('systemSettings.fields.taskId')}
+      />
     ),
     cell: ({ row }) => {
       const mjId = row.getValue('mj_id') as string
@@ -176,7 +187,10 @@ export function useDrawingLogsColumns(
     columns.push({
       accessorKey: 'code',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('usageLogs.actions.submitResult')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('usageLogs.actions.submitResult')}
+        />
       ),
       cell: ({ row }) => {
         const code = row.getValue('code') as number
@@ -195,11 +209,16 @@ export function useDrawingLogsColumns(
   }
 
   columns.push(
-    createProgressColumn<MidjourneyLog>({ headerLabel: t('systemSettings.fields.progress') }),
+    createProgressColumn<MidjourneyLog>({
+      headerLabel: t('systemSettings.fields.progress'),
+    }),
     {
       accessorKey: 'image_url',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('models.fields.image')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('models.fields.image')}
+        />
       ),
       cell: function ImageCell({ row }) {
         const log = row.original
@@ -236,7 +255,10 @@ export function useDrawingLogsColumns(
     {
       accessorKey: 'prompt',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keyQuery.fields.prompt')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keyQuery.fields.prompt')}
+        />
       ),
       cell: function PromptCell({ row }) {
         const log = row.original

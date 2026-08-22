@@ -258,7 +258,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
               </span>
               <span className='flex items-center gap-1 text-sm'>
                 <Package className='h-3.5 w-3.5' />
-                {totalAmount > 0 ? formatQuota(totalAmount) : t('keyQuery.fields.unlimited')}
+                {totalAmount > 0
+                  ? formatQuota(totalAmount)
+                  : t('keyQuery.fields.unlimited')}
               </span>
             </div>
             {plan.upgrade_group && (
@@ -271,7 +273,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
             )}
             <Separator />
             <div className='flex items-center justify-between'>
-              <span className='text-sm font-medium'>{t('subscriptions.fields.amountDue')}</span>
+              <span className='text-sm font-medium'>
+                {t('subscriptions.fields.amountDue')}
+              </span>
               <span className='text-primary text-lg font-bold'>${price}</span>
             </div>
           </div>
@@ -279,8 +283,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
           {limitReached && (
             <Alert variant='destructive'>
               <AlertDescription>
-                {t('subscriptions.fields.purchaseLimitReached')} ({props.purchaseCount}/
-                {props.purchaseLimit})
+                {t('subscriptions.fields.purchaseLimitReached')} (
+                {props.purchaseCount}/{props.purchaseLimit})
               </AlertDescription>
             </Alert>
           )}

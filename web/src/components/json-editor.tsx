@@ -59,7 +59,8 @@ export function JsonEditor({
   const resolvedEmptyMessage =
     emptyMessage ?? t('common.tips.noMappingsConfiguredClickAddRowToGetStarted')
   const resolvedKeyPlaceholder = keyPlaceholder ?? t('common.fields.key')
-  const resolvedValuePlaceholder = valuePlaceholder ?? t('common.fields.value8dce17')
+  const resolvedValuePlaceholder =
+    valuePlaceholder ?? t('common.fields.value8dce17')
   const resolvedKeyLabel = keyLabel ?? t('common.fields.key')
   const resolvedValueLabel = valueLabel ?? t('common.fields.value8dce17')
   const [mode, setMode] = useState<'visual' | 'json'>('visual')

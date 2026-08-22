@@ -165,7 +165,9 @@ export function PrefillGroupFormDrawer({
 
       if (response.success) {
         toast.success(
-          isEdit ? t('models.status.prefillGroupUpdated') : t('models.status.prefillGroupCreated')
+          isEdit
+            ? t('models.status.prefillGroupUpdated')
+            : t('models.status.prefillGroupCreated')
         )
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
@@ -175,7 +177,9 @@ export function PrefillGroupFormDrawer({
         toast.error(response.message || t('channels.status.operationFailed'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || t('channels.status.operationFailed'))
+      toast.error(
+        (err as Error)?.message || t('channels.status.operationFailed')
+      )
     } finally {
       setIsSaving(false)
     }
@@ -189,7 +193,9 @@ export function PrefillGroupFormDrawer({
       <SheetContent className={sideDrawerContentClassName('sm:max-w-2xl')}>
         <SheetHeader className={sideDrawerHeaderClassName()}>
           <SheetTitle>
-            {isEdit ? t('models.actions.editPrefillGroup') : t('models.actions.createPrefillGroup')}
+            {isEdit
+              ? t('models.actions.editPrefillGroup')
+              : t('models.actions.createPrefillGroup')}
           </SheetTitle>
           <SheetDescription>
             {isEdit
@@ -206,7 +212,9 @@ export function PrefillGroupFormDrawer({
           >
             <SideDrawerSection>
               <div className='flex flex-col gap-1'>
-                <h3 className='text-sm font-semibold'>{t('models.titles.groupDetails')}</h3>
+                <h3 className='text-sm font-semibold'>
+                  {t('models.titles.groupDetails')}
+                </h3>
                 <p className='text-muted-foreground text-sm'>
                   {t(
                     'models.tips.giveTheGroupARecognizableNameAndOptionalDescription'
@@ -250,9 +258,7 @@ export function PrefillGroupFormDrawer({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t(
-                        'models.tips.makeItEasierForTeammatesToPickTheRight'
-                      )}
+                      {t('models.tips.makeItEasierForTeammatesToPickTheRight')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -262,9 +268,13 @@ export function PrefillGroupFormDrawer({
 
             <SideDrawerSection>
               <div className='flex flex-col gap-1'>
-                <h3 className='text-sm font-semibold'>{t('models.titles.configuration')}</h3>
+                <h3 className='text-sm font-semibold'>
+                  {t('models.titles.configuration')}
+                </h3>
                 <p className='text-muted-foreground text-sm'>
-                  {t('models.placeholders.chooseTheBundleTypeAndDefineTheItemsInside')}
+                  {t(
+                    'models.placeholders.chooseTheBundleTypeAndDefineTheItemsInside'
+                  )}
                 </p>
               </div>
 
@@ -299,7 +309,11 @@ export function PrefillGroupFormDrawer({
                     >
                       <FormControl>
                         <SelectTrigger className='[&_[data-slot=select-value]_[data-prefill-description]]:hidden'>
-                          <SelectValue placeholder={t('models.placeholders.selectAGroupType')} />
+                          <SelectValue
+                            placeholder={t(
+                              'models.placeholders.selectAGroupType'
+                            )}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -323,7 +337,9 @@ export function PrefillGroupFormDrawer({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {t('models.tips.determinesHowThisGroupIsAppliedElsewhere')}
+                      {t(
+                        'models.tips.determinesHowThisGroupIsAppliedElsewhere'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -332,7 +348,9 @@ export function PrefillGroupFormDrawer({
 
               <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
                 <div className='flex items-center gap-2'>
-                  <h4 className='text-sm font-medium'>{t('models.fields.project')}</h4>
+                  <h4 className='text-sm font-medium'>
+                    {t('models.fields.project')}
+                  </h4>
                   <StatusBadge
                     label={meta.label}
                     variant={meta.badge}
@@ -345,7 +363,9 @@ export function PrefillGroupFormDrawer({
                   name='items'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className='sr-only'>{t('models.fields.items')}</FormLabel>
+                      <FormLabel className='sr-only'>
+                        {t('models.fields.items')}
+                      </FormLabel>
                       <FormControl>
                         {selectedType === 'endpoint' ? (
                           <JsonEditor
@@ -354,7 +374,9 @@ export function PrefillGroupFormDrawer({
                             keyPlaceholder='provider'
                             valuePlaceholder='{"path": "/v1/...","method": "POST"}'
                             keyLabel={t('models.fields.provider')}
-                            valueLabel={t('models.titles.endpointConfiguration')}
+                            valueLabel={t(
+                              'models.titles.endpointConfiguration'
+                            )}
                             valueType='any'
                             template={ENDPOINT_TEMPLATES}
                             emptyMessage={t(
@@ -367,7 +389,9 @@ export function PrefillGroupFormDrawer({
                               Array.isArray(field.value) ? field.value : []
                             }
                             onChange={field.onChange}
-                            placeholder={t('models.placeholders.enterAValueAndPressEnter')}
+                            placeholder={t(
+                              'models.placeholders.enterAValueAndPressEnter'
+                            )}
                           />
                         )}
                       </FormControl>
@@ -376,7 +400,9 @@ export function PrefillGroupFormDrawer({
                           ? t(
                               'models.tips.provideAJsonObjectWhereEachKeyMapsTo'
                             )
-                          : t('models.actions.addEachModelOrTagYouWantToInclude')}
+                          : t(
+                              'models.actions.addEachModelOrTagYouWantToInclude'
+                            )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -98,7 +98,11 @@ export function Stats(_props: StatsProps) {
   const { t } = useTranslation()
 
   const stats: StatItem[] = [
-    { end: 50, suffix: '+', label: t('home.fields.upstreamServicesIntegrated') },
+    {
+      end: 50,
+      suffix: '+',
+      label: t('home.fields.upstreamServicesIntegrated'),
+    },
     { end: 100, suffix: '+', label: t('home.fields.modelBillingSupport') },
     { end: 50, suffix: '+', label: t('home.fields.compatibleApiRoutes') },
     { end: 10, suffix: '+', label: t('home.tips.schedulingControls') },

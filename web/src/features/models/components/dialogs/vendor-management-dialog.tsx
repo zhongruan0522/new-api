@@ -145,7 +145,7 @@ export function VendorManagementDialog({
                     <TableRow key={vendor.id}>
                       <TableCell>
                         <div className='flex min-w-0 items-center gap-2'>
-                          <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background'>
+                          <span className='bg-background flex h-8 w-8 shrink-0 items-center justify-center rounded-md border'>
                             {getLobeIcon(vendor.icon || vendor.name, 18)}
                           </span>
                           <div className='min-w-0'>
@@ -160,7 +160,8 @@ export function VendorManagementDialog({
                       </TableCell>
                       <TableCell className='max-w-[280px]'>
                         <span className='text-muted-foreground line-clamp-2 whitespace-normal'>
-                          {vendor.description || t('models.tips.noDescriptionProvided')}
+                          {vendor.description ||
+                            t('models.tips.noDescriptionProvided')}
                         </span>
                       </TableCell>
                       <TableCell>

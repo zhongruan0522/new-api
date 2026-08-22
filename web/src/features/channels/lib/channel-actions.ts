@@ -265,7 +265,9 @@ export async function handleCopyChannel(
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.(response.data?.id ?? 0)
     } else {
-      toast.error(response.message || i18next.t('channels.errors.failedToCopyChannel'))
+      toast.error(
+        response.message || i18next.t('channels.errors.failedToCopyChannel')
+      )
     }
   } catch (_error) {
     toast.error(i18next.t('channels.errors.failedToCopyChannel'))
@@ -296,7 +298,9 @@ export async function handleUpdateChannelBalance(
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.(balance)
     } else {
-      toast.error(response.message || i18next.t('channels.errors.failedToUpdateBalance'))
+      toast.error(
+        response.message || i18next.t('channels.errors.failedToUpdateBalance')
+      )
     }
   } catch (_error: unknown) {
     toast.error(
@@ -365,7 +369,9 @@ export async function handleBatchEnable(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('channels.status.countChannelSEnabled', { count: successCount })
+        i18next.t('channels.status.countChannelSEnabled', {
+          count: successCount,
+        })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
@@ -373,7 +379,9 @@ export async function handleBatchEnable(
 
     if (failCount > 0) {
       toast.error(
-        i18next.t('channels.status.countChannelSFailedToEnable', { count: failCount })
+        i18next.t('channels.status.countChannelSFailedToEnable', {
+          count: failCount,
+        })
       )
     }
   } catch (_error) {
@@ -406,7 +414,9 @@ export async function handleBatchDisable(
 
     if (successCount > 0) {
       toast.success(
-        i18next.t('channels.status.countChannelSDisabled', { count: successCount })
+        i18next.t('channels.status.countChannelSDisabled', {
+          count: successCount,
+        })
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
@@ -568,7 +578,8 @@ export async function handleTestAllChannels(
       onSuccess?.()
     } else {
       toast.error(
-        response.message || i18next.t('channels.errors.failedToStartTestingAllChannels')
+        response.message ||
+          i18next.t('channels.errors.failedToStartTestingAllChannels')
       )
     }
   } catch (_error) {
@@ -587,15 +598,14 @@ export async function handleUpdateAllBalances(
     const response = await updateAllChannelsBalance()
     if (response.success) {
       toast.success(
-        i18next.t(
-          'channels.tips.updatingAllChannelBalancesThisMayTakeAWhile'
-        )
+        i18next.t('channels.tips.updatingAllChannelBalancesThisMayTakeAWhile')
       )
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
       onSuccess?.()
     } else {
       toast.error(
-        response.message || i18next.t('channels.errors.failedToUpdateAllBalances')
+        response.message ||
+          i18next.t('channels.errors.failedToUpdateAllBalances')
       )
     }
   } catch (_error) {

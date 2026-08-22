@@ -38,7 +38,8 @@ export function useUserDisplay(user: AuthUser | null | undefined) {
     }
 
     // Display name: priority order
-    const displayName = user.display_name || user.username || t('systemSettings.fields.user')
+    const displayName =
+      user.display_name || user.username || t('systemSettings.fields.user')
 
     // Secondary text: first available identifier
     const secondaryText = (() => {

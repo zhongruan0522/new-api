@@ -131,7 +131,9 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
         size: 120,
         cell: ({ row }) => (
           <Badge variant={row.original.allowed ? 'default' : 'outline'}>
-            {row.original.allowed ? t('minimax.fields.allowed') : t('minimax.fields.notAllowed')}
+            {row.original.allowed
+              ? t('minimax.fields.allowed')
+              : t('minimax.fields.notAllowed')}
           </Badge>
         ),
       },

@@ -110,7 +110,9 @@ export function ChannelsPrimaryButtons() {
           size='sm'
         >
           <Plus className='h-4 w-4' />
-          <span className='max-sm:hidden'>{t('channels.actions.createChannel')}</span>
+          <span className='max-sm:hidden'>
+            {t('channels.actions.createChannel')}
+          </span>
           <span className='sm:hidden'>{t('channels.actions.create')}</span>
         </Button>
 

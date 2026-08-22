@@ -348,7 +348,9 @@ export function OllamaModelsDialog({
         setDeleteOpen(false)
         setDeleteTarget(null)
       } else {
-        toast.error(payload?.message || t('channels.errors.failedToDeleteModel'))
+        toast.error(
+          payload?.message || t('channels.errors.failedToDeleteModel')
+        )
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : undefined
@@ -372,7 +374,8 @@ export function OllamaModelsDialog({
         <DialogHeader>
           <DialogTitle>{t('channels.titles.ollamaModels')}</DialogTitle>
           <DialogDescription>
-            {t('channels.titles.manageLocalModelsFor')} <strong>{currentRow?.name}</strong>
+            {t('channels.titles.manageLocalModelsFor')}{' '}
+            <strong>{currentRow?.name}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -384,7 +387,9 @@ export function OllamaModelsDialog({
           <div className='max-h-[78vh] space-y-4 overflow-y-auto py-2 pr-1'>
             <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
               <div className='flex-1 space-y-2'>
-                <Label htmlFor='ollama-pull'>{t('channels.fields.pullModel')}</Label>
+                <Label htmlFor='ollama-pull'>
+                  {t('channels.fields.pullModel')}
+                </Label>
                 <div className='flex gap-2'>
                   <Input
                     id='ollama-pull'
@@ -413,7 +418,10 @@ export function OllamaModelsDialog({
                 {pullProgress && (
                   <div className='space-y-2'>
                     <div className='text-muted-foreground text-xs'>
-                      {t('channels.fields.labelWithColon', { label: t('channels.fields.status') })} {String(pullProgress.status || '-')}
+                      {t('channels.fields.labelWithColon', {
+                        label: t('channels.fields.status'),
+                      })}{' '}
+                      {String(pullProgress.status || '-')}
                     </div>
                     <Progress
                       value={
@@ -455,9 +463,13 @@ export function OllamaModelsDialog({
             <div className='space-y-3'>
               <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
                 <div>
-                  <p className='text-sm font-medium'>{t('channels.titles.localModels')}</p>
+                  <p className='text-sm font-medium'>
+                    {t('channels.titles.localModels')}
+                  </p>
                   <p className='text-muted-foreground text-xs'>
-                    {t('channels.placeholders.selectModelsAndApplyToChannelModelsList')}
+                    {t(
+                      'channels.placeholders.selectModelsAndApplyToChannelModelsList'
+                    )}
                   </p>
                 </div>
                 <div className='relative sm:w-72'>
@@ -524,11 +536,15 @@ export function OllamaModelsDialog({
                                 </div>
                                 <div className='text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs'>
                                   <span>
-                                    {t('channels.fields.labelWithColon', { label: t('channels.fields.size') })} {formatBytes(m.size)}
+                                    {t('channels.fields.labelWithColon', {
+                                      label: t('channels.fields.size'),
+                                    })}{' '}
+                                    {formatBytes(m.size)}
                                   </span>
                                   {m.digest && (
                                     <span className='truncate'>
-                                      {t('channels.fields.digest')} {String(m.digest)}
+                                      {t('channels.fields.digest')}{' '}
+                                      {String(m.digest)}
                                     </span>
                                   )}
                                 </div>
@@ -574,7 +590,9 @@ export function OllamaModelsDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('channels.actions.confirmDelete')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('channels.actions.confirmDelete')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t('channels.actions.deleteModelNameThisCannotBeUndone', {
                 name: deleteTarget || '',

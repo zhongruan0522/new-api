@@ -31,12 +31,15 @@ import {
 import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/use-admin'
-import { useAuthStore } from '@/stores/auth-store'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { DataTablePage, usePersistentColumnVisibility } from '@/components/data-table'
+import {
+  DataTablePage,
+  usePersistentColumnVisibility,
+} from '@/components/data-table'
 import {
   DEFAULT_LOGS_DATA,
   LOG_TYPE_ALL_VALUE,
@@ -86,9 +89,9 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     ensurePageInRange,
   } = useTableUrlState({
     search: route.useSearch(),
-   navigate: route.useNavigate(),
+    navigate: route.useNavigate(),
     pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
-   globalFilter: { enabled: false },
+    globalFilter: { enabled: false },
     columnFilters: [
       {
         columnId: 'created_at',

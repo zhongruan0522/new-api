@@ -123,7 +123,9 @@ export function WorkerSettingsSection({
                   <Input
                     type='url'
                     inputMode='url'
-                    placeholder={t('systemSettings.placeholders.urlWorkerExampleWorkersDev')}
+                    placeholder={t(
+                      'systemSettings.placeholders.urlWorkerExampleWorkersDev'
+                    )}
                     autoComplete='off'
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
@@ -144,11 +146,15 @@ export function WorkerSettingsSection({
             name='WorkerValidKey'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.workerAccessKey')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.workerAccessKey')}
+                </FormLabel>
                 <FormControl>
                   <Input
                     type='password'
-                    placeholder={t('systemSettings.placeholders.enterNewKeyToUpdate')}
+                    placeholder={t(
+                      'systemSettings.placeholders.enterNewKeyToUpdate'
+                    )}
                     autoComplete='new-password'
                     {...field}
                     onChange={(event) => field.onChange(event.target.value)}
@@ -170,7 +176,9 @@ export function WorkerSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.allowHttpImageRequests')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.allowHttpImageRequests')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.actions.enableWhenProxyingWorkersThatFetchImagesOverHttp'

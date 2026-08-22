@@ -1,0 +1,562 @@
+package stream
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/relay/wire/convert"
+	"github.com/NookMux/NookMux/pkg/jsonx"
+)
+
+const chatToResponsesAssistantMessageID = "msg_0"
+const chatToResponsesReasoningItemID = "rs_0"
+
+type chatToResponsesStreamConverter struct {
+	id      string
+	model   string
+	created int64
+
+	sentCreated        bool
+	sentInProgress     bool
+	sentMsgAdded       bool
+	sentReasoningAdded bool
+	reasoningDone      bool
+	finishReason       string
+	reasoningBuilder   strings.Builder
+	textBuilder        strings.Builder
+	toolCallsByID      map[string]*chatToResponsesToolCallState
+	toolCallIDByIndex  map[int]string
+	toolCallOrder      []string
+	toolContext        *convert.OpenAIWireToolContext
+
+	usage *shared.Usage
+	err   error
+}
+
+type chatToResponsesToolCallState struct {
+	id             string
+	index          int
+	toolType       string
+	name           string
+	namespace      string
+	toolSpec       convert.OpenAIWireToolSpec
+	hasToolSpec    bool
+	args           strings.Builder
+	emittedArgsLen int
+	sentAdded      bool
+	hasStableID    bool
+	customProxy    bool
+}
+
+type OpenAIWireStreamConverter interface {
+	ConvertFrame(event string, data string, rawFrame string) (string, error)
+	Err() error
+}
+
+func NewChatToResponsesStreamConverter(toolContext ...*convert.OpenAIWireToolContext) OpenAIWireStreamConverter {
+	return newChatToResponsesStreamConverter(toolContext...)
+}
+
+func newChatToResponsesStreamConverter(toolContext ...*convert.OpenAIWireToolContext) *chatToResponsesStreamConverter {
+	var ctx *convert.OpenAIWireToolContext
+	if len(toolContext) > 0 {
+		ctx = toolContext[0]
+	}
+	return &chatToResponsesStreamConverter{
+		toolCallsByID:     make(map[string]*chatToResponsesToolCallState),
+		toolCallIDByIndex: make(map[int]string),
+		toolContext:       ctx,
+	}
+}
+
+func (c *chatToResponsesStreamConverter) Err() error {
+	return c.err
+}
+
+func (c *chatToResponsesStreamConverter) ConvertFrame(event string, data string, rawFrame string) (string, error) {
+	if c.err != nil {
+		return "", c.err
+	}
+	if isSSECommentFrame(rawFrame) {
+		return rawFrame, nil
+	}
+	data = strings.TrimSpace(data)
+	if data == "" {
+		return "", nil
+	}
+	if data == "[DONE]" {
+		return c.emitCompleted()
+	}
+
+	chunk, err := c.parseChatChunk(data)
+	if err != nil {
+		return "", err
+	}
+	return c.convertChunk(chunk)
+}
+
+func (c *chatToResponsesStreamConverter) emitCreated() (string, error) {
+	resp := &shared.OpenAIResponsesResponse{
+		ID:        c.ensureID(),
+		Object:    "response",
+		CreatedAt: int(c.ensureCreated()),
+		Status:    "in_progress",
+		Model:     c.model,
+		Output:    make([]shared.ResponsesOutput, 0),
+	}
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:     "response.created",
+		Response: resp,
+	})
+}
+
+func (c *chatToResponsesStreamConverter) convertChunk(chunk *shared.ChatCompletionsStreamResponse) (string, error) {
+	c.hydrateFromChunk(chunk)
+
+	if chunk.Usage != nil && len(chunk.Choices) == 0 {
+		c.usage = chunk.Usage
+		return "", nil
+	}
+
+	var out strings.Builder
+	if !c.sentCreated {
+		frame, err := c.emitCreated()
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+		c.sentCreated = true
+	}
+	if !c.sentInProgress {
+		frame, err := c.emitInProgress()
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+		c.sentInProgress = true
+	}
+
+	for _, choice := range chunk.Choices {
+		frame, err := c.convertChoice(choice)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
+	return out.String(), nil
+}
+
+func (c *chatToResponsesStreamConverter) parseChatChunk(data string) (*shared.ChatCompletionsStreamResponse, error) {
+	var chunk shared.ChatCompletionsStreamResponse
+	if err := jsonx.UnmarshalJsonStr(data, &chunk); err != nil {
+		c.err = fmt.Errorf("unmarshal chat stream chunk failed: %w", err)
+		return nil, c.err
+	}
+	return &chunk, nil
+}
+
+func (c *chatToResponsesStreamConverter) convertChoice(choice shared.ChatCompletionsStreamResponseChoice) (string, error) {
+	c.captureFinishReason(choice)
+
+	var out strings.Builder
+	if delta := choice.Delta.GetReasoningContent(); delta != "" {
+		frame, err := c.emitReasoningDelta(delta)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
+	if delta := choice.Delta.GetContentString(); delta != "" {
+		if !c.reasoningDone {
+			doneFrame, err := c.emitReasoningDoneIfAny()
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(doneFrame)
+		}
+		frame, err := c.emitAssistantTextDelta(delta)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
+	if len(choice.Delta.ToolCalls) > 0 {
+		if !c.reasoningDone {
+			doneFrame, err := c.emitReasoningDoneIfAny()
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(doneFrame)
+		}
+		frames, err := c.emitToolCallDeltas(choice.Delta.ToolCalls)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frames)
+	}
+	return out.String(), nil
+}
+
+func (c *chatToResponsesStreamConverter) captureFinishReason(choice shared.ChatCompletionsStreamResponseChoice) {
+	if choice.FinishReason == nil {
+		return
+	}
+	if strings.TrimSpace(*choice.FinishReason) == "" {
+		return
+	}
+	c.finishReason = *choice.FinishReason
+}
+
+func (c *chatToResponsesStreamConverter) emitAssistantTextDelta(delta string) (string, error) {
+	c.textBuilder.WriteString(delta)
+
+	var out strings.Builder
+	if !c.sentMsgAdded {
+		added, err := c.emitMessageAdded()
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(added)
+		c.sentMsgAdded = true
+	}
+
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:   "response.output_text.delta",
+		Delta:  delta,
+		ItemID: chatToResponsesAssistantMessageID,
+	})
+	if err != nil {
+		return "", err
+	}
+	out.WriteString(frame)
+	return out.String(), nil
+}
+
+func (c *chatToResponsesStreamConverter) emitMessageAdded() (string, error) {
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type: "response.output_item.added",
+		Item: &shared.ResponsesOutput{
+			Type:   "message",
+			ID:     chatToResponsesAssistantMessageID,
+			Status: "in_progress",
+			Role:   "assistant",
+		},
+		ItemID: chatToResponsesAssistantMessageID,
+	})
+}
+
+func (c *chatToResponsesStreamConverter) emitInProgress() (string, error) {
+	resp := &shared.OpenAIResponsesResponse{
+		ID:        c.ensureID(),
+		Object:    "response",
+		CreatedAt: int(c.ensureCreated()),
+		Status:    "in_progress",
+		Model:     c.model,
+		Output:    make([]shared.ResponsesOutput, 0),
+	}
+	return encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:     "response.in_progress",
+		Response: resp,
+	})
+}
+
+// emitReasoningDelta preserves chat reasoning deltas as Responses reasoning
+// summary events so Responses clients can continue consuming thinking streams.
+func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (string, error) {
+	c.reasoningBuilder.WriteString(delta)
+
+	var out strings.Builder
+	if !c.sentReasoningAdded {
+		added, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+			Type: "response.output_item.added",
+			Item: &shared.ResponsesOutput{
+				Type:   "reasoning",
+				ID:     chatToResponsesReasoningItemID,
+				Status: "in_progress",
+				Summary: []shared.ResponsesContentPart{{
+					Type: "summary_text",
+				}},
+			},
+			ItemID: chatToResponsesReasoningItemID,
+		})
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(added)
+		c.sentReasoningAdded = true
+	}
+
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:   "response.reasoning_summary_text.delta",
+		Delta:  delta,
+		ItemID: chatToResponsesReasoningItemID,
+	})
+	if err != nil {
+		return "", err
+	}
+	out.WriteString(frame)
+	return out.String(), nil
+}
+
+func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []shared.ToolCallResponse) (string, error) {
+	var out strings.Builder
+	for _, call := range calls {
+		callID, hasStableID := c.resolveToolCallID(call)
+
+		state := c.getOrCreateToolCall(callID)
+		state.hasStableID = state.hasStableID || hasStableID
+		if call.Index != nil {
+			state.index = *call.Index
+		}
+		if strings.EqualFold(common.Interface2String(call.Type), shared.CustomType) || len(call.Custom) > 0 {
+			state.toolType = shared.CustomType
+		} else if strings.EqualFold(common.Interface2String(call.Type), "function") || strings.TrimSpace(call.Function.Name) != "" || strings.TrimSpace(call.Function.Arguments) != "" {
+			state.toolType = "function"
+		}
+		if state.toolType == shared.CustomType {
+			name, input, err := parseChatCustomToolCallDelta(call.Custom)
+			if err != nil {
+				return "", err
+			}
+			if name != "" {
+				state.name = name
+			}
+			delta := input
+			if delta != "" {
+				state.args.WriteString(delta)
+			}
+		} else if strings.TrimSpace(call.Function.Name) != "" {
+			if spec, ok := c.toolContext.ResolveToolProxy(call.Function.Name); ok {
+				state.applyToolSpec(spec)
+			} else {
+				state.toolType = "function"
+				state.name = call.Function.Name
+				state.namespace = ""
+				state.hasToolSpec = false
+				state.customProxy = false
+			}
+			delta := call.Function.Arguments
+			if delta != "" {
+				state.args.WriteString(delta)
+			}
+		} else if call.Function.Arguments != "" {
+			state.args.WriteString(call.Function.Arguments)
+		}
+
+		if !state.sentAdded && state.hasStableID && strings.TrimSpace(state.name) != "" {
+			frame, err := c.emitToolCallAdded(state)
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
+			state.sentAdded = true
+		}
+
+		if !state.sentAdded {
+			continue
+		}
+
+		// Responses custom tools are proxied as Chat functions with an "input"
+		// string. Buffer until the full JSON arguments can be unwrapped.
+		if state.customProxy {
+			continue
+		}
+
+		pendingArgs := state.args.String()
+		if len(pendingArgs) > state.emittedArgsLen {
+			if state.isToolSearch() {
+				continue
+			}
+			delta := pendingArgs[state.emittedArgsLen:]
+			eventType := "response.function_call_arguments.delta"
+			if state.isCustomTool() {
+				eventType = "response.custom_tool_call_input.delta"
+			}
+			frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+				Type:   eventType,
+				Delta:  delta,
+				ItemID: callID,
+			})
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
+			state.emittedArgsLen = len(pendingArgs)
+		}
+	}
+	return out.String(), nil
+}
+
+func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
+	reasoningDoneFrame, err := c.emitReasoningDoneIfAny()
+	if err != nil {
+		return "", err
+	}
+	messageDoneFrame, err := c.emitMessageDoneIfAny()
+	if err != nil {
+		return "", err
+	}
+
+	output, err := c.buildOutput()
+	if err != nil {
+		return "", err
+	}
+	resp := &shared.OpenAIResponsesResponse{
+		ID:        c.ensureID(),
+		Object:    "response",
+		CreatedAt: int(c.ensureCreated()),
+		Status:    c.mapStatus(),
+		Model:     c.model,
+		Output:    output,
+		Usage:     c.buildUsage(),
+	}
+
+	var out strings.Builder
+	out.WriteString(reasoningDoneFrame)
+	out.WriteString(messageDoneFrame)
+	for _, call := range c.toolCallOrder {
+		state := c.toolCallsByID[call]
+		if state == nil {
+			continue
+		}
+		if strings.TrimSpace(state.name) == "" {
+			return "", fmt.Errorf("tool call %q is missing name", state.id)
+		}
+		if !state.sentAdded {
+			frame, err := c.emitToolCallAdded(state)
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
+		}
+		toolArgs, err := state.responsesArguments()
+		if err != nil {
+			return "", err
+		}
+		if state.customProxy {
+			if len(toolArgs) > 0 {
+				frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+					Type:   "response.custom_tool_call_input.delta",
+					Delta:  toolArgs,
+					ItemID: state.id,
+					CallID: state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(frame)
+				state.emittedArgsLen = len(toolArgs)
+			}
+			customDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+				Type:   "response.custom_tool_call_input.done",
+				Input:  toolArgs,
+				ItemID: state.id,
+				CallID: state.id,
+			})
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(customDoneFrame)
+		} else if !state.isToolSearch() && len(toolArgs) > state.emittedArgsLen {
+			// Regular function calls emit incremental deltas and a done event.
+			delta := toolArgs[state.emittedArgsLen:]
+			frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+				Type:   "response.function_call_arguments.delta",
+				Delta:  delta,
+				ItemID: state.id,
+			})
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
+			state.emittedArgsLen = len(toolArgs)
+		}
+		if !state.customProxy && !state.isToolSearch() {
+			if state.isCustomTool() {
+				customDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+					Type:   "response.custom_tool_call_input.done",
+					Input:  toolArgs,
+					ItemID: state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(customDoneFrame)
+			} else {
+				argumentsDoneFrame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+					Type:      "response.function_call_arguments.done",
+					Arguments: toolArgs,
+					ItemID:    state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(argumentsDoneFrame)
+			}
+		}
+		item, err := state.responsesOutputItem("completed")
+		if err != nil {
+			return "", err
+		}
+		frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+			Type:   "response.output_item.done",
+			Item:   &item,
+			ItemID: state.id,
+		})
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
+
+	eventType := "response.completed"
+	if resp.Status == "incomplete" {
+		eventType = "response.incomplete"
+	} else if resp.Status == "failed" {
+		eventType = "response.failed"
+	}
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:     eventType,
+		Response: resp,
+	})
+	if err != nil {
+		return "", err
+	}
+	out.WriteString(frame)
+	return out.String(), nil
+}
+
+func isSSECommentFrame(rawFrame string) bool {
+	return strings.HasPrefix(strings.TrimSpace(rawFrame), ":")
+}
+
+func (c *chatToResponsesStreamConverter) emitToolCallAdded(state *chatToResponsesToolCallState) (string, error) {
+	item, err := state.responsesOutputItem("in_progress")
+	if err != nil {
+		return "", err
+	}
+	frame, err := encodeResponsesStreamEvent(shared.ResponsesStreamResponse{
+		Type:   "response.output_item.added",
+		Item:   &item,
+		ItemID: state.id,
+	})
+	if err != nil {
+		return "", err
+	}
+	state.sentAdded = true
+	return frame, nil
+}
+
+func parseChatCustomToolCallDelta(raw json.RawMessage) (name string, input string, err error) {
+	if len(raw) == 0 {
+		return "", "", nil
+	}
+	var custom map[string]any
+	if err := jsonx.Unmarshal(raw, &custom); err != nil {
+		return "", "", fmt.Errorf("unmarshal custom tool call delta failed: %w", err)
+	}
+	return strings.TrimSpace(common.Interface2String(custom["name"])), common.Interface2String(custom["input"]), nil
+}

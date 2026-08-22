@@ -49,7 +49,9 @@ export function MessageError({ message, className = '' }: MessageErrorProps) {
     return (
       <Alert variant='default' className={className}>
         <AlertTriangle className='text-orange-500' />
-        <AlertTitle>{t('playground.fields.modelPriceNotConfigured')}</AlertTitle>
+        <AlertTitle>
+          {t('playground.fields.modelPriceNotConfigured')}
+        </AlertTitle>
         <AlertDescription className='space-y-2'>
           <p>{errorContent}</p>
           {isAdmin && (

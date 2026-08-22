@@ -27,17 +27,13 @@ export function HowItWorks() {
     {
       num: '1',
       title: t('home.tips.configure'),
-      desc: t(
-        'home.actions.addYourApiKeysSetUpChannelsAndConfigure'
-      ),
+      desc: t('home.actions.addYourApiKeysSetUpChannelsAndConfigure'),
       icon: <Settings className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '2',
       title: t('home.fields.connect'),
-      desc: t(
-        'home.tips.connectThroughOpenAiClaudeGeminiAndOtherCompatible'
-      ),
+      desc: t('home.tips.connectThroughOpenAiClaudeGeminiAndOtherCompatible'),
       icon: <Zap className='size-6' strokeWidth={1.5} />,
     },
     {

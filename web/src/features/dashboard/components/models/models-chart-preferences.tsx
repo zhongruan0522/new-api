@@ -91,7 +91,9 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
 
         <div className='grid gap-4 py-2'>
           <div className='grid gap-2'>
-            <Label htmlFor='default-time-range'>{t('dashboard.fields.defaultRange')}</Label>
+            <Label htmlFor='default-time-range'>
+              {t('dashboard.fields.defaultRange')}
+            </Label>
             <Select
               items={[
                 ...TIME_RANGE_PRESETS.map((option) => ({
@@ -108,7 +110,9 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='default-time-range'>
-                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultRange')} />
+                <SelectValue
+                  placeholder={t('dashboard.placeholders.selectDefaultRange')}
+                />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -142,7 +146,11 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='default-time-granularity'>
-                <SelectValue placeholder={t('dashboard.placeholders.selectTimeGranularity')} />
+                <SelectValue
+                  placeholder={t(
+                    'dashboard.placeholders.selectTimeGranularity'
+                  )}
+                />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -177,7 +185,9 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='consumption-distribution-chart'>
-                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultChart')} />
+                <SelectValue
+                  placeholder={t('dashboard.placeholders.selectDefaultChart')}
+                />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -211,7 +221,9 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               }
             >
               <SelectTrigger id='model-analytics-chart'>
-                <SelectValue placeholder={t('dashboard.placeholders.selectDefaultChart')} />
+                <SelectValue
+                  placeholder={t('dashboard.placeholders.selectDefaultChart')}
+                />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>

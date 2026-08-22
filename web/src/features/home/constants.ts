@@ -107,7 +107,8 @@ export const DEFAULT_FEATURES = [
   },
   {
     title: 'home.fields.highPerformance',
-    description: 'home.tips.supportForHighConcurrencyWithAutomaticLoadBalancing',
+    description:
+      'home.tips.supportForHighConcurrencyWithAutomaticLoadBalancing',
     iconName: 'Gauge',
   },
   {
@@ -117,7 +118,8 @@ export const DEFAULT_FEATURES = [
   },
   {
     title: 'home.fields.teamCollaboration',
-    description: 'home.tips.multiUserManagementWithFlexiblePermissionAllocation',
+    description:
+      'home.tips.multiUserManagementWithFlexiblePermissionAllocation',
     iconName: 'Users',
   },
   {

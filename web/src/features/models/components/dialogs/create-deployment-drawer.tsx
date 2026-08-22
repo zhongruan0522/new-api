@@ -411,7 +411,10 @@ export function CreateDeploymentDrawer({
                   <FormItem>
                     <FormLabel>{t('models.fields.containerName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('keys.placeholders.enterAName')} {...field} />
+                      <Input
+                        placeholder={t('keys.placeholders.enterAName')}
+                        {...field}
+                      />
                     </FormControl>
                     {open && field.value?.trim() ? (
                       <div className='text-muted-foreground text-xs'>
@@ -470,7 +473,9 @@ export function CreateDeploymentDrawer({
                       >
                         <FormControl>
                           <SelectTrigger className='w-full'>
-                            <SelectValue placeholder={t('keys.placeholders.select')} />
+                            <SelectValue
+                              placeholder={t('keys.placeholders.select')}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent alignItemWithTrigger={false}>
@@ -494,7 +499,9 @@ export function CreateDeploymentDrawer({
                 name='location_ids'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('models.fields.deploymentLocation')}</FormLabel>
+                    <FormLabel>
+                      {t('models.fields.deploymentLocation')}
+                    </FormLabel>
                     <FormControl>
                       <MultiSelect
                         options={locationOptions}
@@ -615,7 +622,9 @@ export function CreateDeploymentDrawer({
 
             {/* Price Estimation */}
             <SideDrawerSection>
-              <h3 className='text-sm font-medium'>{t('models.fields.priceEstimation')}</h3>
+              <h3 className='text-sm font-medium'>
+                {t('models.fields.priceEstimation')}
+              </h3>
               <p className='text-muted-foreground text-xs'>
                 {t('models.tips.priceEstimationDescription')}
               </p>
@@ -636,7 +645,9 @@ export function CreateDeploymentDrawer({
                     >
                       <FormControl>
                         <SelectTrigger className='w-full'>
-                          <SelectValue placeholder={t('keys.placeholders.select')} />
+                          <SelectValue
+                            placeholder={t('keys.placeholders.select')}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent alignItemWithTrigger={false}>
@@ -657,7 +668,9 @@ export function CreateDeploymentDrawer({
                 {t('models.titles.advancedConfiguration')}
               </h3>
               <p className='text-muted-foreground text-xs'>
-                {t('models.tips.optionalSettingsForAdvancedContainerConfiguration')}
+                {t(
+                  'models.tips.optionalSettingsForAdvancedContainerConfiguration'
+                )}
               </p>
 
               <div className='flex flex-col gap-4'>
@@ -683,7 +696,9 @@ export function CreateDeploymentDrawer({
                     name='args'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('models.fields.argsSpaceSeparated')}</FormLabel>
+                        <FormLabel>
+                          {t('models.fields.argsSpaceSeparated')}
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder='--foo bar' {...field} />
                         </FormControl>
@@ -698,7 +713,9 @@ export function CreateDeploymentDrawer({
                   name='env_json'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('models.fields.environmentVariablesJson')}</FormLabel>
+                      <FormLabel>
+                        {t('models.fields.environmentVariablesJson')}
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           className='min-h-24 font-mono text-xs'
@@ -737,7 +754,9 @@ export function CreateDeploymentDrawer({
                     name='registry_username'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('models.fields.registryUsername')}</FormLabel>
+                        <FormLabel>
+                          {t('models.fields.registryUsername')}
+                        </FormLabel>
                         <FormControl>
                           <Input autoComplete='off' {...field} />
                         </FormControl>
@@ -751,7 +770,9 @@ export function CreateDeploymentDrawer({
                     name='registry_secret'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('models.fields.registrySecret')}</FormLabel>
+                        <FormLabel>
+                          {t('models.fields.registrySecret')}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type='password'
@@ -778,7 +799,9 @@ export function CreateDeploymentDrawer({
             type='submit'
             disabled={createMutation.isPending}
           >
-            {createMutation.isPending ? t('models.tips.submitting') : t('channels.actions.create')}
+            {createMutation.isPending
+              ? t('models.tips.submitting')
+              : t('channels.actions.create')}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -168,7 +168,9 @@ export function ModelMappingEditor({
         map_key: mapKey,
       })
       if (!data.success) {
-        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
+        throw new Error(
+          data.message || t('channels.errors.failedToUpdateSetting')
+        )
       }
     },
     onSuccess: async () => {
@@ -202,7 +204,9 @@ export function ModelMappingEditor({
         value: row.to.trim(),
       })
       if (!data.success) {
-        throw new Error(data.message || t('channels.errors.failedToUpdateSetting'))
+        throw new Error(
+          data.message || t('channels.errors.failedToUpdateSetting')
+        )
       }
     },
     onSuccess: async () => {
@@ -316,8 +320,7 @@ export function ModelMappingEditor({
         Math.ceil(
           (isServerPaginated
             ? (jsonMapQuery.data?.total ?? 0) + unsavedServerRowCount
-            : rows.length) /
-            pageSize
+            : rows.length) / pageSize
         )
       ),
     [
@@ -333,10 +336,7 @@ export function ModelMappingEditor({
 
   const pageRows = useMemo(
     () =>
-      rows.slice(
-        safePageIndex * pageSize,
-        safePageIndex * pageSize + pageSize
-      ),
+      rows.slice(safePageIndex * pageSize, safePageIndex * pageSize + pageSize),
     [pageSize, rows, safePageIndex]
   )
 
@@ -438,7 +438,9 @@ export function ModelMappingEditor({
       if (isServerPaginated) {
         const result = await fullJsonQuery.refetch()
         if (result.isError) {
-          toast.error(result.error.message || t('channels.errors.failedToLoadSettings'))
+          toast.error(
+            result.error.message || t('channels.errors.failedToLoadSettings')
+          )
           return
         }
         const fullValue = result.data ?? '{}'
@@ -513,8 +515,14 @@ export function ModelMappingEditor({
           {isLoadingRows || totalRows > 0 ? (
             <div className='space-y-2'>
               <div className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
-                <div>{fromLabel ? t(fromLabel) : t('channels.fields.originalModel')}</div>
-                <div>{toLabel ? t(toLabel) : t('channels.fields.replacementModel')}</div>
+                <div>
+                  {fromLabel
+                    ? t(fromLabel)
+                    : t('channels.fields.originalModel')}
+                </div>
+                <div>
+                  {toLabel ? t(toLabel) : t('channels.fields.replacementModel')}
+                </div>
                 <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
               </div>
               {isLoadingRows ? (
@@ -592,10 +600,7 @@ export function ModelMappingEditor({
               <div className='text-muted-foreground flex flex-wrap items-center gap-3 text-xs'>
                 <span>
                   {t('channels.tips.showingStartEndOfCountMappings', {
-                    start: Math.min(
-                      totalRows,
-                      safePageIndex * pageSize + 1
-                    ),
+                    start: Math.min(totalRows, safePageIndex * pageSize + 1),
                     end: Math.min(
                       totalRows,
                       safePageIndex * pageSize + visibleRows.length
@@ -603,29 +608,29 @@ export function ModelMappingEditor({
                     count: totalRows,
                   })}
                 </span>
-               <div className='flex items-center gap-2'>
-                 <span>{t('common.fields.rowsPerPage')}</span>
-                 <Select
-                   value={String(pageSize)}
-                   onValueChange={(value) => {
-                     setPageSize(Number(value))
-                     setPageIndex(0)
-                   }}
-                 >
-                   <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent alignItemWithTrigger={false}>
-                     <SelectGroup>
-                       {PAGE_SIZE_OPTIONS.map((size) => (
-                         <SelectItem key={size} value={String(size)}>
-                           {size}
-                         </SelectItem>
-                       ))}
-                     </SelectGroup>
-                   </SelectContent>
-                 </Select>
-               </div>
+                <div className='flex items-center gap-2'>
+                  <span>{t('common.fields.rowsPerPage')}</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => {
+                      setPageSize(Number(value))
+                      setPageIndex(0)
+                    }}
+                  >
+                    <SelectTrigger className='h-8 w-[70px]' disabled={disabled}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className='flex items-center gap-2'>
                 <Button
@@ -637,7 +642,7 @@ export function ModelMappingEditor({
                     setPageIndex(() => Math.max(0, safePageIndex - 1))
                   }
                 >
-                  {t('common.fields.previous')}
+                  {t('common.actions.previous')}
                 </Button>
                 <span className='text-muted-foreground text-xs'>
                   {safePageIndex + 1} / {pageCount}
@@ -648,26 +653,30 @@ export function ModelMappingEditor({
                   size='sm'
                   disabled={disabled || safePageIndex >= pageCount - 1}
                   onClick={() =>
-                    setPageIndex(() => Math.min(pageCount - 1, safePageIndex + 1))
+                    setPageIndex(() =>
+                      Math.min(pageCount - 1, safePageIndex + 1)
+                    )
                   }
                 >
-                  {t('common.fields.next')}
+                  {t('common.actions.next')}
                 </Button>
               </div>
             </div>
           ) : null}
         </div>
       ) : (
-        <div className='min-w-0 max-w-full overflow-hidden'>
+        <div className='max-w-full min-w-0 overflow-hidden'>
           <Textarea
             value={jsonValue}
             onChange={(e) => handleJsonChange(e.target.value)}
-            placeholder={jsonPlaceholder ?? t('common.tips.originalModelReplacementModel')}
+            placeholder={
+              jsonPlaceholder ?? t('common.tips.originalModelReplacementModel')
+            }
             disabled={disabled}
             rows={8}
             wrap='off'
             className={cn(
-              'h-48 max-h-48 min-h-48 w-full min-w-0 max-w-full resize-none overflow-auto whitespace-pre font-mono text-sm [field-sizing:fixed]'
+              '[field-sizing:fixed] h-48 max-h-48 min-h-48 w-full max-w-full min-w-0 resize-none overflow-auto font-mono text-sm whitespace-pre'
             )}
           />
         </div>

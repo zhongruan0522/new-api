@@ -38,7 +38,7 @@ export function SignIn() {
           {!status?.self_use_mode_enabled &&
             status?.register_enabled !== false && (
               <p className='text-muted-foreground text-left text-sm sm:text-base'>
-                {t("common.tips.donTHaveAnAccount")}{' '}
+                {t('common.tips.donTHaveAnAccount')}{' '}
                 <Link
                   to='/sign-up'
                   className='hover:text-primary font-medium underline underline-offset-4'

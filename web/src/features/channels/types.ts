@@ -163,6 +163,19 @@ export interface FetchModelsResponse {
   data?: unknown[]
 }
 
+export interface OpenRouterProviderInfo {
+  slug: string
+  name: string
+  headquarters?: string
+  privacy_policy_url?: string
+}
+
+export interface FetchProvidersResponse {
+  success: boolean
+  message?: string
+  data?: OpenRouterProviderInfo[]
+}
+
 export type ProxyTestStatus = 'success' | 'invalid' | 'failed'
 
 export interface ProxyTestResultData {
@@ -294,6 +307,98 @@ export interface GlmRiskResponse {
   }
 }
 
+export interface GlmContactData {
+  phone?: string
+  name?: string
+  raw_name?: string
+  billing_month?: string
+}
+
+export interface GlmContactResponse {
+  success: boolean
+  message?: string
+  data?: GlmContactData
+}
+
+/** 智谱账户资金报告指标，金额为人民币原值；上游无值字段为 null */
+export interface GlmAccountReportData {
+  balance?: number | null
+  recharge_amount?: number | null
+  give_amount?: number | null
+  total_spend_amount?: number | null
+  available_balance?: number | null
+  frozen_balance?: number | null
+}
+
+export interface GlmAccountReportResponse {
+  success: boolean
+  message?: string
+  data?: GlmAccountReportData
+  /** 折算成 USD 后落库的渠道余额，用于同步刷新表格 */
+  balance?: number
+}
+
+export interface GlmActivityDay {
+  date?: string
+  totalTokens?: number
+  mcpCalls?: number
+}
+
+export interface GlmActivitySummary {
+  totalTokens?: number
+  peakDailyTokens?: number
+  peakDailyTokensDate?: string
+  totalUsageDurationMs?: number
+  currentStreakDays?: number
+  longestStreakDays?: number
+}
+
+export interface GlmPlanActivityData {
+  summary?: GlmActivitySummary
+  series?: GlmActivityDay[]
+}
+
+export interface GlmPlanActivityResponse {
+  success: boolean
+  message?: string
+  data?: GlmPlanActivityData
+}
+
+// ============================================================================
+// GLM Reset Card Types
+// ============================================================================
+
+export type GlmResetCardType = 'FIVE_HOUR' | 'WEEK'
+
+export interface GlmResetCard {
+  recordId?: number
+  expireTime?: string
+  available?: boolean
+  priority?: boolean
+}
+
+export interface GlmResetCardListData {
+  fiveHourResets?: GlmResetCard[]
+  weekResets?: GlmResetCard[]
+}
+
+export interface GlmResetCardListResponse {
+  success: boolean
+  message?: string
+  data?: GlmResetCardListData
+}
+
+export interface GlmResetCardUseParams {
+  resetType: GlmResetCardType
+  recordId: number
+}
+
+export interface GlmResetCardUseResponse {
+  success: boolean
+  message?: string
+  msg?: string
+}
+
 // ============================================================================
 // API Request Parameters
 // ============================================================================
@@ -420,4 +525,15 @@ export interface AddChannelRequest {
   multi_key_mode?: 'random' | 'polling'
   batch_add_set_key_prefix_2_name?: boolean
   channel: Partial<Channel>
+}
+
+// ============================================================================
+// Update Channel Request (top-level extras beyond Channel fields)
+// ============================================================================
+
+export interface UpdateChannelParams extends Partial<Channel> {
+  /** 多密钥取用策略，编辑多密钥渠道时随更新提交以支持切换 */
+  multi_key_mode?: 'random' | 'polling'
+  /** 多密钥渠道编辑时新密钥的写入方式 */
+  key_mode?: 'append' | 'replace'
 }

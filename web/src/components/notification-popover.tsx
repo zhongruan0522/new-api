@@ -178,7 +178,10 @@ function NoticeContent({
 
   if (!notice) {
     return (
-      <EmptyState icon={<Bell />} title={t('common.fields.noAnnouncementsAtThisTime')} />
+      <EmptyState
+        icon={<Bell />}
+        title={t('common.fields.noAnnouncementsAtThisTime')}
+      />
     )
   }
 
@@ -213,7 +216,10 @@ function AnnouncementsContent({
 
   if (announcements.length === 0) {
     return (
-      <EmptyState icon={<Megaphone />} title={t('common.titles.noSystemAnnouncements')} />
+      <EmptyState
+        icon={<Megaphone />}
+        title={t('common.titles.noSystemAnnouncements')}
+      />
     )
   }
 

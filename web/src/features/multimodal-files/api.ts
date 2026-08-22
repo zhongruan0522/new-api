@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { api } from '@/lib/api'
 import type {
   ApiResponse,
@@ -40,7 +39,9 @@ function unwrap<T>(res: ApiResponse<T>, fallbackMessage: string): T {
 export async function getStoredMedia(
   params: StoredMediaListParams
 ): Promise<StoredMediaPage> {
-  const endpoint = params.isAdmin ? '/api/stored_media/' : '/api/stored_media/self'
+  const endpoint = params.isAdmin
+    ? '/api/stored_media/'
+    : '/api/stored_media/self'
   const res = await api.get(endpoint, {
     params: {
       p: params.page,

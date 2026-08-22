@@ -39,10 +39,7 @@ import {
   usePersistentColumnVisibility,
 } from '@/components/data-table'
 import { getChannels, searchChannels, getGroups } from '../api'
-import {
-  DEFAULT_PAGE_SIZE,
-  CHANNEL_STATUS,
-} from '../constants'
+import { DEFAULT_PAGE_SIZE, CHANNEL_STATUS } from '../constants'
 import {
   channelsQueryKeys,
   aggregateChannelsByTag,
@@ -52,9 +49,9 @@ import {
 } from '../lib'
 import type { Channel, ChannelSortBy } from '../types'
 import { useChannelsColumns } from './channels-columns'
+import { ChannelsFilterBar } from './channels-filter-bar'
 import { useChannels } from './channels-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
-import { ChannelsFilterBar } from './channels-filter-bar'
 
 const route = getRouteApi('/_authenticated/channels/')
 
@@ -124,12 +121,12 @@ export function ChannelsTable() {
   // 任一过滤字段非空就走 search API
   const shouldSearch = Boolean(
     idFilter.trim() ||
-      nameFilter.trim() ||
-      modelFilter.trim() ||
-      tagFilter.trim() ||
-      typeFilterValue ||
-      statusFilterValue ||
-      groupFilterValue
+    nameFilter.trim() ||
+    modelFilter.trim() ||
+    tagFilter.trim() ||
+    typeFilterValue ||
+    statusFilterValue ||
+    groupFilterValue
   )
 
   const sortParams = useMemo(() => {

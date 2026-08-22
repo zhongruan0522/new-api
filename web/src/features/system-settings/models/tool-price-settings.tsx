@@ -17,7 +17,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, Code2, Copy, Eye, Plus, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Code2,
+  Copy,
+  Eye,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -107,7 +115,10 @@ function normalizeRule(rule: ToolBillingRule): ToolBillingRule {
 }
 
 function rowsToRules(rows: ToolBillingRow[]): ToolBillingRule[] {
-  return rows.map(({ rowId: _rowId, conditionsExpanded: _conditionsExpanded, ...rule }) => normalizeRule(rule))
+  return rows.map(
+    ({ rowId: _rowId, conditionsExpanded: _conditionsExpanded, ...rule }) =>
+      normalizeRule(rule)
+  )
 }
 
 function validateRules(rules: ToolBillingRule[]): string | null {
@@ -182,7 +193,11 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
     } catch (error) {
       setRows([])
       setJsonText(defaultValue || '[]')
-      setJsonError(error instanceof Error ? error.message : t('systemSettings.errors.invalidJson'))
+      setJsonError(
+        error instanceof Error
+          ? error.message
+          : t('systemSettings.errors.invalidJson')
+      )
     }
   }, [defaultValue, t])
 
@@ -204,7 +219,9 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
           setJsonError(t('systemSettings.errors.jsonMustBeAnArray'))
           return
         }
-        const rules = parsed.map((item) => normalizeRule(item as ToolBillingRule))
+        const rules = parsed.map((item) =>
+          normalizeRule(item as ToolBillingRule)
+        )
         const validationError = validateRules(rules)
         if (validationError) {
           setJsonError(validationError)
@@ -219,14 +236,22 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         setNextRowId(nextRows.length + 1)
         setJsonError('')
       } catch (error) {
-        setJsonError(error instanceof Error ? error.message : t('systemSettings.errors.invalidJson'))
+        setJsonError(
+          error instanceof Error
+            ? error.message
+            : t('systemSettings.errors.invalidJson')
+        )
       }
     },
     [t]
   )
 
   const updateRow = useCallback(
-    (rowId: number, field: keyof ToolBillingRule, value: string | number | boolean) => {
+    (
+      rowId: number,
+      field: keyof ToolBillingRule,
+      value: string | number | boolean
+    ) => {
       syncFromRows(
         rows.map((row) =>
           row.rowId === rowId ? { ...row, [field]: value } : row
@@ -361,7 +386,9 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       <Alert>
         <AlertDescription className='space-y-1 text-sm'>
           <div>
-            {t('systemSettings.actions.configureToolBillingRulesPricesAreUsdPerCall')}
+            {t(
+              'systemSettings.actions.configureToolBillingRulesPricesAreUsdPerCall'
+            )}
           </div>
           <div>
             <code className='bg-muted rounded px-1 py-0.5 text-xs'>
@@ -419,7 +446,9 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       value={row.id}
                       placeholder='web_search_openai'
                       className='h-8'
-                      onChange={(e) => updateRow(row.rowId, 'id', e.target.value)}
+                      onChange={(e) =>
+                        updateRow(row.rowId, 'id', e.target.value)
+                      }
                     />
                   </div>
                   <div className='min-w-[140px] flex-1'>
@@ -467,7 +496,11 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       value={row.price}
                       className='h-8'
                       onChange={(e) =>
-                        updateRow(row.rowId, 'price', Number(e.target.value) || 0)
+                        updateRow(
+                          row.rowId,
+                          'price',
+                          Number(e.target.value) || 0
+                        )
                       }
                     />
                   </div>
@@ -495,7 +528,8 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                         <ChevronRight className='h-4 w-4' />
                       )}
                       <span className='ml-1 text-xs'>
-                        {t('channels.fields.conditions')} ({row.conditions?.length ?? 0})
+                        {t('channels.fields.conditions')} (
+                        {row.conditions?.length ?? 0})
                       </span>
                     </Button>
                   </div>
@@ -550,7 +584,11 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       >
                         <div className='flex items-center'>
                           <span className='text-muted-foreground mr-1 font-mono text-xs'>
-                            {ci === 0 ? 'IF' : (row.logic || 'AND') === 'AND' ? 'AND' : 'OR'}
+                            {ci === 0
+                              ? 'IF'
+                              : (row.logic || 'AND') === 'AND'
+                                ? 'AND'
+                                : 'OR'}
                           </span>
                         </div>
                         <Input
@@ -558,7 +596,12 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                           placeholder='model / provider / quality / size'
                           className='h-7 min-w-[160px] flex-1'
                           onChange={(e) =>
-                            updateCondition(row.rowId, ci, 'field', e.target.value)
+                            updateCondition(
+                              row.rowId,
+                              ci,
+                              'field',
+                              e.target.value
+                            )
                           }
                         />
                         <Select
@@ -583,7 +626,12 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                           placeholder='value'
                           className='h-7 min-w-[120px] flex-1'
                           onChange={(e) =>
-                            updateCondition(row.rowId, ci, 'value', e.target.value)
+                            updateCondition(
+                              row.rowId,
+                              ci,
+                              'value',
+                              e.target.value
+                            )
                           }
                         />
                         <label className='text-muted-foreground flex items-center gap-1 text-xs'>

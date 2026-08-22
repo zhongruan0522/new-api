@@ -93,11 +93,15 @@ export function CodexOAuthDialog({
       } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('Failed to open authorization page:', error)
-        toast.warning(t('channels.tips.pleaseManuallyCopyAndOpenTheAuthorizationLink'))
+        toast.warning(
+          t('channels.tips.pleaseManuallyCopyAndOpenTheAuthorizationLink')
+        )
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.status.oauthStartFailed')
+        error instanceof Error
+          ? error.message
+          : t('channels.status.oauthStartFailed')
       )
     } finally {
       setState((prev) => ({ ...prev, isStarting: false }))
@@ -122,7 +126,11 @@ export function CodexOAuthDialog({
       toast.success(t('channels.fields.credentialGenerated'))
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('channels.status.oauthFailed'))
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('channels.status.oauthFailed')
+      )
     } finally {
       setState((prev) => ({ ...prev, isCompleting: false }))
     }
@@ -134,9 +142,7 @@ export function CodexOAuthDialog({
         <DialogHeader>
           <DialogTitle>{t('channels.fields.codexAuthorization')}</DialogTitle>
           <DialogDescription>
-            {t(
-              'channels.tips.generateACodexOauthCredentialAndPasteItInto'
-            )}
+            {t('channels.tips.generateACodexOauthCredentialAndPasteItInto')}
           </DialogDescription>
         </DialogHeader>
 
@@ -180,7 +186,9 @@ export function CodexOAuthDialog({
           </div>
 
           <div className='space-y-2'>
-            <div className='text-sm font-medium'>{t('channels.fields.callbackUrl')}</div>
+            <div className='text-sm font-medium'>
+              {t('channels.fields.callbackUrl')}
+            </div>
             <Input
               value={state.callbackUrl}
               onChange={(e) =>
@@ -193,9 +201,7 @@ export function CodexOAuthDialog({
               spellCheck={false}
             />
             <div className='text-muted-foreground text-xs'>
-              {t(
-                'channels.tips.tipTheGeneratedKeyIsAJsonCredentialIncluding'
-              )}
+              {t('channels.tips.tipTheGeneratedKeyIsAJsonCredentialIncluding')}
             </div>
           </div>
         </div>
@@ -213,7 +219,9 @@ export function CodexOAuthDialog({
             {state.isCompleting && (
               <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {state.isCompleting ? t('channels.tips.generating') : t('channels.fields.generateCredential')}
+            {state.isCompleting
+              ? t('channels.tips.generating')
+              : t('channels.fields.generateCredential')}
           </Button>
         </DialogFooter>
       </DialogContent>

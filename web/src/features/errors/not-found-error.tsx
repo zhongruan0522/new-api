@@ -30,7 +30,7 @@ export function NotFoundError() {
         <h1 className='text-[7rem] leading-tight font-bold'>404</h1>
         <span className='font-medium'>{t('common.tips.oopsPageNotFound')}</span>
         <p className='text-muted-foreground text-center'>
-          {t("common.tips.itSeemsLikeThePageYouReLookingFor")} <br />
+          {t('common.tips.itSeemsLikeThePageYouReLookingFor')} <br />
           {t('common.status.doesNotExistOrMightHaveBeenRemoved')}
         </p>
         <div className='mt-6 flex gap-4'>

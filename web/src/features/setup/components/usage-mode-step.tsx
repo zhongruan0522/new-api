@@ -45,8 +45,7 @@ const USAGE_MODE_OPTIONS: Array<{
   {
     value: 'external',
     titleKey: 'common.fields.externalOperations',
-    descriptionKey:
-      'common.tips.serveMultipleUsersOrTeamsWithBillingAndQuota',
+    descriptionKey: 'common.tips.serveMultipleUsersOrTeamsWithBillingAndQuota',
     icon: Building2,
   },
   {

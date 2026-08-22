@@ -62,7 +62,7 @@ export function DataTablePagination<TData>({
             total: totalPages,
           })}
         </div>
-       <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
+        <div className='flex items-center gap-2 @max-2xl/content:flex-row-reverse'>
           <p className='hidden text-sm font-medium sm:block'>
             {t('common.fields.rowsPerPage')}
           </p>
@@ -117,7 +117,9 @@ export function DataTablePagination<TData>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <span className='sr-only'>{t('common.fields.goToPreviousPage')}</span>
+            <span className='sr-only'>
+              {t('common.fields.goToPreviousPage')}
+            </span>
             <ChevronLeftIcon className='h-4 w-4' />
           </Button>
 

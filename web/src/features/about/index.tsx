@@ -48,11 +48,11 @@ function EmptyAboutState() {
           <Construction className='text-muted-foreground h-24 w-24' />
         </div>
         <div className='space-y-2'>
-          <h2 className='text-2xl font-bold'>{t('about.titles.noAboutContentSet')}</h2>
+          <h2 className='text-2xl font-bold'>
+            {t('about.titles.noAboutContentSet')}
+          </h2>
           <p className='text-muted-foreground'>
-            {t(
-              'about.tips.administratorHasNotConfiguredAnyAboutContentYetYou'
-            )}
+            {t('about.tips.administratorHasNotConfiguredAnyAboutContentYetYou')}
           </p>
         </div>
         <div className='space-y-4 text-sm'>

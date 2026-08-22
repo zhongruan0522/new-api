@@ -162,7 +162,9 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
             name='claude.model_headers_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('channels.fields.requestHeaderOverride')}</FormLabel>
+                <FormLabel>
+                  {t('channels.fields.requestHeaderOverride')}
+                </FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
@@ -181,7 +183,9 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
             name='claude.default_max_tokens'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.defaultMaxTokens')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.defaultMaxTokens')}
+                </FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>

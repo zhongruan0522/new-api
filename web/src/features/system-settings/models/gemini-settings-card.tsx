@@ -217,7 +217,9 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.safety_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.titles.safetySettings')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.titles.safetySettings')}
+                </FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
@@ -236,7 +238,9 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.version_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.fields.versionOverrides')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.fields.versionOverrides')}
+                </FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>
@@ -255,7 +259,9 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             name='gemini.supported_imagine_models'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('systemSettings.titles.supportedImagineModels')}</FormLabel>
+                <FormLabel>
+                  {t('systemSettings.titles.supportedImagineModels')}
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     rows={6}
@@ -280,7 +286,9 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
                   <FormLabel>
-                    {t('systemSettings.actions.enableFunctionCallThoughtSignatureFill')}
+                    {t(
+                      'systemSettings.actions.enableFunctionCallThoughtSignatureFill'
+                    )}
                   </FormLabel>
                   <FormDescription>
                     {t(
@@ -304,7 +312,9 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.removeFunctionResponseIdField')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.removeFunctionResponseIdField')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.vertexAiDoesNotSupportFunctionResponseIdEnable'

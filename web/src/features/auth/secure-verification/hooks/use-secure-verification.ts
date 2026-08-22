@@ -130,7 +130,9 @@ export function useSecureVerification(
 
       const actualMethod = method ?? state.method
       if (!actualMethod) {
-        toast.error(i18next.t('auth.placeholders.selectAVerificationMethodFirst'))
+        toast.error(
+          i18next.t('auth.placeholders.selectAVerificationMethodFirst')
+        )
         return
       }
 

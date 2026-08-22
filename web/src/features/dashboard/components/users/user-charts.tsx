@@ -25,12 +25,13 @@ import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
 import { getRollingDateRange, type TimeGranularity } from '@/lib/time'
 import { VCHART_OPTION } from '@/lib/vchart'
-import { useStatus } from '@/hooks/use-status'
 import { useThemeCustomization } from '@/context/theme-customization-provider'
 import { useTheme } from '@/context/theme-provider'
+import { useStatus } from '@/hooks/use-status'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getUserQuotaDataByUsers } from '@/features/dashboard/api'
+import { DashboardRecalculateDialog } from '@/features/dashboard/components/dashboard-recalculate-dialog'
 import {
   TIME_GRANULARITY_OPTIONS,
   TIME_RANGE_PRESETS,
@@ -42,7 +43,6 @@ import {
   processUserChartData,
   getDataDashboardRefreshIntervalMs,
 } from '@/features/dashboard/lib'
-import { DashboardRecalculateDialog } from '@/features/dashboard/components/dashboard-recalculate-dialog'
 import type { ProcessedUserChartData } from '@/features/dashboard/types'
 
 let themeManagerPromise: Promise<

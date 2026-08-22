@@ -70,7 +70,11 @@ const suggestions = [
   { icon: BarChartIcon, text: 'Analyze data', color: '#76d0eb' },
   { icon: BoxIcon, text: 'Surprise me', color: '#76d0eb' },
   { icon: NotepadTextIcon, text: 'Summarize text', color: '#ea8444' },
-  { icon: CodeSquareIcon, text: 'redemptionCodes.fields.code', color: '#6c71ff' },
+  {
+    icon: CodeSquareIcon,
+    text: 'redemptionCodes.fields.code',
+    color: '#6c71ff',
+  },
   { icon: GraduationCapIcon, text: 'Get advice', color: '#76d0eb' },
   { icon: null, text: 'common.fields.more' },
 ]
@@ -139,8 +143,12 @@ export function PlaygroundInput({
                 }
               >
                 <PaperclipIcon size={16} />
-                <span className='hidden sm:inline'>{t('playground.fields.attach')}</span>
-                <span className='sr-only sm:hidden'>{t('playground.fields.attach')}</span>
+                <span className='hidden sm:inline'>
+                  {t('playground.fields.attach')}
+                </span>
+                <span className='sr-only sm:hidden'>
+                  {t('playground.fields.attach')}
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='start'>
                 <DropdownMenuItem
@@ -173,12 +181,18 @@ export function PlaygroundInput({
             <PromptInputButton
               className='border font-medium'
               disabled={disabled}
-              onClick={() => toast.info(t('playground.actions.searchFeatureInDevelopment'))}
+              onClick={() =>
+                toast.info(t('playground.actions.searchFeatureInDevelopment'))
+              }
               variant='outline'
             >
               <GlobeIcon size={16} />
-              <span className='hidden sm:inline'>{t('common.actions.search')}</span>
-              <span className='sr-only sm:hidden'>{t('common.actions.search')}</span>
+              <span className='hidden sm:inline'>
+                {t('common.actions.search')}
+              </span>
+              <span className='sr-only sm:hidden'>
+                {t('common.actions.search')}
+              </span>
             </PromptInputButton>
           </PromptInputTools>
 
@@ -200,8 +214,12 @@ export function PlaygroundInput({
                 variant='secondary'
               >
                 <SquareIcon className='fill-current' size={16} />
-                <span className='hidden sm:inline'>{t('playground.actions.stop')}</span>
-                <span className='sr-only sm:hidden'>{t('playground.actions.stop')}</span>
+                <span className='hidden sm:inline'>
+                  {t('playground.actions.stop')}
+                </span>
+                <span className='sr-only sm:hidden'>
+                  {t('playground.actions.stop')}
+                </span>
               </PromptInputButton>
             ) : (
               <PromptInputButton
@@ -211,8 +229,12 @@ export function PlaygroundInput({
                 variant='secondary'
               >
                 <SendIcon size={16} />
-                <span className='hidden sm:inline'>{t('playground.actions.send')}</span>
-                <span className='sr-only sm:hidden'>{t('playground.actions.send')}</span>
+                <span className='hidden sm:inline'>
+                  {t('playground.actions.send')}
+                </span>
+                <span className='sr-only sm:hidden'>
+                  {t('playground.actions.send')}
+                </span>
               </PromptInputButton>
             )}
           </div>

@@ -82,12 +82,8 @@ export function OAuthCallbackScreen({
     : t('auth.tips.hangTightWhileWeFinishConnectingYourAccount')
 
   const secondaryNote = isBindMode
-    ? t(
-        'auth.status.closeThisTabOnceTheBindingCompletesOrA'
-      )
-    : t(
-        "common.tips.llBeRedirectedAutomaticallyYouCanReturnToThe"
-      )
+    ? t('auth.status.closeThisTabOnceTheBindingCompletesOrA')
+    : t('common.tips.llBeRedirectedAutomaticallyYouCanReturnToThe')
 
   return (
     <AuthLayout>
@@ -113,9 +109,7 @@ export function OAuthCallbackScreen({
           </div>
           <p className='text-muted-foreground text-sm'>{secondaryNote}</p>
           <p className='text-muted-foreground text-xs'>
-            {t(
-              'auth.tips.mayTakeAFewMomentsWhileWeValidateThe'
-            )}
+            {t('auth.tips.mayTakeAFewMomentsWhileWeValidateThe')}
           </p>
         </div>
       </div>

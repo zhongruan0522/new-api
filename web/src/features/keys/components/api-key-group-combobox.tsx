@@ -145,7 +145,9 @@ export function ApiKeyGroupCombobox({
         <span className='flex min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3'>
           <span className='min-w-0'>
             <span className='block truncate font-medium'>
-              {selectedOption?.label || placeholder || t('dynamicRatio.placeholders.selectAGroup')}
+              {selectedOption?.label ||
+                placeholder ||
+                t('dynamicRatio.placeholders.selectAGroup')}
             </span>
             {selectedOption?.desc && (
               <span className='text-muted-foreground block truncate text-[11px] sm:text-xs'>

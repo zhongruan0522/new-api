@@ -75,7 +75,9 @@ const createRateLimitSchema = (t: (key: string) => string) =>
       .string()
       .optional()
       .refine(isValidJSON, {
-        message: t('systemSettings.errors.invalidJsonFormatOrValuesOutOfAllowedRange'),
+        message: t(
+          'systemSettings.errors.invalidJsonFormatOrValuesOutOfAllowedRange'
+        ),
       }),
   })
 
@@ -131,7 +133,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.actions.enableRateLimiting')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.actions.enableRateLimiting')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.controlsModelRequestRateLimitingWebApiRouteThrottling'
@@ -154,7 +158,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitDurationMinutes'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.limitPeriod')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.limitPeriod')}
+                  </FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -184,7 +190,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitCount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.fields.maxRequestsPerPeriod')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.maxRequestsPerPeriod')}
+                  </FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -203,7 +211,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                     </div>
                   </FormControl>
                   <FormDescription>
-                    {t('systemSettings.status.includingFailedRequests0Unlimited')}
+                    {t(
+                      'systemSettings.status.includingFailedRequests0Unlimited'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -215,7 +225,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitSuccessCount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('systemSettings.status.maxSuccessfulRequests')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.status.maxSuccessfulRequests')}
+                  </FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -248,7 +260,9 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <div className='flex items-center justify-between'>
-                  <FormLabel>{t('systemSettings.fields.groupBasedRateLimits')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.groupBasedRateLimits')}
+                  </FormLabel>
                   <Button
                     type='button'
                     variant='outline'
@@ -286,14 +300,20 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                 {!useVisualEditor && (
                   <FormDescription>
                     <div className='space-y-1 text-xs'>
-                      <p className='font-semibold'>{t('channels.fields.labelWithColon', { label: t('channels.fields.format') })}</p>
+                      <p className='font-semibold'>
+                        {t('channels.fields.labelWithColon', {
+                          label: t('channels.fields.format'),
+                        })}
+                      </p>
                       <ul className='list-inside list-disc space-y-0.5 pl-2'>
                         <li>
                           {t('systemSettings.fields.jsonObject')}{' '}
                           {`{"groupName": [maxRequests, maxSuccess]}`}
                         </li>
                         <li>
-                          {t('channels.fields.labelWithColon', { label: t('channels.placeholders.example') })}{' '}
+                          {t('channels.fields.labelWithColon', {
+                            label: t('channels.placeholders.example'),
+                          })}{' '}
                           {`{"default": [200, 100], "vip": [0, 1000]}`}
                         </li>
                         <li>

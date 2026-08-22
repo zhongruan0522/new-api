@@ -139,7 +139,9 @@ export function MultiKeyManageDialog({
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.errors.failedToLoadKeyStatus')
+        error instanceof Error
+          ? error.message
+          : t('channels.errors.failedToLoadKeyStatus')
       )
     } finally {
       setIsLoading(false)
@@ -182,7 +184,9 @@ export function MultiKeyManageDialog({
       }
 
       if (response?.success) {
-        toast.success(response.message || t('channels.status.operationSuccessful'))
+        toast.success(
+          response.message || t('channels.status.operationSuccessful')
+        )
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
 
         // Reload data - reset to page 1 for bulk actions
@@ -198,7 +202,9 @@ export function MultiKeyManageDialog({
       }
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : t('channels.status.operationFailed')
+        error instanceof Error
+          ? error.message
+          : t('channels.status.operationFailed')
       )
     } finally {
       setIsPerformingAction(false)
@@ -250,7 +256,9 @@ export function MultiKeyManageDialog({
               )}
             </DialogTitle>
             <DialogDescription>
-              {t('channels.tips.manageMultiKeyStatusAndConfigurationForThisChannel')}
+              {t(
+                'channels.tips.manageMultiKeyStatusAndConfigurationForThisChannel'
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -364,8 +372,12 @@ export function MultiKeyManageDialog({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className='w-20'>{t('channels.fields.index')}</TableHead>
-                        <TableHead className='w-32'>{t('channels.fields.status')}</TableHead>
+                        <TableHead className='w-20'>
+                          {t('channels.fields.index')}
+                        </TableHead>
+                        <TableHead className='w-32'>
+                          {t('channels.fields.status')}
+                        </TableHead>
                         <TableHead className='min-w-[200px]'>
                           {t('channels.status.disabledReason')}
                         </TableHead>
@@ -421,7 +433,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || isLoading}
                   >
-                    {t('common.fields.previous')}
+                    {t('common.actions.previous')}
                   </Button>
                   <Button
                     variant='outline'
@@ -429,7 +441,7 @@ export function MultiKeyManageDialog({
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages || isLoading}
                   >
-                    {t('common.fields.next')}
+                    {t('common.actions.next')}
                   </Button>
                 </div>
               </div>

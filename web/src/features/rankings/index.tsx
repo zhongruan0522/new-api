@@ -20,9 +20,9 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { Skeleton } from '@/components/ui/skeleton'
-import { DashboardRecalculateDialog } from '@/features/dashboard/components/dashboard-recalculate-dialog'
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
+import { DashboardRecalculateDialog } from '@/features/dashboard/components/dashboard-recalculate-dialog'
 import {
   MarketShareSection,
   ModelsSection,

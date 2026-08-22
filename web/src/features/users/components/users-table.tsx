@@ -40,15 +40,12 @@ import {
   DataTablePage,
 } from '@/components/data-table'
 import { getUsers, searchUsers } from '../api'
-import {
-  USER_STATUS,
-  isUserDeleted,
-} from '../constants'
+import { USER_STATUS, isUserDeleted } from '../constants'
 import type { User } from '../types'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { useUsersColumns } from './users-columns'
-import { useUsers } from './users-provider'
 import { UsersFilterBar } from './users-filter-bar'
+import { useUsers } from './users-provider'
 
 const route = getRouteApi('/_authenticated/users/')
 
@@ -66,15 +63,12 @@ export function UsersTable() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const searchParams = route.useSearch()
-  const {
-    pagination,
-    onPaginationChange,
-    ensurePageInRange,
-  } = useTableUrlState({
-    search: route.useSearch(),
-    navigate: route.useNavigate(),
-    pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
-  })
+  const { pagination, onPaginationChange, ensurePageInRange } =
+    useTableUrlState({
+      search: route.useSearch(),
+      navigate: route.useNavigate(),
+      pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
+    })
 
   const username = searchParams.username ?? ''
   const displayName = searchParams.display_name ?? ''
@@ -100,25 +94,31 @@ export function UsersTable() {
       refreshTrigger,
     ],
     queryFn: async () => {
-      const hasFilter = username || displayName || email || linuxDoId || githubId || status || role
+      const hasFilter =
+        username ||
+        displayName ||
+        email ||
+        linuxDoId ||
+        githubId ||
+        status ||
+        role
       const params = {
         p: pagination.pageIndex + 1,
         page_size: pagination.pageSize,
       }
 
-      const result =
-        hasFilter
-          ? await searchUsers({
-              ...params,
-              username,
-              display_name: displayName,
-              email,
-              linux_do_id: linuxDoId,
-              github_id: githubId,
-              status,
-              role,
-            })
-          : await getUsers(params)
+      const result = hasFilter
+        ? await searchUsers({
+            ...params,
+            username,
+            display_name: displayName,
+            email,
+            linux_do_id: linuxDoId,
+            github_id: githubId,
+            status,
+            role,
+          })
+        : await getUsers(params)
 
       if (!result.success) {
         toast.error(

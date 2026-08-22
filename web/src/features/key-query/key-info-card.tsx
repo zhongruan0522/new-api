@@ -100,13 +100,19 @@ export function KeyInfoCard({ usage, onCopySummary }: KeyInfoCardProps) {
 
   const firstRow = (
     <>
-      <StatBlock label={t('dashboard.fields.totalQuota')} value={totalQuotaText} />
+      <StatBlock
+        label={t('dashboard.fields.totalQuota')}
+        value={totalQuotaText}
+      />
       <StatBlock label={t('keyQuery.status.usedQuota')} value={usedText} />
       <StatBlock
         label={t('keyQuery.fields.remainingQuota')}
         value={remainingText}
       />
-      <StatBlock label={t('keyQuery.fields.expirationTime')} value={expiresText} />
+      <StatBlock
+        label={t('keyQuery.fields.expirationTime')}
+        value={expiresText}
+      />
     </>
   )
 
@@ -209,7 +215,9 @@ export function KeyInfoCard({ usage, onCopySummary }: KeyInfoCardProps) {
         </div>
       </CardHeader>
       <CardContent className='space-y-3'>
-        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>{firstRow}</div>
+        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+          {firstRow}
+        </div>
         {secondRow && (
           <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
             {secondRow}

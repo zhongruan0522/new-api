@@ -16,7 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { formatCurrencyFromUSD, formatQuotaWithCurrency } from '@/lib/currency'
+import {
+  formatCompactCurrencyFromUSD,
+  formatCurrencyFromUSD,
+  formatQuotaWithCurrency,
+} from '@/lib/currency'
 import dayjs from '@/lib/dayjs'
 import { formatTimestampToDate } from '@/lib/format'
 import {
@@ -109,6 +113,13 @@ export function isMultiKeyChannel(channel: Channel): boolean {
  */
 export function isPlanChannel(channel: Channel): boolean {
   return channel.channel_info?.is_plan || false
+}
+
+/**
+ * Check if channel is a Zhipu V4 (智谱GLM-4V) channel.
+ */
+export function isZhipuChannel(channel: Channel): boolean {
+  return channel.type === 26
 }
 
 // ============================================================================
@@ -260,6 +271,21 @@ export function formatBalance(balance: number | null | undefined): string {
     digitsLarge: 2,
     digitsSmall: 4,
     abbreviate: false,
+  })
+}
+
+/**
+ * Format balance with currency symbol, abbreviating large values to
+ * K/M/B suffixes (e.g. "$99.99M") for dense table cells. Pair with a
+ * tooltip showing the exact `formatBalance()` value.
+ */
+export function formatBalanceCompact(
+  balance: number | null | undefined
+): string {
+  if (balance == null || Number.isNaN(balance)) return '-'
+  return formatCompactCurrencyFromUSD(balance, {
+    digitsLarge: 2,
+    digitsSmall: 4,
   })
 }
 
@@ -496,8 +522,8 @@ export function aggregateChannelsByTag(
         group: '',
         used_quota: 0,
         response_time: 0,
-        priority: -1 as unknown as number | null,
-        weight: -1 as unknown as number | null,
+        priority: null,
+        weight: null,
         balance: 0,
         test_time: 0,
         created_time: 0,
@@ -522,20 +548,6 @@ export function aggregateChannelsByTag(
     tagRow.response_time =
       (tagRow.response_time * (childCount - 1) + channel.response_time) /
       childCount
-
-    // Aggregate priority (same value or null if different)
-    if (tagRow.priority === -1) {
-      tagRow.priority = channel.priority
-    } else if (tagRow.priority !== channel.priority) {
-      tagRow.priority = null
-    }
-
-    // Aggregate weight (same value or null if different)
-    if (tagRow.weight === -1) {
-      tagRow.weight = channel.weight
-    } else if (tagRow.weight !== channel.weight) {
-      tagRow.weight = null
-    }
 
     // Aggregate group (concatenate and deduplicate)
     if (tagRow.group === '') {

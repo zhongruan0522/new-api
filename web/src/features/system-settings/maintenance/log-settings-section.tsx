@@ -46,7 +46,6 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { DateTimePicker } from '@/components/datetime-picker'
 import { cleanLogs } from '../api'
-import type { CleanLogsResult } from '../types'
 import {
   SettingsControlGroup,
   SettingsForm,
@@ -56,6 +55,7 @@ import {
 import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
+import type { CleanLogsResult } from '../types'
 
 const logSettingsSchema = z.object({
   LogConsumeEnabled: z.boolean(),
@@ -106,7 +106,9 @@ export function LogSettingsSection({
   const [startDate, setStartDate] = useState<Date | undefined>(() =>
     getDateDaysAgo(30)
   )
-  const [endDate, setEndDate] = useState<Date | undefined>(() => getDateDaysAgo(0))
+  const [endDate, setEndDate] = useState<Date | undefined>(() =>
+    getDateDaysAgo(0)
+  )
   const [isCleaning, setIsCleaning] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -151,7 +153,9 @@ export function LogSettingsSection({
 
   const handleRequestCleanLogs = () => {
     if (!endTimestamp) {
-      toast.error(t('systemSettings.placeholders.selectAnEndTimeBeforeClearingLogs'))
+      toast.error(
+        t('systemSettings.placeholders.selectAnEndTimeBeforeClearingLogs')
+      )
       return
     }
     if (startTimestamp && endTimestamp && startTimestamp > endTimestamp) {
@@ -159,7 +163,9 @@ export function LogSettingsSection({
       return
     }
     if (noTargetSelected) {
-      toast.error(t('systemSettings.placeholders.selectAtLeastOneLogTypeToClean'))
+      toast.error(
+        t('systemSettings.placeholders.selectAtLeastOneLogTypeToClean')
+      )
       return
     }
 
@@ -168,7 +174,9 @@ export function LogSettingsSection({
 
   const handleCleanLogs = async () => {
     if (!endTimestamp) {
-      toast.error(t('systemSettings.placeholders.selectAnEndTimeBeforeClearingLogs'))
+      toast.error(
+        t('systemSettings.placeholders.selectAnEndTimeBeforeClearingLogs')
+      )
       return
     }
 
@@ -183,21 +191,29 @@ export function LogSettingsSection({
         clean_audit_logs: targets.cleanAuditLogs,
       })
       if (!res.success) {
-        throw new Error(res.message || t('systemSettings.errors.failedToCleanLogs'))
+        throw new Error(
+          res.message || t('systemSettings.errors.failedToCleanLogs')
+        )
       }
       const summary = summarizeResult(res.data)
       if (summary.total > 0) {
         toast.success(
-          t('systemSettings.status.countEntriesRemoved', { count: summary.total }) +
+          t('systemSettings.status.countEntriesRemoved', {
+            count: summary.total,
+          }) +
             ' ' +
             summary.detail
         )
       } else {
-        toast.success(t('systemSettings.tips.noLogEntriesMatchedTheSelectedRange'))
+        toast.success(
+          t('systemSettings.tips.noLogEntriesMatchedTheSelectedRange')
+        )
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : t('systemSettings.errors.failedToCleanLogs')
+        error instanceof Error
+          ? error.message
+          : t('systemSettings.errors.failedToCleanLogs')
       toast.error(message)
     } finally {
       setIsCleaning(false)
@@ -212,15 +228,21 @@ export function LogSettingsSection({
       total += result.logs
     }
     if (result?.stored_images !== undefined) {
-      parts.push(`${t('systemSettings.fields.storedImages')}: ${result.stored_images}`)
+      parts.push(
+        `${t('systemSettings.fields.storedImages')}: ${result.stored_images}`
+      )
       total += result.stored_images
     }
     if (result?.stored_videos !== undefined) {
-      parts.push(`${t('systemSettings.fields.storedVideos')}: ${result.stored_videos}`)
+      parts.push(
+        `${t('systemSettings.fields.storedVideos')}: ${result.stored_videos}`
+      )
       total += result.stored_videos
     }
     if (result?.audit_logs !== undefined) {
-      parts.push(`${t('systemSettings.titles.auditLogs')}: ${result.audit_logs}`)
+      parts.push(
+        `${t('systemSettings.titles.auditLogs')}: ${result.audit_logs}`
+      )
       total += result.audit_logs
     }
     return { total, detail: parts.join(', ') }
@@ -234,7 +256,9 @@ export function LogSettingsSection({
     {
       key: 'cleanLogs',
       label: t('systemSettings.titles.usageLogs'),
-      description: t('systemSettings.tips.consumeErrorTopupManageAndSystemLogs'),
+      description: t(
+        'systemSettings.tips.consumeErrorTopupManageAndSystemLogs'
+      ),
     },
     {
       key: 'cleanStoredImages',
@@ -274,7 +298,9 @@ export function LogSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('systemSettings.fields.recordQuotaUsage')}</FormLabel>
+                  <FormLabel>
+                    {t('systemSettings.fields.recordQuotaUsage')}
+                  </FormLabel>
                   <FormDescription>
                     {t(
                       'systemSettings.tips.trackPerRequestConsumptionToPowerUsageAnalyticsKeeping'
@@ -294,7 +320,9 @@ export function LogSettingsSection({
 
           <SettingsControlGroup className='space-y-3'>
             <div>
-              <h4 className='text-sm font-medium'>{t('systemSettings.actions.cleanHistoryLogs')}</h4>
+              <h4 className='text-sm font-medium'>
+                {t('systemSettings.actions.cleanHistoryLogs')}
+              </h4>
               <p className='text-muted-foreground text-sm'>
                 {t(
                   'systemSettings.placeholders.selectLogTypesAndTimeRangeToRemoveMatching'
@@ -306,7 +334,7 @@ export function LogSettingsSection({
               {targetOptions.map((option) => (
                 <label
                   key={option.key}
-                  className='flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-accent/50'
+                  className='hover:bg-accent/50 flex cursor-pointer items-start gap-3 rounded-md border p-3'
                 >
                   <Checkbox
                     checked={targets[option.key]}
@@ -319,7 +347,7 @@ export function LogSettingsSection({
                     className='mt-0.5'
                   />
                   <div className='space-y-0.5'>
-                    <div className='text-sm font-medium leading-none'>
+                    <div className='text-sm leading-none font-medium'>
                       {option.label}
                     </div>
                     <p className='text-muted-foreground text-xs'>
@@ -331,7 +359,9 @@ export function LogSettingsSection({
             </div>
 
             <div className='space-y-2'>
-              <div className='text-sm font-medium'>{t('systemSettings.fields.timeRange')}</div>
+              <div className='text-sm font-medium'>
+                {t('systemSettings.fields.timeRange')}
+              </div>
               <div className='grid gap-2 sm:grid-cols-2'>
                 <div className='space-y-1'>
                   <div className='text-muted-foreground text-xs'>
@@ -383,7 +413,9 @@ export function LogSettingsSection({
                 onClick={handleRequestCleanLogs}
                 disabled={isCleaning || noTargetSelected}
               >
-                {isCleaning ? t('systemSettings.tips.cleaning') : t('systemSettings.actions.cleanLogs')}
+                {isCleaning
+                  ? t('systemSettings.tips.cleaning')
+                  : t('systemSettings.actions.cleanLogs')}
               </Button>
             </div>
           </SettingsControlGroup>
@@ -392,7 +424,9 @@ export function LogSettingsSection({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('systemSettings.actions.confirmLogCleanup')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('systemSettings.actions.confirmLogCleanup')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {formattedRange
                 ? t(
@@ -404,7 +438,7 @@ export function LogSettingsSection({
                   )}{' '}
               {t('keys.errors.actionCannotBeUndone951f49')}
               {targets.cleanAuditLogs && (
-                <span className='mt-2 block font-medium text-destructive'>
+                <span className='text-destructive mt-2 block font-medium'>
                   {t(
                     'systemSettings.status.auditLogsSelectedAdministrativeOperationRecordsWillBePermanently'
                   )}
@@ -417,7 +451,9 @@ export function LogSettingsSection({
               {t('common.actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleCleanLogs} disabled={isCleaning}>
-              {isCleaning ? t('systemSettings.tips.cleaning') : t('systemSettings.actions.deleteLogs')}
+              {isCleaning
+                ? t('systemSettings.tips.cleaning')
+                : t('systemSettings.actions.deleteLogs')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

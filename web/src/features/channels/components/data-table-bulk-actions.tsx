@@ -114,7 +114,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Power />
-            <span className='sr-only'>{t('channels.actions.enableSelectedChannels')}</span>
+            <span className='sr-only'>
+              {t('channels.actions.enableSelectedChannels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('channels.actions.enableSelectedChannels')}</p>
@@ -135,7 +137,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <PowerOff />
-            <span className='sr-only'>{t('channels.actions.disableSelectedChannels')}</span>
+            <span className='sr-only'>
+              {t('channels.actions.disableSelectedChannels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('channels.actions.disableSelectedChannels')}</p>
@@ -179,7 +183,9 @@ export function DataTableBulkActions<TData>({
             }
           >
             <Trash2 />
-            <span className='sr-only'>{t('channels.actions.deleteSelectedChannels')}</span>
+            <span className='sr-only'>
+              {t('channels.actions.deleteSelectedChannels')}
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('channels.actions.deleteSelectedChannels')}</p>
@@ -220,7 +226,9 @@ export function DataTableBulkActions<TData>({
             >
               {t('common.actions.cancel')}
             </Button>
-            <Button onClick={handleSetTag}>{t('channels.fields.setTag')}</Button>
+            <Button onClick={handleSetTag}>
+              {t('channels.fields.setTag')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

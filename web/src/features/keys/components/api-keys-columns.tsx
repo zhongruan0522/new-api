@@ -107,7 +107,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'name',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.name')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.name')}
+        />
       ),
       cell: ({ row }) => (
         <div className='max-w-[200px] truncate font-medium'>
@@ -119,7 +122,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'status',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.fields.status')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.fields.status')}
+        />
       ),
       cell: ({ row }) => {
         const statusConfig = API_KEY_STATUSES[row.getValue('status') as number]
@@ -155,7 +161,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'group',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('common.fields.group')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('common.fields.group')}
+        />
       ),
       cell: ({ row }) => {
         const apiKey = row.original
@@ -197,7 +206,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       id: 'model_limits',
       accessorKey: 'model_limits',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('channels.titles.models')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('channels.titles.models')}
+        />
       ),
       cell: renderModelLimitsCell,
       enableSorting: false,
@@ -207,7 +219,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       id: 'allow_ips',
       accessorKey: 'allow_ips',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keys.fields.ipRestriction')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keys.fields.ipRestriction')}
+        />
       ),
       cell: renderIpRestrictionsCell,
       enableSorting: false,
@@ -216,7 +231,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'created_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('dynamicRatio.status.created')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('dynamicRatio.status.created')}
+        />
       ),
       cell: ({ row }) => (
         <span className='text-muted-foreground font-mono text-xs tabular-nums'>
@@ -228,7 +246,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'accessed_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keys.status.lastUsed')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keys.status.lastUsed')}
+        />
       ),
       cell: ({ row }) => {
         const accessedTime = row.getValue('accessed_time') as number
@@ -246,7 +267,10 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
     {
       accessorKey: 'expired_time',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('keys.fields.expires')} />
+        <DataTableColumnHeader
+          column={column}
+          title={t('keys.fields.expires')}
+        />
       ),
       cell: ({ row }) => {
         const expiredTime = row.getValue('expired_time') as number

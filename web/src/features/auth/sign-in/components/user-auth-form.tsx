@@ -74,7 +74,9 @@ export function UserAuthForm({
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
-  const legalConsentErrorMessage = t('auth.errors.pleaseAgreeToTheLegalTermsFirst')
+  const legalConsentErrorMessage = t(
+    'auth.errors.pleaseAgreeToTheLegalTermsFirst'
+  )
   const loginFailedMessage = t('auth.status.loginFailed')
 
   const { status } = useStatus()
@@ -241,7 +243,9 @@ export function UserAuthForm({
     try {
       const begin = await beginPasskeyLogin()
       if (!begin.success) {
-        throw new Error(begin.message || t('auth.errors.failedToStartPasskeyLogin'))
+        throw new Error(
+          begin.message || t('auth.errors.failedToStartPasskeyLogin')
+        )
       }
 
       const publicKey = prepareCredentialRequestOptions(
@@ -264,11 +268,15 @@ export function UserAuthForm({
 
       const finish = await finishPasskeyLogin(assertion)
       if (!finish.success) {
-        throw new Error(finish.message || t('auth.errors.failedToCompletePasskeyLogin'))
+        throw new Error(
+          finish.message || t('auth.errors.failedToCompletePasskeyLogin')
+        )
       }
 
       if (!finish.data) {
-        throw new Error(t('auth.errors.missingUserDataFromPasskeyLoginResponse'))
+        throw new Error(
+          t('auth.errors.missingUserDataFromPasskeyLoginResponse')
+        )
       }
 
       await handleLoginSuccess(
@@ -345,7 +353,9 @@ export function UserAuthForm({
                   <FormLabel>{t('auth.fields.usernameOrEmail')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('auth.placeholders.enterYourUsernameOrEmail')}
+                      placeholder={t(
+                        'auth.placeholders.enterYourUsernameOrEmail'
+                      )}
                       {...field}
                     />
                   </FormControl>
@@ -419,9 +429,7 @@ export function UserAuthForm({
             <DialogHeader className='text-left'>
               <DialogTitle>{t('auth.fields.chatSignIn')}</DialogTitle>
               <DialogDescription>
-                {t(
-                  'auth.tips.scanTheQrCodeToFollowTheOfficialAccount'
-                )}
+                {t('auth.tips.scanTheQrCodeToFollowTheOfficialAccount')}
               </DialogDescription>
             </DialogHeader>
 
@@ -440,7 +448,9 @@ export function UserAuthForm({
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('auth.fields.verificationCode')}</Label>
+              <Label htmlFor='wechat-code'>
+                {t('auth.fields.verificationCode')}
+              </Label>
               <Input
                 id='wechat-code'
                 placeholder={t('auth.placeholders.enterTheVerificationCode')}

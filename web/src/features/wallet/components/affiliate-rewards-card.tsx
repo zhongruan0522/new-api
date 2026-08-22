@@ -81,7 +81,10 @@ export function AffiliateRewardsCard({
         <div className='grid grid-cols-3 gap-1.5 text-center'>
           {[
             [t('common.status.pending'), formatQuota(user?.aff_quota ?? 0)],
-            [t('wallet.fields.totalEarned'), formatQuota(user?.aff_history_quota ?? 0)],
+            [
+              t('wallet.fields.totalEarned'),
+              formatQuota(user?.aff_history_quota ?? 0),
+            ],
             [t('wallet.fields.invites'), String(user?.aff_count ?? 0)],
           ].map(([label, value]) => (
             <div key={label}>

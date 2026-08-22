@@ -210,10 +210,12 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
 
 function formatQuotaScheduleValue(value: string, t: TFunction) {
   const hourMatch = value.match(/^Every (\d+)h$/)
-  if (hourMatch) return t('keys.fields.everyCountH', { count: Number(hourMatch[1]) })
+  if (hourMatch)
+    return t('keys.fields.everyCountH', { count: Number(hourMatch[1]) })
 
   const dayMatch = value.match(/^Every (\d+)d$/)
-  if (dayMatch) return t('keys.fields.everyCountD', { count: Number(dayMatch[1]) })
+  if (dayMatch)
+    return t('keys.fields.everyCountD', { count: Number(dayMatch[1]) })
 
   return value
 }
@@ -272,12 +274,11 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
         >
           {MASKED_API_KEY}
         </PopoverTrigger>
-        <PopoverContent
-          className='w-[min(90vw,36rem)]'
-          align='start'
-        >
+        <PopoverContent className='w-[min(90vw,36rem)]' align='start'>
           <div className='space-y-2'>
-            <p className='text-muted-foreground text-xs'>{t('keys.fields.fullApiKey')}</p>
+            <p className='text-muted-foreground text-xs'>
+              {t('keys.fields.fullApiKey')}
+            </p>
             {isLoading ? (
               <div className='flex items-center gap-2 py-2'>
                 <Loader2 className='size-3.5 animate-spin' />
@@ -393,23 +394,36 @@ export function ApiKeyQuotaCell({
                 {t('keys.tips.noQuotaCapUsageStillDependsOnAccountBalance')}
               </div>
               <div>
-                {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {formatQuota(usage.used)}
+                {t('channels.fields.labelWithColon', {
+                  label: t('common.status.used'),
+                })}{' '}
+                {formatQuota(usage.used)}
               </div>
             </>
           ) : (
             <>
               <div>
-                {t('channels.fields.labelWithColon', { label: t('common.status.used') })} {formatQuota(usage.used)}
+                {t('channels.fields.labelWithColon', {
+                  label: t('common.status.used'),
+                })}{' '}
+                {formatQuota(usage.used)}
               </div>
               <div>
-                {t('channels.fields.labelWithColon', { label: t('channels.fields.remaining') })} {formatQuota(usage.remaining)} (
-                {percentage.toFixed(1)}%)
+                {t('channels.fields.labelWithColon', {
+                  label: t('channels.fields.remaining'),
+                })}{' '}
+                {formatQuota(usage.remaining)} ({percentage.toFixed(1)}%)
               </div>
               <div>
-                {t('channels.fields.labelWithColon', { label: t('dashboard.fields.total') })} {formatQuota(usage.total)}
+                {t('channels.fields.labelWithColon', {
+                  label: t('dashboard.fields.total'),
+                })}{' '}
+                {formatQuota(usage.total)}
               </div>
               <div>
-                {t('channels.fields.labelWithColon', { label: t('common.actions.reset') })}{' '}
+                {t('channels.fields.labelWithColon', {
+                  label: t('common.actions.reset'),
+                })}{' '}
                 {usage.detailLines.length > 0
                   ? usage.detailLines
                       .map((line) => formatQuotaScheduleValue(line.value, t))
@@ -429,7 +443,11 @@ export function ModelLimitsCell({ apiKey }: { apiKey: ApiKey }) {
 
   if (!apiKey.model_limits_enabled || !apiKey.model_limits) {
     return (
-      <StatusBadge label={t('keyQuery.fields.unlimited')} variant='neutral' copyable={false} />
+      <StatusBadge
+        label={t('keyQuery.fields.unlimited')}
+        variant='neutral'
+        copyable={false}
+      />
     )
   }
 

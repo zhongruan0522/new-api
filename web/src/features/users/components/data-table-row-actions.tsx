@@ -250,7 +250,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         confirmText={t('users.actions.resetTwoFactorAuthentication')}
         handleConfirm={handleResetTwoFA}
       />
-
     </>
   )
 }

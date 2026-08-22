@@ -155,7 +155,9 @@ export function PrefillGroupManagementDialog({
     try {
       const response = await deletePrefillGroup(deleteState.group.id)
       if (response.success) {
-        toast.success(t('common.status.deletedName', { name: deleteState.group.name }))
+        toast.success(
+          t('common.status.deletedName', { name: deleteState.group.name })
+        )
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
         })
@@ -164,7 +166,9 @@ export function PrefillGroupManagementDialog({
         toast.error(response.message || t('models.errors.failedToDeleteGroup'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || t('models.errors.failedToDeleteGroup'))
+      toast.error(
+        (err as Error)?.message || t('models.errors.failedToDeleteGroup')
+      )
     } finally {
       setIsDeleting(false)
     }
@@ -211,7 +215,9 @@ export function PrefillGroupManagementDialog({
                   />
                 }
               >
-                <span className='sr-only'>{t('models.actions.closeDialog')}</span>
+                <span className='sr-only'>
+                  {t('models.actions.closeDialog')}
+                </span>
                 <X className='h-4 w-4' />
               </DialogClose>
             </div>
@@ -253,7 +259,9 @@ export function PrefillGroupManagementDialog({
                 <div className='flex flex-col gap-4'>
                   {error && (
                     <Alert variant='destructive'>
-                      <AlertTitle>{t('models.errors.unableToLoadGroups')}</AlertTitle>
+                      <AlertTitle>
+                        {t('models.errors.unableToLoadGroups')}
+                      </AlertTitle>
                       <AlertDescription>
                         {(error as Error).message ||
                           'Please retry or refresh the page.'}
@@ -274,7 +282,9 @@ export function PrefillGroupManagementDialog({
                         <Layers3 className='h-6 w-6' />
                       </EmptyMedia>
                       <EmptyHeader>
-                        <EmptyTitle>{t('models.fields.noPrefillGroupsYet')}</EmptyTitle>
+                        <EmptyTitle>
+                          {t('models.fields.noPrefillGroupsYet')}
+                        </EmptyTitle>
                         <EmptyDescription>
                           {t(
                             'models.actions.createYourFirstGroupToReuseModelTagOr'
@@ -314,9 +324,9 @@ export function PrefillGroupManagementDialog({
                                   {group.description}
                                 </CardDescription>
                               ) : (
-                                 <CardDescription className='text-muted-foreground italic'>
-                                   {t('models.tips.noDescriptionProvided')}
-                                 </CardDescription>
+                                <CardDescription className='text-muted-foreground italic'>
+                                  {t('models.tips.noDescriptionProvided')}
+                                </CardDescription>
                               )}
                             </div>
 
@@ -376,7 +386,9 @@ export function PrefillGroupManagementDialog({
                             ) : (
                               <p className='text-muted-foreground text-sm'>
                                 {group.type === 'endpoint'
-                                  ? t('models.tips.noEndpointMappingsConfigured')
+                                  ? t(
+                                      'models.tips.noEndpointMappingsConfigured'
+                                    )
                                   : t('models.tips.noItemsConfiguredYet')}
                               </p>
                             )}
@@ -417,9 +429,11 @@ export function PrefillGroupManagementDialog({
                                           {group.description}
                                         </p>
                                       ) : (
-                                         <p className='text-muted-foreground text-xs italic'>
-                                           {t('models.tips.noDescriptionProvided')}
-                                         </p>
+                                        <p className='text-muted-foreground text-xs italic'>
+                                          {t(
+                                            'models.tips.noDescriptionProvided'
+                                          )}
+                                        </p>
                                       )}
                                     </div>
                                   </TableCell>
@@ -457,8 +471,12 @@ export function PrefillGroupManagementDialog({
                                       ) : (
                                         <p className='text-muted-foreground text-sm'>
                                           {group.type === 'endpoint'
-                                            ? t('models.tips.noEndpointMappingsConfigured')
-                                            : t('models.tips.noItemsConfiguredYet')}
+                                            ? t(
+                                                'models.tips.noEndpointMappingsConfigured'
+                                              )
+                                            : t(
+                                                'models.tips.noItemsConfiguredYet'
+                                              )}
                                         </p>
                                       )}
                                     </div>
@@ -519,7 +537,9 @@ export function PrefillGroupManagementDialog({
           </p>
         }
         destructive
-        confirmText={isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')}
+        confirmText={
+          isDeleting ? t('keys.tips.deleting') : t('common.actions.delete')
+        }
         isLoading={isDeleting}
         handleConfirm={handleDeleteConfirm}
       />

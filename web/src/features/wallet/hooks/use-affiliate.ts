@@ -66,7 +66,9 @@ export function useAffiliate() {
       const response = await transferAffiliateQuota({ quota })
 
       if (response.success) {
-        toast.success(response.message || i18next.t('wallet.status.transferSuccessful'))
+        toast.success(
+          response.message || i18next.t('wallet.status.transferSuccessful')
+        )
         await getSelf()
         return true
       }
