@@ -242,9 +242,56 @@ gantt
 7. **服务端校验**：`AddToken`/`UpdateToken` 对 `model_mapping` 做严格校验
    （JSON 对象、键值均为非空字符串），错误提示走 `i18n.MsgTokenInvalidModelMapping`
    （zh/en yaml 同步）。渠道级 `model_mapping` 目前仅前端校验，令牌侧更严。
-8. **审计与上下文**：改写发生时写 `ContextKeyClientModelName` 保留客户端原始
-   模型名供审计追踪；令牌增删改的审计 before/after 自动携带新字段。
+8. **审计**：令牌增删改的审计 before/after 自动携带新字段。PRD 3.1 的
+   `ContextKeyClientModelName` 可选项未落地：完整消费需扩散 5 个
+   `Generate*OtherInfo` 日志函数与 usage log 字段可见性体系
+   （`UsageLogFieldsDefaults` + 前端 details-dialog + i18n），超出本 PRD
+   范围；日志中的模型归因按 PRD 第 3.1 节设计落在目标模型（`model_name`
+   = 重定向后模型），如需原始模型审计可后续扩展。
 9. **前端**：复用渠道模块 `ModelMappingEditor`（不传 `optionKey` 的本地受控
    模式，`minimax-settings-card` 已有跨 feature 复用先例），列头语义定制为
-   "客户端请求模型 → 重定向目标模型"，预设模板为 Claude→GLM；表单校验复用
-   `validateModelMappingJson`。
+   "客户端请求模型 → 重定向目标模型"，预设模板为 Claude→GLM；表单校验
+   与后端 `validateTokenModelMapping` 对齐（含键值字符集检查）。
+
+### 阶段二（测试与验证）执行记录（2026-08-22）
+
+1. **单元测试**（全部通过，`go test -count=1`）：
+   - `internal/store/token/token_model_mapping_test.go`：`GetModelMapping`/
+     `GetModelMappingMap` 表驱动（nil/空/`{}`/非法 JSON/非对象/值非字符串/
+     合法映射）；SQLite 持久化（Insert 读回、Update 修改与清空为 NULL）；
+     旧 schema 表（无 model_mapping 列）经 AutoMigrate 补列后可写读。
+   - `internal/httpapi/middleware/token_model_mapping_test.go`：
+     `resolveTokenModelMapping` 覆盖单次映射、链式 A→B→C、起点自引用、
+     链中自引用、两/三节点环、无命中透传、空目标；`applyTokenModelMapping`
+     覆盖 JSON body（含 int64 精度保留、三通道读取、ContentLength）、
+     未命中不动 body、无映射跳过、环形报错、Gemini 路径（action 后缀与
+     query 保留）、realtime query、urlencoded 表单、multipart 透传、
+     body 无 model 不注入；`getModelRequest` 集成点（改写后返回、环形上抛、
+     compact 后缀时序）；`SetupContextForSelectedChannel` 后
+     `original_model` 为目标模型（计费/预扣费/日志链路的模型来源）；
+     磁盘缓存路径（>1MB body 强制磁盘存储，验证 `SetRequestBody` 磁盘分支）。
+   - `internal/httpapi/controller/token/token_model_mapping_test.go`：
+     `validateTokenModelMapping` 表驱动（含字符集 `:`/`/`/空白、单值 256
+     上限、总量 64KB 上限）；`normalizeTokenModelMapping` 空值归一。
+2. **多数据库兼容性**：SQLite 全量实测通过（含旧表迁移补列）。本仓库 CI
+   （docker-image.yml）无 MySQL/PostgreSQL 测试矩阵，本地亦无实例；兼容性
+   口径：新增仅为可空 `text` 列 + GORM AutoMigrate 标准路径，无原始 SQL、
+   无方言分支，与既有 `tokens.allow_ips`、`channels.model_mapping`（同为
+   `*string` + `type:text`，三库长期运行）同型。
+3. **Review 子代理审查**：结论"可提交，无 P0/P1"。按建议完成修复：
+   - P2：`validateTokenModelMapping` 增加字符集（拒绝 `:`、`/`、空白——
+     `:` 会干扰 Gemini `:action` 后缀判定、`/` 为路径分隔符）与长度上限
+     （单键值 256、总量 64KB）；前端 `superRefine` 同步对齐。中间件侧
+     映射改经 `SetupContextForToken` 预解析为 map 传入 context
+     （`GetModelMappingMap` 获得生产调用方，省去每请求重复 Unmarshal；
+     非法 JSON 在 auth 侧记 SysError 并跳过）。
+   - P2：补磁盘存储分支测试（如上）。
+   - P3：删除无消费者的 `ContextKeyClientModelName`（见阶段一记录第 8 条）；
+     multipart 透传日志由 SysLog 降级为 LogDebug（避免高流量噪音）。
+4. **前端验证**：`bun run typecheck` / `bun run lint` / `bun run build` /
+   `bun run i18n:sync` 全部通过。
+5. **端到端场景说明**：真实上游联调需要渠道与上游凭据，本地以链路断言
+   代替——`getModelRequest` 改写 → `original_model` 上下文 →
+   `GenRelayInfo.OriginModelName`（`PreConsumeBilling` 与日志
+   `model_name` 的数据源，`quota.go:435,491`）→ `InitChannelMeta` →
+   渠道级 `ModelMappedHelper`，逐跳均有代码级确认或测试覆盖。

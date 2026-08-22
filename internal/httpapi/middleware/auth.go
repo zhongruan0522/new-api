@@ -492,8 +492,13 @@ func SetupContextForToken(c *gin.Context, token *tokenstore.Token, parts ...stri
 		c.Set("token_model_limit_enabled", false)
 	}
 	// 令牌级模型重定向规则，由 distributor 在选路前改写请求模型。
-	if tokenModelMapping := token.GetModelMapping(); tokenModelMapping != "" {
-		httpapi.SetContextKey(c, common.ContextKeyTokenModelMapping, tokenModelMapping)
+	// 非法 JSON（历史脏数据/手改库）解析为 nil，跳过映射保持透传。
+	if mappingStr := token.GetModelMapping(); mappingStr != "" {
+		if modelMap := token.GetModelMappingMap(); len(modelMap) > 0 {
+			httpapi.SetContextKey(c, common.ContextKeyTokenModelMapping, modelMap)
+		} else {
+			common.SysError("invalid token model_mapping json, skip mapping: " + mappingStr)
+		}
 	}
 	httpapi.SetContextKey(c, common.ContextKeyTokenGroup, token.Group)
 	httpapi.SetContextKey(c, common.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)

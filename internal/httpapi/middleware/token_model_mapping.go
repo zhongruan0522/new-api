@@ -9,6 +9,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/infra/log"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
 )
@@ -62,17 +63,8 @@ func resolveTokenModelMapping(modelMap map[string]string, originModel string) (s
 // 对于无法安全改写来源的请求（multipart 表单、路径参数兜底等），跳过映射并
 // 保持原始模型透传，保证计费与上游请求始终一致。返回 error 时调用方应拦截请求。
 func applyTokenModelMapping(c *gin.Context, modelRequest *ModelRequest) error {
-	mappingStr := httpapi.GetContextKeyString(c, common.ContextKeyTokenModelMapping)
-	if mappingStr == "" || mappingStr == "{}" || modelRequest == nil || modelRequest.Model == "" {
-		return nil
-	}
-	modelMap := make(map[string]string)
-	if err := jsonx.Unmarshal([]byte(mappingStr), &modelMap); err != nil {
-		// 创建/编辑令牌时已校验格式，此处防御旧数据或手改库导致的非法 JSON。
-		common.SysError("invalid token model_mapping json, skip mapping: " + err.Error())
-		return nil
-	}
-	if len(modelMap) == 0 {
+	modelMap, ok := httpapi.GetContextKeyType[map[string]string](c, common.ContextKeyTokenModelMapping)
+	if !ok || len(modelMap) == 0 || modelRequest == nil || modelRequest.Model == "" {
 		return nil
 	}
 
@@ -91,11 +83,10 @@ func applyTokenModelMapping(c *gin.Context, modelRequest *ModelRequest) error {
 	if !rewritten {
 		// 请求模型来源无法安全改写（multipart 表单/路径参数兜底等），
 		// 保持原始模型透传，避免计费模型与上游请求模型不一致。
-		common.SysLog(fmt.Sprintf("token model mapping skipped: model source of %s cannot be rewritten", c.Request.URL.Path))
+		log.LogDebug(c, fmt.Sprintf("token model mapping skipped: model source of %s cannot be rewritten", c.Request.URL.Path))
 		return nil
 	}
 
-	httpapi.SetContextKey(c, common.ContextKeyClientModelName, modelRequest.Model)
 	modelRequest.Model = targetModel
 	return nil
 }

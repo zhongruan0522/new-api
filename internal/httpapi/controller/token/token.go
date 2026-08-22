@@ -19,8 +19,27 @@ import (
 // maxUserTokens 每用户最大令牌数量（硬编码）
 const maxUserTokens = 1000
 
+// maxTokenModelMappingBytes 令牌级模型重定向 JSON 的长度上限。
+// 模型别名映射是少量人工条目，64KB 足够宽裕，同时规避恶意超大 JSON
+// 在每次请求的映射解析中放大 CPU 消耗。
+const maxTokenModelMappingBytes = 64 * 1024
+
+// maxTokenModelMappingNameLen 单个模型名（键或值）的长度上限。
+const maxTokenModelMappingNameLen = 256
+
+// invalidTokenModelMappingName 判断模型名是否含改写来源无法安全承载的字符：
+// Gemini 路径改写会把映射值拼入 URL 路径，":" 会干扰 :action 后缀判定，
+// "/" 与路径分隔符冲突，空白字符对 multipart 之外的改写来源也不可控。
+func invalidTokenModelMappingName(name string) bool {
+	if name == "" {
+		return true
+	}
+	return strings.ContainsAny(name, ":/\t\r\n ") || len(name) > maxTokenModelMappingNameLen
+}
+
 // validateTokenModelMapping 校验令牌级模型重定向配置：
-// 空值合法（未配置）；非空时必须是 JSON 对象且键值均为非空字符串，不允许嵌套。
+// 空值合法（未配置）；非空时必须是 JSON 对象且键值均为非空字符串、
+// 不含路径/动作分隔符等改写来源无法安全承载的字符，并有长度上限。
 func validateTokenModelMapping(mapping *string) error {
 	if mapping == nil {
 		return nil
@@ -29,16 +48,19 @@ func validateTokenModelMapping(mapping *string) error {
 	if mappingStr == "" {
 		return nil
 	}
+	if len(mappingStr) > maxTokenModelMappingBytes {
+		return errors.New("model mapping too large")
+	}
 	modelMap := make(map[string]string)
 	if err := jsonx.Unmarshal([]byte(mappingStr), &modelMap); err != nil {
 		return errors.New("invalid json")
 	}
 	for from, to := range modelMap {
-		if strings.TrimSpace(from) == "" {
-			return errors.New("empty source model")
+		if invalidTokenModelMappingName(from) {
+			return fmt.Errorf("invalid source model %q", from)
 		}
-		if strings.TrimSpace(to) == "" {
-			return fmt.Errorf("empty target model for %s", from)
+		if invalidTokenModelMappingName(to) {
+			return fmt.Errorf("invalid target model %q for %s", to, from)
 		}
 	}
 	return nil

@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { z } from 'zod'
 import type { TFunction } from 'i18next'
 import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
-import { validateModelMappingJson } from '@/features/channels/lib/model-mapping-validation'
 import { DEFAULT_GROUP } from '../constants'
 import { type ApiKeyFormData, type ApiKey } from '../types'
 
@@ -50,7 +49,27 @@ export function getApiKeyFormSchema(t: TFunction) {
     .superRefine((data, ctx) => {
       const modelMapping = (data.model_mapping || '').trim()
       if (modelMapping) {
-        const { valid } = validateModelMappingJson(modelMapping)
+        // 与后端 validateTokenModelMapping 对齐：JSON 对象且键值均为
+        // 非空字符串、不含冒号/斜杠/空白（这些字符无法安全承载在
+        // Gemini 路径等改写来源中）。
+        let valid: boolean
+        try {
+          const parsed: unknown = JSON.parse(modelMapping)
+          valid =
+            !!parsed &&
+            typeof parsed === 'object' &&
+            !Array.isArray(parsed) &&
+            Object.entries(parsed as Record<string, unknown>).every(
+              ([from, to]) =>
+                typeof to === 'string' &&
+                from.trim() !== '' &&
+                to.trim() !== '' &&
+                !/[:/\s]/.test(from) &&
+                !/[:/\s]/.test(to)
+            )
+        } catch {
+          valid = false
+        }
         if (!valid) {
           ctx.addIssue({
             code: 'custom',

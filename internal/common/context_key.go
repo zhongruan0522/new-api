@@ -23,10 +23,6 @@ const (
 	ContextKeyTokenModelMapping      ContextKey = "token_model_mapping"
 	ContextKeyTokenCrossGroupRetry   ContextKey = "token_cross_group_retry"
 
-	// ContextKeyClientModelName 记录令牌级模型重定向发生前客户端请求的原始模型名，
-	// 供日志/审计追踪使用；未发生重定向时不设置。
-	ContextKeyClientModelName ContextKey = "client_model_name"
-
 	/* channel related keys */
 	ContextKeyChannelId                ContextKey = "channel_id"
 	ContextKeyChannelName              ContextKey = "channel_name"
