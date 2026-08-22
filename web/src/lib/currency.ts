@@ -260,14 +260,27 @@ function adjustForMinimum(
 
 /**
  * Abbreviate a non-negative number with K/M/B suffixes
- * (e.g. 33678.86 → 33.68K). Callers keep the sign so it can be placed
- * before the currency symbol.
+ * (e.g. 33678.86 → 33.67K). Magnitudes are truncated, not rounded, so a
+ * compact label never exceeds the exact value. Callers keep the sign so
+ * it can be placed before the currency symbol.
  */
 function formatCompactNumeric(value: number): string {
   const abs = Math.abs(value)
-  if (abs >= 1e9) return removeTrailingZeros((abs / 1e9).toFixed(2)) + 'B'
-  if (abs >= 1e6) return removeTrailingZeros((abs / 1e6).toFixed(2)) + 'M'
-  return removeTrailingZeros((abs / 1e3).toFixed(2)) + 'K'
+  if (abs >= 1e9) return truncateToTwoDecimals(abs / 1e9) + 'B'
+  if (abs >= 1e6) return truncateToTwoDecimals(abs / 1e6) + 'M'
+  return truncateToTwoDecimals(abs / 1e3) + 'K'
+}
+
+/**
+ * Floor at two decimals. The epsilon must stay well below the gap between
+ * real values and the next integer (e.g. 999.999999999 → 99999.9999999×100
+ * scale) yet above double-precision noise on exact tenths (8.2×100 →
+ * 819.9999999999999), hence 1e-9.
+ */
+function truncateToTwoDecimals(value: number): string {
+  return removeTrailingZeros(
+    (Math.floor(value * 100 + 1e-9) / 100).toFixed(2)
+  )
 }
 
 /** Signed K/M/B abbreviation with the sign before any symbol, e.g. "-33.68K" */

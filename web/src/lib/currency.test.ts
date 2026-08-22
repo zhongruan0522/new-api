@@ -27,13 +27,18 @@ function setDisplay(currency: Partial<CurrencyConfig>) {
 }
 
 describe('formatCompactCurrencyFromUSD', () => {
-  test('abbreviates large values with K/M/B suffixes', () => {
+  test('abbreviates large values with truncated K/M/B suffixes', () => {
     setDisplay({ quotaDisplayType: 'USD' })
-    assert.equal(formatCompactCurrencyFromUSD(33678.86), '$33.68K')
-    assert.equal(formatCompactCurrencyFromUSD(1146.13), '$1.15K')
-    assert.equal(formatCompactCurrencyFromUSD(12345678), '$12.35M')
-    assert.equal(formatCompactCurrencyFromUSD(99999983.93), '$100M')
+    assert.equal(formatCompactCurrencyFromUSD(33678.86), '$33.67K')
+    assert.equal(formatCompactCurrencyFromUSD(1146.13), '$1.14K')
+    assert.equal(formatCompactCurrencyFromUSD(12345678), '$12.34M')
     assert.equal(formatCompactCurrencyFromUSD(1234567890), '$1.23B')
+  })
+
+  test('never rounds up across a tier boundary', () => {
+    setDisplay({ quotaDisplayType: 'USD' })
+    assert.equal(formatCompactCurrencyFromUSD(99999983.93), '$99.99M')
+    assert.equal(formatCompactCurrencyFromUSD(999999999999), '$999.99B')
   })
 
   test('trims trailing zeros from the abbreviated magnitude', () => {
@@ -57,7 +62,7 @@ describe('formatCompactCurrencyFromUSD', () => {
 
   test('places the negative sign before the currency symbol', () => {
     setDisplay({ quotaDisplayType: 'USD' })
-    assert.equal(formatCompactCurrencyFromUSD(-33678.86), '-$33.68K')
+    assert.equal(formatCompactCurrencyFromUSD(-33678.86), '-$33.67K')
   })
 
   test('converts through the exchange rate in CNY mode', () => {
@@ -79,7 +84,7 @@ describe('formatCompactCurrencyFromUSD', () => {
 describe('formatCompactQuotaWithCurrency', () => {
   test('converts raw quota units then abbreviates', () => {
     setDisplay({ quotaDisplayType: 'USD', quotaPerUnit: 500000 })
-    assert.equal(formatCompactQuotaWithCurrency(16839430000), '$33.68K')
+    assert.equal(formatCompactQuotaWithCurrency(16839430000), '$33.67K')
   })
 
   test('returns "-" for missing values like the exact formatter', () => {
