@@ -1047,9 +1047,9 @@ func UseGlmResetCard(apiKey string, planBaseURL string, proxyURL string, req Glm
 // 账单明细中的 customerAcName 形如 "13121009002(郁有坤)"，携带账户手机号与姓名。
 const glmContactBillPath = "/api/finance/monthlyBill/monthlyBillDetails"
 
-// glmContactUserAgent 模拟 iPhone Safari 浏览器的 UA。账单明细接口要求浏览器 UA，
-// 缺失时上游会拒绝请求。
-const glmContactUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
+// glmBrowserUserAgent 模拟 iPhone Safari 浏览器的 UA。智谱后台 biz/finance
+// 系列接口（账单明细、账户报告等）要求浏览器 UA，缺失时上游会拒绝请求。
+const glmBrowserUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
 
 // GlmContactInfo 智谱账户联系信息，由月度账单明细的 customerAcName 解析而来。
 // RawName 保留原始字符串，便于前端在格式解析失败时兜底展示。
@@ -1099,7 +1099,7 @@ func FetchGlmContactInfo(apiKey string, planName string, proxyURL string) (*GlmC
 	}
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
 	req.Header.Set("Accept", "*/*")
-	req.Header.Set("User-Agent", glmContactUserAgent)
+	req.Header.Set("User-Agent", glmBrowserUserAgent)
 
 	client, err := newGlmHttpClient(proxyURL)
 	if err != nil {

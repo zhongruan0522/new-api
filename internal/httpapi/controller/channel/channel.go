@@ -2545,6 +2545,54 @@ func QueryGlmContactInfo(c *gin.Context) {
 	})
 }
 
+// QueryGlmAccountReport 查询智谱 GLM-4V 渠道的账户资金报告
+// （余额 / 充值 / 赠金 / 消耗 / 可用 / 冻结）。Key 取数据库保存的渠道密钥由
+// 服务端注入并强制携带浏览器 UA，浏览器不直连智谱后台；请求经渠道代理发出。
+// 成功后同步把可用余额折算成 USD 落库，与通用余额更新（update_balance）一致。
+func QueryGlmAccountReport(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelParamInvalid)
+		return
+	}
+
+	channel, err := channelstore.GetChannelById(id, true)
+	if err != nil {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelNotFound)
+		return
+	}
+
+	if channel.Type != constant.ChannelTypeZhipu_v4 {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelBalanceNotImplemented)
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	report, err := planquota.FetchGlmAccountReport(key, channel.ChannelInfo.PlanName, channel.GetSetting().Proxy)
+	if err != nil {
+		if errors.Is(err, planquota.ErrGlmKeyInvalid) {
+			httpapi.ApiErrorI18n(c, i18n.MsgChannelKeyInvalid)
+			return
+		}
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+
+	balanceCNY, err := planquota.PickGlmPersistBalance(report)
+	if err != nil {
+		httpapi.ApiErrorI18n(c, i18n.MsgChannelQuotaQueryFailed, map[string]any{"Error": err.Error()})
+		return
+	}
+	balanceUSD := glmBalanceCNYToUSD(balanceCNY)
+	channel.UpdateBalance(balanceUSD)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    report,
+		"balance": balanceUSD,
+	})
+}
+
 // QueryGlmResetCards 查询智谱 GLM 套餐的重置卡列表。
 // 上游 base URL 按套餐区域划分（国内 bigmodel.cn / 国际 api.z.ai），targetType 固定 PERSONAL。
 func QueryGlmResetCards(c *gin.Context) {

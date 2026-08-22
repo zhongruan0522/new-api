@@ -320,6 +320,24 @@ export interface GlmContactResponse {
   data?: GlmContactData
 }
 
+/** 智谱账户资金报告指标，金额为人民币原值；上游无值字段为 null */
+export interface GlmAccountReportData {
+  balance?: number | null
+  recharge_amount?: number | null
+  give_amount?: number | null
+  total_spend_amount?: number | null
+  available_balance?: number | null
+  frozen_balance?: number | null
+}
+
+export interface GlmAccountReportResponse {
+  success: boolean
+  message?: string
+  data?: GlmAccountReportData
+  /** 折算成 USD 后落库的渠道余额，用于同步刷新表格 */
+  balance?: number
+}
+
 export interface GlmActivityDay {
   date?: string
   totalTokens?: number

@@ -233,6 +233,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/plan/glm/usage/:id", channelcontroller.QueryGlmUsage)
 			channelRoute.GET("/plan/glm/risk/:id", channelcontroller.QueryRiskStatus)
 			channelRoute.GET("/glm/contact/:id", channelcontroller.QueryGlmContactInfo)
+			channelRoute.GET("/glm/account_report/:id", channelcontroller.QueryGlmAccountReport)
 			channelRoute.GET("/plan/glm/activity/:id", channelcontroller.QueryGlmPlanActivity)
 			channelRoute.GET("/plan/glm/reset_cards/:id", channelcontroller.QueryGlmResetCards)
 			channelRoute.POST("/plan/glm/reset_cards/:id/use", channelcontroller.UseGlmResetCard)

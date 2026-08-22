@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	planquota "github.com/NookMux/NookMux/internal/domain/billing/plan_quota"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/httpapi"
@@ -17,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -250,6 +252,8 @@ func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float6
 		return updateChannelOpenRouterBalance(channel)
 	case constant.ChannelTypeMoonshot:
 		return updateChannelMoonshotBalance(channel)
+	case constant.ChannelTypeZhipu_v4:
+		return updateChannelZhipuBalance(channel)
 	default:
 		return 0, errors.New(i18n.T(c, i18n.MsgChannelBalanceNotImplemented))
 	}
@@ -283,6 +287,29 @@ func updateChannelBalance(c *gin.Context, channel *channelstore.Channel) (float6
 	balance := subscription.HardLimitUSD - usage.TotalUsage/100
 	channel.UpdateBalance(balance)
 	return balance, nil
+}
+
+// glmBalanceCNYToUSD 智谱上游金额为人民币，按全局美元售价折算成
+// 系统统一记账单位（USD），与 Moonshot 渠道的处理方式保持一致。
+func glmBalanceCNYToUSD(balanceCNY float64) float64 {
+	return decimal.NewFromFloat(balanceCNY).Div(decimal.NewFromFloat(operation.Price)).InexactFloat64()
+}
+
+// updateChannelZhipuBalance 通过智谱账户报告接口刷新 GLM-4V 渠道余额。
+// Key 取数据库保存的渠道密钥，请求由服务端发出并经渠道代理。
+func updateChannelZhipuBalance(channel *channelstore.Channel) (float64, error) {
+	key := strings.Split(channel.Key, "\n")[0]
+	report, err := planquota.FetchGlmAccountReport(key, channel.ChannelInfo.PlanName, channel.GetSetting().Proxy)
+	if err != nil {
+		return 0, err
+	}
+	balanceCNY, err := planquota.PickGlmPersistBalance(report)
+	if err != nil {
+		return 0, err
+	}
+	balanceUSD := glmBalanceCNYToUSD(balanceCNY)
+	channel.UpdateBalance(balanceUSD)
+	return balanceUSD, nil
 }
 
 func UpdateChannelBalance(c *gin.Context) {

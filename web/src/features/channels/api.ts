@@ -33,6 +33,7 @@ import type {
   GetChannelResponse,
   GetChannelsParams,
   GetChannelsResponse,
+  GlmAccountReportResponse,
   GlmPlanActivityResponse,
   GlmContactResponse,
   GlmResetCardListResponse,
@@ -387,6 +388,25 @@ export async function getGlmContactInfo(
     disableDuplicate: true,
   }
   const res = await api.get(`/api/channel/glm/contact/${channelId}`, config)
+  return res.data
+}
+
+/**
+ * Query Zhipu GLM-4V account report (balance / recharge / gift / spend).
+ * The request is sent server-side with the channel key stored in DB;
+ * the response also carries the USD-converted balance persisted for the table.
+ */
+export async function getGlmAccountReport(
+  channelId: number
+): Promise<GlmAccountReportResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(
+    `/api/channel/glm/account_report/${channelId}`,
+    config
+  )
   return res.data
 }
 
