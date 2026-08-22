@@ -32,6 +32,7 @@ import { getCurrencyDisplay } from '@/lib/currency'
 import {
   formatTimestampToDate,
   formatQuota as formatQuotaValue,
+  formatQuotaCompact,
 } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { truncateText } from '@/lib/utils'
@@ -51,6 +52,7 @@ import { TruncatedText } from '@/components/truncated-text'
 import { CHANNEL_STATUS_CONFIG } from '../constants'
 import {
   formatBalance,
+  formatBalanceCompact,
   formatRelativeTime,
   formatResponseTime,
   getBalanceVariant,
@@ -180,16 +182,36 @@ function BalanceCell({ channel }: { channel: Channel }) {
 
   const usedDisplay = withSuffix(formatQuotaValue(usedQuota))
   const remainingDisplay = withSuffix(formatBalance(balance))
+  // Compact K/M/B labels keep dense cells readable; tooltips show exact values
+  const usedCompact = withSuffix(formatQuotaCompact(usedQuota))
+  const remainingCompact = withSuffix(formatBalanceCompact(balance))
 
   // Tag row: only show cumulative used quota
   if (isTagRow) {
     return (
-      <StatusBadge
-        label={`Used: ${usedDisplay}`}
-        variant='neutral'
-        size='sm'
-        copyable={false}
-      />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <StatusBadge
+                label={`Used: ${usedCompact}`}
+                variant='neutral'
+                size='sm'
+                copyable={false}
+                className='cursor-help'
+              />
+            }
+          />
+          <TooltipContent>
+            <p>
+              {t('channels.fields.labelWithColon', {
+                label: t('common.status.used'),
+              })}{' '}
+              {usedDisplay}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   }
 
@@ -211,7 +233,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           <TooltipTrigger
             render={
               <StatusBadge
-                label={usedDisplay}
+                label={usedCompact}
                 variant='neutral'
                 size='sm'
                 copyable={false}
@@ -233,7 +255,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
             render={
               <StatusBadge
                 label={
-                  isUpdating ? t('channels.status.updating') : remainingDisplay
+                  isUpdating ? t('channels.status.updating') : remainingCompact
                 }
                 variant={isUpdating ? 'neutral' : variant}
                 size='sm'
