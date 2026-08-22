@@ -93,16 +93,17 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
   const handleApply = useCallback(() => {
     navigate({
       to: '/users',
-      search: {
-        username: filters.username,
-        display_name: filters.displayName,
-        email: filters.email,
-        linux_do_id: filters.linuxDoId,
-        github_id: filters.githubId,
-        status,
-        role,
+      search: (prev) => ({
+        ...prev,
+        username: filters.username || undefined,
+        display_name: filters.displayName || undefined,
+        email: filters.email || undefined,
+        linux_do_id: filters.linuxDoId || undefined,
+        github_id: filters.githubId || undefined,
+        status: status || undefined,
+        role: role || undefined,
         page: 1,
-      },
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['users'] })
   }, [filters, status, role, navigate, queryClient])
@@ -113,7 +114,17 @@ export function UsersFilterBar<TData>(props: UsersFilterBarProps<TData>) {
     setRole('')
     navigate({
       to: '/users',
-      search: { page: 1 },
+      search: (prev) => ({
+        ...prev,
+        page: 1,
+        username: undefined,
+        display_name: undefined,
+        email: undefined,
+        linux_do_id: undefined,
+        github_id: undefined,
+        status: undefined,
+        role: undefined,
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['users'] })
   }, [navigate, queryClient])

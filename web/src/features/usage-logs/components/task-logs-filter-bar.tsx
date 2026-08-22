@@ -119,10 +119,11 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
     navigate({
       to: '/usage-logs/$section',
       params: { section: props.logCategory },
-      search: {
+      search: (prev) => ({
+        ...prev,
         ...filterParams,
         page: 1,
-      },
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
   }, [filters, navigate, props.logCategory, queryClient])
@@ -135,11 +136,11 @@ export function TaskLogsFilterBar<TData>(props: TaskLogsFilterBarProps<TData>) {
     navigate({
       to: '/usage-logs/$section',
       params: { section: props.logCategory },
-      search: {
+      search: (prev) => ({
+        ...prev,
+        ...buildSearchParams(resetFilters, props.logCategory),
         page: 1,
-        startTime: start.getTime(),
-        endTime: end.getTime(),
-      },
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
   }, [navigate, props.logCategory, queryClient])

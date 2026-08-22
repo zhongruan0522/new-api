@@ -33,16 +33,20 @@ import type {
 // ============================================================================
 
 /**
- * Build search params from filters based on log category
+ * Build search params from filters based on log category.
+ *
+ * Every filter key is always present in the result (empty filters map to
+ * `undefined`) so callers can spread it over the previous search params to
+ * update filters without dropping unrelated URL state such as `pageSize`.
  */
 export function buildSearchParams(
   filters: LogFilters,
   logCategory: LogCategory
 ): Record<string, unknown> {
   const baseParams: Record<string, unknown> = {
-    ...(filters.startTime && { startTime: filters.startTime.getTime() }),
-    ...(filters.endTime && { endTime: filters.endTime.getTime() }),
-    ...(filters.channel && { channel: filters.channel }),
+    startTime: filters.startTime ? filters.startTime.getTime() : undefined,
+    endTime: filters.endTime ? filters.endTime.getTime() : undefined,
+    channel: filters.channel || undefined,
   }
 
   switch (logCategory) {
@@ -50,34 +54,30 @@ export function buildSearchParams(
       const commonFilters = filters as CommonLogFilters
       return {
         ...baseParams,
-        ...(commonFilters.model && { model: commonFilters.model }),
-        ...(commonFilters.token && { token: commonFilters.token }),
-        ...(commonFilters.group && { group: commonFilters.group }),
-        ...(commonFilters.username && { username: commonFilters.username }),
-        ...(commonFilters.requestId && { requestId: commonFilters.requestId }),
-        ...(commonFilters.upstreamRequestId && {
-          upstreamRequestId: commonFilters.upstreamRequestId,
-        }),
-        ...(commonFilters.ip && { ip: commonFilters.ip }),
-        ...(commonFilters.ua && { ua: commonFilters.ua }),
-        ...(commonFilters.xTitle && { xTitle: commonFilters.xTitle }),
-        ...(commonFilters.httpReferer && {
-          httpReferer: commonFilters.httpReferer,
-        }),
+        model: commonFilters.model || undefined,
+        token: commonFilters.token || undefined,
+        group: commonFilters.group || undefined,
+        username: commonFilters.username || undefined,
+        requestId: commonFilters.requestId || undefined,
+        upstreamRequestId: commonFilters.upstreamRequestId || undefined,
+        ip: commonFilters.ip || undefined,
+        ua: commonFilters.ua || undefined,
+        xTitle: commonFilters.xTitle || undefined,
+        httpReferer: commonFilters.httpReferer || undefined,
       }
     }
     case 'drawing': {
       const drawingFilters = filters as DrawingLogFilters
       return {
         ...baseParams,
-        ...(drawingFilters.mjId && { filter: drawingFilters.mjId }),
+        filter: drawingFilters.mjId || undefined,
       }
     }
     case 'task': {
       const taskFilters = filters as TaskLogFilters
       return {
         ...baseParams,
-        ...(taskFilters.taskId && { filter: taskFilters.taskId }),
+        filter: taskFilters.taskId || undefined,
       }
     }
     default:

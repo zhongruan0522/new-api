@@ -137,11 +137,12 @@ export function CommonLogsFilterBar<TData>(
     navigate({
       to: '/usage-logs/$section',
       params: { section: 'common' },
-      search: {
+      search: (prev) => ({
+        ...prev,
         ...filterParams,
         type: [logType],
         page: 1,
-      },
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
@@ -156,12 +157,12 @@ export function CommonLogsFilterBar<TData>(
     navigate({
       to: '/usage-logs/$section',
       params: { section: 'common' },
-      search: {
-        page: 1,
+      search: (prev) => ({
+        ...prev,
+        ...buildSearchParams(resetFilters, 'common'),
         type: [LOG_TYPE_ALL_VALUE],
-        startTime: start.getTime(),
-        endTime: end.getTime(),
-      },
+        page: 1,
+      }),
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
