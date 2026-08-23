@@ -51,15 +51,26 @@ export function getApiKeyFormSchema(t: TFunction) {
       if (modelMapping) {
         // 与后端 validateTokenModelMapping 对齐：JSON 对象且键值均为
         // 非空字符串、不含冒号/斜杠/空白（这些字符无法安全承载在
-        // Gemini 路径等改写来源中）。
+        // Gemini 路径等改写来源中），单键值不超过 256 字符、总量
+        // 不超过 64KB。
+        let tooLong = false
         let valid: boolean
         try {
           const parsed: unknown = JSON.parse(modelMapping)
+          const entries = Object.entries(
+            (parsed ?? {}) as Record<string, unknown>
+          )
+          tooLong =
+            entries.some(
+              ([from, to]) =>
+                typeof to === 'string' &&
+                (from.length > 256 || to.length > 256)
+            ) || modelMapping.length > 64 * 1024
           valid =
             !!parsed &&
             typeof parsed === 'object' &&
             !Array.isArray(parsed) &&
-            Object.entries(parsed as Record<string, unknown>).every(
+            entries.every(
               ([from, to]) =>
                 typeof to === 'string' &&
                 from.trim() !== '' &&
@@ -75,6 +86,12 @@ export function getApiKeyFormSchema(t: TFunction) {
             code: 'custom',
             path: ['model_mapping'],
             message: t('keys.errors.invalidModelMapping'),
+          })
+        } else if (tooLong) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['model_mapping'],
+            message: t('keys.errors.modelMappingEntryTooLong'),
           })
         }
       }

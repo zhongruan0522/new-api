@@ -242,7 +242,9 @@ gantt
 7. **服务端校验**：`AddToken`/`UpdateToken` 对 `model_mapping` 做严格校验
    （JSON 对象、键值均为非空字符串），错误提示走 `i18n.MsgTokenInvalidModelMapping`
    （zh/en yaml 同步）。渠道级 `model_mapping` 目前仅前端校验，令牌侧更严。
-8. **审计**：令牌增删改的审计 before/after 自动携带新字段。PRD 3.1 的
+8. **审计**：UpdateToken 的审计 before/after 为完整 Token 结构体，自动携带
+   `model_mapping`（含清空差异）；AddToken/DeleteToken 的审计 payload 仅含
+   `name`/`user_id`/`id`，不含 `model_mapping`。PRD 3.1 的
    `ContextKeyClientModelName` 可选项未落地：完整消费需扩散 5 个
    `Generate*OtherInfo` 日志函数与 usage log 字段可见性体系
    （`UsageLogFieldsDefaults` + 前端 details-dialog + i18n），超出本 PRD
