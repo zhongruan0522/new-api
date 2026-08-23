@@ -18,13 +18,6 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
 import { ChevronRight, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -32,6 +25,13 @@ import {
   formatTimestampToDate,
   formatUseTime,
 } from '@/lib/format'
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

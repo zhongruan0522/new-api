@@ -18,9 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import * as React from 'react'
 import { useState, type ReactNode } from 'react'
-import { type Table } from '@tanstack/react-table'
 import { ChevronDown, Loader2, X as Cross2Icon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { type RowData, type Table } from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,7 @@ type FilterDef = {
   singleSelect?: boolean
 }
 
-export type DataTableToolbarProps<TData> = {
+export type DataTableToolbarProps<TData extends RowData> = {
   table: Table<TData>
   /**
    * Placeholder for the default search input. Defaults to `t('Filter...')`.
@@ -140,7 +140,9 @@ export type DataTableToolbarProps<TData> = {
  * No background panel, no row separators — relies on whitespace and the
  * adjacent table border for visual hierarchy.
  */
-export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
+export function DataTableToolbar<TData extends RowData>(
+  props: DataTableToolbarProps<TData>
+) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 

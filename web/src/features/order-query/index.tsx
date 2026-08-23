@@ -17,13 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   type ColumnDef,
   getCoreRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { RefreshCw } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+} from '@/lib/tanstack-table'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataTablePage } from '@/components/data-table'

@@ -6,6 +6,9 @@ it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, version 3 of the License.
 */
 import { useMemo, type ReactNode } from 'react'
+import { Edit, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { formatQuota, formatTimestampToDate } from '@/lib/format'
 import {
   flexRender,
   getCoreRowModel,
@@ -14,10 +17,7 @@ import {
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
-} from '@tanstack/react-table'
-import { Edit, Trash2 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { formatQuota, formatTimestampToDate } from '@/lib/format'
+} from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

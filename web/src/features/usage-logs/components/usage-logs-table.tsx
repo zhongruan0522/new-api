@@ -19,6 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { useMediaQuery } from '@/hooks'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 import {
   type ColumnDef,
   flexRender,
@@ -27,11 +31,7 @@ import {
   getFacetedUniqueValues,
   getPaginationRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useMediaQuery } from '@/hooks'
-import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
+} from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/use-admin'
 import { useTableUrlState } from '@/hooks/use-table-url-state'

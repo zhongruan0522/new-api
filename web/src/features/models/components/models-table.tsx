@@ -19,14 +19,14 @@ For commercial licensing, please contact support@quantumnous.com
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { useMediaQuery } from '@/hooks'
+import { useTranslation } from 'react-i18next'
 import {
   getCoreRowModel,
   useReactTable,
   type SortingState,
   type VisibilityState,
-} from '@tanstack/react-table'
-import { useMediaQuery } from '@/hooks'
-import { useTranslation } from 'react-i18next'
+} from '@/lib/tanstack-table'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { DataTablePage } from '@/components/data-table'
 import { getModels, searchModels, getVendors } from '../api'

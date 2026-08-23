@@ -63,8 +63,7 @@ export function getApiKeyFormSchema(t: TFunction) {
           tooLong =
             entries.some(
               ([from, to]) =>
-                typeof to === 'string' &&
-                (from.length > 256 || to.length > 256)
+                typeof to === 'string' && (from.length > 256 || to.length > 256)
             ) || modelMapping.length > 64 * 1024
           valid =
             !!parsed &&
