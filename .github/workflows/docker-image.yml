@@ -1,14 +1,9 @@
 name: Publish Docker image (AMD64 only)
 
+# 发布入口已收口为两个：CI 工作流（ci.yml）全绿后通过 workflow_dispatch
+# 派发（见 ci.yml 的 trigger-docker job），或维护者手动触发。
+# 直接 push 不再触发本工作流——所有提交必须先过 CI 门禁。
 on:
-  push:
-    branches:
-      - main
-      - beta
-      - dev
-      - test
-    tags:
-      - '*'
   workflow_dispatch:
 
 jobs:
