@@ -1,13 +1,11 @@
 // TanStack Table v9 统一入口：项目所有表格相关导入都从这里走。
 //
 // 历史背景：dependabot 升级到 v9 后，此文件曾把 v8 API 集中映射到官方
-// deprecated 的 `/legacy` 入口完成止血。`/legacy` 默认注册全部 stock
-// features、不做 tree-shaking，且上游随时可能删除该入口。
+// deprecated 的 `/legacy` 入口完成止血，现已全面切换到 v9 原生 API。
 //
-// 迁移目标：全面切换到 v9 原生 API（`useTable` + `features` 注册）。
 // `appTableFeatures` 在这里一次性注册项目用到的 feature 与 row model
-// 工厂，所有表格实例共享；下方 legacy 导出在全部调用点切换完成前暂时
-// 保留，切换完成后整段删除。
+// 工厂，所有 `useTable` 实例共享；Table/Row/Column/Cell/ColumnDef 类型
+// 别名预绑定 AppTableFeatures，业务代码保持 v8 的单参数写法。
 import {
   columnFacetingFeature,
   columnFilteringFeature,
@@ -86,18 +84,3 @@ export type ColumnDef<
   TValue extends CellData = CellData,
 > = TanstackColumnDef<AppTableFeatures, TData, TValue>
 export type { ColumnVisibilityState as VisibilityState } from '@tanstack/react-table'
-
-// --- legacy 兼容导出（v8 API → `/legacy` 入口），迁移完成后删除 ---------
-// 仅供尚未切换 useTable 的自建表格（upstream-conflict-dialog、
-// key-query-logs-table）使用。
-export {
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  getExpandedRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  useLegacyTable as useReactTable,
-} from '@tanstack/react-table/legacy'
-export type { LegacyColumnDef } from '@tanstack/react-table/legacy'

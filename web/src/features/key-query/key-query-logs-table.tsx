@@ -26,13 +26,11 @@ import {
   formatUseTime,
 } from '@/lib/format'
 import {
-  // TODO(v9 迁移): 本文件暂留 legacy 范式，随下一提交切换 useTable 并改回
-  // 预绑定的 ColumnDef 别名。
-  type LegacyColumnDef as ColumnDef,
+  appTableFeatures,
+  type ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  type Row,
+  useTable,
 } from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -396,7 +394,8 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
     [expandedRowId, t]
   )
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: logs,
     columns,
     state: {
@@ -406,8 +405,6 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
     manualPagination: true,
     manualFiltering: true,
     pageCount: Math.ceil(total / pageSize) || 1,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onPaginationChange: (updater) => {
       const next =
         typeof updater === 'function'
@@ -680,9 +677,7 @@ function DateTimeRangeInput(props: {
 }
 
 interface LogRowProps {
-  row: ReturnType<
-    ReturnType<typeof useReactTable<KeyQueryLog>>['getRowModel']
-  >['rows'][number]
+  row: Row<KeyQueryLog>
   isExpanded: boolean
   onToggle: () => void
   visibility: UsageLogDetailsVisibility

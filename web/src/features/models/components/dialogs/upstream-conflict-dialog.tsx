@@ -28,12 +28,10 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
+  appTableFeatures,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
-  // TODO(v9 迁移): 本文件暂留 legacy 范式，随下一提交切换 useTable 并改回
-  // 预绑定的 ColumnDef 别名。
-  type LegacyColumnDef as ColumnDef,
+  useTable,
+  type ColumnDef,
   type RowSelectionState,
 } from '@/lib/tanstack-table'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -350,7 +348,8 @@ export function UpstreamConflictDialog({
     ]
   }, [isMobile, t])
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: conflictRows,
     columns,
     state: {
@@ -358,7 +357,6 @@ export function UpstreamConflictDialog({
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.id,
   })
 
