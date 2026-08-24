@@ -123,13 +123,35 @@ jobs:
       actions: write
       contents: read
     steps:
-      # 用 GITHUB_TOKEN 触发 workflow_dispatch 属于官方允许的工作流链接
-      # 方式（token 递归触发限制的例外清单明确包含 workflow_dispatch）。
+      # 用 GitHub App installation token 派发 workflow_dispatch：由
+      # GITHUB_TOKEN 派发的 run，其完成时派发的 workflow_run 事件会被
+      # GHA 防递归机制抑制，notify.yml 将收不到通知（OpenCode-Docker
+      # 的 check-update.yml 也是同样解法）。App 未配置时回退
+      # GITHUB_TOKEN——发布链不断，仅通知静默。
+      #
+      # 所需仓库配置（Settings → Secrets and variables → Actions）：
+      #   Variables → GH_APP_CLIENT_ID    = GitHub App 的 Client ID
+      #   Secrets   → GH_APP_PRIVATE_KEY  = App 私钥（PEM 全文）
+      # App 本体只需一项仓库权限：Actions - Read and write，并安装到本仓库。
+      - name: Generate GitHub App token
+        id: app-token
+        if: vars.GH_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          # 仅授权派发 workflow_dispatch 所需的最小权限
+          permission-actions: write
+
       - name: Dispatch docker publish workflow
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          APP_TOKEN_PRESENT: ${{ steps.app-token.outputs.token != '' }}
           REF: ${{ github.ref_name }}
         run: |
+          if [ "$APP_TOKEN_PRESENT" != "true" ]; then
+            echo "::warning::GH_APP_CLIENT_ID / GH_APP_PRIVATE_KEY 未配置，使用 GITHUB_TOKEN 派发：Docker 发布不受影响，但 notify.yml 收不到 workflow_run 通知"
+          fi
           gh workflow run docker-image.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref "$REF"
