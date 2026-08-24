@@ -23,8 +23,8 @@ import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
-  getCoreRowModel,
-  useReactTable,
+  appTableFeatures,
+  useTable,
   type VisibilityState,
 } from '@/lib/tanstack-table'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
@@ -199,7 +199,8 @@ export function DeploymentsTable() {
     },
   })
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: deployments,
     columns,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
@@ -213,7 +214,6 @@ export function DeploymentsTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange,
     onGlobalFilterChange,
-    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualFiltering: true,
   })

@@ -20,9 +20,9 @@ import { useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
+  appTableFeatures,
   type ColumnDef,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
 } from '@/lib/tanstack-table'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -65,7 +65,8 @@ export function OrderQuery() {
     columnActions
   ) as ColumnDef<TopupRecord>[]
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: records,
     columns,
     state: {
@@ -87,7 +88,6 @@ export function OrderQuery() {
         }
       }
     },
-    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(total / pageSize),
   })

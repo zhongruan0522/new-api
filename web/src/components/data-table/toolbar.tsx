@@ -151,8 +151,8 @@ export function DataTableToolbar<TData extends RowData>(
   const hasSearch = props.onSearch != null
 
   const isFiltered =
-    props.table.getState().columnFilters.length > 0 ||
-    !!props.table.getState().globalFilter ||
+    props.table.state.columnFilters.length > 0 ||
+    !!props.table.state.globalFilter ||
     !!props.hasAdditionalFilters
 
   const placeholder = props.searchPlaceholder ?? t('common.actions.filter')
@@ -160,7 +160,7 @@ export function DataTableToolbar<TData extends RowData>(
   const searchValue = props.searchKey
     ? ((props.table.getColumn(props.searchKey)?.getFilterValue() as string) ??
       '')
-    : (props.table.getState().globalFilter ?? '')
+    : (props.table.state.globalFilter ?? '')
 
   const handleSearchInputChange = (
     event: React.ChangeEvent<HTMLInputElement>

@@ -24,9 +24,9 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
 import {
+  appTableFeatures,
   type ColumnDef,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
 } from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import {
@@ -386,11 +386,11 @@ export function DynamicRatio() {
     columnActions
   ) as ColumnDef<DynamicRatioRule>[]
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: rules,
     columns,
     state: {},
-    getCoreRowModel: getCoreRowModel(),
   })
 
   return (

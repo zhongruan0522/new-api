@@ -26,7 +26,9 @@ import {
   formatUseTime,
 } from '@/lib/format'
 import {
-  type ColumnDef,
+  // TODO(v9 迁移): 本文件暂留 legacy 范式，随下一提交切换 useTable 并改回
+  // 预绑定的 ColumnDef 别名。
+  type LegacyColumnDef as ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,

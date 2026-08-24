@@ -22,8 +22,8 @@ import { getRouteApi } from '@tanstack/react-router'
 import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import {
-  getCoreRowModel,
-  useReactTable,
+  appTableFeatures,
+  useTable,
   type SortingState,
   type VisibilityState,
 } from '@/lib/tanstack-table'
@@ -176,7 +176,8 @@ export function ModelsTable() {
   const columns = useModelsColumns(vendors)
 
   // React Table instance
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: models,
     columns,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
@@ -196,7 +197,6 @@ export function ModelsTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange,
     onGlobalFilterChange,
-    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,

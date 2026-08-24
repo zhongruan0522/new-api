@@ -10,10 +10,9 @@ import { Edit, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatQuota, formatTimestampToDate } from '@/lib/format'
 import {
+  appTableFeatures,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  useTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
@@ -184,7 +183,8 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
     ]
   }, [props, t])
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: props.items,
     columns,
     state: {
@@ -193,8 +193,6 @@ export function VoiceManagementTable(props: VoiceManagementTableProps) {
     manualPagination: true,
     pageCount: Math.max(1, Math.ceil(props.total / props.pagination.pageSize)),
     onPaginationChange: props.onPaginationChange,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   })
 
   return (

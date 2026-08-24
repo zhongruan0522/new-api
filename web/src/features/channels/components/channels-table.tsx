@@ -23,9 +23,8 @@ import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import {
-  getCoreRowModel,
-  useReactTable,
-  getExpandedRowModel,
+  appTableFeatures,
+  useTable,
   type OnChangeFn,
   type SortingState,
   type ExpandedState,
@@ -236,7 +235,8 @@ export function ChannelsTable() {
   const columns = useChannelsColumns()
 
   // React Table instance
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: channels,
     columns,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
@@ -255,8 +255,6 @@ export function ChannelsTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange,
     onExpandedChange: setExpanded,
-    getCoreRowModel: getCoreRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getSubRows: (row: Channel & { children?: Channel[] }) => row.children,
     manualPagination: true,
     manualSorting: true,

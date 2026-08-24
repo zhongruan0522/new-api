@@ -25,10 +25,9 @@ import { useAuthStore } from '@/stores/auth-store'
 import dayjs from '@/lib/dayjs'
 import { ROLE } from '@/lib/roles'
 import {
+  appTableFeatures,
   type ColumnDef,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  useTable,
 } from '@/lib/tanstack-table'
 import {
   AlertDialog,
@@ -205,7 +204,8 @@ export function MultimodalFiles() {
     columnActions
   ) as ColumnDef<StoredMediaItem>[]
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: items,
     columns,
     state: {
@@ -215,8 +215,6 @@ export function MultimodalFiles() {
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(total / pagination.pageSize),
   })

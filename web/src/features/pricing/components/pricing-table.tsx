@@ -19,10 +19,9 @@ For commercial licensing, please contact support@quantumnous.com
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  appTableFeatures,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  useTable,
   type PaginationState,
 } from '@/lib/tanstack-table'
 import {
@@ -73,14 +72,13 @@ export function PricingTable(props: PricingTableProps) {
     showRechargePrice,
   })
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: models,
     columns,
     pageCount: Math.ceil(models.length / pagination.pageSize),
     state: { pagination },
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: false,
   })
 

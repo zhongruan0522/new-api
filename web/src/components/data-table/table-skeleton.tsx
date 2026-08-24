@@ -50,7 +50,7 @@ export function TableSkeleton<TData extends RowData>({
   const visibleColumns = table.getVisibleLeafColumns()
 
   const finalRowCount =
-    rowCount ?? Math.min(table.getState().pagination?.pageSize || 20, 20)
+    rowCount ?? Math.min(table.state.pagination?.pageSize || 20, 20)
 
   return (
     <>

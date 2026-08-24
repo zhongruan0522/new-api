@@ -25,12 +25,11 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import dayjs from '@/lib/dayjs'
 import {
+  appTableFeatures,
   type ColumnDef,
   type PaginationState,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  useTable,
 } from '@/lib/tanstack-table'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -309,7 +308,8 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
 
   const logs = data?.items || []
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: logs,
     columns,
     state: {
@@ -317,8 +317,6 @@ export function AuditLogsTable({ search }: AuditLogsTableProps) {
     },
     enableRowSelection: false,
     onPaginationChange: handlePageChange,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     pageCount: Math.ceil((data?.total || 0) / pageSize),
   })

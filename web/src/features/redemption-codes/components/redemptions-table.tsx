@@ -22,15 +22,10 @@ import { getRouteApi } from '@tanstack/react-router'
 import { useMediaQuery } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import {
+  appTableFeatures,
   type SortingState,
   type VisibilityState,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
 } from '@/lib/tanstack-table'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import {
@@ -110,7 +105,8 @@ export function RedemptionsTable() {
 
   const redemptions = data?.items || []
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: redemptions,
     columns,
     state: {
@@ -133,12 +129,6 @@ export function RedemptionsTable() {
 
       return name.includes(searchValue) || id.includes(searchValue)
     },
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
     onPaginationChange,
     onGlobalFilterChange,
     onColumnFiltersChange,

@@ -52,7 +52,7 @@ export type DataTablePageToolbarProps<TData extends RowData> = Omit<
 
 export type DataTablePageProps<TData extends RowData> = {
   /**
-   * TanStack Table instance returned from `useReactTable`.
+   * TanStack Table instance returned from `useTable`.
    */
   table: TanstackTable<TData>
 
