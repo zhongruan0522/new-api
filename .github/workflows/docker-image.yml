@@ -125,15 +125,17 @@ jobs:
   notify_feishu:
     name: Notify Feishu
     needs: [build_amd64]
-    if: always()
+    if: ${{ always() && (needs.build_amd64.result == 'success' || needs.build_amd64.result == 'failure') }}
     continue-on-error: true
-    uses: ./.github/workflows/notify.yml
-    with:
-      workflow_name: ${{ github.workflow }}
-      project_name: ${{ github.repository }}
-      branch: ${{ github.ref_name }}
-      conclusion: ${{ needs.build_amd64.result }}
-    secrets:
-      FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
-      FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
-      FEISHU_USER_ID: ${{ secrets.FEISHU_USER_ID }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Feishu notification
+        uses: ./.github/actions/feishu-notify
+        with:
+          workflow_name: ${{ github.workflow }}
+          project_name: ${{ github.repository }}
+          branch: ${{ github.ref_name }}
+          conclusion: ${{ needs.build_amd64.result }}
+          app_id: ${{ secrets.FEISHU_APP_ID }}
+          app_secret: ${{ secrets.FEISHU_APP_SECRET }}
+          user_id: ${{ secrets.FEISHU_USER_ID }}

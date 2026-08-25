@@ -125,7 +125,8 @@ jobs:
     steps:
       # 用 GitHub App installation token 派发 workflow_dispatch。
       # App 未配置时回退 GITHUB_TOKEN，Docker 发布仍会继续。
-      # 飞书通知现在由 docker-image.yml 内部直接调用复用 workflow。
+      # 飞书通知现在由 docker-image.yml 内部直接调用共享 action，
+      # 后续 CI 也可以复用同一套通知逻辑。
       #
       # 所需仓库配置（Settings → Secrets and variables → Actions）：
       #   Variables → GH_APP_CLIENT_ID    = GitHub App 的 Client ID
