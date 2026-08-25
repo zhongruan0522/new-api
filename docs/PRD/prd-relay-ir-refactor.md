@@ -1,9 +1,8 @@
 # PRD：Relay 协议转换层 IR 重构（以 Chat 为中心）
 
-> 版本：v2（整文重写：v1 的「点对点」定性有误，实测现状已是隐式 Hub；阶段划分按协议对拆分重排）
+> 版本：v2.1（v2 整文重写：v1 的「点对点」定性有误，实测现状已是隐式 Hub；阶段划分按协议对拆分重排。v2.1 评审修订：删除对不存在的 SDK 迁移 PRD 的引用；跨协议签名策略定为按提供者识别过滤，并补工具调用级签名承载与 axonhub 三层方案落地细节；D4 增加计费基准定性疑点，bug 1 顺延至对拍框架之后；待决问题 1–5 落定后从 §8 移除（仅留 2 条未决）；错误模型改为以 Chat 为中枢只保 code+message，不做强类型展开；旧代码随各阶段重写完成时立即删除，不保留 deprecated 观察期；修正若干与代码不符的描述）
 > 日期：2026-08-25
 > 状态：待评审
-> 关联文档：`prd-relay-sdk-migration.md`（SDK 迁移，已延期搁置，见 §1.4）
 
 ## 1. 背景
 
@@ -36,7 +35,7 @@
 
 **D1：转换矩阵有洞，Responses 客户端打到三类渠道直接报错**
 
-`channel/gemini/adaptor.go:228`、`channel/vertex/adaptor.go:299`、`channel/aws/adaptor.go:142` 的 `ConvertOpenAIResponsesRequest` 全部是 `// TODO implement me` + `return nil, errors.New("not implemented")`。
+`channel/gemini/adaptor.go:229`、`channel/vertex/adaptor.go:300`、`channel/aws/adaptor.go:143` 的 `ConvertOpenAIResponsesRequest` 全部是 `// TODO implement me` + `return nil, errors.New("not implemented")`。
 
 底层零件其实齐备（Responses↔Chat 有 `wire/convert`，Chat↔Gemini 有 `helper` 系列），缺的只是把两跳接起来。之所以一直没接，见 D2。
 
@@ -52,13 +51,15 @@
 
 后果是客户端声明了搜索工具、期待按调用计费，实际上游没执行、也没有任何错误或标记告知客户端能力已降级。
 
-**D4：计费语义标记只在一处设置，复用渠道漏设（存量 bug）**
+**D4：计费语义标记只在一处设置，复用渠道漏设（存量 bug，定性存疑）**
 
-`FinalRequestRelayFormat` 字段定义在 `relay/common/relay_info.go:160`，注释自己写着「TODO: 当前仅设置了Claude」。全仓库只有 `channel/claude/adaptor.go:121` 一处赋值，消费方是 `domain/billing/usage.go:108` 的 `isClaudeUsageSemantic`。
+`FinalRequestRelayFormat` 字段定义在 `relay/common/relay_info.go:160`，注释自己写着「TODO: 当前仅设置了Claude」。全仓库只有 `channel/claude/adaptor.go:121` 一处赋值，消费方有**两处**：`domain/billing/usage.go:108` 的 `isClaudeUsageSemantic`，以及 `domain/billing/quota.go:304` 中 `PostClaudeConsumeQuota` 的一个独立同名判定（基于 `ChannelType != OpenRouter`，与该标记无关）。
 
-该标记决定缓存 token 的计费算法：Anthropic 的 `input_tokens` 不含缓存 token，OpenAI 的 `prompt_tokens` 含缓存 token，所以基础 token 要不要减去 `cachedTokens` 取决于它。
+该标记决定缓存 token 的计费算法：`isClaudeUsageSemantic=true` 的公式假设 `prompt_tokens` 不含缓存 token（Anthropic 原生语义），false 则假设含（OpenAI 语义），含则先减去再按倍率计。
 
-而 AWS 渠道复用 Claude 的处理函数（`channel/aws/relay_aws.go:222,235,254,266,279` 调用 `claude.ClaudeResponseInfo`、`claude.HandleClaudeResponseData`、`claude.HandleStreamResponseData`、`claude.HandleStreamFinalResponse`）却从不设置该标记，导致 AWS Bedrock 上的 Claude 模型缓存 token 按 OpenAI 语义计算。
+**定性疑点（阶段 0.3 对拍验证后再修，见阶段 0.1）：**所有设置该标记的路径，其 usage 都已经过 `shared.ClaudeUsageToOpenAIUsage`（`domain/shared/claude.go:615`，`promptTokens = input + cacheRead + cacheCreation`）或 `mergeClaudeUsageIntoOpenAIUsage` 归一为**含缓存的 OpenAI 语义**。若此观察成立，Claude 直连渠道（标记开、不减）反而可能存在缓存 token 双计，而漏设标记的 AWS 路径（减）恰好与公式匹配——「谁是正确基准」未经计费对拍验证，不能默认直连渠道正确。
+
+而 AWS 渠道复用 Claude 的处理函数（`channel/aws/relay_aws.go:222,235,254,266,279` 调用 `claude.ClaudeResponseInfo`、`claude.HandleClaudeResponseData`、`claude.HandleStreamResponseData`、`claude.HandleStreamFinalResponse`）却不设置该标记。已查证：Vertex（`vertex/adaptor.go:328-332`，RequestModeClaude 经 `claudeAdaptor.DoResponse`）与 Moonshot（`moonshot/adaptor.go:127`）等复用渠道走的是 `claude.Adaptor.DoResponse`，已设置标记，无此问题；真正绕过标记设置的只有 AWS 的 `awsHandler`/`awsStreamHandler`。
 
 **D5：错误出口漏了 Gemini，底子铺好却没接上**
 
@@ -70,7 +71,7 @@
 
 所以 Gemini 客户端报错时走 default 分支，收到 OpenAI 格式错误体。Gemini SDK 期待 `{"error":{"code":429,"message":"...","status":"RESOURCE_EXHAUSTED"}}`，实际拿到 `{"error":{"message":"...","type":"...","code":"..."}}`——`status` 缺失，`code` 从数字变字符串。
 
-附带两个问题：同一套出口分发在 `httpapi/middleware/performance.go:23-31` 又写了一遍；`ToClaudeError()` 把 OpenAI 的 `code` 用 `fmt.Sprintf("%v", ...)` 塞进 Anthropic 的 `type` 字段，而后者是固定枚举（`invalid_request_error`、`rate_limit_error` 等），塞进去的值不在枚举内。
+附带两个问题：出口分发在 `httpapi/middleware/performance.go:20-35` 又写了一份，但判定依据不同（`relay.go` 按 `RelayFormat` 分发，`performance.go` 按 URL 前缀 `/v1/messages` 分发，Claude 分支仅靠路径约定对齐）；`ToClaudeError()` 把 OpenAI 的 `code` 用 `fmt.Sprintf("%v", ...)` 塞进 Anthropic 的 `type` 字段，而后者是固定枚举（`invalid_request_error`、`rate_limit_error` 等），塞进去的值不在枚举内。
 
 **D6：架构张力已经产生内联补丁**
 
@@ -78,7 +79,7 @@
 
 ### 1.3 「渠道魔改协议」的调查结论
 
-调查了 17 个渠道目录，**没有任何渠道发明自己的 Chat/Claude/Responses 语义**。所有偏差是四类线路方言，出站边不需要为它们建协议变体：
+调查了 17 个渠道目录，**没有任何渠道发明自己的 Chat/Claude/Responses 语义**。所有偏差是三类线路方言，出站边不需要为它们建协议变体：
 
 
 | 类别         | 实例                                                                                                                                                                                                                                     | 位置                                                                     |
@@ -86,24 +87,9 @@
 | URL 路径     | Azure `deployments/{model}?api-version=`（含 `AzureNoRemoveDotTime` 按渠道创建时间的历史兼容）；DeepSeek `/anthropic/v1/messages`；Bytedance `/api/v3`→`/api/compatible`；Moonshot/xiaomi/ollama/zhipu 走 `ChannelSpecialBases` 特殊基址表；zhipu 仅 `/v1`→`/v4` | `channel/openai/adaptor.go:126-195`、`channel/deepseek/adaptor.go:55` 等 |
 | 认证头        | OpenRouter 的 Anthropic 端点用 Bearer 而非 `x-api-key`                                                                                                                                                                                       | `channel/openai/adaptor.go:220`                                        |
 | Body 扩展字段  | 仅 OpenRouter 的 `provider` 路由对象，非 OpenRouter 渠道必须剥离                                                                                                                                                                                     | `relay/common/openrouter_routing.go`                                   |
-| Usage 字段变体 | Moonshot 的 Anthropic 端点用 `cached_tokens` 而非 `cache_read_input_tokens`；Llama 系当前未做兼容                                                                                                                                                    | 参考 axonhub `llm/transformer/anthropic/usage.go` 同样特判                   |
 
 
 其中 URL 与认证属于渠道适配层，与协议转换正交，本 PRD 不动（见 §3.2）。
-
-### 1.4 与 SDK 迁移 PRD 的关系
-
-`prd-relay-sdk-migration.md` 已延期搁置。两份 PRD 存在方向冲突，需要明确顺序：
-
-SDK 迁移计划把 4 个 `Convert*Request` 方法改为返回官方 SDK params 类型（`openai.ChatCompletionNewParams`、`anthropic.MessageNewParams` 等），而该 PRD 自己也承认「本 PRD 对 adaptor 接口的改造在 IR PRD 中会被推倒重来，这是预期行为」。
-
-**结论：先 IR 后 SDK。** IR 边界定清后，把 Outbound 内部实现换成官方 SDK 是局部替换，不影响上层。反之先做 SDK 迁移，那部分接口改造会白做一遍。
-
-SDK 迁移中唯一值得抢先处理的是 BaseURL 双重版本前缀 bug（用户填 `https://ark.cn-beijing.volces.com/api/v3`，系统拼出 `.../api/v3/v1/chat/completions`）。该问题与 IR 无关，且属真实故障，放入阶段 0.1。
-
-> 注：BaseURL bug 的描述来自 SDK 迁移 PRD，本次未独立复现验证，阶段 0.1 需先复现再修。
-
-
 
 ## 2. 依据与边界
 
@@ -128,7 +114,7 @@ SDK 迁移中唯一值得抢先处理的是 BaseURL 双重版本前缀 bug（用
 
 以下诉求容易导致目标漂移，显式排除：
 
-1. **不追求「IR 无损」这个提法。** 无损是不可达的：`web_search` 转到 Chat 必然降级（D3）、Gemini 的 `thoughtSignature` 转到 Claude 无对应概念。正确目标是**有损点显式化**——每条边声明能力降级并可观测，而不是静默丢弃。
+1. **不追求「IR 无损」这个提法。** 无损是不可达的：`file_search`/`image_generation` 转到无等价能力的上游直接拒绝（见 §8 问题 4）、思考签名跨协议按提供者识别过滤会丢弃非目标提供者签名（见阶段 6）。正确目标是**有损点显式化**——降级写入后台日志与用户文档，而不是静默丢弃；降级信号不向客户端响应注入（见 §8 问题 2）。
 2. **不追求「全量请求过 IR」。** axonhub 全量过 IR，但本项目已有同协议直通优化（`channel/claude/adaptor.go:33-35` 的 `ConvertClaudeRequest` 直接返回原请求；DeepSeek/Moonshot/OpenRouter 的原生 Anthropic 端点透传）。这些优化必须保留，见 §3.3。
 3. **不重写流式转换器。** `wire/stream` 的 chat↔responses 逐帧转换器已处理大量边界情况，IR 化是复用与收口，不是重新实现。
 
@@ -139,8 +125,8 @@ SDK 迁移中唯一值得抢先处理的是 BaseURL 双重版本前缀 bug（用
 - 不改渠道 URL 构建与认证逻辑（`GetRequestURL` / `SetupRequestHeader` 原样保留）
 - 不改路由对外路径、数据库 schema、模型倍率数值、审计逻辑、前端
 - 不改重试策略本身，只适配错误模型
-- Realtime/WebSocket 暂不纳入 IR（阶段 10 评估）
-- 不引入官方 SDK（见 §1.4）
+- Realtime/WebSocket 不纳入本 PRD 范围（见 §8 问题 5 决策，继续走现有 WebSocket 旁路）
+- 不引入官方 SDK。与 SDK 迁移的顺序结论：**先 IR 后 SDK**——IR 边界定清后，把 Outbound 内部实现换成官方 SDK 是局部替换，不影响上层；反之先做 SDK 迁移，接口改造会做两遍
 
 
 
@@ -193,7 +179,7 @@ Chat 作为 IR 底座缺三类概念，必须在超集中补齐，且不能塞�
 
 | 概念        | 各协议来源                                                                                                                                                                                                                           | 承载要求                                |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| 思考签名      | Claude thinking block 的 signature（`domain/shared/claude.go`）；Gemini `thoughtSignature`（`domain/shared/gemini.go`，含 `GetThoughtSignature()`）；Responses reasoning item 签名（`domain/shared/openai_response.go`、`openai_request.go`） | 与所属内容块绑定，不可展平为全局字段。详见阶段 2/4/6       |
+| 思考签名      | Claude thinking block 的 signature（`domain/shared/claude.go`）；Gemini `thoughtSignature`（`domain/shared/gemini.go`，含 `GetThoughtSignature()`，可挂在含 functionCall 在内的任意 part 上）；Responses reasoning item 的 `encrypted_content`（`domain/shared/openai_response.go:404` 仅定义、全仓库零读写，属死字段；请求侧输入结构 `responsesReasoningInput` 无签名字段）；Chat 侧现有私有扩展 `reasoning_signature`（`openai_request.go:304`，非 OpenAI 官方字段，是本网关的事实签名载体） | 与所属内容块绑定，不可展平为全局字段（同协议 bit 级保真所需），工具调用块同样可挂签名（借鉴 axonhub 三层方案，见阶段 4）。跨协议按提供者识别过滤（阶段 6） |
 | 服务端工具调用计数 | Responses 内建工具（`relay/common/relay_info.go:382-388` 初始化，`channel/openai/relay_responses.go:81,145,149` 递增）；Claude/Gemini 走 gin 字符串键 `claude_web_search_requests`、`gemini_web_search_requests`                                   | 升为 IR 一等字段，替代 gin context 旁路。详见阶段 7 |
 | 工具名代理上下文  | `OpenAIWireToolContext`（挂在 `RelayInfo.OpenAIResponsesToolContext`），负责 namespace 扁平化与还原、custom tool 代理                                                                                                                           | 迁入 IR 会话态，不再挂 RelayInfo。详见阶段 1      |
 
@@ -222,7 +208,7 @@ Chat 作为 IR 底座缺三类概念，必须在超集中补齐，且不能塞�
 
 **类型 B：语义标记丢失。**
 
-即 D4。`FinalRequestRelayFormat` 漏设导致 usage 按错误语义计算，AWS Bedrock 的 Claude 模型缓存计费偏差。
+即 D4。`FinalRequestRelayFormat` 漏设导致 usage 按错误语义计算，AWS Bedrock 的 Claude 模型缓存计费偏差（定性存疑：基准未经验证，不能默认直连 Claude 渠道为正确范本，见 D4 与阶段 0.1）。
 
 ### 4.2 五条强制原则
 
@@ -259,33 +245,34 @@ Chat 作为 IR 底座缺三类概念，必须在超集中补齐，且不能塞�
 
 ## 5. 分阶段实施
 
-每阶段独立可验证、可回滚，一阶段一 PR。阶段 1–8 按协议对推进，阶段 9 按协议做错误专项，阶段 0 与 10 为前置和收尾。
+每阶段独立可验证、一阶段一 PR 合入主干。阶段 1–8 按协议对推进，阶段 9 按协议做错误专项，阶段 0 与 10 为前置和收尾。
+
+**发布约束（合入 ≠ 发布）：**阶段 1–7 的代码逐阶段合入主干，但**生产版本不在中间态发布**——由于 D3（工具静默丢弃）与跨协议工具计数缺失当前互相掩盖（见阶段 7 问题 1），阶段 1 修掉 D3 后若单独上线会出现「工具真实执行但漏计费」窗口。因此阶段 1–7 完成前只合不发布，待阶段 7（计数统一）就绪后作为一个大版本一次性上线；阶段 8 起恢复逐阶段发布。代价是发布窗口较长、整体回滚粒度变粗，作为对计费正确性的让步被显式接受。
 
 ### 阶段 0：基础准备与存量 bug 修复
 
-本阶段不引入 IR 行为变更，目标是「把地基和安全网准备好，把已知的存量 bug 先修掉」。三个子阶段可并行。
+本阶段不引入 IR 行为变更，目标是「把地基和安全网准备好」。0.2 与 0.3 可并行；0.1 的存量 bug 修复依赖 0.3 的对拍框架（D4 定性疑点需先以真实数字确认基准），顺延执行。
 
-#### 0.1 修存量 bug（与 IR 无关，先修先发）
+#### 0.1 修存量 bug（依赖 0.3 对拍框架，顺延执行）
 
 **bug 1：AWS Bedrock 的 Claude 模型缓存计费偏差（D4）**
 
-现状：`channel/aws/relay_aws.go` 复用 `claude.HandleClaudeResponseData` 等函数处理响应，但不设置 `info.FinalRequestRelayFormat`，导致 `domain/billing/usage.go:108` 的 `isClaudeUsageSemantic` 为 false，Anthropic 语义的 usage 被按 OpenAI 语义计算——缓存 token 被从基础 token 中错误减去。
+现状：AWS 的 `awsHandler`/`awsStreamHandler` 复用 `claude.HandleClaudeResponseData` 等函数处理响应，但绕过了 `claude.Adaptor.DoResponse`，不设置 `info.FinalRequestRelayFormat`，导致 `domain/billing/usage.go:108` 的 `isClaudeUsageSemantic` 为 false。
 
-修法：AWS 渠道的 `DoResponse` 补设 `info.FinalRequestRelayFormat = relayconstant.RelayFormatClaude`，与 `channel/claude/adaptor.go:121` 对齐。同时排查 Vertex 的 Claude 路径是否有同类问题（Vertex 有 `ConvertClaudeRequest` 但未确认是否复用 claude 包处理函数，需先查证）。
+**为什么顺延（而不是先修先发）：**「谁是正确基准」未经验证——设置标记的 Claude 直连路径，其 usage 已被 `ClaudeUsageToOpenAIUsage` 归一为含缓存的 OpenAI 语义，与 `isClaudeUsageSemantic=true` 公式「不含缓存」的假设矛盾，直连渠道自身可能存在缓存 token 双计（见 D4 定性疑点）。在用对拍框架以真实数字确认基准之前就「对齐直连渠道」，存在把潜在双计复制到 AWS 的风险。因此本 bug 的修复放在 0.3 对拍框架就位之后执行。
 
-这是打补丁而非根治——根治在阶段 8（P1 让语义由边契约保证）。但存量偏差影响真实计费，不能等到阶段 8。
+修法（对拍确认基准后）：
 
-**bug 2：BaseURL 双重版本前缀**
+- 若基准为「不减」语义：仅在 `awsHandler`/`awsStreamHandler`（`channel/aws/relay_aws.go`）补设 `info.FinalRequestRelayFormat = relayconstant.RelayFormatClaude`。**不得**在 `aws/adaptor.go` 的 `DoResponse` 顶部统一设置——那会波及 Nova 分支（OpenAI 语义 usage）与 ClientModeApiKey 分支（经 `claude.Adaptor.DoResponse` 已设置）。
+- 若对拍发现直连渠道本身双计：定性反转，改为修 Claude 路径的计费公式与 usage 语义匹配问题（届时独立评估影响面，含已落账数据的处理）。
+- 同步梳理 `PostClaudeConsumeQuota`（`domain/billing/quota.go:304`）基于 `ChannelType` 的独立语义判定与该标记的关系，两处判定在阶段 8 前不得出现语义分叉。
 
-来自 SDK 迁移 PRD 的描述：用户填写带版本前缀的 BaseURL（如 `https://ark.cn-beijing.volces.com/api/v3`）后，拼出的上游 URL 变成 `.../api/v3/v1/chat/completions`。
-
-**本次未独立验证，需先复现再修。** 若复现失败则移出本 PRD。
+这是打补丁而非根治——根治在阶段 8（P1 让语义由边契约保证）。
 
 **验收**：
 
-- AWS Claude 渠道缓存计费用例（含 `cache_read_input_tokens` > 0 场景）结果与直连 Claude 渠道一致
+- 阶段 0.3 对拍框架先产出 Claude 直连渠道（含 `cache_read_input_tokens` > 0 场景）的基准结论，本 bug 按结论方向修复
 - `go test ./internal/domain/billing/... ./internal/relay/channel/aws/...`
-- BaseURL 修复后，带版本前缀与不带版本前缀的渠道配置都能拼出正确 URL
 
 
 
@@ -312,12 +299,12 @@ internal/relay/ir/
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ir.Request`     | `shared.GeneralOpenAIRequest` 为底，补 §3.4 三类概念                                                                                                                       |
 | `ir.Usage`       | `shared.Usage` 为底（已含 `PromptTokensDetails.CachedTokens`/`CachedCreationTokens`/`ClaudeCacheCreation5mTokens`/`ClaudeCacheCreation1hTokens`、`AudioTokens`），补服务端工具计数 |
-| `ir.Error`       | `shared.NookMuxError` 的 `RelayError any` 收敛为强类型（阶段 9 展开）                                                                                                           |
+| `ir.Error`       | `shared.NookMuxError` 的 `RelayError any` 收敛——以 Chat 错误为中枢（code + message + status_code），跨协议转换只保证这三者双向可转，不做协议特化的强类型展开（见阶段 9）                                                                                                           |
 | `ir.ToolContext` | `convert.OpenAIWireToolContext` 平移                                                                                                                                 |
-| `ir.Capability`  | 新增，D3 的解药                                                                                                                                                          |
+| `ir.Capability`  | 新增，D3 的解药（承载降级记录，供后台日志与计费决策使用，不向客户端暴露）                                                                                                                                                          |
 
 
-`capability.go` 是本次新增的核心概念：每条转换边在发生能力降级时（如 `web_search` 转 Chat）必须写入降级记录，供响应标注、日志和计费决策使用。这是 §2.2 第 1 点「有损点显式化」的落地载体。
+`capability.go` 是本次新增的核心概念：每条转换边在发生能力降级时（如签名跨协议过滤丢弃、内建工具拒绝等）写入降级记录，供后台日志和计费决策使用。降级信号不向客户端响应暴露（不加响应头、不加响应体扩展字段），降级的实际语义写入用户文档。这是 §2.2 第 1 点「有损点显式化」的落地载体。
 
 **验收**：
 
@@ -341,6 +328,7 @@ internal/relay/ir/
 
 - 三个框架各自能跑通至少一条现有链路（建议用 Chat↔Responses，因其既有测试最完整）
 - 对拍框架能检出人为注入的偏差（故意改一个倍率，对拍必须失败）
+- 框架就位后立即执行 D4 基准验证：对 Claude 直连渠道含缓存场景做计费对拍，产出「双计/正常」结论，据此落地 0.1 的修复方向
 
 
 
@@ -363,7 +351,7 @@ internal/relay/ir/
 
 **问题。** 两点：一是转换器虽有单点入口但产出的是 Chat DTO 而非 IR，无法被其他协议复用；二是 D3 的静默丢弃。
 
-**目标。** 把 `wire/convert` 与 `wire/stream` 收口为 Inbound/Outbound 形态，产出 IR 而非 Chat DTO。`OpenAIWireToolContext` 迁入 `ir.ToolContext`。`web_search` / `image_generation` 改为按能力协商处理：目标协议支持则映射，不支持则写入 `ir.Capability` 降级记录（阶段 7 定义完整矩阵，本阶段只要求不再静默丢弃）。
+**目标。** 把 `wire/convert` 与 `wire/stream` 收口为 Inbound/Outbound 形态，产出 IR 而非 Chat DTO。`OpenAIWireToolContext` 迁入 `ir.ToolContext`。内建工具按能力矩阵处置（详见阶段 7 矩阵）：`web_search`/`web_search_preview` 在 Claude/Gemini 上游映射到各自原生搜索能力（Claude 的 `ServerToolUse.WebSearchRequests`、Gemini 的 Google Search grounding），在 Chat 上游按渠道配置降级为函数工具或拒绝；`file_search`/`image_generation` 在无等价能力的上游直接拒绝请求（返回 400/404，明确告知「该上游不支持此内建工具」），不再静默丢弃，也不降级为函数工具（见 §8 问题 4 决策）。其他能映射的内建工具（如 `apply_patch` 走 generic custom tool 通道）继续按现状映射。降级行为（含签名跨协议过滤丢弃、其他能力丢失）仅在后台日志记录，不向客户端暴露响应头/响应体扩展字段；降级的实际语义写入用户文档（见 §8 问题 2 决策）。
 
 **验收**：
 
@@ -410,7 +398,8 @@ internal/relay/ir/
 **验收**：
 
 - 现有 Claude + Responses 行为不回退（用现网请求样本对拍）
-- 内建工具按能力协商处理而非静默丢弃
+- 内建工具按能力矩阵处置：`web_search`/`web_search_preview` 在 Claude/Gemini 上游映射到原生搜索能力，在 Chat 上游按渠道配置降级或拒绝；`file_search`/`image_generation` 在无等价能力上游返回 400/404 错误不再静默丢弃；其他内建工具（如 `apply_patch`）继续按现状映射
+- 降级事件（含工具拒绝、签名过滤丢弃等）写入后台日志，不向客户端暴露响应头/响应体扩展字段
 - 删除的胶水代码无残留引用：`rg "writeClaudeChatChunkAsResponsesEvent|ensureClaudeResponsesStreamConverter|writeClaudeResponsesFinalEvent" internal/` 无输出
 - `go test ./internal/relay/...`
 
@@ -420,18 +409,28 @@ internal/relay/ir/
 
 **现状。** 去程 `helper.GeminiToOpenAIRequest`，回程 `helper.ResponseOpenAI2Gemini`、`helper.StreamResponseOpenAI2Gemini`。流式状态在 `RelayInfo.GeminiConvertInfo`，辅助函数 `ensureGeminiConvertInfo`、`ensureGeminiChoiceToolCallState`。
 
-思考签名现状最脏：`channel/gemini/relay_gemini.go` 有一个绕行常量（值为 `context_engineering_is_the_way_to_go`）和 `parseFunctionCallSignature`，在渠道类型为 Gemini 或请求显式要求时附加签名。这是既有 workaround，不是设计。
+思考签名现状最脏：`channel/gemini/relay_gemini.go:32` 有一个绕行常量 `thoughtSignatureBypassValue`（值为 `context_engineering_is_the_way_to_go`，出处已查证为参考项目 axonhub `llm/transformer/gemini/thinking_signature.go:10`，依据 Gemini 3 迁移文档 `https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models` 的「function call 没签名给默认值」实践，非 Google 官方文档明文推荐的占位符）和 `parseFunctionCallThoughtSignature`，仅在渠道类型为 Gemini/VertexAi **且**客户端显式传 `extra_body.google.thought_signature` 时，把签名附加到 assistant 消息的 functionCall/文本 part。这是既有 workaround，不是设计。
 
 Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":{...}}` 下发，`domain/shared/gemini.go:558` 的 `GeminiChatResponse.Error` 字段专门保留这个载荷供 handler 识别真实错误。
 
 **问题。** 除 §3.4 的签名承载缺失外，还有 D5 的一半：Gemini 客户端收到 OpenAI 格式错误（本阶段只做转换层，错误出口在阶段 9.3 处理，但本阶段需确保 IR 能承载 Gemini 错误载荷）。
 
-**目标。** Gemini Inbound/Outbound 实现，`GeminiConvertInfo` 状态机迁入转换器内部。`thoughtSignature` 按 §3.4 承载，清理绕行常量与 workaround——签名应由 IR 正常传递，不需要魔法值。HTTP 200 携带错误载荷的识别逻辑保留，纳入 Outbound 的响应解析。
+**目标。** Gemini Inbound/Outbound 实现，`GeminiConvertInfo` 状态机迁入转换器内部。`thoughtSignature` 按 §3.4 承载，并补齐工具调用级签名（借鉴 axonhub 三层方案）：
+
+1. **IR 层**：签名元数据可挂到工具调用块（对应 axonhub `ToolCalls[j].TransformerMetadata["google_thought_signature"]`），与消息级签名并存；跨提供者识别器（`GuessSignatureProvider` 等价物）放本层 `signature.go`，各协议 Outbound 复用——**识别策略为正向白名单 + unknown 丢弃**：只转发被正向识别为目标提供者的签名，识别不出（unknown）一律丢弃。此策略安全等价于一律丢弃（误判只丢不漏），依据为 axonhub `shared/README.md:74`；目的是防止下游模型尝试解密别家 blob 触发 `invalid_request_body` / `encrypted content could not be verified` 硬失败。
+2. **Chat DTO 层**：tool_call 仿照现有 `reasoning_signature` 私有扩展的做法，增加签名字段（对应 axonhub `extra_content.google.thought_signature`），使「Chat 客户端 + Gemini 上游」的多轮 function calling 能靠客户端回传签名走通，不再依赖魔法值；回程 Gemini→Chat 时从 functionCall part 提取签名写入该字段。
+3. **bypass 值的编码对齐（落地必读）**：现状 `thoughtSignatureBypassValue` 经 `strconv.Quote` 包成带引号的 `json.RawMessage`（`relay_gemini.go:131`），**未做 base64 编码**；axonhub 同名常量是 `base64.StdEncoding.EncodeToString([]byte("context_engineering_is_the_way_to_go"))`（真 base64）。引入识别器前必须先统一 bypass 的编码方式——否则自家 bypass 值会被自家识别器判定为 `unknown`（非合法标准 base64）而丢弃，bypass 失效。统一为真 base64 编码（对齐 axonhub），识别器无需对 bypass 特判。
+4. **Anthropic 兼容出站例外**：axonhub 对非 Anthropic 官方平台（OpenRouter 等 Anthropic 兼容端点）的出站**不做解码、原样转发**（`shared/README.md:76`）。本仓库 Claude Outbound 需复用此例外——已有雏形（`channel/openai/adaptor.go:220` 的 OpenRouter Anthropic 端点 Bearer 认证特判），实施时扩展为「OpenRouter 等 Anthropic 兼容平台跳过签名过滤」。
+5. **Gemini 上游未给签名也兜底**：除「客户端未回传签名时兜底」外，**Gemini Outbound 在上游本轮响应未携带 thoughtSignature、但本轮产生了 function call 时也补 bypass 值**（对齐 axonhub `gemini/outbound_convert.go:434-444`：tool call 存在但签名缺失即补默认值，引用同上 Gemini 3 迁移文档）。理由：Gemini 3 多轮 function calling 校验链要求 assistant turn 携带签名，缺签名会在下一轮报 `Function call is missing a thought_signature`，补 bypass 是兜住模型不报错，不是伪造凭据。
+
+HTTP 200 携带错误载荷的识别逻辑保留，纳入 Outbound 的响应解析。
 
 **验收**：
 
 - `Gemini→IR→Gemini` bit 级保真，含 `thoughtSignature`
-- 绕行常量删除后签名正常传递：`rg "context_engineering_is_the_way_to_go" internal/` 无输出
+- Chat 客户端 + Gemini 上游的多轮 function calling：工具调用签名经 Chat DTO 私有字段往返传递；bypass 值经真 base64 编码对齐，能被识别器放行
+- Gemini 上游本轮产生 function call 但未回传签名时，Outbound 补 bypass 值（与 axonhub 行为对齐），下一轮不触发 `missing thought_signature` 400
+- Anthropic 兼容出站（OpenRouter 等）跳过签名过滤，原样转发
 - HTTP 200 + error 载荷仍被正确识别为上游错误（不能被当成正常响应计费）
 - Gemini audio token 计费不变（`GetGeminiInputAudioPricePerMillionTokens` 路径对拍）
 - `go test ./internal/relay/channel/gemini/... ./internal/relay/helper/...`
@@ -440,7 +439,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 ### 阶段 5：Responses ↔ Gemini
 
-**现状。** 不通。`channel/gemini/adaptor.go:228` 与 `channel/vertex/adaptor.go:299` 均为 `not implemented`（D1）。
+**现状。** 不通。`channel/gemini/adaptor.go:229` 与 `channel/vertex/adaptor.go:300` 均为 `not implemented`（D1）。
 
 **问题。** 零件齐备但无人组合，同阶段 3 的成因。
 
@@ -460,14 +459,20 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 **现状。** 部分通且实现分散：Gemini 客户端 → Claude 上游在 `channel/claude/adaptor.go:26` 经 `helper.GeminiToOpenAIRequest`；Claude 上游 → Gemini 客户端在 `channel/claude/relay_claude.go:1006-1027`（流式）与 `:1220-1229`（非流式）。反向（Claude 客户端 → Gemini 上游）在 `channel/gemini/adaptor.go:46` 经 `helper.ClaudeToOpenAIRequest`。
 
-**问题。** 这是唯一一条两端都非 Chat 的边，签名跨协议问题在此暴露：Gemini 的 `thoughtSignature` 与 Claude thinking block 的 signature 是两套互不兼容的上游凭据，不能互相转换。现状没有明确策略。
+签名现状是**原值互塞**：Gemini 的 `thoughtSignature` 经 Chat 的 `reasoning_signature` 中转后塞进 Claude thinking block 的 `signature`，反向同理（每条消息只保留一个非空签名，多块场景有信息损失）。现有测试固化了这一透传行为（`claude/adaptor_test.go`、`gemini/adaptor_test.go` 均断言签名原样到达对方签名字段）。
 
-**目标。** 由阶段 2 与阶段 4 的边组合得到。签名跨协议按「丢弃并记入 `ir.Capability`」处理，**严禁伪造**——把 Gemini 签名塞进 Claude 的 signature 字段会导致上游拒绝请求或推理链断裂。删除 `relay_claude.go` 的 Gemini 分支胶水。
+**问题。** 这是唯一一条两端都非 Chat 的边。两套签名是互不兼容的上游凭据，无任何厂商规范定义跨厂商签名语义——互塞的签名对目标上游只是无效字节（被拒绝或被忽略，行为未定），属已知的脏行为，现有测试把脏行为固化成了契约。
+
+**决策：按提供者识别过滤。** 跨协议边只转发「正向识别为目标提供者」的签名，其余（含 unknown）丢弃并记 `ir.Capability`（本决策借鉴 axonhub `GuessSignatureProvider` 启发式：OpenAI `gAAA*` 前缀 / Anthropic `EqQ*` 系前缀 / Gemini base64+protobuf 特征；识别器放 IR 层 `signature.go`，各协议 Outbound 复用，正向白名单 + unknown 丢弃，安全等价于一律丢弃，依据 axonhub `shared/README.md:74`）。这是**行为翻转**——从现状的互塞翻转为按归属过滤：自家签名自家协议内保真，跨协议不再互塞无效凭据。Anthropic 兼容出站（OpenRouter 等）跳过过滤、原样转发，对齐 axonhub 例外（`shared/README.md:76`）。
+
+**目标。** 由阶段 2 与阶段 4 的边组合得到。签名按上述过滤策略处理，识别器与承载结构落 IR。删除 `relay_claude.go` 的 Gemini 分支胶水。
 
 **验收**：
 
 - 双向可用（流式与非流式）
-- 签名不伪造：`Gemini→IR→Claude` 与 `Claude→IR→Gemini` 用例断言目标协议签名字段为空且 `ir.Capability` 有降级记录
+- 过滤行为正确：`Gemini→IR→Claude` 与 `Claude→IR→Gemini` 用例断言——目标提供者自己的签名原样透传，非目标提供者签名被丢弃且 `ir.Capability` 有降级记录；**现有断言互塞的测试同步翻转为断言过滤**
+- 同协议往返 bit 级保真（多 thinking 块/多 part 的签名不丢失；多块合并为单签名的信息损失仅存在于跨协议路径，维持现状）
+- 识别器对三家真实签名样本（含多轮工具调用）识别率验证通过，未识别（unknown）一律丢弃
 - 删除的胶水无残留引用
 - `go test ./internal/relay/...`
 
@@ -501,8 +506,8 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 | 客户端声明 → 上游协议       | Chat                    | Claude                  | Gemini                     | Responses |
 | ------------------ | ----------------------- | ----------------------- | -------------------------- | --------- |
 | `web_search`       | 降级为函数工具（客户端执行）或拒绝，按渠道配置 | 映射 Claude 原生 web search | 映射 Google Search grounding | 原生        |
-| `file_search`      | 降级或拒绝                   | 无对应能力，降级或拒绝             | 无对应能力，降级或拒绝                | 原生        |
-| `image_generation` | 降级或拒绝                   | 无对应能力                   | 无对应能力                      | 原生        |
+| `file_search`      | 拒绝                      | 拒绝                      | 拒绝（注：Gemini 有独立 File Search API，未来可另立 PRD 接入） | 原生        |
+| `image_generation` | 拒绝                      | 拒绝                      | 拒绝                         | 原生        |
 
 
 矩阵每格的最终结论以阶段执行时查证的上游官方文档为准，上表是待验证草案。
@@ -510,7 +515,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 **验收**：
 
 - 矩阵每格有测试用例
-- 跨协议组合的工具计数不丢：Responses 客户端 + Claude 上游声明 `web_search`，若映射成功则按 Claude 单价计费（对拍），若降级则有 `ir.Capability` 记录且不计工具费
+- 跨协议组合的工具计数不丢：Responses 客户端 + Claude 上游声明 `web_search` 映射到 Claude 原生 web search，按 Claude 单价计费（对拍）；`file_search`/`image_generation` 在无等价能力上游直接 400 不计费
 - gin 字符串键旁路清除：`rg "claude_web_search_requests|gemini_web_search_requests" internal/` 仅在兼容层出现或无输出
 - `go test ./internal/domain/billing/... ./internal/relay/...`
 
@@ -524,7 +529,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 **目标。** 逐条落地 §4.2 的 P1–P5，并处理 §4.3 的三处耦合：
 
-1. **删除** `isClaudeUsageSemantic` **分支**（`usage.go:108` 及其在 `BuildContextPricingUsage` 的传参）。前置条件是所有 Outbound 已按 P1 归一 usage 语义，届时该分支恒为一个值，属死代码。这同时根治 D4——不再依赖渠道记得打标。
+1. **删除** `isClaudeUsageSemantic` **分支**（`usage.go:108` 及其在 `BuildContextPricingUsage` 的传参，连同 `PostClaudeConsumeQuota` 中 `quota.go:304` 基于 `ChannelType` 的独立同名判定）。前置条件是所有 Outbound 已按 P1 归一 usage 语义，届时这些分支恒为一个值，属死代码。这同时根治 D4——不再依赖渠道记得打标。
 2. **重新定义空 usage 重试判定**（`quota.go:33-38`）。从「转换链长度 > 1」改为「非上游原生直通」，复用 §3.3 的直通判定。
 3. **原始请求体快照独立化**（P3）。确保 token 估算与日志读的是用户原始输入，不受 `setTemporaryRequestBody` 窗口影响。
 
@@ -542,9 +547,17 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 错误路径与转换路径同层但独立收口，按协议拆三个子阶段。共同前提：`ir.Error`（阶段 0.2 已定义骨架）作为唯一内部错误模型，各协议 Inbound 负责 IR→客户端格式，Outbound 负责上游格式→IR。
 
+**错误模型策略：以 Chat 错误为中枢，跨协议只保 code+message。** `ir.Error` 不做协议特化的强类型展开——三家协议的错误体结构虽有差异（OpenAI 的 `error.{message,type,code}`、Claude 的 `error.{type,message}` 且 `type` 是固定枚举、Gemini 的 `error.{code,message,status}` 且 `status` 是 gRPC 枚举），但网关层需要跨协议传递的核心信息只有 HTTP 状态码、错误码、错误消息三者。`ir.Error` 以 Chat 错误结构（`message` + `code` + `http_status`）为内部表示，各协议 Inbound/Outbound 负责自家枚举与这三者的双向映射：
+
+- Chat ↔ IR：直通（Chat 是中枢）
+- Claude ↔ IR：`type` 枚举 ↔ `code`，`message` 直传
+- Gemini ↔ IR：`status` 枚举 ↔ `code`（上游已有 status 时透传，无则按 HTTP 码逆射，见 9.3），`message` 直传
+
+不做「把 Claude 的 `type` 完整还原给 Gemini 客户端」之类的协议特化还原——跨协议场景下客户端拿到的是目标协议合法的错误体（含可读 message），足够定位问题。
+
 三家共有的两个问题先说清楚：
 
-**共有问题 1：出口分发重复两处。** `httpapi/controller/relay/relay.go:98-110` 与 `httpapi/middleware/performance.go:23-31` 各有一套按格式分发的 switch。改一处漏另一处。
+**共有问题 1：出口分发重复两处。** `httpapi/controller/relay/relay.go:98-110` 按 `RelayFormat` 分发；`httpapi/middleware/performance.go:20-35` 按 URL 前缀 `/v1/messages` 分发。两处判定依据不同，仅靠路径约定保持一致，改一处漏另一处。
 
 **共有问题 2：脱敏分散三处。** `domain/shared/error.go` 的 `ToOpenAIError`、`ToClaudeError` 各调一次 `MaskSensitiveInfoWithExemptions`，`relay/helper/error.go:47` 的 `ClaudeErrorWrapper` 另有一套手写替换逻辑（把含 post/dial/http 的错误文本替换为「请求上游地址失败」）。
 
@@ -602,7 +615,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 `status` 字段完全缺失，`code` 类型从数字变字符串。按 Gemini 规范解析的客户端会拿到空 `status` 或解析失败。这不是「不够优雅」，是协议不兼容。
 
-**目标。** 补齐 Gemini 错误出口：新增 `ToGeminiError()`（或 IR 化后的 Gemini Inbound `TransformError`），启用 `ErrorTypeGeminiError`，出口分发增加 Gemini 分支。`status` 字段需按 HTTP 状态码映射到 Google API 标准 status 枚举（`INVALID_ARGUMENT`、`RESOURCE_EXHAUSTED`、`UNAVAILABLE`、`INTERNAL` 等），映射表需查证 Google API 官方文档后确定。HTTP 200 携带错误载荷的识别逻辑纳入 Gemini Outbound。
+**目标。** 补齐 Gemini 错误出口：新增 `ToGeminiError()`（或 IR 化后的 Gemini Inbound `TransformError`），启用 `ErrorTypeGeminiError`，出口分发增加 Gemini 分支。`status` 字段映射策略（见 §8 问题 1 决策）：上游本来就是 Google API（响应体含 `error.status`）时原样透传 status 字符串；只有上游是 OpenAI/Anthropic 错误体（无 `error.status`）时才按 HTTP 状态码用映射表逆射。逆射映射表依据 Google API 统一错误模型规范（17 个 gRPC status 枚举，REST 多对一映射到 HTTP），本阶段实施时写入代码。HTTP 200 携带错误载荷的识别逻辑纳入 Gemini Outbound。
 
 **验收**：
 
@@ -622,17 +635,18 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 **目标。** 三件事：
 
-1. **实机矩阵验证。** 每个 Inbound × 每个 Outbound 组合，流式与非流式各跑一遍真实请求。矩阵规模为 4 × 4 × 2 = 32 个组合（Chat/Responses/Claude/Gemini 四种客户端格式 × 四种上游协议 × 流式/非流式），逐格记录结果。
-2. **旧代码物理删除。** 前置是 deprecated 观察期通过。删除清单：`relay/helper/convert.go` 的协议转换函数、各渠道 `Convert*Request` 的冗余实现、各渠道 `DoResponse` 的四路 switch、`wire/auto_convert.go` 的快照恢复机制（若 IR 化后不再需要覆写请求体）。
+1. **实机矩阵验证。** 每个 Inbound × 每个 Outbound 组合，流式与非流式各跑一遍真实请求。矩阵规模为 4 × 4 × 2 = 32 个组合（Chat/Responses/Claude/Gemini 四种客户端格式 × 四种上游协议 × 流式/非流式），逐格记录结果。`file_search`/`image_generation` 声明到无等价能力上游的组合直接返回 400（见阶段 1 决策），单独跑一遍确认错误码与消息即可，不纳入转换矩阵。
+2. **旧代码残留扫描。** 旧代码不保留、不设 deprecated 观察期——各阶段重写完成时立即物理删除该阶段涉及的旧代码（`relay/helper/convert.go` 的协议转换函数、各渠道 `Convert*Request` 的冗余实现、各渠道 `DoResponse` 的四路 switch、`wire/auto_convert.go` 的快照恢复机制等随对应阶段删除）。阶段 10 只做全仓库残留扫描，确认无遗漏。
 3. **文档同步。** `internal/relay/AGENTS.md` 的单点入口规则从「chat↔responses 必须走 `convert.NewConverter`」推广为「所有协议转换必须走 IR 边」；依赖方向段落按新包结构更新；`docs/` 下涉及协议转换的开发文档同步。
 
-**Realtime 评估。** `relay/core/websocket.go` 的 `WssHelper` 目前是独立入口，不走 adaptor 的 Convert 方法，计费走 `PreWssConsumeQuota`/`PostWssConsumeQuota`。WebSocket 的双向流模型与 IR 的单向流模型差异较大，本阶段只做评估并给出结论，不强制纳入。倾向暂缓，保留旁路。
+**Realtime 处置。** `relay/core/websocket.go` 的 `WssHelper` 目前是独立入口，不走 adaptor 的 Convert 方法，计费走 `PreWssConsumeQuota`/`PostWssConsumeQuota`。**结论（见 §8 问题 5 决策）：Realtime 不纳入本 PRD 范围**——WebSocket 的双向流模型与 IR 的请求-响应模型不匹配，纳入会让 IR 抽象复杂度大幅上升。Realtime 继续走现有 WebSocket 旁路，不在 IR 边抽象内；未来如需统一另立 PRD。本阶段不涉及 Realtime 代码改动。
 
 **验收**：
 
-- 32 格实机矩阵全绿，逐格留记录（含请求样本与响应快照）
+- 32 格实机矩阵全绿（拒绝路径单独记录），逐格留记录（含请求样本与响应快照）
 - `go build ./...` 与 `go test ./...` 全绿
-- 旧代码删除后无残留引用，`gofmt -l` 与 `go vet ./...` 干净
+- 旧代码残留扫描无遗漏：`rg "relay/helper/convert\.|ConvertClaudeRequest|ConvertGeminiRequest|ConvertOpenAIRequest|ConvertOpenAIResponsesRequest" internal/` 仅命中 IR 边或无输出
+- `gofmt -l` 与 `go vet ./...` 干净
 - `internal/relay/AGENTS.md` 与代码一致
 - Realtime 处置结论已写入本文档
 
@@ -644,12 +658,12 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 | 风险                      | 影响             | 缓解                                                                                   |
 | ----------------------- | -------------- | ------------------------------------------------------------------------------------ |
 | 流式状态机迁移导致 chunk 顺序或事件错乱 | 客户端流式输出异常      | 每阶段流式 golden 测试（阶段 0.3 框架 2）；复用既有 `wire/stream` 实现而非重写（§2.2 第 3 点）                   |
-| 思考签名跨协议保真失败             | 上游拒绝后续请求，推理链断裂 | 阶段 2/4 要求同协议 bit 级 roundtrip；阶段 6 要求异构组合明确丢弃并记录，严禁伪造                                 |
+| 思考签名跨协议保真失败             | 上游拒绝后续请求，推理链断裂 | 阶段 2/4 要求同协议 bit 级 roundtrip；阶段 6 跨协议按提供者识别过滤（正向白名单，误判只丢不漏），丢弃记 `ir.Capability`；上线前用三家真实签名样本验证识别率 |
 | 计费对拍覆盖不全导致偏差            | 直接资金影响         | 阶段 0.3 先建对拍框架再动转换代码；阶段 8 全组合对拍；上线分渠道灰度                                               |
 | 同协议直通被 IR 往返破坏          | 延迟上升，保真风险      | §3.3 直通判定，同协议跳过 IR                                                                   |
-| 阶段 1 修掉 D3 后暴露漏计费       | 服务端工具漏计费       | D3 与工具计数缺失当前互相掩盖（阶段 7 问题 1），阶段 1 与阶段 7 之间不得上线中间态                                     |
+| 阶段 1 修掉 D3 后暴露漏计费       | 服务端工具漏计费       | D3 与工具计数缺失当前互相掩盖（阶段 7 问题 1）；阶段 1–7 代码逐阶段合入主干但生产发布整体压至阶段 7 完成后一次性上线（见 §5 发布约束） |
 | 空 usage 重试判定全局失效        | 上游异常时不再重试      | 阶段 8 明确改为直通判定，并补用例覆盖两种分支                                                             |
-| 存量线上用户回归                | 服务中断           | deprecated 过渡 + feature flag 分渠道灰度，不硬删（对齐参考 PRD 的删除策略）                               |
+| 存量线上用户回归                | 服务中断           | 旧代码随各阶段重写完成时立即删除（不保留 deprecated 观察期）；阶段 1–7 生产发布整体压至阶段 7 完成后一次性上线（见 §5 发布约束），给存量用户一个完整迁移窗口 |
 | IR 表达力不足                | 上游能力丢失         | Chat 超集 + §3.4 三类概念显式承载；`ir.Capability` 记录降级。**禁止**用通用 `extra map` 承载已知协议概念，避免退化为垃圾桶 |
 
 
@@ -660,7 +674,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 - 全部协议互转组合可用，无 `not implemented` 残留
 - 每个 Inbound × Outbound 组合有 roundtrip 与流式 golden 测试
 - 内建工具能力矩阵文档化，每格结论明确，无静默丢弃
-- 思考签名同协议往返 bit 级保真，跨协议行为明确且不伪造
+- 思考签名同协议往返 bit 级保真，跨协议按提供者识别过滤（非目标提供者签名丢弃并记 `ir.Capability`）
 - 三家协议错误出口符合各自规范，Gemini 客户端收到 Gemini 格式错误
 - 计费对拍全绿；计费取数不依赖转换后请求体；`isClaudeUsageSemantic` 类语义分支已删除
 - 旧协议转换与胶水代码物理删除
@@ -671,10 +685,7 @@ Gemini 还有一个特殊性：上游会把 429/5xx 转成 HTTP 200 + `{"error":
 
 ## 8. 待决问题
 
-1. **Gemini status 枚举映射表**：HTTP 状态码 → Google API status（`INVALID_ARGUMENT`/`RESOURCE_EXHAUSTED`/…）的映射需查 Google API 官方文档确定，阶段 9.3 执行前完成。
-2. **能力降级的对外可观测方式**：`ir.Capability` 的降级记录如何告知客户端——响应扩展字段、响应头、仅记日志，或组合。需产品决策，影响阶段 1 与阶段 7。
-3. **签名跨协议丢弃是否需提示客户端**：避免客户端静默丢失推理链而不自知。同上属产品决策。
-4. `file_search` **/** `image_generation` **在非 Responses 上游的处置**：降级为函数工具（客户端无法真正执行文件检索）还是直接拒绝请求。倾向拒绝，但需确认是否有存量用户依赖当前的静默丢弃行为。
-5. **Realtime 是否纳入 IR**：阶段 10 评估，倾向暂缓。
-6. **BaseURL 双重前缀 bug 是否真实存在**：阶段 0.1 需先复现，未复现则移出本 PRD。
+1. **BaseURL 双重前缀 bug 是否真实存在**：原始描述来自一份已不在仓库内的 SDK 迁移 PRD，无原始依据可核对，已移出本 PRD 范围；若后续有用户报告，独立立项复现再修。
+
+2. **D4 计费基准疑点**：`isClaudeUsageSemantic=true` 的公式假设（PromptTokens 不含缓存）与所有设置该标记路径实际传入的归一后 usage 语义（含缓存）存在矛盾——Claude 直连渠道可能存在缓存 token 双计（多收），需阶段 0.3 对拍以真实数字确认；结论决定阶段 0.1 bug 1 的修复方向，若确认双计，需独立评估存量账目影响。
 
