@@ -1,33 +1,45 @@
 name: Notify Feishu
 
-# 监听 Docker 构建工作流完成事件。仅 default branch (main) 触发，可正常读取仓库 secrets。
-# 注意：PR 触发的上游构建不会派发 workflow_run 事件，这是 GHA 的安全限制，符合预期。
 on:
-  workflow_run:
-    workflows:
-      - Publish Docker image (AMD64 only)
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: Workflow display name.
+        required: true
+        type: string
+      project_name:
+        description: Repository name.
+        required: true
+        type: string
+      branch:
+        description: Branch or tag name.
+        required: true
+        type: string
+      conclusion:
+        description: Workflow conclusion.
+        required: true
+        type: string
+    secrets:
+      FEISHU_APP_ID:
+        required: true
+      FEISHU_APP_SECRET:
+        required: true
+      FEISHU_USER_ID:
+        required: true
 
 jobs:
   notify:
-    # 上游被跳过/取消时不通知，避免噪音
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
+    if: ${{ inputs.conclusion == 'success' || inputs.conclusion == 'failure' }}
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
 
     steps:
       - name: Resolve notification context
         id: ctx
         env:
-          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          WF_NAME: ${{ github.event.workflow_run.name }}
-          REPO: ${{ github.repository }}
-          # head_branch 是触发上游构建的 git 分支名或标签名（main/beta/dev/test/标签）
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          # updated_at 为上游工作流完成时间（UTC ISO），转成北京时间可读格式
-          UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
+          CONCLUSION: ${{ inputs.conclusion }}
+          WF_NAME: ${{ inputs.workflow_name }}
+          REPO: ${{ inputs.project_name }}
+          BRANCH: ${{ inputs.branch }}
         run: |
           # 1. 根据构建结论选择卡片模板
           if [ "$CONCLUSION" = "success" ]; then
@@ -36,9 +48,9 @@ jobs:
             echo "template_id=AAqv27Co32Y8H" >> $GITHUB_OUTPUT
           fi
 
-          # 2. 构建完成时间转北京时间
+          # 2. 取当前时间并转北京时间
           # 卡片模板 Time 变量声明为 DateTime 类型，固定格式 yyyy-MM-dd HH:mm（不带秒）
-          TIME_BJ=$(TZ='Asia/Shanghai' date -d "$UPDATED_AT" '+%Y-%m-%d %H:%M')
+          TIME_BJ=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')
           echo "time=${TIME_BJ}" >> $GITHUB_OUTPUT
 
           # 3. 透传工作流名、仓库名与分支名（Branch 变量为真实 git 分支/标签名）

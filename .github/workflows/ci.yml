@@ -123,11 +123,9 @@ jobs:
       actions: write
       contents: read
     steps:
-      # 用 GitHub App installation token 派发 workflow_dispatch：由
-      # GITHUB_TOKEN 派发的 run，其完成时派发的 workflow_run 事件会被
-      # GHA 防递归机制抑制，notify.yml 将收不到通知（OpenCode-Docker
-      # 的 check-update.yml 也是同样解法）。App 未配置时回退
-      # GITHUB_TOKEN——发布链不断，仅通知静默。
+      # 用 GitHub App installation token 派发 workflow_dispatch。
+      # App 未配置时回退 GITHUB_TOKEN，Docker 发布仍会继续。
+      # 飞书通知现在由 docker-image.yml 内部直接调用复用 workflow。
       #
       # 所需仓库配置（Settings → Secrets and variables → Actions）：
       #   Variables → GH_APP_CLIENT_ID    = GitHub App 的 Client ID
@@ -150,7 +148,7 @@ jobs:
           REF: ${{ github.ref_name }}
         run: |
           if [ "$APP_TOKEN_PRESENT" != "true" ]; then
-            echo "::warning::GH_APP_CLIENT_ID / GH_APP_PRIVATE_KEY 未配置，使用 GITHUB_TOKEN 派发：Docker 发布不受影响，但 notify.yml 收不到 workflow_run 通知"
+            echo "::warning::GH_APP_CLIENT_ID / GH_APP_PRIVATE_KEY 未配置，使用 GITHUB_TOKEN 派发：Docker 发布仍会继续"
           fi
           gh workflow run docker-image.yml \
             --repo "$GITHUB_REPOSITORY" \

@@ -121,3 +121,19 @@ jobs:
           echo "${{ steps.tags.outputs.TAGS }}" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  notify_feishu:
+    name: Notify Feishu
+    needs: [build_amd64]
+    if: always()
+    continue-on-error: true
+    uses: ./.github/workflows/notify.yml
+    with:
+      workflow_name: ${{ github.workflow }}
+      project_name: ${{ github.repository }}
+      branch: ${{ github.ref_name }}
+      conclusion: ${{ needs.build_amd64.result }}
+    secrets:
+      FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+      FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+      FEISHU_USER_ID: ${{ secrets.FEISHU_USER_ID }}
