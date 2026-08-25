@@ -259,6 +259,10 @@ export function ChannelsTable() {
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
+    // 标签聚合模式下，编辑/添加/刷新等 refetch 会重建行结构；TanStack 默认
+    // 在行结构变化时自动重置 expanded，导致已展开标签收起。行 ID（tag:xxx /
+    // channel id）本身稳定，关闭自动重置让展开状态在数据重载后得以保留。
+    autoResetExpanded: false,
   })
 
   // Ensure page is in range when total count changes
