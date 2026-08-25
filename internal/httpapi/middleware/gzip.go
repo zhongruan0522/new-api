@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/andybalholm/brotli"
@@ -41,7 +42,8 @@ func DecompressRequestMiddleware() gin.HandlerFunc {
 		}
 		decompressed := false
 
-		switch c.GetHeader("Content-Encoding") {
+		contentEncoding := strings.ToLower(strings.TrimSpace(c.GetHeader("Content-Encoding")))
+		switch contentEncoding {
 		case "gzip":
 			gzipReader, err := gzip.NewReader(origBody)
 			if err != nil {
@@ -88,7 +90,12 @@ func DecompressRequestMiddleware() gin.HandlerFunc {
 		}
 
 		if decompressed {
+			// The original Content-Length describes the compressed wire body, not
+			// the replacement decompressed stream. Clear it so body storage and
+			// later middleware do not rely on a stale compressed size.
 			c.Request.Header.Del("Content-Encoding")
+			c.Request.Header.Del("Content-Length")
+			c.Request.ContentLength = -1
 		}
 
 		// Continue processing the request
