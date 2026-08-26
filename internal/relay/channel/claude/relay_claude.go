@@ -237,7 +237,7 @@ func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) 
 }
 
 func isClaudeAdaptiveOutputModel(model string) bool {
-	return strings.Contains(model, "claude-opus-4-6") || strings.Contains(model, "claude-opus-4-7")
+	return strings.Contains(model, "claude-opus-4-6") || strings.Contains(model, "claude-opus-4-7") || strings.Contains(model, "claude-opus-4-8")
 }
 
 func isClaudeOpus47Model(model string) bool {

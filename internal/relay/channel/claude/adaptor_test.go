@@ -329,6 +329,37 @@ func TestAdaptorConvertOpenAIRequestClaudeOpus47ThinkingSuffixUsesHighEffort(t *
 	}
 }
 
+func TestAdaptorConvertOpenAIRequestClaudeOpus48UsesAdaptiveThinking(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeAnthropic,
+			UpstreamModelName: "claude-opus-4-8-high",
+		},
+	}
+
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, buildOpenAIWeatherToolRequest("claude-opus-4-8-high", ""))
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
+	}
+	if converted.Model != "claude-opus-4-8" {
+		t.Fatalf("model = %q, want claude-opus-4-8", converted.Model)
+	}
+	if converted.Thinking == nil || converted.Thinking.Type != "adaptive" || converted.Thinking.BudgetTokens != nil {
+		t.Fatalf("thinking = %+v, want adaptive without budget_tokens", converted.Thinking)
+	}
+	var outputConfig shared.ClaudeOutputConfig
+	if err := jsonx.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+		t.Fatalf("unmarshal output_config error = %v", err)
+	}
+	if outputConfig.Effort != "high" {
+		t.Fatalf("output_config.effort = %q, want high", outputConfig.Effort)
+	}
+}
+
 func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingDisabled(t *testing.T) {
 	info := &relaycommon.RelayInfo{
 		ChannelMeta: &relaycommon.ChannelMeta{
