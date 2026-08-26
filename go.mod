@@ -10,6 +10,7 @@ require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/aws/aws-sdk-go-v2 v1.43.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
+	github.com/aws/aws-sdk-go-v2/service/bedrock v1.58.0
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1
 	github.com/aws/smithy-go v1.27.8
 	github.com/bytedance/gopkg v0.1.4

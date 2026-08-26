@@ -700,6 +700,7 @@ export function ChannelMutateDrawer({
       type: form.getValues('type'),
       key: form.getValues('key'),
       base_url: form.getValues('base_url') || '',
+      aws_key_type: form.getValues('aws_key_type'),
     })
     if (response.success && response.data) {
       return response.data.map((m) =>
