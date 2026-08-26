@@ -23,11 +23,11 @@
 
 ### 使用的 AI Coding 工具
 
-- OpenCode
-- Codex
-- Cursor
-- CodeBuddy
-- ZCode
+- OpenCode[Web UI]
+- Codex[CLI & APP]
+- Cursor[IDE]
+- CodeBuddy[插件]
+- ZCode[闲时任务]
 
 ### 当前使用的 AI 模型
 
@@ -35,14 +35,18 @@
 
 - Zhipu/GLM-5.3[Max]
 - Zhipu/GLM-5V-Turbo[Thinking]
-- OpenAI/GPT-5.4[Xhigh]
 - OpenAI/GPT-5.5[high]
 - OpenAI/GPT-5.5[Xhigh]
 - OpenAI/GPT-5.6-系列[Sol/Luna]-[Max]
 
+### 历史使用的 AI Coding 工具
+
+- Claude Code
+
 ### 历史使用模型
 
 - OpenAI/GPT-5.2[Xhigh]
+- OpenAI/GPT-5.4[Xhigh]
 - Zhipu/GLM-5-Turbo[Thinking]
 - Zhipu/GLM-5[Thinking]
 - Zhipu/GLM-5.1[Thinking]
@@ -56,9 +60,10 @@
 
 感谢以下开源项目对本项目的启发与帮助：
 
-- **[newapi](https://github.com/QuantumNous/new-api)** — 本项目的上游基础项目。
-- **[MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
-- **[AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
-- **[Openafw](https://github.com/openafw/openafw)** — 本地 AI 流量安全过滤方案参考。
-- **[zaicontrol](https://github.com/zhongruan0522/zaicontrol)（私有仓库）** — Z.AI 套餐查询相关接口。
-- **[cc-switch](https://github.com/farion1231/cc-switch)** — Kimi 套餐查询相关接口。
+- **[QuantumNous/new-api](https://github.com/QuantumNous/new-api)** — 本项目的上游基础项目。
+- **[CuzTeam/new-api](https://github.com/CuzTeam/new-api)** — 首页UI的参考来源。
+- **[ccbkkb/MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
+- **[looplj/AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
+- **[openafw/Openafw](https://github.com/openafw/openafw)** — 本地 AI 流量安全过滤方案参考。
+- **[zhongruan0522/zaicontrol](https://github.com/zhongruan0522/zaicontrol)（私有仓库）** — Z.AI 套餐查询相关接口。
+- **[farion1231/cc-switch](https://github.com/farion1231/cc-switch)** — Kimi 套餐查询相关接口。
