@@ -100,7 +100,7 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]shared.Mes
 		if itemType == "" {
 			itemType = openAIResponsesInputItemTypeMessage
 		}
-		if itemType == openAIResponsesInputItemTypeComputerCall {
+		if isUnsupportedResponsesExecutedCallItem(itemType) {
 			continue
 		}
 		if itemType == openAIResponsesInputItemTypeReasoning {
@@ -175,8 +175,8 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 			return nil, err
 		}
 		return []shared.Message{msg}, nil
-	case openAIResponsesInputItemTypeComputerCallOutput:
-		msg, err := buildChatMessageFromResponsesComputerCallOutput(raw)
+	case openAIResponsesInputItemTypeComputerCallOutput, openAIResponsesInputItemTypeLocalShellCallOutput:
+		msg, err := buildChatMessageFromResponsesUnsupportedCallOutput(raw)
 		if err != nil {
 			return nil, err
 		}
@@ -189,17 +189,30 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 	}
 }
 
-func buildChatMessageFromResponsesComputerCallOutput(raw json.RawMessage) (*shared.Message, error) {
+func isUnsupportedResponsesExecutedCallItem(itemType string) bool {
+	switch itemType {
+	case openAIResponsesInputItemTypeComputerCall,
+		openAIResponsesInputItemTypeLocalShellCall,
+		openAIResponsesInputItemTypeWebSearchCall,
+		openAIResponsesInputItemTypeFileSearchCall,
+		openAIResponsesInputItemTypeImageGenerationCall:
+		return true
+	default:
+		return false
+	}
+}
+
+func buildChatMessageFromResponsesUnsupportedCallOutput(raw json.RawMessage) (*shared.Message, error) {
 	var item responsesUnsupportedCallOutputInput
 	if err := jsonx.Unmarshal(raw, &item); err != nil {
-		return nil, fmt.Errorf("unmarshal computer_call_output item failed: %w", err)
+		return nil, fmt.Errorf("unmarshal %s item failed: %w", item.Type, err)
 	}
-	output, ok := responsesComputerCallOutputString(item.Output)
+	output, ok := responsesUnsupportedCallOutputString(item.Output)
 	if !ok {
 		return nil, nil
 	}
 
-	prefix := openAIResponsesInputItemTypeComputerCallOutput
+	prefix := strings.TrimSpace(item.Type)
 	if callID := strings.TrimSpace(item.CallID); callID != "" {
 		prefix += " " + callID
 	}
@@ -209,7 +222,7 @@ func buildChatMessageFromResponsesComputerCallOutput(raw json.RawMessage) (*shar
 	}, nil
 }
 
-func responsesComputerCallOutputString(raw json.RawMessage) (string, bool) {
+func responsesUnsupportedCallOutputString(raw json.RawMessage) (string, bool) {
 	if len(raw) == 0 || jsonx.GetJsonType(raw) == "null" {
 		return "", false
 	}
@@ -225,7 +238,7 @@ func responsesComputerCallOutputString(raw json.RawMessage) (string, bool) {
 	if err := jsonx.Unmarshal(raw, &output); err != nil {
 		return "", false
 	}
-	if isImageOnlyComputerCallOutput(output) {
+	if isImageOnlyUnsupportedCallOutput(output) {
 		return "", false
 	}
 	encoded, err := jsonx.Marshal(output)
@@ -236,7 +249,7 @@ func responsesComputerCallOutputString(raw json.RawMessage) (string, bool) {
 	return normalized, normalized != "" && normalized != "null"
 }
 
-func isImageOnlyComputerCallOutput(output any) bool {
+func isImageOnlyUnsupportedCallOutput(output any) bool {
 	part, ok := output.(map[string]any)
 	if !ok {
 		return false
@@ -264,8 +277,11 @@ func buildChatMessagesFromResponsesMessageItem(raw json.RawMessage) ([]shared.Me
 	}
 
 	role := strings.TrimSpace(item.Role)
-	if role == "" {
+	switch role {
+	case "":
 		role = "user"
+	case "developer":
+		role = "system"
 	}
 
 	msg, err := buildChatMessageFromResponsesMessageContent(role, item.Content)

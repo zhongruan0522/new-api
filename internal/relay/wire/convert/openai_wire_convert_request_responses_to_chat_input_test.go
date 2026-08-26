@@ -91,3 +91,50 @@ func TestConvertResponsesRequestToChatCompletionsRequestDropsImageOnlyComputerCa
 		t.Fatalf("messages = %#v, want only the following user message", got.Messages)
 	}
 }
+
+func TestConvertResponsesRequestToChatCompletionsRequestNormalizesCodexHistory(t *testing.T) {
+	inputRaw, err := jsonx.Marshal([]map[string]any{
+		{
+			"type":    "message",
+			"role":    "developer",
+			"content": "developer note",
+		},
+		{
+			"type":    openAIResponsesInputItemTypeLocalShellCallOutput,
+			"call_id": "call_shell",
+			"output":  "shell ok",
+		},
+		{
+			"type": openAIResponsesInputItemTypeImageGenerationCall,
+			"id":   "ig_123",
+		},
+		{
+			"type":    "message",
+			"role":    "user",
+			"content": "continue",
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal input error: %v", err)
+	}
+
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&shared.OpenAIResponsesRequest{
+		Model: "claude-opus-4-8",
+		Input: inputRaw,
+	})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequest() error: %v", err)
+	}
+	if len(got.Messages) != 3 {
+		t.Fatalf("messages len = %d, want 3: %#v", len(got.Messages), got.Messages)
+	}
+	if got.Messages[0].Role != "system" || got.Messages[0].StringContent() != "developer note" {
+		t.Fatalf("developer message = %#v, want system message %q", got.Messages[0], "developer note")
+	}
+	if got.Messages[1].Role != "user" || got.Messages[1].StringContent() != "local_shell_call_output call_shell output:\nshell ok" {
+		t.Fatalf("local shell output message = %#v", got.Messages[1])
+	}
+	if got.Messages[2].Role != "user" || got.Messages[2].StringContent() != "continue" {
+		t.Fatalf("following message = %#v, want user message %q", got.Messages[2], "continue")
+	}
+}

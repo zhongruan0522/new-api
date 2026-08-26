@@ -19,6 +19,12 @@ const (
 	openAIResponsesInputItemTypeToolSearchOutput   = "tool_search_output"
 	openAIResponsesInputItemTypeComputerCall       = "computer_call"
 	openAIResponsesInputItemTypeComputerCallOutput = "computer_call_output"
+	openAIResponsesInputItemTypeLocalShellCall     = "local_shell_call"
+
+	openAIResponsesInputItemTypeLocalShellCallOutput = "local_shell_call_output"
+	openAIResponsesInputItemTypeWebSearchCall        = "web_search_call"
+	openAIResponsesInputItemTypeFileSearchCall       = "file_search_call"
+	openAIResponsesInputItemTypeImageGenerationCall  = "image_generation_call"
 )
 
 const (
