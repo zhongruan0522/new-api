@@ -1,7 +1,7 @@
 # PRD：Relay 协议转换层 IR 重构（以 Chat 为中心）
 
-> 版本：v2.1（v2 整文重写：v1 的「点对点」定性有误，实测现状已是隐式 Hub；阶段划分按协议对拆分重排。v2.1 评审修订：删除对不存在的 SDK 迁移 PRD 的引用；跨协议签名策略定为按提供者识别过滤，并补工具调用级签名承载与 axonhub 三层方案落地细节；D4 增加计费基准定性疑点，bug 1 顺延至对拍框架之后；待决问题 1–5 落定后从 §8 移除（仅留 2 条未决）；错误模型改为以 Chat 为中枢只保 code+message，不做强类型展开；旧代码随各阶段重写完成时立即删除，不保留 deprecated 观察期；修正若干与代码不符的描述）
-> 日期：2026-08-25
+> 版本：v2.1
+> 日期：2026-08-26
 > 状态：待评审
 
 ## 1. 背景
@@ -144,7 +144,7 @@
 | 全新中立 IR            | 否。等价于重写全部转换算子，收益不足以覆盖风险                                                                                                                                               |
 
 
-**Usage 语义统一为 OpenAI 语义**（`prompt_tokens` 含缓存 token）。依据是 `ClaudeUsageToOpenAIUsage` 已经这么做了，且与 axonhub 一致。落地后 `usage.go:108` 的 `isClaudeUsageSemantic` 分支可以删除——语义由边契约保证，不再依赖「渠道记得打标」，这是 D4 的根治方式而非打补丁。
+**IR usage 语义唯一且逐字段独立**（输入、缓存读取、缓存写入/创建分档、输出、音频各自独立保留，不对 `prompt_tokens` 做先合并再减）。依据是各家官方本就把输入与缓存分开下发（见 §4.1.3 对照表），且与 axonhub 一致。落地后 `usage.go:108` 的 `isClaudeUsageSemantic` 分支可以删除——语义由边契约保证，不再依赖「渠道记得打标」，这是 D4 的根治方式而非打补丁。
 
 ### 3.2 三层正交分离
 
@@ -209,6 +209,37 @@ Chat 作为 IR 底座缺三类概念，必须在超集中补齐，且不能塞�
 **类型 B：语义标记丢失。**
 
 即 D4。`FinalRequestRelayFormat` 漏设导致 usage 按错误语义计算，AWS Bedrock 的 Claude 模型缓存计费偏差（定性存疑：基准未经验证，不能默认直连 Claude 渠道为正确范本，见 D4 与阶段 0.1）。
+
+**根因（不是 A/B 的补充，而是共同病灶）：计费层拿到的是「被转换 + 被猜语义」的 usage，而不是上游原值。**
+
+`domain/billing/usage.go:75` 的 `CalculateUsage` 接收的 `rawUsage *shared.Usage` 是 Outbound 归一化后的值，且靠 `usage.go:108` 的 `isClaudeUsageSemantic`（= `FinalRequestRelayFormat == RelayFormatClaude`）去猜「`PromptTokens` 含不含缓存」来决定加减。上游官方本来就把输入、缓存读取、缓存写入、输出拆得明明白白（见 4.1.3 对照表），计费层本不需要猜——猜才会出 D4 双计这类错账。
+
+#### 4.1.3 各渠道规范计费读取分析（根治方向）
+
+**原则：上游原值只读一次、只归一一次、落成唯一标准值，此后任何消费者不得再按协议加加减减、不得再靠语义标记猜。**
+
+计费正确性不取决于「合并式 vs 拆分式」，而取决于「计费层拿到的值是否与上游官方原值逐字段一致」。各家官方 usage 字段语义如下（以官方响应为准，非网关内部口径）：
+
+| 协议 | 输入字段 | 是否含缓存 | 缓存字段 | 输出字段 |
+| --- | --- | --- | --- | --- |
+| OpenAI Chat | `prompt_tokens` | **含** | `prompt_tokens_details.cached_tokens` / `.audio_tokens` | `completion_tokens` |
+| OpenAI Responses | `input_tokens` | **含** | `input_tokens_details.cached_tokens` / `.cache_write_tokens` | `output_tokens` |
+| Claude | `input_tokens` | **不含** | `cache_read_input_tokens` + `cache_creation_input_tokens`（分 5m/1h 三档） | `output_tokens` |
+| Gemini | `promptTokenCount` | **不含** | 无标准缓存拆分字段（走 context/tier 分档） | `candidatesTokenCount` |
+| OpenRouter | `prompt_tokens` | **含**（与 OpenAI 同构） | `prompt_tokens_details.cached_tokens` | `completion_tokens` |
+
+由此得出**读取规范**：
+
+1. **Outbound 是唯一读取点**（对齐 P1）：每条边把自己的上游原值字段映射为 IR usage，逐字段保留（输入、缓存读取、缓存写入/创建分档、输出、音频），不做任何加减。
+2. **IR usage 落库值语义唯一且自洽**：`ir.Usage.PromptTokens` 存「上游实际下发的输入字段原值」；缓存/音频拆分字段各自独立保存。**禁止**为「统一口径」先合并再减（`shared.ClaudeUsageToOpenAIUsage`/`OpenAIUsageToClaudeUsage` 的合并-还原往返是错误样板，见下）。
+3. **计费层只做乘法、不做语义猜测**：按缓存倍率单独计价时，直接读 IR usage 的缓存字段，**不**再通过 `isClaudeUsageSemantic` 推断 `PromptTokens` 含不含缓存。P1 落地后该标记恒为无意义，阶段 8 删除。
+4. **`OpenAIUsageToClaudeUsage`（`claude.go:664`）的 `promptTokens - cacheRead - cacheCreation` 是有损减法**：它假定 `PromptTokens` 是「合并式含缓存」，只对「归一后数据」成立。一旦上游原值是拆分式（Claude/Gemini），减过头。重构后该函数只应在 Claude Outbound「把 IR 的独立字段填回 Claude 官方拆分子段」时使用，且不得改变 `PromptTokens` 本体。
+
+**落地形式（写入阶段 8）：**
+
+- 每渠道一条「上游原值字段 → IR usage 字段」映射记录（对齐本文档 §2.1 的「本仓库代码为准」原则，对照上游官方响应样例逐一核实，不许凭记忆）。
+- 阶段 0.3 的计费对拍框架，除断言「新旧路径 quota 一致」外，**追加断言「归一化后 IR usage 各缓存/输入/输出字段与上游官方 response 逐字段一致」**——对拍只保证「重构不改账」，本断言保证「账本身读对了」。
+- `CalculateUsage` 输入从「猜语义的归一值」收敛为「逐字段自洽的标准值」，删除 `isClaudeUsageSemantic` 分支及 `BuildContextPricingUsage` 的语义参数。
 
 ### 4.2 五条强制原则
 
@@ -324,11 +355,14 @@ internal/relay/ir/
 
 **框架 3：计费对拍。** 同一请求分别走新旧路径，断言喂给 `CalculateUsage` 的 usage 与最终 quota 完全一致。这是阶段 8 的验收依据，必须在阶段 1 之前就位，否则后续 8 个阶段的计费影响无从验证。
 
+**框架 3 的补充断言（对应 §4.1.3「逐字段与上游原值一致」）：** 对拍只断言「重构不改账」，不足以保证「账本身读对了」。因此在每渠道对拍用例中，除 quota 一致外，**追加断言归一化后 IR usage 的输入/缓存读取/缓存写入/输出字段与上游官方 response 的原始 usage 逐字段一致**——逐渠道对照表见 §4.1.3。此为阶段 8「计费读取正确性」的验收依据。
+
 **验收**：
 
 - 三个框架各自能跑通至少一条现有链路（建议用 Chat↔Responses，因其既有测试最完整）
 - 对拍框架能检出人为注入的偏差（故意改一个倍率，对拍必须失败）
 - 框架就位后立即执行 D4 基准验证：对 Claude 直连渠道含缓存场景做计费对拍，产出「双计/正常」结论，据此落地 0.1 的修复方向
+- 至少一个含缓存的渠道（建议 Claude 直连）产出「IR usage 各字段与上游原值逐字段一致」的对拍样本，作为 §4.1.3 对照表的可执行样例
 
 
 
@@ -530,12 +564,14 @@ HTTP 200 携带错误载荷的识别逻辑保留，纳入 Outbound 的响应解�
 **目标。** 逐条落地 §4.2 的 P1–P5，并处理 §4.3 的三处耦合：
 
 1. **删除** `isClaudeUsageSemantic` **分支**（`usage.go:108` 及其在 `BuildContextPricingUsage` 的传参，连同 `PostClaudeConsumeQuota` 中 `quota.go:304` 基于 `ChannelType` 的独立同名判定）。前置条件是所有 Outbound 已按 P1 归一 usage 语义，届时这些分支恒为一个值，属死代码。这同时根治 D4——不再依赖渠道记得打标。
-2. **重新定义空 usage 重试判定**（`quota.go:33-38`）。从「转换链长度 > 1」改为「非上游原生直通」，复用 §3.3 的直通判定。
-3. **原始请求体快照独立化**（P3）。确保 token 估算与日志读的是用户原始输入，不受 `setTemporaryRequestBody` 窗口影响。
+2. **逐渠道计费读取收口（对应 §4.1.3）**：按 §4.1.3 对照表，把每家上游原值字段读入 IR usage 后落库，计费层 `CalculateUsage` 只做乘法（按缓存倍率读独立缓存字段），不做语义猜测与加减。`shared.ClaudeUsageToOpenAIUsage`/`OpenAIUsageToClaudeUsage` 的「合并-还原」往返收缩为 Claude Outbound 内部的字段搬运，不得再作为全局 usage 中间口径。
+3. **重新定义空 usage 重试判定**（`quota.go:33-38`）。从「转换链长度 > 1」改为「非上游原生直通」，复用 §3.3 的直通判定。
+4. **原始请求体快照独立化**（P3）。确保 token 估算与日志读的是用户原始输入，不受 `setTemporaryRequestBody` 窗口影响。
 
 **验收**：
 
 - 全渠道 × 全协议组合计费对拍全绿（这是本阶段核心验收项）
+- 每渠道 IR usage 各字段与上游官方 response 原值逐字段一致（§4.1.3 对照表 + 阶段 0.3 补充断言）
 - Claude 三档缓存、Gemini audio token、Responses 内建工具、OpenRouter 缓存创建（`CalcOpenRouterCacheCreateTokens`）逐项回归
 - 空 usage 重试语义符合预期：原生直通请求空 usage 应重试，跨协议转换请求不重试
 - 死代码清除：`rg "isClaudeUsageSemantic" internal/` 无输出
