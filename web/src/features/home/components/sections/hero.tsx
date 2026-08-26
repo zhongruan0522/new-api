@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-
 import { FlipWords } from '../flip-words'
 import { GrainField } from '../grain-field'
 import { HubFlipCard } from '../hub-flip-card'
@@ -38,7 +37,7 @@ export function Hero(props: HeroProps) {
 
   return (
     <section className='relative flex min-h-[calc(100svh-var(--app-header-height,3rem))] flex-col justify-center overflow-hidden px-6'>
-      <GrainField className='opacity-45 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]' />
+      <GrainField className='[mask-image:linear-gradient(to_bottom,black_55%,transparent)] opacity-45' />
       <div className='relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10'>
         <div className='max-w-3xl'>
           <p

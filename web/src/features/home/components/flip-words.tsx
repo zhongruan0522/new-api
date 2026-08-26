@@ -16,9 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
-
+import { AnimatePresence, motion } from 'motion/react'
 import { cn } from '@/lib/utils'
 
 interface FlipWordsProps {
@@ -59,10 +58,7 @@ export function FlipWords({
         className
       )}
     >
-      <AnimatePresence
-        mode='wait'
-        onExitComplete={() => setIsAnimating(false)}
-      >
+      <AnimatePresence mode='wait' onExitComplete={() => setIsAnimating(false)}>
         <motion.span
           key={currentWord}
           initial={{ opacity: 0, y: 10 }}

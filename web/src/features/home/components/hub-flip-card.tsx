@@ -18,10 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-
 import { Logo } from '@/assets/logo'
 import { cn } from '@/lib/utils'
-
 import { HeroTerminalDemo } from './hero-terminal-demo'
 import { HubDiagram } from './hub-diagram'
 

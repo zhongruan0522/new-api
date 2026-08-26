@@ -17,11 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Component, useMemo, useState, type ReactNode } from 'react'
-
 import { GrainGradient } from '@paper-design/shaders-react'
-
-import { useTheme } from '@/context/theme-provider'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/context/theme-provider'
 
 /**
  * Static glow used when WebGL is unavailable — keeps the showcase card
@@ -69,9 +67,7 @@ function isWebGLAvailable(): boolean {
   if (typeof window === 'undefined') return false
   try {
     const canvas = document.createElement('canvas')
-    return !!(
-      canvas.getContext('webgl2') || canvas.getContext('webgl')
-    )
+    return !!(canvas.getContext('webgl2') || canvas.getContext('webgl'))
   } catch {
     return false
   }

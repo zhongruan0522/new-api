@@ -83,10 +83,7 @@ export function HubDiagram({
   return (
     <div
       aria-hidden={onHubActivate ? undefined : 'true'}
-      className={cn(
-        'relative overflow-hidden rounded-[2rem]',
-        className
-      )}
+      className={cn('relative overflow-hidden rounded-[2rem]', className)}
     >
       <div
         className='relative mx-auto'
@@ -122,11 +119,14 @@ export function HubDiagram({
         </svg>
 
         {/* Left: infinitely scrolling LLM icon pill */}
-        <div className='scroll-container absolute top-[50px] bottom-[50px] left-4 w-14 overflow-hidden rounded-full border border-border bg-background/80 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)]'>
+        <div className='scroll-container border-border bg-background/80 absolute top-[50px] bottom-[50px] left-4 w-14 overflow-hidden rounded-full border [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)]'>
           <div className='animate-scroll-down flex flex-col items-center gap-6 py-3'>
             {[...LLM_ICONS, ...LLM_ICONS].map((iconName, i) => (
               // oxlint-disable-next-line react/no-array-index-key
-              <span key={`${iconName}-${i}`} className='shrink-0 text-foreground'>
+              <span
+                key={`${iconName}-${i}`}
+                className='text-foreground shrink-0'
+              >
                 {getLobeIcon(iconName, 26)}
               </span>
             ))}
@@ -135,7 +135,7 @@ export function HubDiagram({
 
         {/* Center: New API hub */}
         <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
-          <div className='absolute -inset-5 rounded-full bg-primary/20 blur-2xl' />
+          <div className='bg-primary/20 absolute -inset-5 rounded-full blur-2xl' />
           <HubTag
             {...(onHubActivate && {
               type: 'button' as const,
@@ -158,7 +158,7 @@ export function HubDiagram({
         {DEV_ICONS.map((icon) => (
           <div
             key={icon.name}
-            className='absolute flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card text-foreground shadow-sm'
+            className='border-border bg-card text-foreground absolute flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm'
             style={{ left: ICON_LEFT, top: icon.y }}
           >
             {getLobeIcon(icon.name, 26)}
