@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	common2 "github.com/NookMux/NookMux/internal/common"
+	modelconfig "github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	httpclient "github.com/NookMux/NookMux/internal/infra/httpclient"
 	"github.com/NookMux/NookMux/internal/infra/log"
@@ -131,6 +132,9 @@ func isHeaderPassthroughRuleKey(key string) bool {
 func shouldSkipPassthroughHeader(name string) bool {
 	name = strings.TrimSpace(name)
 	if name == "" {
+		return true
+	}
+	if modelconfig.ShouldRemoveClaudeCodeBillingHeader(name) {
 		return true
 	}
 	lower := strings.ToLower(name)

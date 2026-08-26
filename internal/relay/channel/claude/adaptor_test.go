@@ -2,9 +2,11 @@ package claude
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/common"
+	modelconfig "github.com/NookMux/NookMux/internal/config/model"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
@@ -12,7 +14,30 @@ import (
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
+	"github.com/gin-gonic/gin"
 )
+
+func TestCommonClaudeHeadersOperationRemovesBillingHeader(t *testing.T) {
+	settings := modelconfig.GetClaudeSettings()
+	original := settings.RemoveClaudeCodeBillingHeaderEnabled
+	settings.RemoveClaudeCodeBillingHeaderEnabled = true
+	t.Cleanup(func() { settings.RemoveClaudeCodeBillingHeaderEnabled = original })
+
+	request := &http.Request{Header: http.Header{
+		modelconfig.ClaudeCodeBillingHeader: []string{"client-billing"},
+		"anthropic-beta":                    []string{"computer-use-2025-01-24"},
+	}}
+	ctx := &gin.Context{Request: request}
+	headers := http.Header{}
+	CommonClaudeHeadersOperation(ctx, &headers, &relaycommon.RelayInfo{OriginModelName: "claude-opus-4-8"})
+
+	if headers.Get(modelconfig.ClaudeCodeBillingHeader) != "" {
+		t.Fatal("billing header was forwarded")
+	}
+	if headers.Get("anthropic-beta") != "computer-use-2025-01-24" {
+		t.Fatalf("anthropic-beta = %q", headers.Get("anthropic-beta"))
+	}
+}
 
 func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T) {
 	budget := 2048
