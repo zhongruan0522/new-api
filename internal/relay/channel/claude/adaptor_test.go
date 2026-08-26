@@ -23,10 +23,9 @@ func TestCommonClaudeHeadersOperationRemovesBillingHeader(t *testing.T) {
 	settings.RemoveClaudeCodeBillingHeaderEnabled = true
 	t.Cleanup(func() { settings.RemoveClaudeCodeBillingHeaderEnabled = original })
 
-	request := &http.Request{Header: http.Header{
-		modelconfig.ClaudeCodeBillingHeader: []string{"client-billing"},
-		"anthropic-beta":                    []string{"computer-use-2025-01-24"},
-	}}
+	request := &http.Request{Header: http.Header{}}
+	request.Header.Set(modelconfig.ClaudeCodeBillingHeader, "client-billing")
+	request.Header.Set("anthropic-beta", "computer-use-2025-01-24")
 	ctx := &gin.Context{Request: request}
 	headers := http.Header{}
 	CommonClaudeHeadersOperation(ctx, &headers, &relaycommon.RelayInfo{OriginModelName: "claude-opus-4-8"})
