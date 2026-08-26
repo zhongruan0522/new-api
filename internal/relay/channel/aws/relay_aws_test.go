@@ -28,10 +28,10 @@ func newAwsHeaderTestContext(headers http.Header) *gin.Context {
 
 func newAwsHeaderTestInfo(overrides map[string]interface{}, passThrough bool) *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
-		ApiKey:            "test-token|us-east-1",
-		UpstreamModelName: "claude-opus-4-8",
 		ChannelMeta: &relaycommon.ChannelMeta{
-			HeadersOverride: overrides,
+			ApiKey:            "test-token|us-east-1",
+			UpstreamModelName: "claude-opus-4-8",
+			HeadersOverride:   overrides,
 			ChannelSetting: shared.ChannelSettings{
 				PassThroughHeadersEnabled: passThrough,
 			},
