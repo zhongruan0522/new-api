@@ -217,6 +217,59 @@ func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.
 	}
 }
 
+func TestAdaptorConvertOpenAIResponsesRequestRemovesUnsupportedComputerCallHistory(t *testing.T) {
+	inputRaw, err := jsonx.Marshal([]map[string]any{
+		{
+			"type":    "computer_call",
+			"call_id": "call_computer",
+			"action":  map[string]any{"type": "screenshot"},
+		},
+		{
+			"type":    "computer_call_output",
+			"call_id": "call_computer",
+			"output": map[string]any{
+				"type":      "input_image",
+				"image_url": "data:image/png;base64,AAAA",
+			},
+		},
+		{
+			"type":    "message",
+			"role":    "user",
+			"content": "continue",
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal input error: %v", err)
+	}
+
+	info := &relaycommon.RelayInfo{
+		RelayFormat:            relayconstant.RelayFormatOpenAIResponses,
+		RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAIResponses},
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeAnthropic,
+			UpstreamModelName: "claude-opus-4-8",
+		},
+	}
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIResponsesRequest(nil, info, shared.OpenAIResponsesRequest{
+		Model:           "claude-opus-4-8",
+		Input:           inputRaw,
+		MaxOutputTokens: 128,
+	})
+	if err != nil {
+		t.Fatalf("ConvertOpenAIResponsesRequest error: %v", err)
+	}
+	converted, ok := convertedAny.(*shared.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *shared.ClaudeRequest", convertedAny)
+	}
+	if len(converted.Messages) != 1 {
+		t.Fatalf("messages len = %d, want only the supported user message: %#v", len(converted.Messages), converted.Messages)
+	}
+	if converted.Messages[0].Role != "user" || converted.Messages[0].GetStringContent() != "continue" {
+		t.Fatalf("converted message = %#v, want user message %q", converted.Messages[0], "continue")
+	}
+}
+
 func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingEnabled(t *testing.T) {
 	info := &relaycommon.RelayInfo{
 		ChannelMeta: &relaycommon.ChannelMeta{

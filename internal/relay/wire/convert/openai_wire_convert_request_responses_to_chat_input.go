@@ -34,6 +34,12 @@ type responsesReasoningInput struct {
 	Summary []shared.ResponsesContentPart `json:"summary,omitempty"`
 }
 
+type responsesUnsupportedCallOutputInput struct {
+	Type   string          `json:"type"`
+	CallID string          `json:"call_id"`
+	Output json.RawMessage `json:"output"`
+}
+
 func buildChatMessagesFromResponsesInput(raw json.RawMessage) ([]shared.Message, error) {
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("input is required")
@@ -93,6 +99,9 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]shared.Mes
 		}
 		if itemType == "" {
 			itemType = openAIResponsesInputItemTypeMessage
+		}
+		if itemType == openAIResponsesInputItemTypeComputerCall {
+			continue
 		}
 		if itemType == openAIResponsesInputItemTypeReasoning {
 			reasoning, err := extractResponsesReasoningSummary(itemRaw)
@@ -166,9 +175,78 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 			return nil, err
 		}
 		return []shared.Message{msg}, nil
+	case openAIResponsesInputItemTypeComputerCallOutput:
+		msg, err := buildChatMessageFromResponsesComputerCallOutput(raw)
+		if err != nil {
+			return nil, err
+		}
+		if msg == nil {
+			return nil, nil
+		}
+		return []shared.Message{*msg}, nil
 	default:
 		return nil, fmt.Errorf("unsupported input item type: %q", itemType)
 	}
+}
+
+func buildChatMessageFromResponsesComputerCallOutput(raw json.RawMessage) (*shared.Message, error) {
+	var item responsesUnsupportedCallOutputInput
+	if err := jsonx.Unmarshal(raw, &item); err != nil {
+		return nil, fmt.Errorf("unmarshal computer_call_output item failed: %w", err)
+	}
+	output, ok := responsesComputerCallOutputString(item.Output)
+	if !ok {
+		return nil, nil
+	}
+
+	prefix := openAIResponsesInputItemTypeComputerCallOutput
+	if callID := strings.TrimSpace(item.CallID); callID != "" {
+		prefix += " " + callID
+	}
+	return &shared.Message{
+		Role:    "user",
+		Content: prefix + " output:\n" + output,
+	}, nil
+}
+
+func responsesComputerCallOutputString(raw json.RawMessage) (string, bool) {
+	if len(raw) == 0 || jsonx.GetJsonType(raw) == "null" {
+		return "", false
+	}
+	if jsonx.GetJsonType(raw) == "string" {
+		var output string
+		if err := jsonx.Unmarshal(raw, &output); err != nil {
+			return "", false
+		}
+		return output, strings.TrimSpace(output) != ""
+	}
+
+	var output any
+	if err := jsonx.Unmarshal(raw, &output); err != nil {
+		return "", false
+	}
+	if isImageOnlyComputerCallOutput(output) {
+		return "", false
+	}
+	encoded, err := jsonx.Marshal(output)
+	if err != nil {
+		return "", false
+	}
+	normalized := strings.TrimSpace(string(encoded))
+	return normalized, normalized != "" && normalized != "null"
+}
+
+func isImageOnlyComputerCallOutput(output any) bool {
+	part, ok := output.(map[string]any)
+	if !ok {
+		return false
+	}
+	partType, _ := part["type"].(string)
+	if strings.EqualFold(strings.TrimSpace(partType), openAIResponsesInputTypeImage) {
+		return true
+	}
+	_, hasImageURL := part["image_url"]
+	return hasImageURL
 }
 
 func probeResponsesInputItemType(raw json.RawMessage) (string, error) {

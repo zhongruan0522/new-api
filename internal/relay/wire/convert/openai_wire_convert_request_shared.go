@@ -17,6 +17,8 @@ const (
 	openAIResponsesInputItemTypeCustomToolOutput   = "custom_tool_call_output"
 	openAIResponsesInputItemTypeToolSearchCall     = "tool_search_call"
 	openAIResponsesInputItemTypeToolSearchOutput   = "tool_search_output"
+	openAIResponsesInputItemTypeComputerCall       = "computer_call"
+	openAIResponsesInputItemTypeComputerCallOutput = "computer_call_output"
 )
 
 const (
