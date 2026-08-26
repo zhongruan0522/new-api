@@ -1279,6 +1279,7 @@ func FetchModels(c *gin.Context) {
 		Type       int               `json:"type"`
 		Key        string            `json:"key"`
 		AwsKeyType shared.AwsKeyType `json:"aws_key_type"`
+		Proxy      string            `json:"proxy"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1325,7 +1326,7 @@ func FetchModels(c *gin.Context) {
 	}
 
 	if req.Type == constant.ChannelTypeAws {
-		models, err := awschannel.FetchClaudeModels(c.Request.Context(), key, req.AwsKeyType, "")
+		models, err := awschannel.FetchClaudeModels(c.Request.Context(), key, req.AwsKeyType, strings.TrimSpace(req.Proxy))
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return

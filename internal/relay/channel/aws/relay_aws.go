@@ -10,6 +10,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/relay/channel"
 	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
@@ -72,7 +73,19 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 
 	// init empty request.header
 	requestHeader := http.Header{}
-	a.SetupRequestHeader(c, &requestHeader, info)
+	if err := a.SetupRequestHeader(c, &requestHeader, info); err != nil {
+		return nil, shared.NewError(errors.Wrap(err, "setup aws request header fail"), shared.ErrorCodeChannelHeaderOverrideInvalid)
+	}
+	if info.ChannelSetting.PassThroughHeadersEnabled {
+		channel.MergeClientHeadersToHeader(c, requestHeader)
+	}
+	headerOverride, err := channel.ResolveHeaderOverride(info, c)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range headerOverride {
+		requestHeader.Set(key, value)
+	}
 
 	if isNovaModel(awsModelId) {
 		var novaReq *NovaRequest

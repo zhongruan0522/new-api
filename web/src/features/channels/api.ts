@@ -620,6 +620,7 @@ export async function fetchModels(data: {
   type: number
   key: string
   aws_key_type?: 'ak_sk' | 'api_key'
+  proxy?: string
 }): Promise<FetchModelsResponse> {
   const res = await api.post('/api/channel/fetch_models', data)
   return res.data

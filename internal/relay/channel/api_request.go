@@ -195,6 +195,12 @@ func mergeClientHeadersToHeader(c *gin.Context, header http.Header) {
 	}
 }
 
+// MergeClientHeadersToHeader exposes the common safe client-header merge for
+// transports that construct an upstream payload without using DoApiRequest.
+func MergeClientHeadersToHeader(c *gin.Context, header http.Header) {
+	mergeClientHeadersToHeader(c, header)
+}
+
 func applyHeaderOverridePlaceholders(template string, c *gin.Context, apiKey string) (string, bool, error) {
 	trimmed := strings.TrimSpace(template)
 	if strings.HasPrefix(trimmed, clientHeaderPlaceholderPrefix) {
@@ -328,6 +334,12 @@ func processHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]s
 		headerOverride[key] = value
 	}
 	return headerOverride, nil
+}
+
+// ResolveHeaderOverride exposes the common header override resolution for
+// transports that do not build an *http.Request through DoApiRequest.
+func ResolveHeaderOverride(info *common.RelayInfo, c *gin.Context) (map[string]string, error) {
+	return processHeaderOverride(info, c)
 }
 
 func applyHeaderOverrideToRequest(req *http.Request, headerOverride map[string]string) {
