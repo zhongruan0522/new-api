@@ -220,9 +220,7 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
                   <FormLabel>
-                    {t(
-                      'systemSettings.actions.removeClaudeCodeBillingHeader'
-                    )}
+                    {t('systemSettings.actions.removeClaudeCodeBillingHeader')}
                   </FormLabel>
                   <FormDescription>
                     {t(
