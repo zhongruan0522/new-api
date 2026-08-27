@@ -2,9 +2,6 @@ name: Feishu Notify
 description: Send a Feishu interactive card for workflow results.
 
 inputs:
-  workflow_name:
-    description: Workflow display name.
-    required: true
   project_name:
     description: Repository name.
     required: true
@@ -31,7 +28,6 @@ runs:
       shell: bash
       env:
         CONCLUSION: ${{ inputs.conclusion }}
-        WF_NAME: ${{ inputs.workflow_name }}
         REPO: ${{ inputs.project_name }}
         BRANCH: ${{ inputs.branch }}
         APP_ID: ${{ inputs.app_id }}
@@ -41,9 +37,9 @@ runs:
         set -euo pipefail
 
         if [ "$CONCLUSION" = "success" ]; then
-          TEMPLATE_ID=AAqv2e8wrOFTm
+          TEMPLATE_ID=AAqv27Ca6iyuE
         else
-          TEMPLATE_ID=AAqv27Co32Y8H
+          TEMPLATE_ID=AAqv27ClgkT3l
         fi
 
         TIME_BJ=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')
@@ -72,17 +68,15 @@ runs:
           --arg project_name "$REPO" \
           --arg branch "$BRANCH" \
           --arg time "$TIME_BJ" \
-          --arg actions_name "$WF_NAME" \
           '{
             type: "template",
             data: {
               template_id: $template_id,
-              template_version_name: "1.0.4",
+              template_version_name: "1.0.1",
               template_variable: {
                 Project_Name: $project_name,
                 Branch: $branch,
-                Time: $time,
-                Actions_name: $actions_name
+                Time: $time
               }
             }
           }')
