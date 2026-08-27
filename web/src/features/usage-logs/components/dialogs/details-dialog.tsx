@@ -59,7 +59,7 @@ import {
   hasAnyCacheTokens,
   isViolationFeeLog,
   getFirstResponseTimeColor,
-  getResponseTimeColor,
+  getTimeColor,
 } from '../../lib/format'
 import {
   getLogTypeConfig,
@@ -1130,10 +1130,7 @@ function DetailsDialogBody(props: {
                 className={cn(
                   'font-medium',
                   timingTextColorClass(
-                    getResponseTimeColor(
-                      props.log.use_time / 1000,
-                      props.log.completion_tokens
-                    )
+                    getTimeColor(props.log.use_time / 1000)
                   )
                 )}
               >

@@ -43,7 +43,7 @@ import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 import {
   formatModelName,
   getFirstResponseTimeColor,
-  getResponseTimeColor,
+  getTimeColor,
   getThroughputColor,
   getTieredBillingSummary,
   hasAnyCacheTokens,
@@ -604,10 +604,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           typeof other?.speed === 'number' && other.speed > 0
             ? other.speed
             : null
-        const timeVariant = getResponseTimeColor(
-          useTimeSeconds,
-          log.completion_tokens
-        )
+        const timeVariant = getTimeColor(useTimeSeconds)
         const frtVariant = frt ? getFirstResponseTimeColor(frt / 1000) : null
         const speedVariant =
           speed != null

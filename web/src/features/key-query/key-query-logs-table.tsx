@@ -59,7 +59,7 @@ import {
 import { ModelBadge } from '@/features/usage-logs/components/model-badge'
 import {
   getFirstResponseTimeColor,
-  getResponseTimeColor,
+  getTimeColor,
   parseLogOther,
 } from '@/features/usage-logs/lib/format'
 import { fetchKeyLogs } from './api'
@@ -285,10 +285,7 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
                   className={cn(
                     'font-medium',
                     timingTextColorClass(
-                      getResponseTimeColor(
-                        log.use_time / 1000,
-                        log.completion_tokens
-                      )
+                      getTimeColor(log.use_time / 1000)
                     )
                   )}
                 >
