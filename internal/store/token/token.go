@@ -41,7 +41,10 @@ type Token struct {
 	RemainQuota        int     `json:"remain_quota" gorm:"default:0"`
 	UnlimitedQuota     bool    `json:"unlimited_quota"`
 	ModelLimitsEnabled bool    `json:"model_limits_enabled"`
-	ModelLimits        string  `json:"model_limits" gorm:"type:text;default:''"`
+	// model_limits 不可带 default：MySQL 拒绝为 TEXT 列设字面默认值
+	// （Error 1101），空库 AutoMigrate 建表会直接失败；string 零值本就
+	// 等价于空串，去掉 default 不改变读写语义。
+	ModelLimits        string  `json:"model_limits" gorm:"type:text"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:text"` // 令牌级模型重定向规则 (JSON 字符串)
 	AllowIps           *string `json:"allow_ips" gorm:"default:''"`
 	UsedQuota          int     `json:"used_quota" gorm:"default:0"` // used quota

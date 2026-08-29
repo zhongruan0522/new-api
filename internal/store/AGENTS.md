@@ -47,6 +47,11 @@
   拼接（由 `dbstore.InitCol` 按方言初始化），不要手写反引号/双引号。
 - 保留字列、布尔值、引号、JSON 存储、ALTER 行为要处理三库差异。
 - JSON 存储优先 `TEXT`，不要引入缺少回退方案的 JSONB/MySQL 专有能力。
+- TEXT 列不要带 `default` tag：MySQL 拒绝为 TEXT/BLOB 列设字面默认值
+  （Error 1101），空库 AutoMigrate 建表会直接失败（详见
+  `internal/store/token/token.go` 的 ModelLimits 与 `internal/store/log/log.go`
+  的 ua/x_title 列注释）；可空 JSON text 列用 `*string` 指针（如
+  `Log.BillingDetails`）。
 - SQLite 不支持 `ALTER COLUMN`，迁移按现有 add-column/兼容模式处理。
 
 ## 缓存与配置

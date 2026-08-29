@@ -17,10 +17,8 @@
 
 - 依赖核查必须看符号级依赖而非仅 import 语句：候选文件即使直接 import 只有
   标准库，若引用业务包内定义的函数/变量/错误值（如磁盘缓存配置、`SysError`、
-  `ErrRequestBodyTooLarge`），也不得进 `pkg/`。先例见
-  [docs/PRD/prd-architecture-migration.md](../docs/PRD/prd-architecture-migration.md)
-  阶段 2 对 `internal/common/body_storage.go` 的核查结论（暂留，阶段 4 已随迁
-  `internal/infra/cache/`）。
+  `ErrRequestBodyTooLarge`），也不得进 `pkg/`（先例：`internal/common/body_storage.go`
+  曾据此暂留，后随阶段 4 迁入 `internal/infra/cache/`）。
 - 禁止为通过核查而在迁移时改写业务逻辑（依赖注入等重构不在 `pkg/` 抽离范围内）。
 
 ## 验证

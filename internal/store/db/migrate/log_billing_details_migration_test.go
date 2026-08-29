@@ -126,6 +126,51 @@ func TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB(t *testing.T) {
 	}
 }
 
+// TestMigrateDBAddsBillingDetailsOnHistoricalMainDB 验证主库路径（同库日志）的
+// 历史库启动：logs 表已存在且无新列时，完整执行 migrateDB 补列、重复启动
+// 幂等，历史行保持 NULL 且旧字段不被改写。
+func TestMigrateDBAddsBillingDetailsOnHistoricalMainDB(t *testing.T) {
+	mainDB, _ := setupBillingDetailsMigrateTestDB(t)
+
+	if err := mainDB.AutoMigrate(&logstore.Log{}); err != nil {
+		t.Fatalf("migrate sqlite main db: %v", err)
+	}
+	historical := &logstore.Log{
+		UserId:           1,
+		CreatedAt:        1700000000,
+		Type:             logstore.LogTypeConsume,
+		Username:         "legacy-user",
+		ModelName:        "gpt-legacy",
+		Quota:            42,
+		PromptTokens:     100,
+		CompletionTokens: 50,
+		Group:            "default",
+		Other:            `{"cache_read":100}`,
+	}
+	if err := mainDB.Create(historical).Error; err != nil {
+		t.Fatalf("seed historical log: %v", err)
+	}
+	dropBillingDetailsColumn(t, mainDB)
+
+	for run := 1; run <= 2; run++ {
+		if err := migrateDB(); err != nil {
+			t.Fatalf("migrateDB run %d on historical main db: %v", run, err)
+		}
+	}
+	if !mainDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
+		t.Fatal("billing_details column missing after migrateDB on historical main db")
+	}
+	assertBillingDetailsNull(t, mainDB, historical.Id)
+
+	var stored logstore.Log
+	if err := mainDB.First(&stored, historical.Id).Error; err != nil {
+		t.Fatalf("reload historical log: %v", err)
+	}
+	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_read":100}` {
+		t.Fatalf("historical row mutated by migration: %+v", stored)
+	}
+}
+
 // TestMigrateDBMigratesLogModelOnFreshDB 验证主库迁移列表不遗漏 Log 模型：
 // 空库上完整执行 migrateDB 后 logs 表具备 billing_details 列、重复启动幂等，
 // 且迁移后的库可创建并读回该列（同库日志路径）。
