@@ -13,6 +13,7 @@ import (
 	"github.com/NookMux/NookMux/internal/relay/channel"
 	"github.com/NookMux/NookMux/internal/relay/channel/claude"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -266,6 +267,8 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 
 // Nova模型处理函数
 func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*shared.NookMuxError, *shared.Usage) {
+	// Nova usage 由本包按 prompt/completion 口径构造，语义为 OpenAI Chat 族。
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 
 	ctx, cancel := newAwsInvokeContext()
 	defer cancel()

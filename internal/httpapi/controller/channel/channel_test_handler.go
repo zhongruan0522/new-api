@@ -480,7 +480,7 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 			newAPIError: respErr,
 		}
 	}
-	usage, usageErr := coerceTestUsage(usageA, isStream, info.GetEstimatePromptTokens())
+	usage, usageErr := coerceTestUsage(c, usageA, isStream, info.GetEstimatePromptTokens())
 	if usageErr != nil {
 		return testResult{
 			context:     c,
@@ -545,6 +545,9 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 		IsStream:         info.IsStream,
 		Group:            info.UsingGroup,
 		Other:            other,
+		// 模型测试同样记录归一化 Token 用量；本地估算分支由
+		// coerceTestUsage 打标后自动跳过。
+		BillingDetails: billing.BuildBillingDetailsForLog(c, info, usage),
 	})
 	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return testResult{
@@ -554,7 +557,7 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 	}
 }
 
-func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*shared.Usage, error) {
+func coerceTestUsage(c *gin.Context, usageAny any, isStream bool, estimatePromptTokens int) (*shared.Usage, error) {
 	switch u := usageAny.(type) {
 	case *shared.Usage:
 		return u, nil
@@ -568,6 +571,8 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*sh
 			PromptTokens: estimatePromptTokens,
 		}
 		usage.TotalTokens = usage.PromptTokens
+		// 流式且上游未返回 usage 时的本地估算，billing_details 不落列。
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		return usage, nil
 	default:
 		if !isStream {
@@ -577,6 +582,8 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*sh
 			PromptTokens: estimatePromptTokens,
 		}
 		usage.TotalTokens = usage.PromptTokens
+		// 流式且上游未返回 usage 时的本地估算，billing_details 不落列。
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		return usage, nil
 	}
 }

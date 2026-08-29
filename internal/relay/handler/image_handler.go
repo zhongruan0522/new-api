@@ -118,11 +118,16 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *shar
 		return newAPIError
 	}
 
+	// 上游未返回 usage 时按生成张数充数：伪 token 用量，billing_details 不落列。
+	imageUsageFilledLocally := usage.(*shared.Usage).TotalTokens == 0 || usage.(*shared.Usage).PromptTokens == 0
 	if usage.(*shared.Usage).TotalTokens == 0 {
 		usage.(*shared.Usage).TotalTokens = int(request.N)
 	}
 	if usage.(*shared.Usage).PromptTokens == 0 {
 		usage.(*shared.Usage).PromptTokens = int(request.N)
+	}
+	if imageUsageFilledLocally {
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 	}
 
 	quality := resolveImageQuality(request)

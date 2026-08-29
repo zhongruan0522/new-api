@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 
 	sensitive "github.com/NookMux/NookMux/internal/domain/sensitive"
@@ -19,6 +20,7 @@ import (
 )
 
 func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) *shared.Usage {
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	// the status code has been judged before, if there is a body reading failure,
 	// it should be regarded as a non-recoverable error, so it should not return err for external retry.
 	// Analogous to nginx's load balancing, it will only retry if it can't be requested or
@@ -115,6 +117,8 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 }
 
 func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, responseFormat string) (*shared.NookMuxError, *shared.Usage) {
+	// STT 真实 usage 按 prompt/completion 口径上报，语义为 OpenAI Chat 族。
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := helper.ReadResponseBody(resp.Body)
@@ -144,5 +148,7 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	usage.PromptTokens = info.GetEstimatePromptTokens()
 	usage.CompletionTokens = 0
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+	// usage 为本地估算，不属于上游 Token 用量，billing_details 不落列。
+	httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 	return nil, usage
 }

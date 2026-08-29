@@ -5,6 +5,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/internal/relay/wire/convert"
 
@@ -14,6 +15,7 @@ import (
 )
 
 func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIResponses
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := helper.ReadResponseBody(resp.Body)

@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	"github.com/NookMux/NookMux/internal/relay/helper"
@@ -20,6 +22,7 @@ import (
 )
 
 func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIResponses
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	// read response body
@@ -85,6 +88,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 }
 
 func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIResponses
 	if resp == nil || resp.Body == nil {
 		log.LogError(c, "invalid response or response body")
 		return nil, shared.NewError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse)
@@ -183,11 +187,15 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			// 非正常结束，使用输出文本的 token 数量
 			completionTokens := tokenizer.CountTextToken(tempStr, info.UpstreamModelName)
 			usage.CompletionTokens = completionTokens
+			// 输出 token 为本地估算，整条 usage 不属于上游 Token 用量，
+			// billing_details 不落列。
+			httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		}
 	}
 
 	if usage.PromptTokens == 0 && usage.CompletionTokens != 0 {
 		usage.PromptTokens = info.GetEstimatePromptTokens()
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 	}
 
 	if usage.TotalTokens == 0 {

@@ -67,6 +67,12 @@ type UsageSettlement struct {
 
 	totalTokensZero bool
 	hasToolFees     bool
+	// estimatedUsage 表示 usage 来自本地估算（上游无计费信息）而非上游返回，
+	// 该情况下不生成 billing_details。
+	estimatedUsage bool
+	// usage 保留 CalculateUsage 实际使用的完整用量（含模态/缓存/推理明细），
+	// 供 billing_details 归一化使用，避免从标量重建丢失拆分。
+	usage *shared.Usage
 }
 
 // CalculateUsage 根据原始 usage 与计费上下文（RelayInfo.PriceData 等）计算应扣额度，
@@ -74,6 +80,7 @@ type UsageSettlement struct {
 // 返回错误时（上游缺失计费信息且不可重试豁免）调用方应直接中止，不要调用 ApplyQuota。
 func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage *shared.Usage, extraContent ...string) (*UsageSettlement, *shared.NookMuxError) {
 	usage := rawUsage
+	settlementEstimatedUsage := false
 	if usage == nil {
 		usage = &shared.Usage{
 			PromptTokens:     relayInfo.GetEstimatePromptTokens(),
@@ -81,6 +88,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			TotalTokens:      relayInfo.GetEstimatePromptTokens(),
 		}
 		extraContent = append(extraContent, "上游无计费信息")
+		settlementEstimatedUsage = true
 	}
 
 	if rawUsage != nil {
@@ -321,6 +329,8 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		groupRatio:            groupRatio,
 		isClaudeUsageSemantic: isClaudeUsageSemantic,
 		adminRejectReason:     adminRejectReason,
+		estimatedUsage:        settlementEstimatedUsage,
+		usage:                 usage,
 
 		webSearchPrice:           webSearchPrice,
 		claudeWebSearchPrice:     claudeWebSearchPrice,
@@ -403,6 +413,12 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 		settlement.extraContent = append(settlement.extraContent, fmt.Sprintf("模型 %s", settlement.modelName))
 	}
 	logContent := strings.Join(settlement.extraContent, ", ")
+	// billing_details 只在携带上游真实 Token 用量时生成；本地估算（上游无计费
+	// 信息或渠道本地计数）不写该列。
+	billingDetailsJSON := ""
+	if !settlement.estimatedUsage && settlement.usage != nil {
+		billingDetailsJSON = BuildBillingDetailsForLog(ctx, relayInfo, settlement.usage)
+	}
 	// 计算原始分组倍率（不含动态倍率），用于日志记录
 	groupRatio := settlement.groupRatio
 	originalGroupRatio := groupRatio
@@ -476,6 +492,8 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
+		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
+		BillingDetails: billingDetailsJSON,
 	})
 	return nil
 }

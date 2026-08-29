@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	redis "github.com/NookMux/NookMux/internal/infra/redis"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	channelstore "github.com/NookMux/NookMux/internal/store/channel"
 	dbstore "github.com/NookMux/NookMux/internal/store/db"
 	logstore "github.com/NookMux/NookMux/internal/store/log"
@@ -367,4 +368,58 @@ func TestApplyQuotaSettlesViaBillingSession(t *testing.T) {
 	other, err := common.StrToMap(stored.Other)
 	require.NoError(t, err)
 	assert.Equal(t, "wallet", other["billing_source"], "billing source should flow into log OtherInfo")
+}
+
+// 阶段 1 计费 PRD：携带上游真实 Token 用量的消费日志写 billing_details
+// canonical JSON；上游无计费信息（rawUsage == nil，本地估算）不写该列。
+func TestApplyQuotaBillingDetailsWrittenOnlyForUpstreamUsage(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+
+	waitForConsumeLogByToken := func(t *testing.T, tokenName string) logstore.Log {
+		t.Helper()
+		var stored logstore.Log
+		require.Eventually(t, func() bool {
+			err := dbstore.LOG_DB.Where("user_id = ? AND type = ? AND token_name = ?",
+				applyQuotaTestUserId, logstore.LogTypeConsume, tokenName).Order("id DESC").First(&stored).Error
+			return err == nil
+		}, 2*time.Second, 10*time.Millisecond, "consume log row should be written asynchronously")
+		return stored
+	}
+
+	t.Run("real upstream usage writes parseable json", func(t *testing.T) {
+		ctx := newApplyQuotaTestContext()
+		ctx.Set("token_name", "tk-bd-real")
+		relayInfo := newApplyQuotaTestRelayInfo()
+		relayInfo.UsageSource = relayconstant.UsageSourceOpenAIChat
+		usage := newApplyQuotaTestUsage()
+
+		settlement, apiErr := CalculateUsage(ctx, relayInfo, usage)
+		require.Nil(t, apiErr)
+		require.Nil(t, ApplyQuota(ctx, relayInfo, settlement))
+
+		stored := waitForConsumeLogByToken(t, "tk-bd-real")
+		require.NotNil(t, stored.BillingDetails, "upstream usage must persist billing_details")
+		payload, err := ParseBillingDetailsJSON(*stored.BillingDetails)
+		require.NoError(t, err)
+		require.NotNil(t, payload.Tokens.Cache.ReadCache)
+		require.Equal(t, 40, *payload.Tokens.Cache.ReadCache)
+	})
+
+	t.Run("estimated usage keeps billing_details null", func(t *testing.T) {
+		ctx := newApplyQuotaTestContext()
+		ctx.Set("token_name", "tk-bd-estimate")
+		relayInfo := newApplyQuotaTestRelayInfo()
+		relayInfo.UsageSource = relayconstant.UsageSourceOpenAIChat
+		// rawUsage == nil：usage 来自本地估算（GetEstimatePromptTokens），
+		// settlement.estimatedUsage 置位，billing_details 不落列。
+		relayInfo.SetEstimatePromptTokens(80)
+
+		settlement, apiErr := CalculateUsage(ctx, relayInfo, nil)
+		require.Nil(t, apiErr)
+		require.True(t, settlement.estimatedUsage, "nil rawUsage must mark estimated usage")
+		require.Nil(t, ApplyQuota(ctx, relayInfo, settlement))
+
+		stored := waitForConsumeLogByToken(t, "tk-bd-estimate")
+		require.Nil(t, stored.BillingDetails, "estimated usage must not write billing_details")
+	})
 }

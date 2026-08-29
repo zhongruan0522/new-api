@@ -288,10 +288,41 @@ type InputTokenDetails struct {
 	ImageTokens          int `json:"image_tokens"`
 }
 
+// UnmarshalJSON 补充读取 OpenAI Chat/Responses 官方的
+// prompt_tokens_details.cache_write_tokens / input_tokens_details.cache_write_tokens
+// （计费 PRD 3.1 缓存写入来源）。CachedCreationTokens 保持 json:"-"，
+// 序列化行为不变，避免改动客户端可见响应。
+func (d *InputTokenDetails) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*d = InputTokenDetails{}
+		return nil
+	}
+	type inputTokenDetailsAlias InputTokenDetails
+	var alias inputTokenDetailsAlias
+	if err := jsonx.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*d = InputTokenDetails(alias)
+	var cacheWrite struct {
+		CacheWriteTokens *int `json:"cache_write_tokens"`
+	}
+	// 第二趟解析为可选增强：个别网关下发畸形值时保持既有行为（忽略），
+	// 不让可选字段破坏整个 usage 的解析。
+	if err := jsonx.Unmarshal(data, &cacheWrite); err == nil && cacheWrite.CacheWriteTokens != nil {
+		d.CachedCreationTokens = *cacheWrite.CacheWriteTokens
+	}
+	return nil
+}
+
 type OutputTokenDetails struct {
 	TextTokens      int `json:"text_tokens"`
 	AudioTokens     int `json:"audio_tokens"`
 	ReasoningTokens int `json:"reasoning_tokens"`
+	// accepted/rejected prediction 是 Chat Completions 官方输出审计拆分
+	// （completion_tokens_details.accepted_prediction_tokens 等），仅透传为
+	// 审计维度；omitempty 保证旧响应序列化不受影响。
+	AcceptedPredictionTokens int `json:"accepted_prediction_tokens,omitempty"`
+	RejectedPredictionTokens int `json:"rejected_prediction_tokens,omitempty"`
 }
 
 type OpenAIResponsesResponse struct {

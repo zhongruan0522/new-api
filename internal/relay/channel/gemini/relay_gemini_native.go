@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
@@ -18,6 +19,8 @@ import (
 )
 
 func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	// usage 语义来源显式标识：Gemini 原生端点非流式。
+	info.UsageSource = relayconstant.UsageSourceGemini
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	// 读取响应体
@@ -54,6 +57,10 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 
 	// 计算使用量（基于 UsageMetadata）
 	usage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+	// 保留原始 usageMetadata：toolUsePromptTokenCount 已被并入转换结果，
+	// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
+	metadata := geminiResponse.UsageMetadata
+	info.UsageGeminiMetadata = &metadata
 
 	helper.IOCopyBytesGracefully(c, resp, responseBody)
 

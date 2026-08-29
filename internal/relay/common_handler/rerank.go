@@ -6,6 +6,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 
@@ -14,6 +15,8 @@ import (
 )
 
 func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	// rerank usage 按 prompt/completion 口径上报，语义为 OpenAI Chat 族。
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := helper.ReadResponseBody(resp.Body)

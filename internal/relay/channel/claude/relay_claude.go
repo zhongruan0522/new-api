@@ -938,6 +938,9 @@ func FormatClaudeResponseInfo(claudeResponse *shared.ClaudeResponse, oaiResponse
 }
 
 func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string) *shared.NookMuxError {
+	// usage 语义来源显式标识：Claude 原生、AWS Bedrock 复用路径、Vertex Claude
+	// 模式与 OpenRouter 原生 /api/v1/messages 全部经此收敛为同一条 Claude 规则。
+	info.UsageSource = relayconstant.UsageSourceClaude
 	var claudeResponse shared.ClaudeResponse
 	err := jsonx.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
@@ -1176,6 +1179,8 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 }
 
 func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, httpResp *http.Response, data []byte) *shared.NookMuxError {
+	// usage 语义来源显式标识：非流式与流式 Claude 返回统一走 Claude 归一化规则。
+	info.UsageSource = relayconstant.UsageSourceClaude
 	var claudeResponse shared.ClaudeResponse
 	err := jsonx.Unmarshal(data, &claudeResponse)
 	if err != nil {

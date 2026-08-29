@@ -43,6 +43,7 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 }
 
 func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	if resp == nil || resp.Body == nil {
 		log.LogError(c, "invalid response or response body")
 		return nil, shared.NewOpenAIError(fmt.Errorf("invalid response"), shared.ErrorCodeBadResponse, http.StatusInternalServerError)
@@ -156,6 +157,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 }
 
 func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	var simpleResponse shared.OpenAITextResponse
@@ -219,6 +221,8 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			TotalTokens:      info.GetEstimatePromptTokens() + completionTokens,
 		}
 		usageModified = true
+		// usage 为本地估算，不属于上游 Token 用量，billing_details 不落列。
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 	}
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
@@ -265,6 +269,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 }
 
 func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared.NookMuxError, *shared.RealtimeUsage) {
+	// Realtime usage（input_tokens/input_token_details/output_tokens）与
+	// Responses 同族，归一化按 openai_responses 规则。
+	info.UsageSource = relayconstant.UsageSourceOpenAIResponses
 	if info == nil || info.ClientWs == nil || info.TargetWs == nil {
 		return shared.NewError(fmt.Errorf("invalid websocket connection"), shared.ErrorCodeBadResponse), nil
 	}
@@ -477,6 +484,7 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *share
 }
 
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := helper.ReadMediaResponseBody(resp.Body)

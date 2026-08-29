@@ -263,6 +263,8 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
+		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
+		BillingDetails: BuildRealtimeBillingDetailsForLog(ctx, relayInfo, usage),
 	})
 	return nil
 }
@@ -393,6 +395,8 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
+		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
+		BillingDetails: BuildBillingDetailsForLog(ctx, relayInfo, usage),
 	})
 	return nil
 }
@@ -523,6 +527,8 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
+		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
+		BillingDetails: BuildBillingDetailsForLog(ctx, relayInfo, usage),
 	})
 	return nil
 }

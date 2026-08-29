@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/billing"
 	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
@@ -261,5 +262,67 @@ func TestLogModelReadsHistoricalSchemaWithoutBillingDetails(t *testing.T) {
 	}
 	if logs[0].BillingDetails != nil {
 		t.Fatalf("billing_details = %v on un-migrated schema, want nil", logs[0].BillingDetails)
+	}
+}
+
+// TestRecordConsumeLogBillingDetailsReadableByParser 验证阶段 1 验收标准
+// "新日志能读出 JSON"：归一化产物经 RecordConsumeLog 落库后，读出的列值
+// 必须能被读取端解析器还原为同一语义；损坏 JSON 有显式错误路径。
+func TestRecordConsumeLogBillingDetailsReadableByParser(t *testing.T) {
+	setupBillingDetailsTestDB(t)
+
+	bu := &billing.BillingUsage{
+		PromptAggregateTokens: 200,
+		OutputTokens:          100,
+		CacheReadTokens:       30,
+		CacheWriteTokens:      20,
+	}
+	bu.CacheWrite5mTokens = &bu.CacheWriteTokens
+	raw, err := billing.SerializeBillingUsage(bu)
+	if err != nil {
+		t.Fatalf("serialize billing usage: %v", err)
+	}
+
+	ctx := newBillingDetailsTestContext()
+	logstore.RecordConsumeLog(ctx, 1, logstore.RecordConsumeLogParams{
+		ChannelId:        1,
+		PromptTokens:     200,
+		CompletionTokens: 100,
+		ModelName:        "claude-sonnet-4-5",
+		TokenName:        "tk-parser",
+		Quota:            42,
+		Content:          "billing details parser roundtrip",
+		TokenId:          1,
+		UseTimeMs:        100,
+		IsStream:         false,
+		Group:            "default",
+		Other:            map[string]interface{}{"model_ratio": 1.0},
+		BillingDetails:   raw,
+	})
+	stored := waitForConsumeLogRow(t, "token_name = ?", "tk-parser")
+	if value := queryBillingDetailsRaw(t, stored.Id); value.String != raw || !value.Valid {
+		t.Fatalf("stored billing_details = %q (valid=%v), want %q", value.String, value.Valid, raw)
+	}
+
+	if stored.BillingDetails == nil || *stored.BillingDetails != raw {
+		t.Fatalf("model billing_details = %v, want %q", stored.BillingDetails, raw)
+	}
+	payload, err := billing.ParseBillingDetailsJSON(*stored.BillingDetails)
+	if err != nil {
+		t.Fatalf("parse stored billing_details %q: %v", *stored.BillingDetails, err)
+	}
+	if payload.Tokens.Cache.ReadCache == nil || *payload.Tokens.Cache.ReadCache != 30 {
+		t.Fatalf("read cache = %v, want 30", payload.Tokens.Cache.ReadCache)
+	}
+	if payload.Tokens.Cache.WriteCache5m == nil || *payload.Tokens.Cache.WriteCache5m != 20 {
+		t.Fatalf("write cache 5m = %v, want 20", payload.Tokens.Cache.WriteCache5m)
+	}
+	if payload.Tokens.Output.TextOutput != nil {
+		t.Fatalf("absent output split should stay nil, got %d", *payload.Tokens.Output.TextOutput)
+	}
+
+	// 损坏 JSON 读取端显式失败，不做启发式猜测。
+	if _, err := billing.ParseBillingDetailsJSON(`{"schema_version":9,"tokens":{}}`); err == nil {
+		t.Fatalf("unknown schema version must fail explicitly")
 	}
 }

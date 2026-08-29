@@ -1168,6 +1168,8 @@ func handleFinalStream(c *gin.Context, info *relaycommon.RelayInfo, resp *shared
 }
 
 func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response, callback func(data string, geminiResponse *shared.GeminiChatResponse) bool) (*shared.Usage, *shared.NookMuxError) {
+	// usage 语义来源显式标识：Gemini 流式（兼容 OpenAI 格式与原生端点共用）。
+	info.UsageSource = relayconstant.UsageSourceGemini
 	var usage = &shared.Usage{}
 	var imageCount int
 	responseText := strings.Builder{}
@@ -1213,6 +1215,10 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		if billing.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
 			convertedUsage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 			*usage = convertedUsage
+			// 保留原始 usageMetadata：toolUsePromptTokenCount 已被并入转换结果，
+			// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
+			metadata := geminiResponse.UsageMetadata
+			info.UsageGeminiMetadata = &metadata
 		}
 
 		return callback(data, &geminiResponse)
@@ -1227,6 +1233,9 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	if imageCount != 0 {
 		if usage.CompletionTokens == 0 {
 			usage.CompletionTokens = imageCount * 1400
+			// 输出 token 为本地常数估算，整条 usage 不属于上游 Token 用量，
+			// billing_details 不落列。
+			httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		}
 	}
 
@@ -1346,6 +1355,8 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 }
 
 func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
+	// usage 语义来源显式标识：Gemini 非流式（OpenAI 格式请求）。
+	info.UsageSource = relayconstant.UsageSourceGemini
 	defer helper.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := helper.ReadResponseBody(resp.Body)
@@ -1374,9 +1385,16 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		usage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 		if usage.PromptTokens <= 0 {
 			usage.PromptTokens = info.GetEstimatePromptTokens()
+			// 被拦截/空候选请求的 prompt token 为本地估算，billing_details 不落列。
+			httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 			if usage.TotalTokens < usage.PromptTokens {
 				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 			}
+		} else if billing.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
+			// 上游返回了真实用量：与正常路径一样保留原始 usageMetadata，
+			// 保证被拦截请求的日志同样能归一化落列。
+			metadata := geminiResponse.UsageMetadata
+			info.UsageGeminiMetadata = &metadata
 		}
 
 		var newAPIError *shared.NookMuxError
@@ -1414,6 +1432,10 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.GetResponseModelName()
 	usage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+	// 保留原始 usageMetadata：toolUsePromptTokenCount 已被并入转换结果，
+	// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
+	metadata := geminiResponse.UsageMetadata
+	info.UsageGeminiMetadata = &metadata
 
 	fullTextResponse.Usage = usage
 
@@ -1535,6 +1557,8 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 		CompletionTokens: 0,                             // image generation does not calculate completion tokens
 		TotalTokens:      imageTokens * generatedImages,
 	}
+	// usage 为本地固定常数估算，不属于上游 Token 用量，billing_details 不落列。
+	httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 
 	return usage, nil
 }

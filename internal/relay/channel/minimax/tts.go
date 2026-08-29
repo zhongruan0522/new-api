@@ -7,9 +7,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/relay/helper"
 	"github.com/NookMux/NookMux/pkg/jsonx"
 	"github.com/gin-gonic/gin"
@@ -199,6 +201,9 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	}
 	usage.(*shared.Usage).PromptTokensDetails.TextTokens = usageCharacters
 	usage.(*shared.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
+	// usage_characters 是字符数而非 token 数，不属于归一化 Token 用量，
+	// billing_details 不落列。
+	httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 
 	return usage, nil
 }
