@@ -46,7 +46,13 @@ type Log struct {
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
 	Other             string `json:"other"`
-	ModelIcon         string `json:"model_icon,omitempty" gorm:"-"`
+	// billing_details 保存本次请求归一化 Token 用量的 canonical JSON 字符串
+	//（schema 见 docs/PRD/计费.md 第 4 章），只描述"用了哪些 token"，不含
+	// quota、价格、倍率或请求元数据。指针类型沿用 ModelMapping 的可空 JSON
+	// text 列先例：仅在有 Token 用量的消费入口写入，历史日志与无用量入口保持
+	// NULL，不以 "{}"、"null" 或空串占位。
+	BillingDetails *string `json:"billing_details,omitempty" gorm:"column:billing_details;type:text"`
+	ModelIcon      string  `json:"model_icon,omitempty" gorm:"-"`
 }
 
 // don't use iota, avoid change log type value
@@ -264,7 +270,12 @@ type RecordConsumeLogParams struct {
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
-	LogType          int                    `json:"log_type"` // 日志类型，0 表示使用默认的 LogTypeConsume
+	// BillingDetails 是归一化 Token 用量的 canonical JSON 字符串（schema 见
+	// docs/PRD/计费.md 第 4 章），由调用方在归一化成功后传入；上游序列化失败
+	// 时调用方必须显式报错，不得传占位值。空串表示该入口没有 Token 用量，
+	// 落库时 billing_details 列保持 NULL。
+	BillingDetails string `json:"billing_details,omitempty"`
+	LogType        int    `json:"log_type"` // 日志类型，0 表示使用默认的 LogTypeConsume
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
@@ -279,6 +290,12 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	clientIP := c.ClientIP()
 	headers := extractClientHeaders(c)
 	otherStr := serializeLogOther(params.Other)
+	// billing_details 只在调用方提供归一化用量时写入；空入口保持 NULL，
+	// 不写 "{}"/"null" 占位（docs/PRD/计费.md 4.1/4.3）。
+	var billingDetails *string
+	if params.BillingDetails != "" {
+		billingDetails = &params.BillingDetails
+	}
 	logType := params.LogType
 	if logType == 0 {
 		logType = LogTypeConsume
@@ -307,6 +324,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 		Other:             otherStr,
+		BillingDetails:    billingDetails,
 	}
 	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
 	runtime.RelayGo(func() {

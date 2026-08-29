@@ -1,0 +1,265 @@
+package logstore_test
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/infra/redis"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+)
+
+// billingDetailsFixture 是一段符合 docs/PRD/计费.md 第 4 章 schema 的 canonical
+// JSON 样本。阶段 0 的存储层只透传该字符串、不负责归一化（归一化在阶段 1），
+// 这里用它验证列的可空语义与精确透传。
+const billingDetailsFixture = `{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":4,"write_cache":5,"write_cache_5m":5}}}`
+
+// setupBillingDetailsTestDB 复刻 setupLogAdminInfoTestDB 的 fixture 范式：
+// 独立内存 SQLite + 迁移所需表 + 全局量保存/恢复。
+func setupBillingDetailsTestDB(t *testing.T) {
+	t.Helper()
+
+	oldDB := dbstore.DB
+	oldLogDB := dbstore.LOG_DB
+	oldRedisEnabled := redis.RedisEnabled
+	oldMemoryCacheEnabled := common.MemoryCacheEnabled
+	oldDataExportEnabled := common.DataExportEnabled
+	oldLogConsumeEnabled := common.LogConsumeEnabled
+
+	logDB, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite test db: %v", err)
+	}
+	if err := logDB.AutoMigrate(&logstore.Log{}); err != nil {
+		t.Fatalf("migrate sqlite test db: %v", err)
+	}
+	dbstore.DB = logDB
+	dbstore.LOG_DB = logDB
+	dbstore.ResetBatchUpdateStores()
+	redis.RedisEnabled = false
+	common.MemoryCacheEnabled = false
+	// RecordConsumeLog 异步落库之外还会触发 usedata 统计写入，测试统一关闭，
+	// 避免依赖 quota_data 表与批量更新器时序。
+	common.DataExportEnabled = false
+	common.LogConsumeEnabled = true
+
+	t.Cleanup(func() {
+		if sqlDB, err := logDB.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+		dbstore.DB = oldDB
+		dbstore.LOG_DB = oldLogDB
+		dbstore.ResetBatchUpdateStores()
+		redis.RedisEnabled = oldRedisEnabled
+		common.MemoryCacheEnabled = oldMemoryCacheEnabled
+		common.DataExportEnabled = oldDataExportEnabled
+		common.LogConsumeEnabled = oldLogConsumeEnabled
+	})
+}
+
+// waitForConsumeLogRow 轮询等待 RecordConsumeLog 的异步落库：写入经 RelayGo
+// 提交到有界 goroutine 池，无等待句柄，只能以轮询收尾。
+func waitForConsumeLogRow(t *testing.T, query string, args ...interface{}) logstore.Log {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		var stored logstore.Log
+		err := dbstore.LOG_DB.Where(query, args...).Order("id DESC").First(&stored).Error
+		if err == nil {
+			return stored
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			t.Fatalf("query consume log with %q: %v", query, err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("consume log row was not written asynchronously within deadline (query=%s)", query)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// queryBillingDetailsRaw 直查列值并以 sql.NullString 区分 NULL 与空串：
+// 经模型读出时 NULL 与 "" 都表现为 nil/空，无法区分两种"空"状态。
+func queryBillingDetailsRaw(t *testing.T, id int) sql.NullString {
+	t.Helper()
+	var value sql.NullString
+	if err := dbstore.LOG_DB.Raw("SELECT billing_details FROM logs WHERE id = ?", id).Row().Scan(&value); err != nil {
+		t.Fatalf("query billing_details for log id %d: %v", id, err)
+	}
+	return value
+}
+
+func newBillingDetailsTestContext() *gin.Context {
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "http://example.test/v1/chat/completions", nil)
+	c.Set("username", "billing-details-user")
+	return c
+}
+
+// TestRecordConsumeLogWritesBillingDetailsOnlyWhenProvided 验证阶段 0 的核心
+// 写入契约：带归一化用量的入口精确透传 canonical JSON；无 Token 用量的入口
+// （工具费、违规费等）保持 NULL，不写 "{}"/"null" 占位；兼容列与 Other 不受影响。
+func TestRecordConsumeLogWritesBillingDetailsOnlyWhenProvided(t *testing.T) {
+	setupBillingDetailsTestDB(t)
+
+	logstore.RecordConsumeLog(newBillingDetailsTestContext(), 1, logstore.RecordConsumeLogParams{
+		ChannelId:        1,
+		PromptTokens:     16,
+		CompletionTokens: 10,
+		ModelName:        "gpt-test",
+		TokenName:        "tk-main",
+		Quota:            233,
+		Content:          "耗时 0.2 秒",
+		UseTimeMs:        200,
+		Group:            "default",
+		Other:            map[string]interface{}{"model_ratio": 1.5},
+		BillingDetails:   billingDetailsFixture,
+	})
+	withDetails := waitForConsumeLogRow(t, "user_id = ?", 1)
+	if withDetails.BillingDetails == nil || *withDetails.BillingDetails != billingDetailsFixture {
+		t.Fatalf("billing_details = %v, want exact fixture JSON %q", withDetails.BillingDetails, billingDetailsFixture)
+	}
+	// 兼容聚合列保持原语义，不因新列迁移或改写。
+	if withDetails.Quota != 233 || withDetails.PromptTokens != 16 || withDetails.CompletionTokens != 10 {
+		t.Fatalf("legacy aggregate columns changed: quota=%d prompt=%d completion=%d",
+			withDetails.Quota, withDetails.PromptTokens, withDetails.CompletionTokens)
+	}
+	if withDetails.Other != `{"model_ratio":1.5}` {
+		t.Fatalf("other = %q, want unchanged snapshot", withDetails.Other)
+	}
+
+	logstore.RecordConsumeLog(newBillingDetailsTestContext(), 2, logstore.RecordConsumeLogParams{
+		ChannelId: 1,
+		ModelName: "gpt-test",
+		Quota:     1,
+		Content:   "违规罚款",
+		Group:     "default",
+		Other:     map[string]interface{}{"fee_type": "violation"},
+	})
+	withoutDetails := waitForConsumeLogRow(t, "user_id = ?", 2)
+	value := queryBillingDetailsRaw(t, withoutDetails.Id)
+	if value.Valid {
+		t.Fatalf("billing_details = %q for entry without token usage, want NULL", value.String)
+	}
+	if withoutDetails.Other != `{"fee_type":"violation"}` {
+		t.Fatalf("other = %q, want unchanged snapshot", withoutDetails.Other)
+	}
+}
+
+// TestBillingDetailsMigrationKeepsHistoricalRowsEmpty 覆盖 SQLite 迁移路径：
+// 历史库（无该列）启动时 AutoMigrate 补列且幂等重跑通过；历史行保持 NULL、
+// 不回填、旧字段与 Other 原样；迁移后新行可正常写入。
+func TestBillingDetailsMigrationKeepsHistoricalRowsEmpty(t *testing.T) {
+	setupBillingDetailsTestDB(t)
+
+	// 以当前模型建库后插入历史消费日志，再删除 billing_details 列，
+	// 等价还原新列上线前的历史 schema。
+	historical := &logstore.Log{
+		UserId:           1,
+		CreatedAt:        1700000000,
+		Type:             logstore.LogTypeConsume,
+		Username:         "legacy-user",
+		TokenName:        "legacy-token",
+		ModelName:        "gpt-legacy",
+		Quota:            42,
+		PromptTokens:     100,
+		CompletionTokens: 50,
+		Group:            "default",
+		Other:            `{"cache_read":100}`,
+	}
+	if err := dbstore.LOG_DB.Create(historical).Error; err != nil {
+		t.Fatalf("seed historical log: %v", err)
+	}
+	if err := dbstore.LOG_DB.Migrator().DropColumn(&logstore.Log{}, "billing_details"); err != nil {
+		t.Fatalf("simulate historical schema by dropping column: %v", err)
+	}
+	if dbstore.LOG_DB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
+		t.Fatal("precondition failed: billing_details should be absent after drop")
+	}
+
+	// 启动迁移补列，并重复执行一次验证幂等（重复启动迁移）。
+	for run := 1; run <= 2; run++ {
+		if err := dbstore.LOG_DB.AutoMigrate(&logstore.Log{}); err != nil {
+			t.Fatalf("automigrate run %d: %v", run, err)
+		}
+	}
+	if !dbstore.LOG_DB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
+		t.Fatal("billing_details column missing after AutoMigrate")
+	}
+
+	var stored logstore.Log
+	if err := dbstore.LOG_DB.First(&stored, historical.Id).Error; err != nil {
+		t.Fatalf("reload historical log: %v", err)
+	}
+	value := queryBillingDetailsRaw(t, historical.Id)
+	if value.Valid {
+		t.Fatalf("historical billing_details = %q, want NULL (no backfill)", value.String)
+	}
+	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_read":100}` {
+		t.Fatalf("historical row mutated by migration: %+v", stored)
+	}
+
+	// 迁移后的库可正常写入新格式，且历史行保持空列。
+	logstore.RecordConsumeLog(newBillingDetailsTestContext(), 2, logstore.RecordConsumeLogParams{
+		ChannelId:      1,
+		ModelName:      "gpt-test",
+		Quota:          10,
+		Content:        "耗时 0.1 秒",
+		Group:          "default",
+		BillingDetails: billingDetailsFixture,
+	})
+	newRow := waitForConsumeLogRow(t, "user_id = ?", 2)
+	if newRow.BillingDetails == nil || *newRow.BillingDetails != billingDetailsFixture {
+		t.Fatalf("post-migration billing_details = %v, want fixture JSON", newRow.BillingDetails)
+	}
+	if value := queryBillingDetailsRaw(t, historical.Id); value.Valid {
+		t.Fatalf("historical row was backfilled: %q", value.String)
+	}
+}
+
+// TestLogModelReadsHistoricalSchemaWithoutBillingDetails 验证从节点行为：
+// 从节点不执行迁移（dbmigrate 按 IsMasterNode 跳过），滚动升级期间可能先于
+// 主节点面对无 billing_details 列的共享库；GORM 以 SELECT * 读取，模型新字段
+// 保持零值，查询不得报错。
+//
+// 已知局限（既有滚动升级约定，非本列独有）：该窗口内节点写入日志的 INSERT
+// 会显式包含 billing_details 列而失败，consume 日志按既有错误路径记录后继续
+// 服务，与 request_id/ua 等历史列上线时的行为一致。
+func TestLogModelReadsHistoricalSchemaWithoutBillingDetails(t *testing.T) {
+	setupBillingDetailsTestDB(t)
+
+	row := &logstore.Log{
+		UserId:    1,
+		CreatedAt: 1700000000,
+		Type:      logstore.LogTypeConsume,
+		ModelName: "gpt-test",
+		Group:     "default",
+		Other:     "{}",
+	}
+	if err := dbstore.LOG_DB.Create(row).Error; err != nil {
+		t.Fatalf("seed log: %v", err)
+	}
+	if err := dbstore.LOG_DB.Migrator().DropColumn(&logstore.Log{}, "billing_details"); err != nil {
+		t.Fatalf("simulate un-migrated schema: %v", err)
+	}
+
+	var logs []*logstore.Log
+	if err := dbstore.LOG_DB.Model(&logstore.Log{}).Where("user_id = ?", 1).Find(&logs).Error; err != nil {
+		t.Fatalf("read logs on schema without billing_details: %v", err)
+	}
+	if len(logs) != 1 {
+		t.Fatalf("log count = %d, want 1", len(logs))
+	}
+	if logs[0].BillingDetails != nil {
+		t.Fatalf("billing_details = %v on un-migrated schema, want nil", logs[0].BillingDetails)
+	}
+}
