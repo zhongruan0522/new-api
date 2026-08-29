@@ -24,10 +24,10 @@ github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35 h1:kzVuGlatQtYinwBJE
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35/go.mod h1:0yLx0yEI+SfqeJMPvOtIEFoZbiQYXMGszBueiutQyaI=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35 h1:WK6CjihTuLisCjSKKbildJ79sGZZgbBz3iNa7VsKIhU=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35/go.mod h1:KYleN57luLoe97R7vTnx8PMcVrr9gAcRECtOjl91DNg=
-github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1 h1:ZjxrEBMaFr3BaYDo/Wz+8hfE0FgbC1cESZ8BiE02NOs=
-github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1/go.mod h1:xx9ylHjnvUw9VCNrruAVBM8HycwTZ19+qdCQzk50shg=
 github.com/aws/aws-sdk-go-v2/service/bedrock v1.58.0 h1:bZoHj8W4Asvl7GOyFPIAX3q7/e8+SIuZbtCjM2nAd3g=
 github.com/aws/aws-sdk-go-v2/service/bedrock v1.58.0/go.mod h1:C8KxG3IPteAlDQUCBVIXfkn81kDh9iIBZ4SS8B5UbDE=
+github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1 h1:ZjxrEBMaFr3BaYDo/Wz+8hfE0FgbC1cESZ8BiE02NOs=
+github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.1/go.mod h1:xx9ylHjnvUw9VCNrruAVBM8HycwTZ19+qdCQzk50shg=
 github.com/aws/smithy-go v1.27.8 h1:FR0dxZfIlV7Z8eh2iHfIofdunw382XsDV3Mxt9nUvRY=
 github.com/aws/smithy-go v1.27.8/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -245,8 +245,8 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/samber/go-singleflightx v0.3.2 h1:jXbUU0fvis8Fdv4HGONboX5WdEZcYLoBEcKiE+ITCyQ=
 github.com/samber/go-singleflightx v0.3.2/go.mod h1:X2BR+oheHIYc73PvxRMlcASg6KYYTQyUYpdVU7t/ux4=
-github.com/samber/hot v0.13.0 h1:4/OyD5xNfhmdHqyKWHHSisiytp93gA3knkWZLAvld2w=
-github.com/samber/hot v0.13.0/go.mod h1:NB9v5U4NfDx7jmlrP+zHuqCuLUsywgAtCH7XOAkOxAg=
+github.com/samber/hot v0.13.1 h1:cTIS9spjhKs3k6QfL1N2m7qdAud8Aiw8oXsjxR58dxo=
+github.com/samber/hot v0.13.1/go.mod h1:NB9v5U4NfDx7jmlrP+zHuqCuLUsywgAtCH7XOAkOxAg=
 github.com/samber/lo v1.53.0 h1:t975lj2py4kJPQ6haz1QMgtId2gtmfktACxIXArw3HM=
 github.com/samber/lo v1.53.0/go.mod h1:4+MXEGsJzbKGaUEQFKBq2xtfuznW9oz/WrgyzMzRoM0=
 github.com/shirou/gopsutil v3.21.11+incompatible h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=
