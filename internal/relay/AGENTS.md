@@ -21,7 +21,7 @@
 - chat ↔ responses 转换必须经单点入口进入：请求与非流式响应走 `convert.NewConverter(...)` 的方法（会话承载方向与 tool 代理上下文），流式逐帧走 `stream.NewChatToResponsesStreamConverter` / `NewResponsesToChatStreamConverter` 两个构造器；不要绕过它们直调 `wire/convert` 内部具体函数或自建转换器。
 - 计费边界：usage → quota 的计算与落账只经 `domain/billing.CalculateUsage(ctx, relayInfo, rawUsage, extraContent...)` + `ApplyQuota(ctx, relayInfo, settlement)`（通用文本路径）或既有 `PostClaudeConsumeQuota` / `PostAudioConsumeQuota` / Pre&PostWss 等领域侧入口完成；relay 各层不得 import store 的 token/user/channel 包读写配额。
 - usage 语义来源必须显式标识：各渠道响应解析点（`claude.HandleClaudeResponseData`/`HandleStreamResponseData`、`openai` 各 Handler、`gemini` 各 Handler、AWS Nova、rerank handler 等）在解析 usage 时写入 `relayInfo.UsageSource`（`relay/constant` 的 `UsageSource*`，覆盖 Claude / OpenAI Chat / OpenAI Responses / Gemini 或对应兼容渠道来源），计费归一化（`billing.BuildBillingUsage`）据此选择语义规则；禁止用 `FinalRequestRelayFormat` 等请求侧格式反推。Gemini 解析点还须把原始 `usageMetadata` 暂存到 `relayInfo.UsageGeminiMetadata`（toolUse 拆分只审计，不进计价输入）。新增渠道解析 usage 时必须同步打标，否则该渠道日志不写 `billing_details` 并记错误日志。
-- 本地估算/伪 token 用量（`ResponseText2Usage`、TTS 字符数、按张数充数、Gemini imagen 固定 258 等）必须设置 `ContextKeyLocalCountTokens`，这类入口不生成 `billing_details`。
+- 本地估算/伪 token 用量（`ResponseText2Usage`、TTS 字符数与无 usage 事件的 TTS 流、STT 估算、Realtime 本地计数计费分支、按张数充数、Gemini imagen 固定 258 等）必须设置 `ContextKeyLocalCountTokens`，这类入口不生成 `billing_details`。
 - 流式输出必须保护 chunk 顺序、错误事件、finish reason、usage 和连接关闭行为。
 - 计费、预扣、补扣、缓存倍率、音频/图片/视频/embedding/rerank 的 usage 不能随意近似。
 - 供应商适配放在 `internal/relay/channel/<provider>/`，跨模态共享转换放 `internal/relay/helper/`。

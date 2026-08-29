@@ -402,6 +402,9 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 						localUsage.InputTokens += textToken + audioToken
 						localUsage.InputTokenDetails.TextTokens += textToken
 						localUsage.InputTokenDetails.AudioTokens += audioToken
+						// 上游 response.done 未携带 usage，本轮按本地 tokenizer 计数计费；
+						// 会话内混入本地估算，billing_details 不落列。
+						httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 						err = preConsumeUsage(c, info, localUsage, sumUsage)
 						if err != nil {
 							errChan <- fmt.Errorf("error consume usage: %v", err)
@@ -457,6 +460,9 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 	}
 
 	if localUsage.TotalTokens != 0 {
+		// 连接结束时剩余未结算事件按本地计数计费，会话内混入本地估算，
+		// billing_details 不落列。
+		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		_ = preConsumeUsage(c, info, localUsage, sumUsage)
 	}
 

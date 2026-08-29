@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -40,6 +41,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	c.Writer.WriteHeader(resp.StatusCode)
 
 	if info.IsStream {
+		upstreamUsageSeen := false
 		helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 			if sensitive.SundaySearch(data, "usage") {
 				var simpleResponse shared.SimpleResponse
@@ -48,6 +50,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 					log.LogError(c, err.Error())
 				}
 				if simpleResponse.Usage.TotalTokens != 0 {
+					upstreamUsageSeen = true
 					usage.PromptTokens = simpleResponse.Usage.InputTokens
 					usage.CompletionTokens = simpleResponse.OutputTokens
 					usage.TotalTokens = simpleResponse.TotalTokens
@@ -56,6 +59,11 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 			_ = helper.StringData(c, data)
 			return true
 		})
+		if !upstreamUsageSeen {
+			// 流式响应未出现上游 usage：初始估算值继续用于计费（现有行为），
+			// 但不属于上游 Token 用量，billing_details 不落列。
+			httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
+		}
 	} else {
 		httpapi.SetContextKey(c, common.ContextKeyLocalCountTokens, true)
 		// 读取响应体到缓冲区
@@ -129,11 +137,23 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	helper.IOCopyBytesGracefully(c, resp, responseBody)
 
 	var responseData struct {
-		Usage *shared.Usage `json:"usage"`
+		Usage json.RawMessage `json:"usage"`
 	}
-	if err := jsonx.Unmarshal(responseBody, &responseData); err == nil && responseData.Usage != nil {
-		if responseData.Usage.TotalTokens > 0 {
-			usage := responseData.Usage
+	if err := jsonx.Unmarshal(responseBody, &responseData); err == nil && len(responseData.Usage) > 0 {
+		usage := &shared.Usage{}
+		if err := jsonx.Unmarshal(responseData.Usage, usage); err == nil && usage.TotalTokens > 0 {
+			// STT 上游 usage 用单数 input_token_details 承载输入明细（Chat/Responses
+			// 用复数 input_tokens_details，shared.Usage 的 tag 匹配不到），单独补入
+			// InputTokensDetails 供 billing_details 归一化读取官方缓存/文本/音频拆分。
+			// 只写 InputTokensDetails 不写 PromptTokensDetails：audio_handler 按
+			// PromptTokensDetails.AudioTokens 分流 PostAudioConsumeQuota，
+			// 写入会改变既有计费路径与 quota（阶段 1 不切公式）。
+			var sttUsageDetails struct {
+				InputTokenDetails *shared.InputTokenDetails `json:"input_token_details"`
+			}
+			if err := jsonx.Unmarshal(responseData.Usage, &sttUsageDetails); err == nil && sttUsageDetails.InputTokenDetails != nil {
+				usage.InputTokensDetails = sttUsageDetails.InputTokenDetails
+			}
 			if usage.PromptTokens == 0 {
 				usage.PromptTokens = usage.InputTokens
 			}

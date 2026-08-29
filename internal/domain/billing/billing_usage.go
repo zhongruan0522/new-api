@@ -261,6 +261,13 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 			bu.DocumentInputTokens = addModality(bu.DocumentInputTokens, count)
 		}
 	}
+	// 官方口径注意：Gemini 的 promptTokensDetails 是 promptTokenCount（含缓存
+	// 部分）的按模态拆分，TEXT 明细可能包含 cachedContentTokenCount 对应的
+	// token，即 JSON 中 text_input 与 read_cache 存在官方层面的重叠（PRD 3.1
+	// 也注明模态明细"不默认与 cache 互斥"）。这里如实透传官方值，不做减法
+	// 伪造拆分；3.4 计费公式的普通输入文本从 InputTokens（已扣除缓存读取）
+	// 中移除非文本模态，不直接按 text_input 计价，因此不会重复计费。阶段 2
+	// 切换计费与前端展示时需继续遵守该口径。
 	for _, detail := range metadata.CandidatesTokensDetails {
 		count := detail.TokenCount
 		if count == 0 {
