@@ -8,6 +8,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/gin-gonic/gin"
@@ -52,6 +53,23 @@ func installServiceContextPricing(t *testing.T) {
 	})
 }
 
+// buildContextPricingTestUsage 构造 OpenAI Chat 语义的归一化用量
+// （prompt_tokens 含缓存读取/写入）。
+func buildContextPricingTestUsage(promptTokens, completionTokens, cachedTokens, cachedCreationTokens int) *BillingUsage {
+	usage := &shared.Usage{
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
+		TotalTokens:      promptTokens + completionTokens,
+	}
+	usage.PromptTokensDetails.CachedTokens = cachedTokens
+	usage.PromptTokensDetails.CachedCreationTokens = cachedCreationTokens
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceOpenAIChat, usage, nil)
+	if err != nil {
+		panic(err)
+	}
+	return bu
+}
+
 func TestApplyContextPricingDisabledLeavesPriceDataUnchanged(t *testing.T) {
 	if err := ratio.UpdateContextPricingByJSONString("{}"); err != nil {
 		t.Fatalf("failed to reset context pricing: %v", err)
@@ -66,9 +84,9 @@ func TestApplyContextPricingDisabledLeavesPriceDataUnchanged(t *testing.T) {
 		AudioCompletionRatio: 6,
 	}
 
-	result, enabled, err := ApplyContextPricingForUsage("missing-model", ContextPricingUsage{PromptTokens: 300000}, &priceData)
+	result, enabled, err := ApplyContextPricingForBillingUsage("missing-model", buildContextPricingTestUsage(300000, 0, 0, 0), &priceData)
 	if err != nil {
-		t.Fatalf("ApplyContextPricingForUsage returned error: %v", err)
+		t.Fatalf("ApplyContextPricingForBillingUsage returned error: %v", err)
 	}
 	if enabled || result != nil {
 		t.Fatalf("expected disabled context pricing, got enabled=%v result=%+v", enabled, result)
@@ -79,29 +97,71 @@ func TestApplyContextPricingDisabledLeavesPriceDataUnchanged(t *testing.T) {
 	}
 }
 
-func TestApplyContextPricingMatchesInputContextAndIgnoresOutput(t *testing.T) {
+// 阶段 2：档位 tokens = 普通输入 + 输出 + 缓存读取 + 缓存写入（含输出维度）。
+// 输入 199000 不足 200K，但叠加输出 80000 后总处理量进入高档位。
+func TestApplyContextPricingTierIncludesOutputDimension(t *testing.T) {
 	installServiceContextPricing(t)
 
-	usage := &shared.Usage{
-		PromptTokens:     199000,
-		CompletionTokens: 800000,
-	}
 	priceData := contract.PriceData{}
-	result, enabled, err := ApplyContextPricingForUsage("service-tier-model", BuildContextPricingUsage(usage, false), &priceData)
+	result, enabled, err := ApplyContextPricingForBillingUsage("service-tier-model", buildContextPricingTestUsage(199000, 80000, 0, 0), &priceData)
 	if err != nil {
-		t.Fatalf("ApplyContextPricingForUsage returned error: %v", err)
+		t.Fatalf("ApplyContextPricingForBillingUsage returned error: %v", err)
 	}
 	if !enabled || result == nil {
 		t.Fatalf("expected enabled context pricing")
 	}
-	if result.TierName != "<200K" || result.ContextTokensForTier != 199000 {
-		t.Fatalf("result = %+v, want low tier matched by input only", result)
+	if result.TierName != ">=200K" || result.ContextTokensForTier != 279000 {
+		t.Fatalf("result = %+v, want high tier with input+output 279000", result)
 	}
-	if priceData.ModelRatio != 1 {
-		t.Fatalf("model ratio = %v, want low tier ratio 1", priceData.ModelRatio)
+	if priceData.ModelRatio != 10 {
+		t.Fatalf("model ratio = %v, want high tier ratio 10", priceData.ModelRatio)
 	}
 }
 
+// 输入与输出之和未达档位阈值时命中低档位。
+func TestApplyContextPricingLowTierBelowThreshold(t *testing.T) {
+	installServiceContextPricing(t)
+
+	priceData := contract.PriceData{}
+	result, enabled, err := ApplyContextPricingForBillingUsage("service-tier-model", buildContextPricingTestUsage(199000, 800, 0, 0), &priceData)
+	if err != nil {
+		t.Fatalf("ApplyContextPricingForBillingUsage returned error: %v", err)
+	}
+	if !enabled || result == nil {
+		t.Fatalf("expected enabled context pricing")
+	}
+	if result.TierName != "<200K" || result.ContextTokensForTier != 199800 {
+		t.Fatalf("result = %+v, want low tier with 199800 tokens", result)
+	}
+	if priceData.ModelRatio != 1 || priceData.CompletionRatio != 2 {
+		t.Fatalf("low tier did not apply prices to priceData: %+v", priceData)
+	}
+}
+
+// 缓存读取/写入参与档位 tokens 且不重复计数：Claude 聚合 180 =
+// 普通输入 100 + 读取 30 + 写入 50，四维相加仍为 180。
+func TestContextTokensForTierAvoidsDoubleCountingClaudeCache(t *testing.T) {
+	usage := &shared.Usage{
+		PromptTokens: 180,
+		PromptTokensDetails: shared.InputTokenDetails{
+			CachedTokens:         30,
+			CachedCreationTokens: 50,
+		},
+	}
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceClaude, usage, nil)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage returned error: %v", err)
+	}
+	if bu.InputTokens() != 100 {
+		t.Fatalf("normal input tokens = %d, want 100", bu.InputTokens())
+	}
+	if got := ContextTokensForTier(bu); got != 180 {
+		t.Fatalf("ContextTokensForTier = %d, want 180", got)
+	}
+}
+
+// Claude 缓存命中把档位推入高档：聚合 210000 + 输出 1 = 210001 ≥ 200K，
+// 档位价格全量写回 PriceData（价格快照仍写入现有位置）。
 func TestApplyContextPricingCacheCanPushClaudeUsageToHighTier(t *testing.T) {
 	installServiceContextPricing(t)
 
@@ -113,38 +173,24 @@ func TestApplyContextPricingCacheCanPushClaudeUsageToHighTier(t *testing.T) {
 			CachedCreationTokens: 30000,
 		},
 	}
-	priceData := contract.PriceData{}
-	result, enabled, err := ApplyContextPricingForUsage("service-tier-model", BuildContextPricingUsage(usage, true), &priceData)
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceClaude, usage, nil)
 	if err != nil {
-		t.Fatalf("ApplyContextPricingForUsage returned error: %v", err)
+		t.Fatalf("BuildBillingUsage returned error: %v", err)
+	}
+	priceData := contract.PriceData{}
+	result, enabled, err := ApplyContextPricingForBillingUsage("service-tier-model", bu, &priceData)
+	if err != nil {
+		t.Fatalf("ApplyContextPricingForBillingUsage returned error: %v", err)
 	}
 	if !enabled || result == nil {
 		t.Fatalf("expected enabled context pricing")
 	}
-	if result.TierName != ">=200K" || result.ContextTokensForTier != 210000 {
-		t.Fatalf("result = %+v, want high tier with 210000 context tokens", result)
+	if result.TierName != ">=200K" || result.ContextTokensForTier != 210001 {
+		t.Fatalf("result = %+v, want high tier with 210001 context tokens", result)
 	}
 	if priceData.ModelRatio != 10 || priceData.CompletionRatio != 20 || priceData.CacheRatio != 5 ||
 		priceData.CacheCreationRatio != 12.5 || priceData.AudioRatio != 30 || priceData.AudioCompletionRatio != 40 {
 		t.Fatalf("high tier did not apply all prices to priceData: %+v", priceData)
-	}
-}
-
-func TestContextTokensForTierAvoidsDoubleCountingClaudeCache(t *testing.T) {
-	usage := &shared.Usage{
-		PromptTokens: 180,
-		PromptTokensDetails: shared.InputTokenDetails{
-			CachedTokens:         30,
-			CachedCreationTokens: 50,
-		},
-	}
-
-	contextUsage := BuildContextPricingUsage(usage, true)
-	if contextUsage.PromptTokens != 100 {
-		t.Fatalf("base prompt tokens = %d, want 100", contextUsage.PromptTokens)
-	}
-	if got := ContextTokensForTier(contextUsage); got != 180 {
-		t.Fatalf("ContextTokensForTier = %d, want 180", got)
 	}
 }
 

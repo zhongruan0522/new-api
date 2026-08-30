@@ -2,6 +2,7 @@ package billing
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/httpapi"
+	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -43,11 +45,10 @@ type UsageSettlement struct {
 	modelPrice      float64
 	// groupRatio 是计价前快照；ApplyQuota 计算 originalGroupRatio 以它为基数，
 	// 不得改为落账时从 PriceData 重读（计价/落账副作用之间不存在改写者，
-	// 但快照语义与计价阶段使用的 dGroupRatio 保持同源）。
+	// 但快照语义与计价阶段使用的分组倍率保持同源）。
 	groupRatio float64
 
-	isClaudeUsageSemantic bool
-	adminRejectReason     string
+	adminRejectReason string
 
 	webSearchPrice           float64
 	claudeWebSearchPrice     float64
@@ -67,17 +68,46 @@ type UsageSettlement struct {
 
 	totalTokensZero bool
 	hasToolFees     bool
-	// estimatedUsage 表示 usage 来自本地估算（上游无计费信息）而非上游返回，
-	// 该情况下不生成 billing_details。
+	// estimatedUsage 表示 usage 来自本地估算（上游无计费信息）而非上游返回。
 	estimatedUsage bool
-	// usage 保留 CalculateUsage 实际使用的完整用量（含模态/缓存/推理明细），
-	// 供 billing_details 归一化使用，避免从标量重建丢失拆分。
-	usage *shared.Usage
+	// bu 是本次请求的归一化 Token 用量（计费 PRD 阶段 2）：quota 与
+	// billing_details JSON 都来自同一次转换，不再从聚合字段反推。
+	bu *BillingUsage
+	// billingDetailsJSON 由 CalculateUsage 内的同一个 bu 序列化得到；空串
+	// 表示不写该列（本地估算、本地计数伪 usage 或无 token 用量）。
+	billingDetailsJSON string
+	// quotaLines 是归一化计价行项，供影子对拍差异定位与日志解释。
+	quotaLines []BillingQuotaLine
+}
+
+// normalizeUsageForBilling 是通用入口的归一化单点：真实上游 usage 必须携带
+// 显式来源标识（relay 各解析点写入 RelayInfo.UsageSource），上游无 usage 的
+// 本地估算与未打标的本地伪 usage 按聚合口径构造并复用同一计费公式。
+// 归一化失败属于显式错误路径（PRD：计费配置缺失、归一化失败、上游无 usage
+// 三类原因可观测），直接失败暴露问题，不回退旧公式掩盖。
+func normalizeUsageForBilling(relayInfo *relaycommon.RelayInfo, usage *shared.Usage, localCountTokens bool) (*BillingUsage, []string, error) {
+	// 上游无 token 用量（全零）：无可归一化语义，按聚合口径构造，
+	// 后续按 totalTokens==0 的既有路径处理（原生请求触发重试），
+	// 不判为归一化失败。
+	if usage.PromptTokens == 0 && usage.CompletionTokens == 0 {
+		bu, err := buildAggregateBillingUsage(usage)
+		return bu, nil, err
+	}
+	// 本地估算/伪 usage（本地计数标记）：无官方语义可归一化（且可能缺少
+	// Gemini 原始 metadata），按聚合口径构造，与旧通用公式口径一致；
+	// billing_details 由调用方按本地计数标记跳过。audio/realtime 入口的
+	// 伪 usage 携带 text/audio 明细，不走本分支（各入口直接归一化）。
+	if localCountTokens {
+		bu, err := buildAggregateBillingUsage(usage)
+		return bu, nil, err
+	}
+	return BuildBillingUsage(relayInfo.UsageSource, usage, relayInfo.UsageGeminiMetadata)
 }
 
 // CalculateUsage 根据原始 usage 与计费上下文（RelayInfo.PriceData 等）计算应扣额度，
 // 是通用文本路径 usage 计费的单点入口。rawUsage 为 nil 时按预估 prompt tokens 兜底。
-// 返回错误时（上游缺失计费信息且不可重试豁免）调用方应直接中止，不要调用 ApplyQuota。
+// 返回错误时（归一化失败或上游缺失计费信息且不可重试豁免）调用方应直接中止，
+// 不要调用 ApplyQuota。
 func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage *shared.Usage, extraContent ...string) (*UsageSettlement, *shared.NookMuxError) {
 	usage := rawUsage
 	settlementEstimatedUsage := false
@@ -99,50 +129,51 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
-	cacheTokens := usage.PromptTokensDetails.CachedTokens
-	audioTokens := usage.PromptTokensDetails.AudioTokens
 	completionTokens := usage.CompletionTokens
-	cachedCreationTokens := usage.PromptTokensDetails.CachedCreationTokens
 
 	modelName := relayInfo.OriginModelName
 
 	tokenName := ctx.GetString("token_name")
-	completionRatio := relayInfo.PriceData.CompletionRatio
-	cacheRatio := relayInfo.PriceData.CacheRatio
-	modelRatio := relayInfo.PriceData.ModelRatio
 	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
 	modelPrice := relayInfo.PriceData.ModelPrice
-	cachedCreationRatio := relayInfo.PriceData.CacheCreationRatio
-	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude
+	localCountTokens := httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens)
 
-	if _, enabled, err := ApplyContextPricingForUsage(modelName, BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
+	// 归一化（PRD 阶段 2）：同一次转换同时供计费与 billing_details 使用。
+	bu, warnings, normErr := normalizeUsageForBilling(relayInfo, usage, localCountTokens)
+	if normErr != nil {
+		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+normErr.Error())
+		return nil, shared.NewOpenAIError(
+			fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)),
+			shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
+	}
+	for _, warning := range warnings {
+		log.LogWarn(ctx, "billing_details anomaly: "+warning)
+	}
+
+	// 上下文分段计费：档位匹配改用普通输入/输出/缓存读取/缓存写入四维
+	// （PRD 阶段 2）；命中档位后的价格快照仍经 appendBillingInfo 写入现有位置。
+	if _, enabled, err := ApplyContextPricingForBillingUsage(modelName, bu, &relayInfo.PriceData); enabled {
 		if err != nil {
-			log.LogError(ctx, "context pricing failed: "+err.Error())
+			log.LogError(ctx, "context pricing failed (cause=billing_config_missing): "+err.Error())
 			extraContent = append(extraContent, "分段计费匹配失败: "+err.Error())
-		} else {
-			completionRatio = relayInfo.PriceData.CompletionRatio
-			cacheRatio = relayInfo.PriceData.CacheRatio
-			modelRatio = relayInfo.PriceData.ModelRatio
-			modelPrice = relayInfo.PriceData.ModelPrice
-			cachedCreationRatio = relayInfo.PriceData.CacheCreationRatio
 		}
 	}
 
-	// Convert values to decimal for precise calculation
-	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
-	dCacheTokens := decimal.NewFromInt(int64(cacheTokens))
-	dAudioTokens := decimal.NewFromInt(int64(audioTokens))
-	dCompletionTokens := decimal.NewFromInt(int64(completionTokens))
-	dCachedCreationTokens := decimal.NewFromInt(int64(cachedCreationTokens))
-	dCompletionRatio := decimal.NewFromFloat(completionRatio)
-	dCacheRatio := decimal.NewFromFloat(cacheRatio)
-	dModelRatio := decimal.NewFromFloat(modelRatio)
-	dGroupRatio := decimal.NewFromFloat(groupRatio)
-	dModelPrice := decimal.NewFromFloat(modelPrice)
-	dCachedCreationRatio := decimal.NewFromFloat(cachedCreationRatio)
-	dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+	quotaResult, quotaErr := CalculateNormalizedQuota(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName)
+	if quotaErr != nil {
+		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
+		return nil, shared.NewOpenAIError(
+			fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)),
+			shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
+	}
+	if !quotaResult.AudioInputQuota.IsZero() {
+		extraContent = append(extraContent, fmt.Sprintf("Audio Input 花费 %s", quotaResult.AudioInputQuota.String()))
+	}
 
-	ratio := dModelRatio.Mul(dGroupRatio)
+	// Convert values to decimal for precise calculation
+	dGroupRatio := decimal.NewFromFloat(groupRatio)
+	dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+	dRatio := decimal.NewFromFloat(relayInfo.PriceData.ModelRatio).Mul(dGroupRatio)
 
 	// openai web search 工具计费
 	var dWebSearchQuota decimal.Decimal
@@ -247,52 +278,10 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		extraContent = append(extraContent, fmt.Sprintf("Image Generation Call 花费 %s", dImageGenerationCallQuota.String()))
 	}
 
-	var quotaCalculateDecimal decimal.Decimal
-
-	var audioInputQuota decimal.Decimal
-	var audioInputPrice float64
-	if !relayInfo.PriceData.UsePrice {
-		baseTokens := dPromptTokens
-		// 减去 cached tokens
-		// Anthropic API 的 input_tokens 已经不包含缓存 tokens，不需要减去
-		// OpenAI/OpenRouter 等 API 的 prompt_tokens 包含缓存 tokens，需要减去
-		var cachedTokensWithRatio decimal.Decimal
-		if !dCacheTokens.IsZero() {
-			if !isClaudeUsageSemantic {
-				baseTokens = baseTokens.Sub(dCacheTokens)
-			}
-			cachedTokensWithRatio = dCacheTokens.Mul(dCacheRatio)
-		}
-		var dCachedCreationTokensWithRatio decimal.Decimal
-		if !dCachedCreationTokens.IsZero() {
-			if !isClaudeUsageSemantic {
-				baseTokens = baseTokens.Sub(dCachedCreationTokens)
-			}
-			dCachedCreationTokensWithRatio = dCachedCreationTokens.Mul(dCachedCreationRatio)
-		}
-
-		// 减去 Gemini audio tokens
-		if !dAudioTokens.IsZero() {
-			audioInputPrice = operation.GetGeminiInputAudioPricePerMillionTokens(modelName)
-			if audioInputPrice > 0 {
-				// 重新计算 base tokens
-				baseTokens = baseTokens.Sub(dAudioTokens)
-				audioInputQuota = decimal.NewFromFloat(audioInputPrice).Div(decimal.NewFromInt(1000000)).Mul(dAudioTokens).Mul(dGroupRatio).Mul(dQuotaPerUnit)
-				extraContent = append(extraContent, fmt.Sprintf("Audio Input 花费 %s", audioInputQuota.String()))
-			}
-		}
-		promptQuota := baseTokens.Add(cachedTokensWithRatio).
-			Add(dCachedCreationTokensWithRatio)
-
-		completionQuota := dCompletionTokens.Mul(dCompletionRatio)
-
-		quotaCalculateDecimal = promptQuota.Add(completionQuota).Mul(ratio)
-
-		if !ratio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
-			quotaCalculateDecimal = decimal.NewFromInt(1)
-		}
-	} else {
-		quotaCalculateDecimal = dModelPrice.Mul(dQuotaPerUnit).Mul(dGroupRatio)
+	// token 部分费用只来自归一化结果；工具费/图片调用费/音频独立费继续走独立路径。
+	quotaCalculateDecimal := quotaResult.TokenTotal
+	if !quotaResult.UsePrice && !dRatio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
+		quotaCalculateDecimal = decimal.NewFromInt(1)
 	}
 	// 添加 responses tools call 调用的配额
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dWebSearchQuota)
@@ -300,7 +289,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dGeminiWebSearchQuota)
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 	// 添加 audio input 独立计费
-	quotaCalculateDecimal = quotaCalculateDecimal.Add(audioInputQuota)
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(quotaResult.AudioInputQuota)
 	// 添加 image generation call 计费
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dImageGenerationCallQuota)
 
@@ -312,25 +301,40 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		}
 	}
 
+	// billing_details 与计费来自同一次归一化：仅在携带上游真实 Token 用量时
+	// 生成；本地估算（上游无计费信息或渠道本地计数）与无 token 用量不写该列。
+	billingDetailsJSON := ""
+	if !settlementEstimatedUsage && !localCountTokens &&
+		!(promptTokens == 0 && completionTokens == 0) {
+		payload, err := SerializeBillingUsage(bu)
+		if err != nil {
+			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
+		} else {
+			billingDetailsJSON = payload
+		}
+	}
+
 	settlement := &UsageSettlement{
-		modelName:             modelName,
-		tokenName:             tokenName,
-		useTimeMs:             useTimeMs,
-		promptTokens:          promptTokens,
-		completionTokens:      completionTokens,
-		cacheTokens:           cacheTokens,
-		cachedCreationTokens:  cachedCreationTokens,
-		cachedCreationRatio:   cachedCreationRatio,
-		audioTokens:           audioTokens,
-		modelRatio:            modelRatio,
-		completionRatio:       completionRatio,
-		cacheRatio:            cacheRatio,
-		modelPrice:            modelPrice,
-		groupRatio:            groupRatio,
-		isClaudeUsageSemantic: isClaudeUsageSemantic,
-		adminRejectReason:     adminRejectReason,
-		estimatedUsage:        settlementEstimatedUsage,
-		usage:                 usage,
+		modelName:        modelName,
+		tokenName:        tokenName,
+		useTimeMs:        useTimeMs,
+		promptTokens:     promptTokens,
+		completionTokens: completionTokens,
+		// 计费快照字段从归一化结果取值（阶段 2 起缓存/模态口径以归一化为准）
+		cacheTokens:          bu.CacheReadTokens,
+		cachedCreationTokens: bu.CacheWriteTokens,
+		cachedCreationRatio:  relayInfo.PriceData.CacheCreationRatio,
+		audioTokens:          intValue(bu.AudioInputTokens),
+		modelRatio:           relayInfo.PriceData.ModelRatio,
+		completionRatio:      relayInfo.PriceData.CompletionRatio,
+		cacheRatio:           relayInfo.PriceData.CacheRatio,
+		modelPrice:           modelPrice,
+		groupRatio:           groupRatio,
+		adminRejectReason:    adminRejectReason,
+		estimatedUsage:       settlementEstimatedUsage,
+		bu:                   bu,
+		billingDetailsJSON:   billingDetailsJSON,
+		quotaLines:           quotaResult.Lines,
 
 		webSearchPrice:           webSearchPrice,
 		claudeWebSearchPrice:     claudeWebSearchPrice,
@@ -339,14 +343,14 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		geminiWebSearchCallCount: geminiWebSearchCallCount,
 		fileSearchPrice:          fileSearchPrice,
 		imageGenerationCallPrice: imageGenerationCallPrice,
-		audioInputPrice:          audioInputPrice,
+		audioInputPrice:          quotaResult.AudioInputPrice,
 
 		dWebSearchQuota:           dWebSearchQuota,
 		dClaudeWebSearchQuota:     dClaudeWebSearchQuota,
 		dGeminiWebSearchQuota:     dGeminiWebSearchQuota,
 		dFileSearchQuota:          dFileSearchQuota,
 		dImageGenerationCallQuota: dImageGenerationCallQuota,
-		audioInputQuota:           audioInputQuota,
+		audioInputQuota:           quotaResult.AudioInputQuota,
 
 		extraContent: extraContent,
 	}
@@ -364,7 +368,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		settlement.totalTokensZero = true
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费
 		toolQuota := dWebSearchQuota.Add(dClaudeWebSearchQuota).Add(dGeminiWebSearchQuota).
-			Add(dFileSearchQuota).Add(dImageGenerationCallQuota).Add(audioInputQuota)
+			Add(dFileSearchQuota).Add(dImageGenerationCallQuota).Add(quotaResult.AudioInputQuota)
 		if toolQuota.GreaterThan(decimal.Zero) {
 			settlement.hasToolFees = true
 			settlement.quota = int(toolQuota.Round(0).IntPart())
@@ -374,11 +378,24 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			settlement.extraContent = append(settlement.extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
 		}
 	} else {
-		if !ratio.IsZero() && quota == 0 {
+		if !dRatio.IsZero() && quota == 0 {
 			quota = 1
 		}
 		settlement.quota = quota
 	}
+
+	// 影子对拍（计费 PRD 阶段 2 迁移期）：旧公式并行计算，quota 不一致输出告警，
+	// 差异必须定位为旧公式 bug 或新语义 bug，不允许吸收差异。
+	if totalTokens > 0 {
+		claudeSemantic := relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude
+		toolQuota := dWebSearchQuota.Add(dClaudeWebSearchQuota).Add(dGeminiWebSearchQuota).
+			Add(dFileSearchQuota).Add(dImageGenerationCallQuota)
+		legacyQuota := legacyGenericFinalQuota(usage, claudeSemantic, relayInfo.PriceData, modelName, toolQuota, relayInfo.PriceData.OtherRatios)
+		if legacyQuota != settlement.quota {
+			reportBillingShadowMismatch(ctx, "generic", relayInfo, legacyQuota, settlement.quota, bu, quotaResult.Lines, false)
+		}
+	}
+
 	return settlement, nil
 }
 
@@ -413,12 +430,6 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 		settlement.extraContent = append(settlement.extraContent, fmt.Sprintf("模型 %s", settlement.modelName))
 	}
 	logContent := strings.Join(settlement.extraContent, ", ")
-	// billing_details 只在携带上游真实 Token 用量时生成；本地估算（上游无计费
-	// 信息或渠道本地计数）不写该列。
-	billingDetailsJSON := ""
-	if !settlement.estimatedUsage && settlement.usage != nil {
-		billingDetailsJSON = BuildBillingDetailsForLog(ctx, relayInfo, settlement.usage)
-	}
 	// 计算原始分组倍率（不含动态倍率），用于日志记录
 	groupRatio := settlement.groupRatio
 	originalGroupRatio := groupRatio
@@ -429,11 +440,6 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 	other := GenerateTextOtherInfo(ctx, relayInfo, settlement.modelRatio, originalGroupRatio, settlement.completionRatio, settlement.cacheTokens, settlement.cacheRatio, settlement.modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
 	if settlement.adminRejectReason != "" {
 		other["reject_reason"] = settlement.adminRejectReason
-	}
-	// For chat-based calls to the Claude model, tagging is required. Using Claude's rendering logs, the two approaches handle input rendering differently.
-	if settlement.isClaudeUsageSemantic {
-		other["claude"] = true
-		other["usage_semantic"] = "anthropic"
 	}
 	if settlement.cachedCreationTokens != 0 {
 		other["cache_creation_tokens"] = settlement.cachedCreationTokens
@@ -492,8 +498,8 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
-		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
-		BillingDetails: billingDetailsJSON,
+		// 阶段 2：billing_details 由 CalculateUsage 内的同一归一化结果序列化。
+		BillingDetails: settlement.billingDetailsJSON,
 	})
 	return nil
 }

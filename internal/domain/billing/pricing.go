@@ -3,81 +3,31 @@ package billing
 import (
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
-	"github.com/NookMux/NookMux/internal/domain/shared"
 )
 
-type ContextPricingUsage struct {
-	PromptTokens          int
-	CompletionTokens      int
-	CacheReadTokens       int
-	CacheCreationTokens   int
-	CacheCreation5mTokens int
-	CacheCreation1hTokens int
-	AudioInputTokens      int
-	AudioOutputTokens     int
-	IsClaudeUsageSemantic bool
-}
+// 上下文分段计费（计费 PRD 阶段 2）：档位匹配改用归一化 BillingUsage 的
+// 普通输入、输出、缓存读取、缓存写入四个维度（四者之和 = TotalProcessedTokens），
+// 不再依赖请求侧格式推断的语义开关。命中档位后的价格快照仍由
+// ApplyContextPricingResult 写回 PriceData 并经 appendBillingInfo 写入现有
+// 计费快照位置。
 
-func BuildContextPricingUsage(usage *shared.Usage, isClaudeUsageSemantic bool) ContextPricingUsage {
-	if usage == nil {
-		return ContextPricingUsage{IsClaudeUsageSemantic: isClaudeUsageSemantic}
-	}
-	cacheCreationTokens := usage.PromptTokensDetails.CachedCreationTokens
-	promptTokens := usage.PromptTokens
-	if isClaudeUsageSemantic {
-		cacheCreationTokens = usage.ClaudeCacheCreation5mTokens + usage.ClaudeCacheCreation1hTokens
-		if cacheCreationTokens == 0 {
-			cacheCreationTokens = usage.PromptTokensDetails.CachedCreationTokens
-		}
-		// Claude usage is normalized with cache tokens already included in PromptTokens.
-		// Store only the non-cache input side here; ContextTokensForTier adds cache back once.
-		promptTokens = usage.PromptTokens - usage.PromptTokensDetails.CachedTokens - cacheCreationTokens
-		if promptTokens < 0 {
-			promptTokens = usage.PromptTokens
-		}
-	}
-	return ContextPricingUsage{
-		PromptTokens:          promptTokens,
-		CompletionTokens:      usage.CompletionTokens,
-		CacheReadTokens:       usage.PromptTokensDetails.CachedTokens,
-		CacheCreationTokens:   cacheCreationTokens,
-		CacheCreation5mTokens: usage.ClaudeCacheCreation5mTokens,
-		CacheCreation1hTokens: usage.ClaudeCacheCreation1hTokens,
-		AudioInputTokens:      usage.PromptTokensDetails.AudioTokens,
-		AudioOutputTokens:     usage.CompletionTokenDetails.AudioTokens,
-		IsClaudeUsageSemantic: isClaudeUsageSemantic,
-	}
-}
-
-func BuildRealtimeContextPricingUsage(usage *shared.RealtimeUsage) ContextPricingUsage {
-	if usage == nil {
-		return ContextPricingUsage{}
-	}
-	return ContextPricingUsage{
-		PromptTokens:      usage.InputTokens,
-		CompletionTokens:  usage.OutputTokens,
-		CacheReadTokens:   usage.InputTokenDetails.CachedTokens,
-		AudioInputTokens:  usage.InputTokenDetails.AudioTokens,
-		AudioOutputTokens: usage.OutputTokenDetails.AudioTokens,
-	}
-}
-
-func ContextTokensForTier(usage ContextPricingUsage) int {
-	if usage.IsClaudeUsageSemantic {
-		total := usage.PromptTokens + usage.CacheReadTokens + usage.CacheCreationTokens
-		if total < 0 {
-			return 0
-		}
-		return total
-	}
-	if usage.PromptTokens < 0 {
+// ContextTokensForTier 分档匹配 tokens：普通输入 + 输出 + 缓存读取 + 缓存写入。
+// Gemini toolUsePromptTokens 是审计字段，不进入分档（PRD 3.1）。
+func ContextTokensForTier(bu *BillingUsage) int {
+	if bu == nil {
 		return 0
 	}
-	return usage.PromptTokens
+	total := bu.TotalProcessedTokens()
+	if total < 0 {
+		return 0
+	}
+	return total
 }
 
-func ApplyContextPricingForUsage(modelName string, usage ContextPricingUsage, priceData *contract.PriceData) (*contract.ContextPricingResult, bool, error) {
-	contextTokens := ContextTokensForTier(usage)
+// ApplyContextPricingForBillingUsage 对归一化用量匹配上下文计费档位，
+// 命中时把档位价格写回 priceData。
+func ApplyContextPricingForBillingUsage(modelName string, bu *BillingUsage, priceData *contract.PriceData) (*contract.ContextPricingResult, bool, error) {
+	contextTokens := ContextTokensForTier(bu)
 	result, enabled, err := ratio.MatchContextPricingTier(modelName, contextTokens)
 	if err != nil || !enabled || result == nil {
 		return result, enabled, err

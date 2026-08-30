@@ -3,12 +3,15 @@ package billing
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/config/system"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/domain/channel/constant"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
 	"github.com/NookMux/NookMux/internal/infra/log"
 	notify "github.com/NookMux/NookMux/internal/infra/notify"
@@ -20,15 +23,7 @@ import (
 	"github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
-	"math"
-	"net/http"
-	"time"
 )
-
-type TokenDetails struct {
-	TextTokens  int
-	AudioTokens int
-}
 
 // NewEmptyUsageRetryError returns a retryable upstream error when native-format responses contain no billing usage.
 func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) *shared.NookMuxError {
@@ -38,66 +33,17 @@ func NewEmptyUsageRetryError(ctx *gin.Context, relayInfo *relaycommon.RelayInfo)
 	return shared.NewOpenAIError(errors.New(i18n.T(ctx, i18n.MsgQuotaEmptyUsage)), shared.ErrorCodeBadResponse, http.StatusBadGateway)
 }
 
-type QuotaInfo struct {
-	InputDetails         TokenDetails
-	OutputDetails        TokenDetails
-	ModelName            string
-	UsePrice             bool
-	ModelPrice           float64
-	ModelRatio           float64
-	GroupRatio           float64
-	CompletionRatio      float64
-	AudioRatio           float64
-	AudioCompletionRatio float64
+// normalizationFailedError 返回归一化失败的显式错误：响应已交付、不可重试，
+// 计费与落库一并中止（PRD 阶段 2：归一化失败是独立可观测原因）；
+// 具体原因由调用点先记 cause=normalization_failed 日志。
+func normalizationFailedError(ctx *gin.Context) *shared.NookMuxError {
+	return shared.NewOpenAIError(
+		fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)),
+		shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
 }
 
-func hasCustomModelRatio(modelName string, currentRatio float64) bool {
-	defaultRatio, exists := ratio.GetDefaultModelRatioMap()[modelName]
-	if !exists {
-		return true
-	}
-	return currentRatio != defaultRatio
-}
-
-func calculateAudioQuota(info QuotaInfo) int {
-	if info.UsePrice {
-		modelPrice := decimal.NewFromFloat(info.ModelPrice)
-		quotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		groupRatio := decimal.NewFromFloat(info.GroupRatio)
-
-		quota := modelPrice.Mul(quotaPerUnit).Mul(groupRatio)
-		return int(quota.IntPart())
-	}
-
-	completionRatio := decimal.NewFromFloat(info.CompletionRatio)
-	audioRatio := decimal.NewFromFloat(info.AudioRatio)
-	audioCompletionRatio := decimal.NewFromFloat(info.AudioCompletionRatio)
-
-	groupRatio := decimal.NewFromFloat(info.GroupRatio)
-	modelRatio := decimal.NewFromFloat(info.ModelRatio)
-	ratio := groupRatio.Mul(modelRatio)
-
-	inputTextTokens := decimal.NewFromInt(int64(info.InputDetails.TextTokens))
-	outputTextTokens := decimal.NewFromInt(int64(info.OutputDetails.TextTokens))
-	inputAudioTokens := decimal.NewFromInt(int64(info.InputDetails.AudioTokens))
-	outputAudioTokens := decimal.NewFromInt(int64(info.OutputDetails.AudioTokens))
-
-	quota := decimal.Zero
-	quota = quota.Add(inputTextTokens)
-	quota = quota.Add(outputTextTokens.Mul(completionRatio))
-	quota = quota.Add(inputAudioTokens.Mul(audioRatio))
-	quota = quota.Add(outputAudioTokens.Mul(audioRatio).Mul(audioCompletionRatio))
-
-	quota = quota.Mul(ratio)
-
-	// If ratio is not zero and quota is less than or equal to zero, set quota to 1
-	if !ratio.IsZero() && quota.LessThanOrEqual(decimal.Zero) {
-		quota = decimal.NewFromInt(1)
-	}
-
-	return int(quota.Round(0).IntPart())
-}
-
+// PreWssConsumeQuota realtime 会话按事件增量预扣：按归一化用量（含缓存读取）
+// 计算本轮增量额度并实扣（计费 PRD 阶段 2）。
 func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.RealtimeUsage) error {
 	if relayInfo.PriceData.UsePrice {
 		return nil
@@ -108,40 +54,23 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	}
 
 	modelName := relayInfo.OriginModelName
-	textInputTokens := usage.InputTokenDetails.TextTokens
-	textOutTokens := usage.OutputTokenDetails.TextTokens
-	audioInputTokens := usage.InputTokenDetails.AudioTokens
-	audioOutTokens := usage.OutputTokenDetails.AudioTokens
-	actualGroupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
-	modelRatio := relayInfo.PriceData.ModelRatio
-	if _, enabled, err := ApplyContextPricingForUsage(modelName, BuildRealtimeContextPricingUsage(usage), &relayInfo.PriceData); enabled {
-		if err != nil {
-			return err
-		}
-		actualGroupRatio = relayInfo.PriceData.GroupRatioInfo.GroupRatio
-		modelRatio = relayInfo.PriceData.ModelRatio
+	bu, warnings, normErr := BuildRealtimeBillingUsage(relayInfo.UsageSource, usage)
+	if normErr != nil {
+		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+normErr.Error())
+		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed))
+	}
+	for _, warning := range warnings {
+		log.LogWarn(ctx, "billing_details anomaly: "+warning)
+	}
+	if _, enabled, err := ApplyContextPricingForBillingUsage(modelName, bu, &relayInfo.PriceData); enabled && err != nil {
+		return err
 	}
 
-	quotaInfo := QuotaInfo{
-		InputDetails: TokenDetails{
-			TextTokens:  textInputTokens,
-			AudioTokens: audioInputTokens,
-		},
-		OutputDetails: TokenDetails{
-			TextTokens:  textOutTokens,
-			AudioTokens: audioOutTokens,
-		},
-		ModelName:            modelName,
-		UsePrice:             relayInfo.PriceData.UsePrice,
-		ModelPrice:           relayInfo.PriceData.ModelPrice,
-		ModelRatio:           modelRatio,
-		GroupRatio:           actualGroupRatio,
-		CompletionRatio:      relayInfo.PriceData.CompletionRatio,
-		AudioRatio:           relayInfo.PriceData.AudioRatio,
-		AudioCompletionRatio: relayInfo.PriceData.AudioCompletionRatio,
+	quota, _, err := normalizedRealtimeQuota(bu, relayInfo.OriginModelName, relayInfo.PriceData)
+	if err != nil {
+		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+err.Error())
+		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed))
 	}
-
-	quota := calculateAudioQuota(quotaInfo)
 
 	if userQuota < quota {
 		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaUserNotEnough, map[string]any{"UserQuota": log.FormatQuota(userQuota), "NeedQuota": log.FormatQuota(quota)}))
@@ -161,62 +90,59 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	return nil
 }
 
+// PostWssConsumeQuota realtime 会话收尾记账：quota 由归一化用量计算（与
+// PreWssConsumeQuota 同一线性公式，预扣即实扣），消费日志记录汇总用量。
 func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
 	usage *shared.RealtimeUsage, extraContent string) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
-	textInputTokens := usage.InputTokenDetails.TextTokens
-	textOutTokens := usage.OutputTokenDetails.TextTokens
-	audioInputTokens := usage.InputTokenDetails.AudioTokens
-	audioOutTokens := usage.OutputTokenDetails.AudioTokens
-
-	tokenName := ctx.GetString("token_name")
-	modelRatio := relayInfo.PriceData.ModelRatio
-	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
-	modelPrice := relayInfo.PriceData.ModelPrice
-	usePrice := relayInfo.PriceData.UsePrice
-	if _, enabled, err := ApplyContextPricingForUsage(modelName, BuildRealtimeContextPricingUsage(usage), &relayInfo.PriceData); enabled {
+	recordWssBillingFailure := func(reason string) *shared.NookMuxError {
+		// 会话内已按事件增量实扣的资金必须有日志可对账（预扣不走
+		// BillingSession，退款 defer 只覆盖会话前预扣部分），落一条
+		// LogTypeError 日志后再返回显式错误。
+		logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
+			ChannelId:    relayInfo.ChannelId,
+			ModelName:    modelName,
+			TokenName:    ctx.GetString("token_name"),
+			Quota:        0,
+			Content:      "realtime 归一化失败，已按事件预扣的资金见 pre-consumed quota（" + reason + "）",
+			TokenId:      relayInfo.TokenId,
+			UseTimeMs:    int(useTimeMs),
+			IsStream:     relayInfo.IsStream,
+			Group:        relayInfo.UsingGroup,
+			Other:        map[string]interface{}{"ws": true, "billing_cause": "normalization_failed", "pre_consumed_quota": relayInfo.FinalPreConsumedQuota},
+			LogType:      logstore.LogTypeError,
+			PromptTokens: usage.InputTokens,
+		})
+		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+reason+
+			fmt.Sprintf(", preConsumedQuota=%d", relayInfo.FinalPreConsumedQuota))
+		return normalizationFailedError(ctx)
+	}
+	bu, warnings, normErr := BuildRealtimeBillingUsage(relayInfo.UsageSource, usage)
+	if normErr != nil {
+		return recordWssBillingFailure(normErr.Error())
+	}
+	for _, warning := range warnings {
+		log.LogWarn(ctx, "billing_details anomaly: "+warning)
+	}
+	if _, enabled, err := ApplyContextPricingForBillingUsage(modelName, bu, &relayInfo.PriceData); enabled {
 		if err != nil {
-			log.LogError(ctx, "context pricing failed: "+err.Error())
-		} else {
-			modelRatio = relayInfo.PriceData.ModelRatio
-			groupRatio = relayInfo.PriceData.GroupRatioInfo.GroupRatio
-			modelPrice = relayInfo.PriceData.ModelPrice
-			usePrice = relayInfo.PriceData.UsePrice
+			log.LogError(ctx, "context pricing failed (cause=billing_config_missing): "+err.Error())
 		}
 	}
-	completionRatio := decimal.NewFromFloat(relayInfo.PriceData.CompletionRatio)
-	audioRatio := decimal.NewFromFloat(relayInfo.PriceData.AudioRatio)
-	audioCompletionRatio := decimal.NewFromFloat(relayInfo.PriceData.AudioCompletionRatio)
 
-	quotaInfo := QuotaInfo{
-		InputDetails: TokenDetails{
-			TextTokens:  textInputTokens,
-			AudioTokens: audioInputTokens,
-		},
-		OutputDetails: TokenDetails{
-			TextTokens:  textOutTokens,
-			AudioTokens: audioOutTokens,
-		},
-		ModelName:            modelName,
-		UsePrice:             usePrice,
-		ModelPrice:           modelPrice,
-		ModelRatio:           modelRatio,
-		GroupRatio:           groupRatio,
-		CompletionRatio:      relayInfo.PriceData.CompletionRatio,
-		AudioRatio:           relayInfo.PriceData.AudioRatio,
-		AudioCompletionRatio: relayInfo.PriceData.AudioCompletionRatio,
+	quota, quotaLines, quotaErr := normalizedRealtimeQuota(bu, modelName, relayInfo.PriceData)
+	if quotaErr != nil {
+		return recordWssBillingFailure(quotaErr.Error())
 	}
-
-	quota := calculateAudioQuota(quotaInfo)
 
 	totalTokens := usage.TotalTokens
 	var logContent string
-	if !usePrice {
+	if !relayInfo.PriceData.UsePrice {
 		logContent = fmt.Sprintf("模型倍率 %.2f，补全倍率 %.2f，音频倍率 %.2f，音频补全倍率 %.2f，分组倍率 %.2f",
-			modelRatio, completionRatio.InexactFloat64(), audioRatio.InexactFloat64(), audioCompletionRatio.InexactFloat64(), groupRatio)
+			relayInfo.PriceData.ModelRatio, relayInfo.PriceData.CompletionRatio, relayInfo.PriceData.AudioRatio, relayInfo.PriceData.AudioCompletionRatio, relayInfo.PriceData.GroupRatioInfo.GroupRatio)
 	} else {
-		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", modelPrice, groupRatio)
+		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", relayInfo.PriceData.ModelPrice, relayInfo.PriceData.GroupRatioInfo.GroupRatio)
 	}
 
 	// record all the consume log even if quota is 0
@@ -241,20 +167,30 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := GenerateWssOtherInfo(ctx, relayInfo, usage, modelRatio, groupRatio,
-		completionRatio.InexactFloat64(), audioRatio.InexactFloat64(), audioCompletionRatio.InexactFloat64(), modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
+	other := GenerateWssOtherInfo(ctx, relayInfo, usage, relayInfo.PriceData.ModelRatio, relayInfo.PriceData.GroupRatioInfo.GroupRatio,
+		relayInfo.PriceData.CompletionRatio, relayInfo.PriceData.AudioRatio, relayInfo.PriceData.AudioCompletionRatio, relayInfo.PriceData.ModelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
 	if relayInfo.PriceData.GroupRatioInfo.DynamicRatio > 0 {
 		other["dynamic_ratio"] = relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 		// group_ratio 记录原始分组倍率（不含动态倍率）
-		other["group_ratio"] = groupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+		other["group_ratio"] = relayInfo.PriceData.GroupRatioInfo.GroupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+	}
+	// billing_details 与计费来自同一次归一化；会话内混入本地估算时跳过。
+	billingDetailsJSON := ""
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
+		payload, err := SerializeBillingUsage(bu)
+		if err != nil {
+			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
+		} else {
+			billingDetailsJSON = payload
+		}
 	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.InputTokens,
 		CompletionTokens: usage.OutputTokens,
 		ModelName:        logModel,
-		TokenName:        tokenName,
+		TokenName:        ctx.GetString("token_name"),
 		Quota:            quota,
 		Content:          logContent,
 		TokenId:          relayInfo.TokenId,
@@ -263,85 +199,91 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
-		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
-		BillingDetails: BuildRealtimeBillingDetailsForLog(ctx, relayInfo, usage),
+		BillingDetails:   billingDetailsJSON,
 	})
+
+	// 影子对拍：旧公式按 text/audio 明细计算，不含缓存读取。
+	if totalTokens != 0 {
+		legacyQuota := legacyAudioQuota(QuotaInfo{
+			InputDetails: TokenDetails{
+				TextTokens:  usage.InputTokenDetails.TextTokens,
+				AudioTokens: usage.InputTokenDetails.AudioTokens,
+			},
+			OutputDetails: TokenDetails{
+				TextTokens:  usage.OutputTokenDetails.TextTokens,
+				AudioTokens: usage.OutputTokenDetails.AudioTokens,
+			},
+			ModelName:            modelName,
+			UsePrice:             relayInfo.PriceData.UsePrice,
+			ModelPrice:           relayInfo.PriceData.ModelPrice,
+			ModelRatio:           relayInfo.PriceData.ModelRatio,
+			GroupRatio:           relayInfo.PriceData.GroupRatioInfo.GroupRatio,
+			CompletionRatio:      relayInfo.PriceData.CompletionRatio,
+			AudioRatio:           relayInfo.PriceData.AudioRatio,
+			AudioCompletionRatio: relayInfo.PriceData.AudioCompletionRatio,
+		})
+		if legacyQuota != quota {
+			reportBillingShadowMismatch(ctx, "wss", relayInfo, legacyQuota, quota, bu, quotaLines, false)
+		}
+	}
 	return nil
 }
 
+// normalizedRealtimeQuota 用归一化公式计算 realtime/WSS 额度，复刻旧
+// calculateAudioQuota 的最低消费与取整口径（UsePrice 截断、按量四舍五入）。
+func normalizedRealtimeQuota(bu *BillingUsage, modelName string, priceData contract.PriceData) (int, []BillingQuotaLine, error) {
+	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, modelName)
+	if err != nil {
+		return 0, nil, err
+	}
+	if result.UsePrice {
+		return int(result.TokenTotal.IntPart()), result.Lines, nil
+	}
+	ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
+	total := result.TokenTotal
+	if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
+		total = decimal.NewFromInt(1)
+	}
+	return int(total.Round(0).IntPart()), result.Lines, nil
+}
+
+// PostClaudeConsumeQuota Claude Messages 语义消费入口：quota 由归一化用量按
+// PRD 3.4 公式计算（普通输入 × 输入价 + 缓存读取/写入 × 缓存单价 + 输出 ×
+// 补全倍率）。OpenRouter 专属的 cost 反推缓存写入减法已删除（PRD 阶段 2）。
 func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
 	completionTokens := usage.CompletionTokens
 	modelName := relayInfo.OriginModelName
+	openRouter := relayInfo.ChannelType == constant.ChannelTypeOpenRouter
 
-	tokenName := ctx.GetString("token_name")
-	completionRatio := relayInfo.PriceData.CompletionRatio
-	modelRatio := relayInfo.PriceData.ModelRatio
-	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
-	modelPrice := relayInfo.PriceData.ModelPrice
-	cacheRatio := relayInfo.PriceData.CacheRatio
-	cacheTokens := usage.PromptTokensDetails.CachedTokens
-
-	cacheCreationRatio := relayInfo.PriceData.CacheCreationRatio
-	cacheCreationRatio5m := relayInfo.PriceData.CacheCreation5mRatio
-	cacheCreationRatio1h := relayInfo.PriceData.CacheCreation1hRatio
-	cacheCreationTokens := usage.PromptTokensDetails.CachedCreationTokens
-	cacheCreationTokens5m := usage.ClaudeCacheCreation5mTokens
-	cacheCreationTokens1h := usage.ClaudeCacheCreation1hTokens
-
-	if relayInfo.ChannelType == constant.ChannelTypeOpenRouter {
-		promptTokens -= cacheTokens
-		isUsingCustomSettings := relayInfo.PriceData.UsePrice || hasCustomModelRatio(modelName, relayInfo.PriceData.ModelRatio)
-		if cacheCreationTokens == 0 && relayInfo.PriceData.CacheCreationRatio != 1 && usage.Cost != 0 && !isUsingCustomSettings {
-			maybeCacheCreationTokens := CalcOpenRouterCacheCreateTokens(*usage, relayInfo.PriceData)
-			if maybeCacheCreationTokens >= 0 && promptTokens >= maybeCacheCreationTokens {
-				cacheCreationTokens = maybeCacheCreationTokens
-			}
-		}
-		promptTokens -= cacheCreationTokens
+	bu, warnings, normErr := BuildBillingUsage(relayInfo.UsageSource, usage, relayInfo.UsageGeminiMetadata)
+	if normErr != nil {
+		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+normErr.Error())
+		return normalizationFailedError(ctx)
 	}
-
-	isClaudeUsageSemantic := relayInfo.ChannelType != constant.ChannelTypeOpenRouter
-	contextUsage := BuildContextPricingUsage(usage, isClaudeUsageSemantic)
-	contextUsage.CacheCreationTokens = cacheCreationTokens
-	if _, enabled, err := ApplyContextPricingForUsage(modelName, contextUsage, &relayInfo.PriceData); enabled {
+	for _, warning := range warnings {
+		log.LogWarn(ctx, "billing_details anomaly: "+warning)
+	}
+	if _, enabled, err := ApplyContextPricingForBillingUsage(modelName, bu, &relayInfo.PriceData); enabled {
 		if err != nil {
-			log.LogError(ctx, "context pricing failed: "+err.Error())
-		} else {
-			completionRatio = relayInfo.PriceData.CompletionRatio
-			modelRatio = relayInfo.PriceData.ModelRatio
-			groupRatio = relayInfo.PriceData.GroupRatioInfo.GroupRatio
-			modelPrice = relayInfo.PriceData.ModelPrice
-			cacheRatio = relayInfo.PriceData.CacheRatio
-			cacheCreationRatio = relayInfo.PriceData.CacheCreationRatio
-			cacheCreationRatio5m = relayInfo.PriceData.CacheCreation5mRatio
-			cacheCreationRatio1h = relayInfo.PriceData.CacheCreation1hRatio
+			log.LogError(ctx, "context pricing failed (cause=billing_config_missing): "+err.Error())
 		}
 	}
 
-	calculateQuota := 0.0
-	if !relayInfo.PriceData.UsePrice {
-		calculateQuota = float64(promptTokens)
-		calculateQuota += float64(cacheTokens) * cacheRatio
-		calculateQuota += float64(cacheCreationTokens5m) * cacheCreationRatio5m
-		calculateQuota += float64(cacheCreationTokens1h) * cacheCreationRatio1h
-		remainingCacheCreationTokens := cacheCreationTokens - cacheCreationTokens5m - cacheCreationTokens1h
-		if remainingCacheCreationTokens > 0 {
-			calculateQuota += float64(remainingCacheCreationTokens) * cacheCreationRatio
-		}
-		calculateQuota += float64(completionTokens) * completionRatio
-		calculateQuota = calculateQuota * groupRatio * modelRatio
-	} else {
-		calculateQuota = modelPrice * common.QuotaPerUnit * groupRatio
+	quotaResult, quotaErr := CalculateNormalizedQuota(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName)
+	if quotaErr != nil {
+		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
+		return normalizationFailedError(ctx)
 	}
-
-	if modelRatio != 0 && calculateQuota <= 0 {
-		calculateQuota = 1
+	// 旧口径：最低消费判断看模型倍率，取整为截断。UsePrice 分支不加最低
+	// 消费（旧代码 UsePrice 时 ModelRatio 恒为 0，条件不可达；显式守卫防止
+	// 未来构造出 UsePrice=true 且 ModelRatio≠0 的 PriceData 时误抬额）。
+	quota := quotaResult.TokenTotal.IntPart()
+	if !quotaResult.UsePrice && relayInfo.PriceData.ModelRatio != 0 && quotaResult.TokenTotal.LessThanOrEqual(decimal.Zero) {
+		quota = 1
 	}
-
-	quota := int(calculateQuota)
 
 	totalTokens := promptTokens + completionTokens
 
@@ -360,34 +302,45 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		log.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
-		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
-		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, int(quota))
+		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, int(quota))
 	}
 
-	if err := SettleBilling(ctx, relayInfo, quota); err != nil {
+	if err := SettleBilling(ctx, relayInfo, int(quota)); err != nil {
 		log.LogError(ctx, "error settling billing: "+err.Error())
 	}
 
-	other := GenerateClaudeOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio,
-		cacheTokens, cacheRatio,
-		cacheCreationTokens, cacheCreationRatio,
-		cacheCreationTokens5m, cacheCreationRatio5m,
-		cacheCreationTokens1h, cacheCreationRatio1h,
-		modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
+	priceData := relayInfo.PriceData
+	other := GenerateClaudeOtherInfo(ctx, relayInfo, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio, priceData.CompletionRatio,
+		bu.CacheReadTokens, priceData.CacheRatio,
+		bu.CacheWriteTokens, priceData.CacheCreationRatio,
+		intValue(bu.CacheWrite5mTokens), priceData.CacheCreation5mRatio,
+		intValue(bu.CacheWrite1hTokens), priceData.CacheCreation1hRatio,
+		priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
-	if relayInfo.PriceData.GroupRatioInfo.DynamicRatio > 0 {
-		other["dynamic_ratio"] = relayInfo.PriceData.GroupRatioInfo.DynamicRatio
-		other["group_ratio"] = groupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+	if priceData.GroupRatioInfo.DynamicRatio > 0 {
+		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
+		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
 	}
 	// 共享流式日志指标，避免 Claude /v1/messages 丢失吐字速度展示。
 	AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
+	// billing_details 与计费来自同一次归一化；本地估算分支（流中断兜底）跳过。
+	billingDetailsJSON := ""
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
+		payload, err := SerializeBillingUsage(bu)
+		if err != nil {
+			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
+		} else {
+			billingDetailsJSON = payload
+		}
+	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
 		ModelName:        modelName,
-		TokenName:        tokenName,
-		Quota:            quota,
+		TokenName:        ctx.GetString("token_name"),
+		Quota:            int(quota),
 		Content:          logContent,
 		TokenId:          relayInfo.TokenId,
 		UseTimeMs:        int(useTimeMs),
@@ -395,89 +348,67 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
-		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
-		BillingDetails: BuildBillingDetailsForLog(ctx, relayInfo, usage),
+		BillingDetails:   billingDetailsJSON,
 	})
+
+	// 影子对拍（迁移期）：旧公式对原生 Claude 缓存读写按基础价重复计费、
+	// OpenRouter 走 cost 反推减法，差异分类见 classifyShadowDiff。
+	if totalTokens != 0 {
+		legacyQuota := legacyClaudeQuota(usage, openRouter, relayInfo.PriceData, modelName)
+		if legacyQuota != int(quota) {
+			reportBillingShadowMismatch(ctx, "claude", relayInfo, legacyQuota, int(quota), bu, quotaResult.Lines, openRouter)
+		}
+	}
 	return nil
 }
 
-func CalcOpenRouterCacheCreateTokens(usage shared.Usage, priceData contract.PriceData) int {
-	if priceData.CacheCreationRatio == 1 {
-		return 0
-	}
-	quotaPrice := priceData.ModelRatio / common.QuotaPerUnit
-	promptCacheCreatePrice := quotaPrice * priceData.CacheCreationRatio
-	promptCacheReadPrice := quotaPrice * priceData.CacheRatio
-	completionPrice := quotaPrice * priceData.CompletionRatio
-
-	cost, _ := usage.Cost.(float64)
-	totalPromptTokens := float64(usage.PromptTokens)
-	completionTokens := float64(usage.CompletionTokens)
-	promptCacheReadTokens := float64(usage.PromptTokensDetails.CachedTokens)
-
-	return int(math.Round((cost -
-		totalPromptTokens*quotaPrice +
-		promptCacheReadTokens*(quotaPrice-promptCacheReadPrice) -
-		completionTokens*completionPrice) /
-		(promptCacheCreatePrice - quotaPrice)))
-}
-
+// PostAudioConsumeQuota 音频模态消费入口（Chat 音频模型、TTS/STT）：quota 由
+// 归一化用量计算，音频输入/输出按 AudioRatio/AudioCompletionRatio 差异化计价，
+// 缓存读取按缓存单价计费（旧公式静默漏计，PRD 3.4 修正）。
 func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage, extraContent string) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
-	textInputTokens := usage.PromptTokensDetails.TextTokens
-	textOutTokens := usage.CompletionTokenDetails.TextTokens
+	modelName := relayInfo.OriginModelName
 
-	audioInputTokens := usage.PromptTokensDetails.AudioTokens
-	audioOutTokens := usage.CompletionTokenDetails.AudioTokens
-
-	tokenName := ctx.GetString("token_name")
-	modelRatio := relayInfo.PriceData.ModelRatio
-	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
-	modelPrice := relayInfo.PriceData.ModelPrice
-	usePrice := relayInfo.PriceData.UsePrice
-	if _, enabled, err := ApplyContextPricingForUsage(relayInfo.OriginModelName, BuildContextPricingUsage(usage, false), &relayInfo.PriceData); enabled {
+	bu, warnings, normErr := BuildBillingUsage(relayInfo.UsageSource, usage, relayInfo.UsageGeminiMetadata)
+	if normErr != nil {
+		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+normErr.Error())
+		return normalizationFailedError(ctx)
+	}
+	for _, warning := range warnings {
+		log.LogWarn(ctx, "billing_details anomaly: "+warning)
+	}
+	if _, enabled, err := ApplyContextPricingForBillingUsage(modelName, bu, &relayInfo.PriceData); enabled {
 		if err != nil {
-			log.LogError(ctx, "context pricing failed: "+err.Error())
-		} else {
-			modelRatio = relayInfo.PriceData.ModelRatio
-			groupRatio = relayInfo.PriceData.GroupRatioInfo.GroupRatio
-			modelPrice = relayInfo.PriceData.ModelPrice
-			usePrice = relayInfo.PriceData.UsePrice
+			log.LogError(ctx, "context pricing failed (cause=billing_config_missing): "+err.Error())
 		}
 	}
-	completionRatio := decimal.NewFromFloat(relayInfo.PriceData.CompletionRatio)
-	audioRatio := decimal.NewFromFloat(relayInfo.PriceData.AudioRatio)
-	audioCompletionRatio := decimal.NewFromFloat(relayInfo.PriceData.AudioCompletionRatio)
+	priceData := relayInfo.PriceData
 
-	quotaInfo := QuotaInfo{
-		InputDetails: TokenDetails{
-			TextTokens:  textInputTokens,
-			AudioTokens: audioInputTokens,
-		},
-		OutputDetails: TokenDetails{
-			TextTokens:  textOutTokens,
-			AudioTokens: audioOutTokens,
-		},
-		ModelName:            relayInfo.OriginModelName,
-		UsePrice:             usePrice,
-		ModelPrice:           modelPrice,
-		ModelRatio:           modelRatio,
-		GroupRatio:           groupRatio,
-		CompletionRatio:      relayInfo.PriceData.CompletionRatio,
-		AudioRatio:           relayInfo.PriceData.AudioRatio,
-		AudioCompletionRatio: relayInfo.PriceData.AudioCompletionRatio,
+	quotaResult, quotaErr := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, modelName)
+	if quotaErr != nil {
+		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
+		return normalizationFailedError(ctx)
 	}
-
-	quota := calculateAudioQuota(quotaInfo)
+	var quota int
+	if quotaResult.UsePrice {
+		quota = int(quotaResult.TokenTotal.IntPart())
+	} else {
+		ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
+		total := quotaResult.TokenTotal
+		if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
+			total = decimal.NewFromInt(1)
+		}
+		quota = int(total.Round(0).IntPart())
+	}
 
 	totalTokens := usage.TotalTokens
 	var logContent string
-	if !usePrice {
+	if !priceData.UsePrice {
 		logContent = fmt.Sprintf("模型倍率 %.2f，补全倍率 %.2f，音频倍率 %.2f，音频补全倍率 %.2f，分组倍率 %.2f",
-			modelRatio, completionRatio.InexactFloat64(), audioRatio.InexactFloat64(), audioCompletionRatio.InexactFloat64(), groupRatio)
+			priceData.ModelRatio, priceData.CompletionRatio, priceData.AudioRatio, priceData.AudioCompletionRatio, priceData.GroupRatioInfo.GroupRatio)
 	} else {
-		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", modelPrice, groupRatio)
+		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", priceData.ModelPrice, priceData.GroupRatioInfo.GroupRatio)
 	}
 
 	// record all the consume log even if quota is 0
@@ -492,7 +423,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		quota = 0
 		logContent += "（可能是上游超时）"
 		log.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
-			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, relayInfo.OriginModelName, relayInfo.FinalPreConsumedQuota))
+			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
 		userstore.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
 		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
@@ -502,23 +433,33 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		log.LogError(ctx, "error settling billing: "+err.Error())
 	}
 
-	logModel := relayInfo.OriginModelName
+	logModel := modelName
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := GenerateAudioOtherInfo(ctx, relayInfo, usage, modelRatio, groupRatio,
-		completionRatio.InexactFloat64(), audioRatio.InexactFloat64(), audioCompletionRatio.InexactFloat64(), modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
+	other := GenerateAudioOtherInfo(ctx, relayInfo, usage, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio,
+		priceData.CompletionRatio, priceData.AudioRatio, priceData.AudioCompletionRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
-	if relayInfo.PriceData.GroupRatioInfo.DynamicRatio > 0 {
-		other["dynamic_ratio"] = relayInfo.PriceData.GroupRatioInfo.DynamicRatio
-		other["group_ratio"] = groupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+	if priceData.GroupRatioInfo.DynamicRatio > 0 {
+		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
+		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
+	}
+	// billing_details 与计费来自同一次归一化；本地计数伪 usage（字符数计费等）跳过。
+	billingDetailsJSON := ""
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
+		payload, err := SerializeBillingUsage(bu)
+		if err != nil {
+			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
+		} else {
+			billingDetailsJSON = payload
+		}
 	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.PromptTokens,
 		CompletionTokens: usage.CompletionTokens,
 		ModelName:        logModel,
-		TokenName:        tokenName,
+		TokenName:        ctx.GetString("token_name"),
 		Quota:            quota,
 		Content:          logContent,
 		TokenId:          relayInfo.TokenId,
@@ -527,9 +468,33 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
 		LogType:          logType,
-		// 阶段 1：计费公式不切换，billing_details 只做归一化 Token 用量落库。
-		BillingDetails: BuildBillingDetailsForLog(ctx, relayInfo, usage),
+		BillingDetails:   billingDetailsJSON,
 	})
+
+	// 影子对拍（迁移期）：旧公式按官方 text 明细计费且漏计缓存读取。
+	if totalTokens != 0 {
+		legacyQuota := legacyAudioQuota(QuotaInfo{
+			InputDetails: TokenDetails{
+				TextTokens:  usage.PromptTokensDetails.TextTokens,
+				AudioTokens: usage.PromptTokensDetails.AudioTokens,
+			},
+			OutputDetails: TokenDetails{
+				TextTokens:  usage.CompletionTokenDetails.TextTokens,
+				AudioTokens: usage.CompletionTokenDetails.AudioTokens,
+			},
+			ModelName:            modelName,
+			UsePrice:             priceData.UsePrice,
+			ModelPrice:           priceData.ModelPrice,
+			ModelRatio:           priceData.ModelRatio,
+			GroupRatio:           priceData.GroupRatioInfo.GroupRatio,
+			CompletionRatio:      priceData.CompletionRatio,
+			AudioRatio:           priceData.AudioRatio,
+			AudioCompletionRatio: priceData.AudioCompletionRatio,
+		})
+		if legacyQuota != quota {
+			reportBillingShadowMismatch(ctx, "audio", relayInfo, legacyQuota, quota, bu, quotaResult.Lines, false)
+		}
+	}
 	return nil
 }
 

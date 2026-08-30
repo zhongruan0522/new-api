@@ -340,14 +340,15 @@ const (
 
 // Quota related messages
 const (
-	MsgQuotaThresholdGtZero      = "quota.threshold_gt_zero"
-	MsgQuotaUserNotEnough        = "quota.user_not_enough"
-	MsgQuotaTokenNotEnough       = "quota.token_not_enough"
-	MsgQuotaNegative             = "quota.negative"
-	MsgQuotaTokenWindowNotEnough = "quota.token_window_not_enough"
-	MsgQuotaTokenCycleNotEnough  = "quota.token_cycle_not_enough"
-	MsgQuotaRelayInfoNil         = "quota.relay_info_nil"
-	MsgQuotaEmptyUsage           = "quota.empty_usage"
+	MsgQuotaThresholdGtZero            = "quota.threshold_gt_zero"
+	MsgQuotaUserNotEnough              = "quota.user_not_enough"
+	MsgQuotaTokenNotEnough             = "quota.token_not_enough"
+	MsgQuotaNegative                   = "quota.negative"
+	MsgQuotaTokenWindowNotEnough       = "quota.token_window_not_enough"
+	MsgQuotaTokenCycleNotEnough        = "quota.token_cycle_not_enough"
+	MsgQuotaRelayInfoNil               = "quota.relay_info_nil"
+	MsgQuotaEmptyUsage                 = "quota.empty_usage"
+	MsgQuotaBillingNormalizationFailed = "quota.billing_normalization_failed"
 )
 
 // Setting related messages

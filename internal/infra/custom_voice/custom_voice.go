@@ -369,7 +369,7 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 // chargePreviewTTS 按正常 TTS 口径对试听文本计费：
 //   - 按 ModelPrice 优先（按次）或 ModelRatio（按字符 usage）结算到所选试听模型；
 //   - 字符 usage 同时映射到输入文本 token 与音频输出 token，与 relay 层 MiniMax TTS 一致，
-//     让 calculateAudioQuota 同时计入文本成本和音频输出成本；
+//     让音频倍率计费分支同时计入文本成本和音频输出成本；
 //   - 真正乘以 custom_voice_group 分组倍率与动态倍率；
 //   - 失败时不落消费日志，由调用方决定是否退款。
 //

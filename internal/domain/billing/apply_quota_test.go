@@ -254,8 +254,10 @@ func TestApplyQuotaTotalTokensZeroWithToolFeesStillUpdatesCounters(t *testing.T)
 	assert.Equal(t, 77, stored.Quota)
 }
 
-// OtherInfo 组装：动态倍率下原始分组倍率 = 当前倍率 / 动态倍率；Claude 语义、
+// OtherInfo 组装：动态倍率下原始分组倍率 = 当前倍率 / 动态倍率；
 // 缓存创建 tokens、拒付原因、gizmo 模型名改写都要进入日志。
+// （阶段 2 删除了请求侧语义打标 other["claude"]/other["usage_semantic"]，
+// usage 语义由 UsageSource 与 billing_details 承载。）
 func TestApplyQuotaOtherInfoAssembly(t *testing.T) {
 	setupApplyQuotaTestDB(t)
 	ctx := newApplyQuotaTestContext()
@@ -268,8 +270,7 @@ func TestApplyQuotaOtherInfoAssembly(t *testing.T) {
 		modelRatio: 2, completionRatio: 3, cacheRatio: 0.5, groupRatio: 2,
 		// ratio 置 0 以区分守卫条件：写 cache_creation_* 键的依据必须是 tokens != 0
 		cachedCreationTokens: 12, cachedCreationRatio: 0,
-		isClaudeUsageSemantic: true,
-		adminRejectReason:     "risk_control",
+		adminRejectReason: "risk_control",
 	}
 	relayInfo.FinalPreConsumedQuota = settlement.quota
 
@@ -286,8 +287,7 @@ func TestApplyQuotaOtherInfoAssembly(t *testing.T) {
 	// originalGroupRatio = groupRatio / dynamicRatio = 2 / 0.5 = 4
 	assert.Equal(t, float64(4), other["group_ratio"], "group_ratio must be the pre-dynamic original ratio")
 	assert.Equal(t, float64(0.5), other["dynamic_ratio"])
-	assert.Equal(t, true, other["claude"], "claude usage semantic flag expected")
-	assert.Equal(t, "anthropic", other["usage_semantic"])
+	assert.NotContains(t, other, "usage_semantic", "usage semantic param removed in stage 2")
 	assert.Equal(t, float64(12), other["cache_creation_tokens"])
 	assert.Equal(t, float64(0), other["cache_creation_ratio"], "ratio 为 0 时键也必须写入（守卫看 tokens 而非 ratio）")
 	assert.Equal(t, "risk_control", other["reject_reason"])

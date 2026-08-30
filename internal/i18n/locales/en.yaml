@@ -302,6 +302,7 @@ quota.token_window_not_enough: "Token window quota is not enough, remain quota: 
 quota.token_cycle_not_enough: "Token quota is not enough, remain quota: {{.TokenQuota}}, need quota: {{.NeedQuota}}"
 quota.relay_info_nil: "relayInfo is nil"
 quota.empty_usage: "Upstream did not return billing information, cannot deduct quota (possible upstream timeout)"
+quota.billing_normalization_failed: "Billing usage normalization failed, quota deduction aborted (please contact the administrator to check server logs)"
 
 # Setting messages
 setting.invalid_type: "Invalid warning type"

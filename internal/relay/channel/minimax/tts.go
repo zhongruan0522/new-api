@@ -10,6 +10,7 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
 	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/relay/helper"
@@ -191,9 +192,13 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	// MiniMax TTS 按 usage_characters（合成语音消耗的字符数）计费。
 	// 按产品需求：usage_characters 同时映射到【输入 Token】和【音频输出 Token】，
-	// 触发 audio_handler.go:70 的音频倍率分支 (PostAudioConsumeQuota)，
-	// 让 calculateAudioQuota 同时算输入文本成本和音频输出成本。
+	// 触发 audio_handler.go 的音频倍率分支 (PostAudioConsumeQuota)，
+	// 让音频倍率计费同时算输入文本成本和音频输出成本。
 	usageCharacters := int(minimaxResp.ExtraInfo.UsageCharacters)
+	// 阶段 2 计费归一化要求来源显式标识（OpenAI 兼容 TTS 语义）；
+	// usage_characters 是字符数而非 token 数，billing_details 仍按
+	// 本地计数标记跳过，不落列。
+	info.UsageSource = relayconstant.UsageSourceOpenAIChat
 	usage = &shared.Usage{
 		PromptTokens:     usageCharacters,
 		CompletionTokens: usageCharacters,

@@ -4,8 +4,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	"github.com/NookMux/NookMux/internal/httpapi"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	"github.com/gin-gonic/gin"
@@ -22,6 +24,7 @@ func newUsageTestRelayInfo() *relaycommon.RelayInfo {
 	return &relaycommon.RelayInfo{
 		OriginModelName:        "gpt-4o",
 		RequestConversionChain: []relayconstant.RelayFormat{relayconstant.RelayFormatOpenAI},
+		UsageSource:            relayconstant.UsageSourceOpenAIChat,
 		PriceData: contract.PriceData{
 			ModelRatio:         2,
 			CompletionRatio:    3,
@@ -48,7 +51,7 @@ func TestCalculateUsageTextQuotaWithCacheTokens(t *testing.T) {
 	if apiErr != nil {
 		t.Fatalf("CalculateUsage() error = %v", apiErr)
 	}
-	// base = (100-40) + 40*0.5 = 80; completion = 50*3 = 150; quota = (80+150)*2*1 = 460
+	// 普通输入 = (100-40) + 40*0.5 = 80; completion = 50*3 = 150; quota = (80+150)*2*1 = 460
 	if settlement.quota != 460 {
 		t.Fatalf("quota = %d, want 460", settlement.quota)
 	}
@@ -57,8 +60,10 @@ func TestCalculateUsageTextQuotaWithCacheTokens(t *testing.T) {
 	}
 }
 
-// Claude 语义：input_tokens 不含缓存 tokens，base 不扣除缓存，缓存按 CacheRatio 叠加。
-func TestCalculateUsageClaudeSemanticKeepsCacheInBase(t *testing.T) {
+// 阶段 2：usage 语义只由显式来源标识决定，请求侧格式不再参与。
+// OpenAI Chat 语义（prompt_tokens 含缓存）即使客户端走 Claude 格式请求，
+// 也按归一化口径扣除缓存； quota 与 PRD 3.4 OpenAI Chat 公式一致。
+func TestCalculateUsageCacheSubtractionFollowsUsageSource(t *testing.T) {
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.FinalRequestRelayFormat = relayconstant.RelayFormatClaude
 	usage := &shared.Usage{
@@ -72,12 +77,63 @@ func TestCalculateUsageClaudeSemanticKeepsCacheInBase(t *testing.T) {
 	if apiErr != nil {
 		t.Fatalf("CalculateUsage() error = %v", apiErr)
 	}
-	// base = 100 + 40*0.5 = 120; completion = 150; quota = (120+150)*2 = 540
-	if settlement.quota != 540 {
-		t.Fatalf("quota = %d, want 540", settlement.quota)
+	// 普通输入 = (100-40) + 40*0.5 = 80; completion = 150; quota = (80+150)*2 = 460
+	if settlement.quota != 460 {
+		t.Fatalf("quota = %d, want 460", settlement.quota)
 	}
-	if !settlement.isClaudeUsageSemantic {
-		t.Fatal("expected claude usage semantic to be detected")
+}
+
+// 阶段 2：携带真实 token 用量但来源未标识属于归一化失败，显式报错，
+// 不再回退聚合公式静默计费。
+func TestCalculateUsageMissingUsageSourceFailsExplicitly(t *testing.T) {
+	relayInfo := newUsageTestRelayInfo()
+	relayInfo.UsageSource = relayconstant.UsageSourceNone
+	usage := &shared.Usage{PromptTokens: 100, CompletionTokens: 50, TotalTokens: 150}
+
+	settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, usage)
+	if apiErr == nil {
+		t.Fatal("expected explicit error when usage source is not identified")
+	}
+	if settlement != nil {
+		t.Fatalf("settlement = %#v, want nil on normalization failure", settlement)
+	}
+}
+
+// 全零用量 + 来源未标识：属于"上游无 usage"而非归一化失败，
+// 原生请求保持可重试语义。
+func TestCalculateUsageZeroUsageWithoutSourceKeepsRetrySemantics(t *testing.T) {
+	relayInfo := newUsageTestRelayInfo()
+	relayInfo.UsageSource = relayconstant.UsageSourceNone
+
+	settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, &shared.Usage{})
+	if apiErr == nil {
+		t.Fatal("expected retryable error for native zero usage")
+	}
+	if settlement != nil {
+		t.Fatalf("settlement = %#v, want nil on retry error", settlement)
+	}
+}
+
+// 本地计数伪 usage（Gemini 流式兜底：source=Gemini 但无原始 metadata）：
+// 按聚合口径计费，不因 metadata 缺失而失败，billing_details 不落列。
+func TestCalculateUsageLocalCountFallbackUsesAggregate(t *testing.T) {
+	relayInfo := newUsageTestRelayInfo()
+	relayInfo.UsageSource = relayconstant.UsageSourceGemini
+	relayInfo.UsageGeminiMetadata = nil
+	usage := &shared.Usage{PromptTokens: 0, CompletionTokens: 1400, TotalTokens: 1400}
+	ctx := newUsageTestContext()
+	httpapi.SetContextKey(ctx, common.ContextKeyLocalCountTokens, true)
+
+	settlement, apiErr := CalculateUsage(ctx, relayInfo, usage)
+	if apiErr != nil {
+		t.Fatalf("CalculateUsage() error = %v", apiErr)
+	}
+	// 聚合口径：(0 + 1400×3) × 2 = 8400
+	if settlement.quota != 8400 {
+		t.Fatalf("quota = %d, want 8400", settlement.quota)
+	}
+	if settlement.billingDetailsJSON != "" {
+		t.Fatalf("local-count usage must not write billing_details, got %q", settlement.billingDetailsJSON)
 	}
 }
 
