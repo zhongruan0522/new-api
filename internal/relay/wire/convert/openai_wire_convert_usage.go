@@ -33,8 +33,10 @@ func ApplyResponsesUsageToChatUsage(dst *shared.Usage, usage *shared.Usage) {
 	}
 }
 
-// MapChatUsageToResponsesUsage maps Chat Completions usage to the Responses
-// usage shape, including token detail fields that affect billing.
+// MapChatUsageToResponsesUsage maps only the Responses wire-visible usage
+// fields. Billing-only or protocol-specific audit fields must stay on the
+// original upstream usage consumed by domain/billing; do not smuggle them into
+// the converted client response.
 func MapChatUsageToResponsesUsage(u shared.Usage) *shared.Usage {
 	inputTokens := firstNonZero(u.PromptTokens, u.InputTokens)
 	outputTokens := firstNonZero(u.CompletionTokens, u.OutputTokens)
@@ -61,21 +63,16 @@ func MapChatUsageToResponsesUsage(u shared.Usage) *shared.Usage {
 		OutputTokens: outputTokens,
 		TotalTokens:  totalTokens,
 		InputTokensDetails: &shared.InputTokenDetails{
-			CachedTokens:         inputDetails.CachedTokens,
-			CachedCreationTokens: inputDetails.CachedCreationTokens,
-			TextTokens:           inputDetails.TextTokens,
-			AudioTokens:          inputDetails.AudioTokens,
-			ImageTokens:          inputDetails.ImageTokens,
+			CachedTokens: inputDetails.CachedTokens,
+			TextTokens:   inputDetails.TextTokens,
+			AudioTokens:  inputDetails.AudioTokens,
+			ImageTokens:  inputDetails.ImageTokens,
 		},
 		OutputTokensDetails: &shared.OutputTokenDetails{
-			TextTokens:               outputDetails.TextTokens,
-			AudioTokens:              outputDetails.AudioTokens,
-			ReasoningTokens:          outputDetails.ReasoningTokens,
-			AcceptedPredictionTokens: outputDetails.AcceptedPredictionTokens,
-			RejectedPredictionTokens: outputDetails.RejectedPredictionTokens,
+			TextTokens:      outputDetails.TextTokens,
+			AudioTokens:     outputDetails.AudioTokens,
+			ReasoningTokens: outputDetails.ReasoningTokens,
 		},
-		ClaudeCacheCreation5mTokens: u.ClaudeCacheCreation5mTokens,
-		ClaudeCacheCreation1hTokens: u.ClaudeCacheCreation1hTokens,
 	}
 }
 
