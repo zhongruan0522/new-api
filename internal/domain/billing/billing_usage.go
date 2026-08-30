@@ -2,6 +2,7 @@ package billing
 
 import (
 	"fmt"
+	"math"
 
 	"strings"
 
@@ -223,8 +224,12 @@ func buildOpenAIResponsesBillingUsage(usage *shared.Usage) (*BillingUsage, []str
 		CacheWriteTokens: firstNonZero(inputDetailsCachedCreationTokens(usage.InputTokensDetails),
 			usage.PromptTokensDetails.CachedCreationTokens),
 	}
-	fillInputModalities(bu, usage.PromptTokensDetails, usage.InputTokensDetails)
-	fillOutputSplits(bu, usage.CompletionTokenDetails, usage.OutputTokensDetails)
+	// Responses v1 有标准 cache 读写与 reasoning，但没有标准 text/image/audio
+	// 模态或 prediction 明细；不能从 Chat 同名字段“顺手”补造 Responses 明细。
+	if tokens := firstNonZero(usage.CompletionTokenDetails.ReasoningTokens,
+		outputDetailsReasoningTokens(usage.OutputTokensDetails)); tokens != 0 {
+		bu.ReasoningTokens = &tokens
+	}
 	return finalizeBillingUsage(bu)
 }
 
@@ -237,10 +242,15 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 	if metadata == nil {
 		return nil, nil, fmt.Errorf("gemini usage metadata is nil")
 	}
+	var warnings []string
+	geminiOutputTokens, err := checkedAdd(metadata.CandidatesTokenCount, metadata.ThoughtsTokenCount, "gemini output tokens")
+	if err != nil {
+		return nil, nil, err
+	}
 	bu := &BillingUsage{
 		Source:                relayconstant.UsageSourceGemini,
 		PromptAggregateTokens: metadata.PromptTokenCount,
-		OutputTokens:          metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount,
+		OutputTokens:          geminiOutputTokens,
 		CacheReadTokens:       metadata.CachedContentTokenCount,
 	}
 	for _, detail := range metadata.PromptTokensDetails {
@@ -248,17 +258,35 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 		if count == 0 {
 			continue
 		}
+		if count < 0 {
+			return nil, nil, fmt.Errorf("negative gemini input modality %s token count=%d", detail.Modality, count)
+		}
 		switch strings.ToUpper(strings.TrimSpace(detail.Modality)) {
 		case "TEXT":
-			bu.TextInputTokens = addModality(bu.TextInputTokens, count)
+			if err := addModality(&bu.TextInputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "AUDIO":
-			bu.AudioInputTokens = addModality(bu.AudioInputTokens, count)
+			if err := addModality(&bu.AudioInputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "IMAGE":
-			bu.ImageInputTokens = addModality(bu.ImageInputTokens, count)
+			if err := addModality(&bu.ImageInputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "VIDEO":
-			bu.VideoInputTokens = addModality(bu.VideoInputTokens, count)
+			if err := addModality(&bu.VideoInputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "DOCUMENT":
-			bu.DocumentInputTokens = addModality(bu.DocumentInputTokens, count)
+			if err := addModality(&bu.DocumentInputTokens, count); err != nil {
+				return nil, nil, err
+			}
+		default:
+			warnings = append(warnings, fmt.Sprintf(
+				"unknown gemini input modality %q with %d tokens; detail omitted from schema v1",
+				detail.Modality, count,
+			))
 		}
 	}
 	// 官方口径注意：Gemini 的 promptTokensDetails 是 promptTokenCount（含缓存
@@ -273,13 +301,27 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 		if count == 0 {
 			continue
 		}
+		if count < 0 {
+			return nil, nil, fmt.Errorf("negative gemini output modality %s token count=%d", detail.Modality, count)
+		}
 		switch strings.ToUpper(strings.TrimSpace(detail.Modality)) {
 		case "TEXT":
-			bu.TextOutputTokens = addModality(bu.TextOutputTokens, count)
+			if err := addModality(&bu.TextOutputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "AUDIO":
-			bu.AudioOutputTokens = addModality(bu.AudioOutputTokens, count)
+			if err := addModality(&bu.AudioOutputTokens, count); err != nil {
+				return nil, nil, err
+			}
 		case "IMAGE":
-			bu.ImageOutputTokens = addModality(bu.ImageOutputTokens, count)
+			if err := addModality(&bu.ImageOutputTokens, count); err != nil {
+				return nil, nil, err
+			}
+		default:
+			warnings = append(warnings, fmt.Sprintf(
+				"unknown gemini output modality %q with %d tokens; detail omitted from schema v1",
+				detail.Modality, count,
+			))
 		}
 	}
 	if metadata.ThoughtsTokenCount != 0 {
@@ -288,7 +330,11 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 	if metadata.ToolUsePromptTokenCount != 0 {
 		bu.ToolUsePromptTokens = &metadata.ToolUsePromptTokenCount
 	}
-	return finalizeBillingUsage(bu)
+	finalized, finalizeWarnings, err := finalizeBillingUsage(bu)
+	if err != nil {
+		return nil, nil, err
+	}
+	return finalized, append(warnings, finalizeWarnings...), nil
 }
 
 // finalizeBillingUsage 应用缓存写入转换规则、负数/分档校验与可诊断异常收集。
@@ -327,7 +373,13 @@ func finalizeBillingUsage(bu *BillingUsage) (*BillingUsage, []string, error) {
 
 	// 官方分档存在时，校验其和不大于写入总量；否则是上游数据矛盾，显式失败。
 	if bu.CacheWrite5mTokens != nil || bu.CacheWrite1hTokens != nil {
-		officialTiered := intValue(bu.CacheWrite5mTokens) + intValue(bu.CacheWrite1hTokens)
+		officialTiered, err := checkedAdd(
+			intValue(bu.CacheWrite5mTokens), intValue(bu.CacheWrite1hTokens),
+			"cache write tiers",
+		)
+		if err != nil {
+			return nil, nil, err
+		}
 		if officialTiered > bu.CacheWriteTokens {
 			return nil, nil, fmt.Errorf("cache write tiers (%d) exceed write_cache total (%d)",
 				officialTiered, bu.CacheWriteTokens)
@@ -344,13 +396,58 @@ func finalizeBillingUsage(bu *BillingUsage) (*BillingUsage, []string, error) {
 
 	// 明细大于官方总量是可诊断异常：记录告警但不静默裁剪、不伪造空明细。
 	var warnings []string
-	if detail := intValue(bu.TextInputTokens) + intValue(bu.ImageInputTokens) + intValue(bu.AudioInputTokens) +
-		intValue(bu.VideoInputTokens) + intValue(bu.DocumentInputTokens); detail > bu.PromptAggregateTokens && bu.PromptAggregateTokens > 0 {
-		warnings = append(warnings, fmt.Sprintf("input modality details (%d) exceed prompt aggregate (%d)", detail, bu.PromptAggregateTokens))
+	inputDetail, err := checkedAdd(
+		intValue(bu.TextInputTokens), intValue(bu.ImageInputTokens), "input modality details",
+	)
+	if err != nil {
+		return nil, nil, err
 	}
-	if detail := intValue(bu.TextOutputTokens) + intValue(bu.AudioOutputTokens) + intValue(bu.ImageOutputTokens) +
-		intValue(bu.ReasoningTokens) + intValue(bu.AcceptedPredictionTokens) + intValue(bu.RejectedPredictionTokens); detail > bu.OutputTokens && bu.OutputTokens > 0 {
-		warnings = append(warnings, fmt.Sprintf("output splits (%d) exceed output total (%d)", detail, bu.OutputTokens))
+	inputDetail, err = checkedAdd(inputDetail, intValue(bu.AudioInputTokens), "input modality details")
+	if err != nil {
+		return nil, nil, err
+	}
+	inputDetail, err = checkedAdd(inputDetail, intValue(bu.VideoInputTokens), "input modality details")
+	if err != nil {
+		return nil, nil, err
+	}
+	inputDetail, err = checkedAdd(inputDetail, intValue(bu.DocumentInputTokens), "input modality details")
+	if err != nil {
+		return nil, nil, err
+	}
+	if inputDetail > bu.PromptAggregateTokens && bu.PromptAggregateTokens > 0 {
+		warnings = append(warnings, fmt.Sprintf("input modality details (%d) exceed prompt aggregate (%d)", inputDetail, bu.PromptAggregateTokens))
+	}
+	outputDetail, err := checkedAdd(
+		intValue(bu.TextOutputTokens), intValue(bu.AudioOutputTokens), "output splits",
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	outputDetail, err = checkedAdd(outputDetail, intValue(bu.ImageOutputTokens), "output splits")
+	if err != nil {
+		return nil, nil, err
+	}
+	outputDetail, err = checkedAdd(outputDetail, intValue(bu.ReasoningTokens), "output splits")
+	if err != nil {
+		return nil, nil, err
+	}
+	outputDetail, err = checkedAdd(outputDetail, intValue(bu.AcceptedPredictionTokens), "output splits")
+	if err != nil {
+		return nil, nil, err
+	}
+	outputDetail, err = checkedAdd(outputDetail, intValue(bu.RejectedPredictionTokens), "output splits")
+	if err != nil {
+		return nil, nil, err
+	}
+	if outputDetail > bu.OutputTokens && bu.OutputTokens > 0 {
+		warnings = append(warnings, fmt.Sprintf("output splits (%d) exceed output total (%d)", outputDetail, bu.OutputTokens))
+	}
+	cacheUsed, err := checkedAdd(bu.CacheReadTokens, bu.CacheWriteTokens, "cache usage")
+	if err != nil {
+		return nil, nil, err
+	}
+	if cacheUsed > bu.PromptAggregateTokens {
+		return nil, nil, fmt.Errorf("cache usage (%d) exceeds prompt aggregate (%d); ordinary input would be negative", cacheUsed, bu.PromptAggregateTokens)
 	}
 	if bu.CacheReadTokens > bu.PromptAggregateTokens && bu.PromptAggregateTokens > 0 {
 		warnings = append(warnings, fmt.Sprintf("read_cache (%d) exceeds prompt aggregate (%d)", bu.CacheReadTokens, bu.PromptAggregateTokens))
@@ -359,6 +456,16 @@ func finalizeBillingUsage(bu *BillingUsage) (*BillingUsage, []string, error) {
 		warnings = append(warnings, fmt.Sprintf("write_cache (%d) exceeds prompt aggregate (%d)", bu.CacheWriteTokens, bu.PromptAggregateTokens))
 	}
 	return bu, warnings, nil
+}
+
+func checkedAdd(left, right int, name string) (int, error) {
+	if right > 0 && left > math.MaxInt-right {
+		return 0, fmt.Errorf("%s overflow (%d + %d)", name, left, right)
+	}
+	if right < 0 && left < math.MinInt-right {
+		return 0, fmt.Errorf("%s overflow (%d + %d)", name, left, right)
+	}
+	return left + right, nil
 }
 
 func fillInputModalities(bu *BillingUsage, promptDetails shared.InputTokenDetails, inputDetails *shared.InputTokenDetails) {
@@ -392,12 +499,24 @@ func fillOutputSplits(bu *BillingUsage, completionDetails shared.OutputTokenDeta
 	}
 }
 
-func addModality(existing *int, count int) *int {
+func addModality(existing **int, count int) error {
 	if existing == nil {
-		return &count
+		return fmt.Errorf("modality target is nil")
 	}
-	merged := *existing + count
-	return &merged
+	if count < 0 {
+		return fmt.Errorf("negative modality detail=%d", count)
+	}
+	if *existing == nil {
+		value := count
+		*existing = &value
+		return nil
+	}
+	merged, err := checkedAdd(**existing, count, "modality details")
+	if err != nil {
+		return err
+	}
+	*existing = &merged
+	return nil
 }
 
 func firstNonZero(values ...int) int {

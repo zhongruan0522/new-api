@@ -120,6 +120,9 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 	if relayInfo.BillingSource != "" {
 		other["billing_source"] = relayInfo.BillingSource
 	}
+	if relayInfo.ServiceTierEffective != "" {
+		other["service_tier"] = relayInfo.ServiceTierEffective
+	}
 	if relayInfo.PriceData.ContextPricing != nil && relayInfo.PriceData.ContextPricing.Enabled {
 		result := relayInfo.PriceData.ContextPricing
 		other["context_pricing_enabled"] = true

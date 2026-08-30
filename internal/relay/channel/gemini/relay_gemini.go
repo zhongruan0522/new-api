@@ -1215,10 +1215,12 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		if billing.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
 			convertedUsage := billing.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 			*usage = convertedUsage
+			info.SetEffectiveServiceTier(geminiResponse.UsageMetadata.ServiceTier)
 			// 保留原始 usageMetadata：toolUsePromptTokenCount 已被并入转换结果，
 			// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
 			metadata := geminiResponse.UsageMetadata
 			info.UsageGeminiMetadata = &metadata
+			info.SetEffectiveServiceTier(metadata.ServiceTier)
 		}
 
 		return callback(data, &geminiResponse)
@@ -1436,6 +1438,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
 	metadata := geminiResponse.UsageMetadata
 	info.UsageGeminiMetadata = &metadata
+	info.SetEffectiveServiceTier(metadata.ServiceTier)
 
 	fullTextResponse.Usage = usage
 

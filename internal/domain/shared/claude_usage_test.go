@@ -27,6 +27,25 @@ func TestClaudeUsageToOpenAIUsageIncludesCachedPromptTokens(t *testing.T) {
 	}
 }
 
+func TestClaudeUsageThinkingTokensMapToReasoning(t *testing.T) {
+	usage := ClaudeUsageToOpenAIUsage(&ClaudeUsage{
+		InputTokens:         10,
+		OutputTokens:        20,
+		OutputTokensDetails: &ClaudeOutputTokenDetails{ThinkingTokens: 7},
+	})
+	if usage.CompletionTokenDetails.ReasoningTokens != 7 {
+		t.Fatalf("ReasoningTokens = %d, want 7", usage.CompletionTokenDetails.ReasoningTokens)
+	}
+
+	claudeUsage := OpenAIUsageToClaudeUsage(&Usage{
+		CompletionTokens:       20,
+		CompletionTokenDetails: OutputTokenDetails{ReasoningTokens: 7},
+	})
+	if claudeUsage.OutputTokensDetails == nil || claudeUsage.OutputTokensDetails.ThinkingTokens != 7 {
+		t.Fatalf("OutputTokensDetails = %+v, want thinking_tokens=7", claudeUsage.OutputTokensDetails)
+	}
+}
+
 func TestOpenAIUsageToClaudeUsageSplitsPromptTokens(t *testing.T) {
 	usage := OpenAIUsageToClaudeUsage(&Usage{
 		PromptTokens:     180,

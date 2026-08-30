@@ -762,14 +762,21 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 		current.TotalTokens = current.PromptTokens + current.CompletionTokens
 		return current
 	}
+	if claudeUsage.OutputTokensDetails != nil {
+		current.CompletionTokenDetails.ReasoningTokens = claudeUsage.OutputTokensDetails.ThinkingTokens
+		if current.OutputTokensDetails == nil {
+			current.OutputTokensDetails = &shared.OutputTokenDetails{}
+		}
+		current.OutputTokensDetails.ReasoningTokens = claudeUsage.OutputTokensDetails.ThinkingTokens
+	}
 
 	cacheReadTokens := current.PromptTokensDetails.CachedTokens
-	if claudeUsage.CacheReadInputTokens > 0 {
+	if claudeUsage.CacheReadInputTokens != 0 {
 		cacheReadTokens = claudeUsage.CacheReadInputTokens
 	}
 
 	cacheCreationTokens := current.PromptTokensDetails.CachedCreationTokens
-	if incomingCacheCreation := claudeUsage.GetCacheCreationTotalTokens(); incomingCacheCreation > 0 {
+	if incomingCacheCreation := claudeUsage.GetCacheCreationTotalTokens(); incomingCacheCreation != 0 {
 		cacheCreationTokens = incomingCacheCreation
 	}
 
@@ -783,7 +790,7 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 	}
 	cacheCreation5m, cacheCreation1h = helper.NormalizeCacheCreationSplit(cacheCreationTokens, cacheCreation5m, cacheCreation1h)
 
-	if claudeUsage.InputTokens > 0 {
+	if claudeUsage.InputTokens != 0 {
 		current.PromptTokens = claudeUsage.InputTokens + cacheReadTokens + cacheCreationTokens
 	} else if current.PromptTokens == 0 && (cacheReadTokens > 0 || cacheCreationTokens > 0) {
 		current.PromptTokens = cacheReadTokens + cacheCreationTokens
@@ -800,7 +807,7 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 	current.ClaudeCacheCreation5mTokens = cacheCreation5m
 	current.ClaudeCacheCreation1hTokens = cacheCreation1h
 
-	if claudeUsage.OutputTokens > 0 {
+	if claudeUsage.OutputTokens != 0 {
 		current.CompletionTokens = claudeUsage.OutputTokens
 		current.OutputTokens = claudeUsage.OutputTokens
 	}
@@ -947,6 +954,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		common.SysLog("error unmarshalling stream response: " + err.Error())
 		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
+	info.SetEffectiveServiceTier(claudeResponse.ServiceTier)
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
 		// 按官方文档把错误类型还原为真实 HTTP 状态码（如 overloaded_error→529），
 		// 保持重试与渠道禁用判断的准确性。
@@ -1186,6 +1194,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	if err != nil {
 		return shared.NewError(err, shared.ErrorCodeBadResponseBody)
 	}
+	info.SetEffectiveServiceTier(claudeResponse.ServiceTier)
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
 		// 按官方文档把错误类型还原为真实 HTTP 状态码，保持重试与渠道禁用判断的准确性。
 		return shared.WithClaudeError(*claudeError, shared.ClaudeErrorStatusCode(claudeError.Type))

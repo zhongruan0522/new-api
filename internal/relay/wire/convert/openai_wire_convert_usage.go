@@ -61,16 +61,21 @@ func MapChatUsageToResponsesUsage(u shared.Usage) *shared.Usage {
 		OutputTokens: outputTokens,
 		TotalTokens:  totalTokens,
 		InputTokensDetails: &shared.InputTokenDetails{
-			CachedTokens: inputDetails.CachedTokens,
-			TextTokens:   inputDetails.TextTokens,
-			AudioTokens:  inputDetails.AudioTokens,
-			ImageTokens:  inputDetails.ImageTokens,
+			CachedTokens:         inputDetails.CachedTokens,
+			CachedCreationTokens: inputDetails.CachedCreationTokens,
+			TextTokens:           inputDetails.TextTokens,
+			AudioTokens:          inputDetails.AudioTokens,
+			ImageTokens:          inputDetails.ImageTokens,
 		},
 		OutputTokensDetails: &shared.OutputTokenDetails{
-			TextTokens:      outputDetails.TextTokens,
-			AudioTokens:     outputDetails.AudioTokens,
-			ReasoningTokens: outputDetails.ReasoningTokens,
+			TextTokens:               outputDetails.TextTokens,
+			AudioTokens:              outputDetails.AudioTokens,
+			ReasoningTokens:          outputDetails.ReasoningTokens,
+			AcceptedPredictionTokens: outputDetails.AcceptedPredictionTokens,
+			RejectedPredictionTokens: outputDetails.RejectedPredictionTokens,
 		},
+		ClaudeCacheCreation5mTokens: u.ClaudeCacheCreation5mTokens,
+		ClaudeCacheCreation1hTokens: u.ClaudeCacheCreation1hTokens,
 	}
 }
 

@@ -138,6 +138,13 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		}
 	}
 
+	var serviceTierFrame struct {
+		ServiceTier string `json:"service_tier"`
+	}
+	if jsonx.UnmarshalJsonStr(lastStreamData, &serviceTierFrame) == nil {
+		info.SetEffectiveServiceTier(serviceTierFrame.ServiceTier)
+	}
+
 	if !containStreamUsage && lastStreamData != "" {
 		if err := ProcessStreamFrame(info.RelayMode, lastStreamData, &responseTextBuilder, &toolCount); err != nil {
 			log.LogError(c, "error processing final stream token frame: "+err.Error())
@@ -188,6 +195,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+	info.SetEffectiveServiceTier(simpleResponse.ServiceTier)
 
 	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
 		return nil, shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))

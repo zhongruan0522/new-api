@@ -162,6 +162,9 @@ type RelayInfo struct {
 	// UsageSource 由响应解析点显式写入的上游 usage 协议族（relayconstant.UsageSource），
 	// 计费归一化据此选择语义规则；禁止用 FinalRequestRelayFormat 反推。
 	UsageSource relayconstant.UsageSource
+	// ServiceTierEffective 是响应侧实际生效层级；请求侧 service_tier 只用于
+	// 上游请求，不覆盖该快照。
+	ServiceTierEffective string
 	// UsageGeminiMetadata 保留 Gemini usageMetadata 原始值：转换后的 shared.Usage
 	// 会把 toolUsePromptTokenCount 并入 prompt 总量与模态明细，归一化
 	// （billing.BuildBillingUsage）需要原始拆分才能满足"tool-use 只审计不进计价输入"。
@@ -173,6 +176,14 @@ type RelayInfo struct {
 	*RerankerInfo
 	*ResponsesUsageInfo
 	*ChannelMeta
+}
+
+// SetEffectiveServiceTier records only the response-side tier. An omitted or
+// empty field in a later event never overwrites a value already observed.
+func (info *RelayInfo) SetEffectiveServiceTier(tier string) {
+	if info != nil && tier != "" {
+		info.ServiceTierEffective = tier
+	}
 }
 
 func (info *RelayInfo) InitChannelMeta(c *gin.Context) {

@@ -71,6 +71,9 @@ func TestParseBillingDetailsJSONExplicitErrors(t *testing.T) {
 		{"fractional token", `{"schema_version":1,"tokens":{"input":{"text_input":1.5},"output":{},"cache":{}}}`},
 		{"tokens not object", `{"schema_version":1,"tokens":[]}`},
 		{"missing tokens", `{"schema_version":1}`},
+		{"missing all groups", `{"schema_version":1,"tokens":{}}`},
+		{"missing output and cache", `{"schema_version":1,"tokens":{"input":{}}}`},
+		{"missing cache", `{"schema_version":1,"tokens":{"input":{},"output":{}}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

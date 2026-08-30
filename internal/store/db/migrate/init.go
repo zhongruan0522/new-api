@@ -54,6 +54,9 @@ func InitDB() (err error) {
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
 		if !common.IsMasterNode {
+			if err := ensureLogBillingDetailsColumn(dbstore.DB, "main"); err != nil {
+				return err
+			}
 			return nil
 		}
 		if infradb.UsingMySQL {
@@ -98,6 +101,9 @@ func InitLogDB() (err error) {
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
 		if !common.IsMasterNode {
+			if err := ensureLogBillingDetailsColumn(dbstore.LOG_DB, "log"); err != nil {
+				return err
+			}
 			return nil
 		}
 		common.SysLog("database migration started")

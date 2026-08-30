@@ -37,13 +37,14 @@ type OpenAITextResponseChoice struct {
 }
 
 type OpenAITextResponse struct {
-	Id      string                     `json:"id"`
-	Model   string                     `json:"model"`
-	Object  string                     `json:"object"`
-	Created any                        `json:"created"`
-	Choices []OpenAITextResponseChoice `json:"choices"`
-	Error   any                        `json:"error,omitempty"`
-	Usage   `json:"usage"`
+	Id          string                     `json:"id"`
+	Model       string                     `json:"model"`
+	Object      string                     `json:"object"`
+	Created     any                        `json:"created"`
+	ServiceTier string                     `json:"service_tier,omitempty"`
+	Choices     []OpenAITextResponseChoice `json:"choices"`
+	Error       any                        `json:"error,omitempty"`
+	Usage       `json:"usage"`
 }
 
 // GetOpenAIError 从动态错误类型中提取OpenAIError结构
@@ -306,9 +307,11 @@ func (d *InputTokenDetails) UnmarshalJSON(data []byte) error {
 	var cacheWrite struct {
 		CacheWriteTokens *int `json:"cache_write_tokens"`
 	}
-	// 第二趟解析为可选增强：个别网关下发畸形值时保持既有行为（忽略），
-	// 不让可选字段破坏整个 usage 的解析。
-	if err := jsonx.Unmarshal(data, &cacheWrite); err == nil && cacheWrite.CacheWriteTokens != nil {
+	// cache_write_tokens 是计费关键字段：畸形值必须显式失败，不能当作缺失。
+	if err := jsonx.Unmarshal(data, &cacheWrite); err != nil {
+		return err
+	}
+	if cacheWrite.CacheWriteTokens != nil {
 		d.CachedCreationTokens = *cacheWrite.CacheWriteTokens
 	}
 	return nil
@@ -338,6 +341,7 @@ type OpenAIResponsesResponse struct {
 	Output             []ResponsesOutput  `json:"output"`
 	ParallelToolCalls  bool               `json:"parallel_tool_calls"`
 	PreviousResponseID string             `json:"previous_response_id"`
+	ServiceTier        string             `json:"service_tier,omitempty"`
 	Reasoning          *Reasoning         `json:"reasoning"`
 	Store              bool               `json:"store"`
 	Temperature        float64            `json:"temperature"`

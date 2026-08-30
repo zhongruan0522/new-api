@@ -475,6 +475,7 @@ type ClaudeResponse struct {
 	Completion   string               `json:"completion,omitempty"`
 	StopReason   string               `json:"stop_reason,omitempty"`
 	Model        string               `json:"model,omitempty"`
+	ServiceTier  string               `json:"service_tier,omitempty"`
 	Error        any                  `json:"error,omitempty"`
 	Usage        *ClaudeUsage         `json:"usage,omitempty"`
 	Index        *int                 `json:"index,omitempty"`
@@ -565,11 +566,16 @@ type ClaudeUsage struct {
 	CacheCreationInputTokens int                       `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int                       `json:"cache_read_input_tokens"`
 	OutputTokens             int                       `json:"output_tokens"`
+	OutputTokensDetails      *ClaudeOutputTokenDetails `json:"output_tokens_details,omitempty"`
 	CacheCreation            *ClaudeCacheCreationUsage `json:"cache_creation,omitempty"`
 	// claude cache 1h
 	ClaudeCacheCreation5mTokens int                  `json:"claude_cache_creation_5_m_tokens"`
 	ClaudeCacheCreation1hTokens int                  `json:"claude_cache_creation_1_h_tokens"`
 	ServerToolUse               *ClaudeServerToolUse `json:"server_tool_use,omitempty"`
+}
+
+type ClaudeOutputTokenDetails struct {
+	ThinkingTokens int `json:"thinking_tokens,omitempty"`
 }
 
 type ClaudeCacheCreationUsage struct {
@@ -595,7 +601,7 @@ func (u *ClaudeUsage) GetCacheCreationTotalTokens() int {
 	if u == nil {
 		return 0
 	}
-	if u.CacheCreationInputTokens > 0 {
+	if u.CacheCreationInputTokens != 0 {
 		return u.CacheCreationInputTokens
 	}
 	return u.GetCacheCreation5mTokens() + u.GetCacheCreation1hTokens()
@@ -626,7 +632,9 @@ func ClaudeUsageToOpenAIUsage(claudeUsage *ClaudeUsage) *Usage {
 			CachedTokens:         claudeUsage.CacheReadInputTokens,
 			CachedCreationTokens: cacheCreationTokens,
 		},
-		CompletionTokenDetails:      OutputTokenDetails{},
+		CompletionTokenDetails: OutputTokenDetails{
+			ReasoningTokens: claudeUsage.OutputTokensDetails.GetThinkingTokens(),
+		},
 		ClaudeCacheCreation5mTokens: claudeUsage.GetCacheCreation5mTokens(),
 		ClaudeCacheCreation1hTokens: claudeUsage.GetCacheCreation1hTokens(),
 	}
@@ -637,6 +645,13 @@ func ClaudeUsageToOpenAIUsage(claudeUsage *ClaudeUsage) *Usage {
 	}
 
 	return usage
+}
+
+func (d *ClaudeOutputTokenDetails) GetThinkingTokens() int {
+	if d == nil {
+		return 0
+	}
+	return d.ThinkingTokens
 }
 
 // OpenAIUsageToClaudeUsage converts OpenAI-style total prompt usage back into Claude's split usage fields.
@@ -678,6 +693,9 @@ func OpenAIUsageToClaudeUsage(openAIUsage *Usage) *ClaudeUsage {
 			Ephemeral5mInputTokens: openAIUsage.ClaudeCacheCreation5mTokens,
 			Ephemeral1hInputTokens: openAIUsage.ClaudeCacheCreation1hTokens,
 		}
+	}
+	if reasoningTokens := openAIUsage.CompletionTokenDetails.ReasoningTokens; reasoningTokens != 0 {
+		usage.OutputTokensDetails = &ClaudeOutputTokenDetails{ThinkingTokens: reasoningTokens}
 	}
 
 	return usage

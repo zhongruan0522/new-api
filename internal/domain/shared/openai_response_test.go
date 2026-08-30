@@ -67,6 +67,14 @@ func TestOpenAIResponsesResponseInstructionsStillAcceptsString(t *testing.T) {
 	}
 }
 
+func TestUsageDetailsRejectsMalformedCacheWriteTokens(t *testing.T) {
+	raw := []byte(`{"prompt_tokens_details":{"cache_write_tokens":"20"}}`)
+	var usage Usage
+	if err := jsonx.Unmarshal(raw, &usage); err == nil {
+		t.Fatal("malformed cache_write_tokens must fail explicitly")
+	}
+}
+
 // TestUsageDetailsParseCacheWriteAndPredictionTokens 验证计费 PRD 3.1 的
 // 官方来源解析：prompt_tokens_details.cache_write_tokens、
 // input_tokens_details.cache_write_tokens 与 completion_tokens_details 的

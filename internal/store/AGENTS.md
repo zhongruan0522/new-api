@@ -58,6 +58,9 @@
 
 - `OptionMap`、channel cache、dynamic ratio cache 等全局缓存要注意锁、同步频率和多节点行为。
 - 迁移和 cleanup 必须幂等，可重复运行。
+- 从节点不执行迁移。模型新增物理列后，从节点启动必须校验共享主库/独立日志库
+  已具备该列；缺列时显式阻断启动，避免 GORM INSERT 带新列导致日志静默丢失
+  （如 `billing_details` 的 `ensureLogBillingDetailsColumn`）。
 
 ## 测试
 

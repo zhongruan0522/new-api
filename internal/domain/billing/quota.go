@@ -135,6 +135,14 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	if quotaErr != nil {
 		return recordWssBillingFailure(quotaErr.Error())
 	}
+	var billingDetailsJSON string
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && usage.TotalTokens != 0 {
+		payload, serializeErr := SerializeBillingUsage(bu)
+		if serializeErr != nil {
+			return recordWssBillingFailure("billing_details serialization failed: " + serializeErr.Error())
+		}
+		billingDetailsJSON = payload
+	}
 
 	totalTokens := usage.TotalTokens
 	var logContent string
@@ -174,16 +182,6 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		other["dynamic_ratio"] = relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 		// group_ratio 记录原始分组倍率（不含动态倍率）
 		other["group_ratio"] = relayInfo.PriceData.GroupRatioInfo.GroupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
-	}
-	// billing_details 与计费来自同一次归一化；会话内混入本地估算时跳过。
-	billingDetailsJSON := ""
-	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
-		payload, err := SerializeBillingUsage(bu)
-		if err != nil {
-			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
-		} else {
-			billingDetailsJSON = payload
-		}
 	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
@@ -285,6 +283,16 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		quota = 1
 	}
 
+	var billingDetailsJSON string
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && promptTokens+completionTokens != 0 {
+		payload, serializeErr := SerializeBillingUsage(bu)
+		if serializeErr != nil {
+			log.LogError(ctx, "billing_details serialization failed (cause=billing_details_serialization_failed): "+serializeErr.Error())
+			return normalizationFailedError(ctx)
+		}
+		billingDetailsJSON = payload
+	}
+
 	totalTokens := promptTokens + completionTokens
 
 	var logContent string
@@ -324,16 +332,6 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 	}
 	// 共享流式日志指标，避免 Claude /v1/messages 丢失吐字速度展示。
 	AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
-	// billing_details 与计费来自同一次归一化；本地估算分支（流中断兜底）跳过。
-	billingDetailsJSON := ""
-	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
-		payload, err := SerializeBillingUsage(bu)
-		if err != nil {
-			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
-		} else {
-			billingDetailsJSON = payload
-		}
-	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,
@@ -390,6 +388,15 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
 		return normalizationFailedError(ctx)
 	}
+	var billingDetailsJSON string
+	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && usage.TotalTokens != 0 {
+		payload, serializeErr := SerializeBillingUsage(bu)
+		if serializeErr != nil {
+			log.LogError(ctx, "billing_details serialization failed (cause=billing_details_serialization_failed): "+serializeErr.Error())
+			return normalizationFailedError(ctx)
+		}
+		billingDetailsJSON = payload
+	}
 	var quota int
 	if quotaResult.UsePrice {
 		quota = int(quotaResult.TokenTotal.IntPart())
@@ -443,16 +450,6 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	if priceData.GroupRatioInfo.DynamicRatio > 0 {
 		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
 		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
-	}
-	// billing_details 与计费来自同一次归一化；本地计数伪 usage（字符数计费等）跳过。
-	billingDetailsJSON := ""
-	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && totalTokens != 0 {
-		payload, err := SerializeBillingUsage(bu)
-		if err != nil {
-			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
-		} else {
-			billingDetailsJSON = payload
-		}
 	}
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,

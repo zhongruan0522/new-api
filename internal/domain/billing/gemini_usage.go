@@ -21,7 +21,9 @@ func HasGeminiUsageMetadata(metadata shared.GeminiUsageMetadata) bool {
 
 // GeminiUsageMetadataToOpenAIUsage normalizes Gemini usage metadata into the local OpenAI-compatible shape.
 func GeminiUsageMetadataToOpenAIUsage(metadata shared.GeminiUsageMetadata) shared.Usage {
-	promptTokens := metadata.PromptTokenCount + metadata.ToolUsePromptTokenCount
+	// toolUsePromptTokenCount is an independent audit dimension in the PRD;
+	// it is not part of prompt_tokens or the input-side processing total.
+	promptTokens := metadata.PromptTokenCount
 	completionTokens := metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount
 	usage := shared.Usage{
 		PromptTokens:     promptTokens,
@@ -39,7 +41,7 @@ func GeminiUsageMetadataToOpenAIUsage(metadata shared.GeminiUsageMetadata) share
 	usage.PromptTokensDetails.CachedTokens = metadata.CachedContentTokenCount
 	usage.CompletionTokenDetails.ReasoningTokens = metadata.ThoughtsTokenCount
 
-	for _, detail := range append(metadata.PromptTokensDetails, metadata.ToolUsePromptTokensDetails...) {
+	for _, detail := range metadata.PromptTokensDetails {
 		switch strings.ToUpper(strings.TrimSpace(detail.Modality)) {
 		case "TEXT":
 			usage.PromptTokensDetails.TextTokens += detail.TokenCount
@@ -60,7 +62,7 @@ func GeminiUsageMetadataToOpenAIUsage(metadata shared.GeminiUsageMetadata) share
 	}
 
 	// Gemini often omits modality breakdowns; keep a text fallback only when no finer detail exists.
-	if len(metadata.PromptTokensDetails) == 0 && len(metadata.ToolUsePromptTokensDetails) == 0 && usage.PromptTokens > 0 {
+	if len(metadata.PromptTokensDetails) == 0 && usage.PromptTokens > 0 {
 		usage.PromptTokensDetails.TextTokens = usage.PromptTokens
 	}
 	if len(metadata.CandidatesTokensDetails) == 0 && metadata.CandidatesTokenCount > 0 {

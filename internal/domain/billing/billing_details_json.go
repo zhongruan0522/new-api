@@ -2,6 +2,7 @@ package billing
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/NookMux/NookMux/pkg/jsonx"
 )
@@ -165,7 +166,7 @@ func validateBillingDetailsKeys(raw string) error {
 	for group, fields := range groupFields {
 		value, present := tokens[group]
 		if !present {
-			continue
+			return fmt.Errorf("billing_details.tokens.%s is required", group)
 		}
 		groupMap, ok := value.(map[string]any)
 		if !ok {
@@ -214,7 +215,19 @@ func validateBillingDetailsPayload(payload *BillingDetailsPayload) error {
 		}
 	}
 	writeCache := intValue(payload.Tokens.Cache.WriteCache)
-	tiered := intValue(payload.Tokens.Cache.WriteCache5m) + intValue(payload.Tokens.Cache.WriteCache1h)
+	var tiered int
+	if payload.Tokens.Cache.WriteCache5m != nil {
+		tiered = *payload.Tokens.Cache.WriteCache5m
+	}
+	if payload.Tokens.Cache.WriteCache1h != nil {
+		if *payload.Tokens.Cache.WriteCache1h > 0 && tiered > math.MaxInt-*payload.Tokens.Cache.WriteCache1h {
+			return fmt.Errorf("cache write tiers overflow")
+		}
+		tiered += *payload.Tokens.Cache.WriteCache1h
+	}
+	if tiered < 0 {
+		return fmt.Errorf("cache write tiers (%d) exceed write_cache total (%d)", tiered, writeCache)
+	}
 	if tiered > writeCache {
 		return fmt.Errorf("cache write tiers (%d) exceed write_cache total (%d)", tiered, writeCache)
 	}

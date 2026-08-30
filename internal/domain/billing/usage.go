@@ -166,6 +166,20 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)),
 			shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
 	}
+
+	// 序列化失败不能伪装成“无明细的成功消费”：先显式失败，调用方保留预扣
+	// 退款路径，避免 quota 已落账而 billing_details 缺失。
+	var billingDetailsJSON string
+	if !settlementEstimatedUsage && !localCountTokens &&
+		!(promptTokens == 0 && completionTokens == 0) {
+		payload, serializeErr := SerializeBillingUsage(bu)
+		if serializeErr != nil {
+			log.LogError(ctx, "billing_details serialization failed (cause=billing_details_serialization_failed): "+serializeErr.Error())
+			return nil, normalizationFailedError(ctx)
+		}
+		billingDetailsJSON = payload
+	}
+
 	if !quotaResult.AudioInputQuota.IsZero() {
 		extraContent = append(extraContent, fmt.Sprintf("Audio Input 花费 %s", quotaResult.AudioInputQuota.String()))
 	}
@@ -298,19 +312,6 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			dOtherRatio := decimal.NewFromFloat(otherRatio)
 			quotaCalculateDecimal = quotaCalculateDecimal.Mul(dOtherRatio)
 			extraContent = append(extraContent, fmt.Sprintf("其他倍率 %s: %f", key, otherRatio))
-		}
-	}
-
-	// billing_details 与计费来自同一次归一化：仅在携带上游真实 Token 用量时
-	// 生成；本地估算（上游无计费信息或渠道本地计数）与无 token 用量不写该列。
-	billingDetailsJSON := ""
-	if !settlementEstimatedUsage && !localCountTokens &&
-		!(promptTokens == 0 && completionTokens == 0) {
-		payload, err := SerializeBillingUsage(bu)
-		if err != nil {
-			log.LogError(ctx, "billing_details serialization failed: "+err.Error())
-		} else {
-			billingDetailsJSON = payload
 		}
 	}
 

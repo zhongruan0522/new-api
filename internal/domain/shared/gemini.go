@@ -595,6 +595,7 @@ type GeminiUsageMetadata struct {
 	TotalTokenCount            int                         `json:"totalTokenCount"`
 	ThoughtsTokenCount         int                         `json:"thoughtsTokenCount"`
 	CachedContentTokenCount    int                         `json:"cachedContentTokenCount"`
+	ServiceTier                string                      `json:"serviceTier"`
 	PromptTokensDetails        []GeminiPromptTokensDetails `json:"promptTokensDetails"`
 	ToolUsePromptTokensDetails []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
 	CandidatesTokensDetails    []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
@@ -611,6 +612,7 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 		TotalTokenCountSnake            int                         `json:"total_token_count,omitempty"`
 		ThoughtsTokenCountSnake         int                         `json:"thoughts_token_count,omitempty"`
 		CachedContentTokenCountSnake    int                         `json:"cached_content_token_count,omitempty"`
+		ServiceTierSnake                string                      `json:"service_tier,omitempty"`
 		PromptTokensDetailsSnake        []GeminiPromptTokensDetails `json:"prompt_tokens_details,omitempty"`
 		ToolUsePromptTokensDetailsSnake []GeminiPromptTokensDetails `json:"tool_use_prompt_tokens_details,omitempty"`
 		CandidatesTokensDetailsSnake    []GeminiPromptTokensDetails `json:"candidates_tokens_details,omitempty"`
@@ -638,6 +640,9 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 	}
 	if aux.CachedContentTokenCountSnake != 0 {
 		m.CachedContentTokenCount = aux.CachedContentTokenCountSnake
+	}
+	if aux.ServiceTierSnake != "" {
+		m.ServiceTier = aux.ServiceTierSnake
 	}
 	if len(aux.PromptTokensDetailsSnake) > 0 {
 		m.PromptTokensDetails = aux.PromptTokensDetailsSnake

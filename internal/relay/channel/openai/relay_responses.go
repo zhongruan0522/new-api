@@ -35,6 +35,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	if err != nil {
 		return nil, shared.NewOpenAIError(err, shared.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+	info.SetEffectiveServiceTier(responsesResponse.ServiceTier)
 	if oaiError := responsesResponse.GetOpenAIError(); oaiError != nil && oaiError.Message != "" {
 		return nil, shared.WithOpenAIError(*oaiError, upstreamErrorStatusCode(resp.StatusCode, oaiError))
 	}
@@ -126,6 +127,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			switch streamResponse.Type {
 			case "response.completed":
 				if streamResponse.Response != nil {
+					info.SetEffectiveServiceTier(streamResponse.Response.ServiceTier)
 					if streamResponse.Response.Usage != nil {
 						convert.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
 						if info.RelayFormat == relayconstant.RelayFormatClaude && info.ClaudeConvertInfo != nil {

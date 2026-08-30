@@ -1,6 +1,8 @@
 package billing
 
 import (
+	"math"
+	"strings"
 	"testing"
 
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -291,6 +293,58 @@ func TestBuildBillingUsageGeminiToolUseNotInPricingInput(t *testing.T) {
 	want := `{"schema_version":1,"tokens":{"input":{"text_input":151},"output":{"reasoning_output":1120},"cache":{}}}`
 	if json != want {
 		t.Fatalf("JSON = %s, want %s", json, want)
+	}
+}
+
+// TestBuildBillingUsageGeminiUnknownModalityWarns 验证 schema v1 不能表达的
+// 新 Gemini 模态不会被静默丢成“没有异常”；至少保留可诊断告警，供上游协议
+// 升级时定位。
+func TestBuildBillingUsageGeminiUnknownModalityWarns(t *testing.T) {
+	metadata := &shared.GeminiUsageMetadata{
+		PromptTokenCount:     12,
+		CandidatesTokenCount: 8,
+		PromptTokensDetails: []shared.GeminiPromptTokensDetails{
+			{Modality: "NEW_INPUT", TokenCount: 5},
+		},
+		CandidatesTokensDetails: []shared.GeminiPromptTokensDetails{
+			{Modality: "NEW_OUTPUT", TokenCount: 3},
+		},
+	}
+	_, warnings, err := BuildBillingUsage(relayconstant.UsageSourceGemini, nil, metadata)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage() error = %v", err)
+	}
+	joined := strings.Join(warnings, "\n")
+	for _, want := range []string{
+		`unknown gemini input modality "NEW_INPUT" with 5 tokens`,
+		`unknown gemini output modality "NEW_OUTPUT" with 3 tokens`,
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("warnings = %v, want substring %q", warnings, want)
+		}
+	}
+}
+
+// TestBuildBillingUsageRejectsIntegerOverflow 验证 token 求和不因 int 溢出
+// 回绕成“合法的小值”。
+func TestBuildBillingUsageRejectsIntegerOverflow(t *testing.T) {
+	outputMetadata := &shared.GeminiUsageMetadata{
+		CandidatesTokenCount: math.MaxInt,
+		ThoughtsTokenCount:   1,
+	}
+	if _, _, err := BuildBillingUsage(relayconstant.UsageSourceGemini, nil, outputMetadata); err == nil {
+		t.Fatal("gemini output total overflow must fail explicitly")
+	}
+
+	modalityMetadata := &shared.GeminiUsageMetadata{
+		PromptTokenCount: math.MaxInt,
+		PromptTokensDetails: []shared.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: math.MaxInt},
+			{Modality: "TEXT", TokenCount: math.MaxInt},
+		},
+	}
+	if _, _, err := BuildBillingUsage(relayconstant.UsageSourceGemini, nil, modalityMetadata); err == nil {
+		t.Fatal("modality sum overflow must fail explicitly")
 	}
 }
 

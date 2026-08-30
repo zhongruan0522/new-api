@@ -61,6 +61,7 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 	// 归一化需要原始拆分才能满足"tool-use 只审计不进计价输入"。
 	metadata := geminiResponse.UsageMetadata
 	info.UsageGeminiMetadata = &metadata
+	info.SetEffectiveServiceTier(metadata.ServiceTier)
 
 	helper.IOCopyBytesGracefully(c, resp, responseBody)
 

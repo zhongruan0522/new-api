@@ -143,8 +143,8 @@ func TestGeminiChatStreamHandlerClaudeKeepsMultipleToolCallsDistinct(t *testing.
 	if !strings.Contains(out, `"stop_reason":"tool_use"`) || !strings.Contains(out, `"type":"message_stop"`) {
 		t.Fatalf("claude stream output missing final tool_use stop: %s", out)
 	}
-	if !strings.Contains(out, `"input_tokens":5`) {
-		t.Fatalf("claude stream output missing Gemini tool prompt usage: %s", out)
+	if !strings.Contains(out, `"input_tokens":2`) {
+		t.Fatalf("claude stream output should preserve official prompt total excluding tool-use audit: %s", out)
 	}
 }
 

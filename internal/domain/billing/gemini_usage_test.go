@@ -32,7 +32,7 @@ func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {
 	}
 }
 
-func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.T) {
+func TestGeminiUsageMetadataToOpenAIUsageExcludesToolUsePromptTokens(t *testing.T) {
 	usage := GeminiUsageMetadataToOpenAIUsage(shared.GeminiUsageMetadata{
 		PromptTokenCount:        151,
 		ToolUsePromptTokenCount: 18329,
@@ -50,14 +50,14 @@ func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.
 		},
 	})
 
-	if usage.PromptTokens != 18480 || usage.InputTokens != 18480 {
-		t.Fatalf("prompt/input tokens = %d/%d, want 18480/18480", usage.PromptTokens, usage.InputTokens)
+	if usage.PromptTokens != 151 || usage.InputTokens != 151 {
+		t.Fatalf("prompt/input tokens = %d/%d, want 151/151", usage.PromptTokens, usage.InputTokens)
 	}
 	if usage.CompletionTokens != 2209 || usage.OutputTokens != 2209 || usage.TotalTokens != 20689 {
 		t.Fatalf("completion/output/total = %d/%d/%d, want 2209/2209/20689", usage.CompletionTokens, usage.OutputTokens, usage.TotalTokens)
 	}
-	if usage.PromptTokensDetails.TextTokens != 18480 {
-		t.Fatalf("prompt text token details = %d, want 18480", usage.PromptTokensDetails.TextTokens)
+	if usage.PromptTokensDetails.TextTokens != 151 {
+		t.Fatalf("prompt text token details = %d, want 151", usage.PromptTokensDetails.TextTokens)
 	}
 	if usage.CompletionTokenDetails.TextTokens != 1089 || usage.CompletionTokenDetails.ReasoningTokens != 1120 {
 		t.Fatalf("completion token details = %+v, want text=1089 reasoning=1120", usage.CompletionTokenDetails)
@@ -76,11 +76,11 @@ func TestGeminiUsageMetadataToOpenAIUsageAcceptsSnakeCaseToolUseFields(t *testin
 	}
 
 	usage := GeminiUsageMetadataToOpenAIUsage(metadata)
-	if usage.PromptTokens != 5 || usage.InputTokens != 5 {
-		t.Fatalf("prompt/input tokens = %d/%d, want 5/5", usage.PromptTokens, usage.InputTokens)
+	if usage.PromptTokens != 2 || usage.InputTokens != 2 {
+		t.Fatalf("prompt/input tokens = %d/%d, want 2/2", usage.PromptTokens, usage.InputTokens)
 	}
-	if usage.PromptTokensDetails.TextTokens != 3 {
-		t.Fatalf("tool prompt text details = %d, want 3", usage.PromptTokensDetails.TextTokens)
+	if usage.PromptTokensDetails.TextTokens != 2 {
+		t.Fatalf("prompt text details = %d, want 2 (tool-use audit details excluded)", usage.PromptTokensDetails.TextTokens)
 	}
 }
 

@@ -8,7 +8,7 @@
 
 | 子包 | 内容 |
 |---|---|
-| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`usage.go`（`CalculateUsage` 通用文本路径 usage 计算 + `ApplyQuota` 落账，阶段 6 自 relay/handler 下沉）、`billing_usage.go`（三规范 Usage 归一化为 `BillingUsage`，计费 PRD 阶段 1）、`billing_details_json.go`（`billing_details` canonical JSON 序列化与严格解析，schema v1）、`billing_quota.go`（阶段 2 归一化计费核心：四入口共享的 PRD 3.4 公式，含音频两种计价模式与聚合兜底构造）、`billing_shadow.go`（迁移期旧公式影子对拍，差异分类告警，迁移完成后整文件删除）、`pricing.go`（上下文阶梯计价，阶段 2 起档位 tokens = 普通输入+输出+缓存读写）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
+| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`usage.go`（`CalculateUsage` 通用文本路径 usage 计算 + `ApplyQuota` 落账，阶段 6 自 relay/handler 下沉）、`billing_usage.go`（三规范 Usage 归一化为 `BillingUsage`，计费 PRD 阶段 1；负数/溢出/缓存矛盾显式失败，矛盾明细保留诊断告警）、`billing_details_json.go`（`billing_details` canonical JSON 序列化与严格解析，schema v1 三组必在）、`billing_quota.go`（阶段 2 归一化计费核心：四入口共享的 PRD 3.4 公式，含音频两种计价模式与聚合兜底构造）、`billing_shadow.go`（迁移期旧公式影子对拍，差异分类告警，迁移完成后整文件删除）、`pricing.go`（上下文阶梯计价，阶段 2 起档位 tokens = 普通输入+输出+缓存读写）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
 | `billing/contract/` | 计费契约叶子包：`PriceData`、`GroupRatioInfo`、`ContextPricing*`。供 config/ratio、store/pricing、relay 引用（见"依赖方向约束"）。 |
 | `billing/plan_quota/` | 供应商套餐配额（GLM / Kimi / MiniMax）拉取与归一化。 |
 | `channel/` | 渠道域服务：自动禁用/启用、加权随机选择与重试、渠道亲和性缓存；含 `channel_error.go`（`ChannelError`）。 |
