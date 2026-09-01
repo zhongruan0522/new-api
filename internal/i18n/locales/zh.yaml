@@ -295,6 +295,7 @@ pricing.reset_model_ratio_success: "重置模型倍率成功"
 pricing.reset_tool_billing_rules_success: "重置工具计费规则成功"
 pricing.price_table_invalid: "价格表校验失败：{{.Reason}}"
 pricing.price_table_read_failed: "无法加载组件化价格表"
+pricing.price_table_refresh_failed: "组件化价格表已保存，但刷新模型广场失败，请稍后重试。"
 pricing.price_table_save_failed: "无法保存组件化价格表"
 pricing.price_table_saved: "组件化价格表保存成功"
 

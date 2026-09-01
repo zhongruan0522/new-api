@@ -86,7 +86,9 @@ func GetPricing() []Pricing {
 		if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
 			modelSupportEndpointsLock.Lock()
 			defer modelSupportEndpointsLock.Unlock()
-			updatePricing()
+			if err := updatePricing(); err != nil {
+				common.SysError(fmt.Sprintf("refresh pricing: %v", err))
+			}
 		}
 	}
 	return pricingMap
@@ -141,17 +143,21 @@ func GetModelSupportEndpointTypes(model string) []constant.EndpointType {
 	return make([]constant.EndpointType, 0)
 }
 
-func updatePricing() {
+func updatePricing() error {
 	//modelRatios := common.GetModelRatios()
 	enableAbilities, err := channelstore.GetAllEnableAbilityWithChannels()
 	if err != nil {
 		common.SysLog(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
-		return
+		return err
 	}
 	explicitPricePlans, err := GetModelPricePlans()
 	if err != nil {
 		common.SysError(fmt.Sprintf("load component model price plans for marketplace: %v", err))
-		explicitPricePlans = nil
+		// Keep the last complete marketplace cache instead of rebuilding it
+		// without explicit component plans. A failed table read must remain
+		// observable and retryable rather than silently degrading to legacy
+		// ratio projections.
+		return err
 	}
 	explicitPlansByModel := make(map[string][]contract.ModelPricePlan)
 	for _, plan := range explicitPricePlans {
@@ -420,6 +426,7 @@ func updatePricing() {
 	modelEnableGroupsLock.Unlock()
 
 	lastGetPricingTime = time.Now()
+	return nil
 }
 
 // GetSupportedEndpointMap 返回全局端点到路径的映射

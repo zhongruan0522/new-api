@@ -110,7 +110,9 @@ func CreateModelMeta(c *gin.Context) {
 		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	pricingstore.RefreshPricing()
+	if err := pricingstore.RefreshPricing(); err != nil {
+		common.SysError("refresh pricing after model create: " + err.Error())
+	}
 	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
 	httpapi.ApiSuccess(c, &m)
 }
@@ -166,7 +168,9 @@ func UpdateModelMeta(c *gin.Context) {
 		}
 		audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
 	}
-	pricingstore.RefreshPricing()
+	if err := pricingstore.RefreshPricing(); err != nil {
+		common.SysError("refresh pricing after model update: " + err.Error())
+	}
 	httpapi.ApiSuccess(c, &m)
 }
 
@@ -183,7 +187,9 @@ func DeleteModelMeta(c *gin.Context) {
 		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
-	pricingstore.RefreshPricing()
+	if err := pricingstore.RefreshPricing(); err != nil {
+		common.SysError("refresh pricing after model delete: " + err.Error())
+	}
 	audit.RecordAudit(c, auditstore.AuditModuleModel, auditstore.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	httpapi.ApiSuccess(c, nil)
 }

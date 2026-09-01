@@ -81,7 +81,9 @@ func TestGetPricingAnonymousStripsGroupScopedComponentPlans(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("persist price plans: %v", err)
 	}
-	pricingstore.RefreshPricing()
+	if err := pricingstore.RefreshPricing(); err != nil {
+		t.Fatalf("refresh pricing: %v", err)
+	}
 
 	response := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(response)

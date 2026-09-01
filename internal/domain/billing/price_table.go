@@ -74,6 +74,17 @@ func ResolveModelPriceComponent(plans []contract.ModelPricePlan, query contract.
 	sort.SliceStable(candidates, func(i, j int) bool {
 		return modelPricePlanPrecedes(candidates[i], candidates[j])
 	})
+	// A split-component override means consumers must settle the individual
+	// modalities. Returning a generic parent as well would let stage 4 combine
+	// it with a child price from a higher-precedence plan and charge the same
+	// tokens twice. Block aggregate parents whenever any matching token plan
+	// directly configures one of their children.
+	if component == contract.PriceComponentInput && anyPlanHasChildComponent(candidates, contract.InputChildPriceComponents) {
+		return nil, false
+	}
+	if component == contract.PriceComponentOutput && anyPlanHasChildComponent(candidates, contract.OutputChildPriceComponents) {
+		return nil, false
+	}
 	for _, plan := range candidates {
 		if price, found := findPlanComponent(plan, component); found {
 			return &contract.ResolvedModelPriceComponent{
@@ -81,6 +92,7 @@ func ResolveModelPriceComponent(plans []contract.ModelPricePlan, query contract.
 				Component:   price,
 				PlanSource:  normalizedPricePlanSource(plan.Source),
 				BillingMode: plan.BillingMode,
+				Plan:        cloneModelPricePlan(plan),
 			}, true
 		}
 	}
@@ -186,6 +198,19 @@ func findPlanComponent(plan contract.ModelPricePlan, requested contract.PriceCom
 		}
 	}
 	return contract.ModelPriceComponent{}, false
+}
+
+func anyPlanHasChildComponent(plans []contract.ModelPricePlan, children []contract.PriceComponent) bool {
+	for _, plan := range plans {
+		for _, configured := range plan.Components {
+			for _, child := range children {
+				if configured.Component == child {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func priceComponentParent(component contract.PriceComponent) (contract.PriceComponent, bool) {
@@ -380,7 +405,7 @@ func validatePricePlanComponents(plan *contract.ModelPricePlan) error {
 		if plan.Components[0].Unit != contract.PriceUnitPerRequest {
 			return fmt.Errorf("request component must use per_request")
 		}
-		if err := validateNonNegativeDecimal("request unit_price", plan.Components[0].UnitPrice, plan.PricePrecision); err != nil {
+		if err := validatePositiveDecimal("request unit_price", plan.Components[0].UnitPrice, plan.PricePrecision); err != nil {
 			return err
 		}
 		plan.Components[0].UnitPrice = strings.TrimSpace(plan.Components[0].UnitPrice)

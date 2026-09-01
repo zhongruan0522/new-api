@@ -340,6 +340,7 @@ const (
 	MsgPricingPriceTableReadFailed         = "pricing.price_table_read_failed"
 	MsgPricingPriceTableSaveFailed         = "pricing.price_table_save_failed"
 	MsgPricingPriceTableSaved              = "pricing.price_table_saved"
+	MsgPricingPriceTableRefreshFailed      = "pricing.price_table_refresh_failed"
 )
 
 // Quota related messages

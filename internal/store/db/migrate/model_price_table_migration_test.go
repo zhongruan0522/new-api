@@ -3,6 +3,7 @@ package dbmigrate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/NookMux/NookMux/internal/store/pricing"
@@ -54,6 +55,50 @@ func TestModelPriceTablePreMigrationSkipsMissingHistoricalSourceTables(t *testin
 		if count != 0 {
 			t.Fatalf("target %T count = %d, want 0", model, count)
 		}
+	}
+}
+
+func TestModelPriceTablePreMigrationRejectsPartialSourceSchema(t *testing.T) {
+	tests := []struct {
+		name       string
+		create     func(t *testing.T, dbHandle *gorm.DB)
+		wantPrefix string
+	}{
+		{
+			name: "plans without components",
+			create: func(t *testing.T, dbHandle *gorm.DB) {
+				t.Helper()
+				if err := dbHandle.AutoMigrate(&pricingstore.ModelPricePlan{}); err != nil {
+					t.Fatalf("migrate source plans: %v", err)
+				}
+			},
+			wantPrefix: "source database has model_price_plans but is missing model_price_components",
+		},
+		{
+			name: "components without plans",
+			create: func(t *testing.T, dbHandle *gorm.DB) {
+				t.Helper()
+				if err := dbHandle.AutoMigrate(&pricingstore.ModelPriceComponent{}); err != nil {
+					t.Fatalf("migrate source components: %v", err)
+				}
+			},
+			wantPrefix: "source database has model_price_components but is missing model_price_plans",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sourceDB := openModelPriceTableMigrationDB(t, "partial-"+tt.name)
+			targetDB := openModelPriceTableMigrationDB(t, "partial-target-"+tt.name)
+			if err := autoMigrateTargetMainSchema(targetDB); err != nil {
+				t.Fatalf("migrate target schema: %v", err)
+			}
+			tt.create(t, sourceDB)
+
+			err := runModelPriceTableCopySteps(sourceDB, targetDB)
+			if err == nil || !strings.HasPrefix(err.Error(), tt.wantPrefix) {
+				t.Fatalf("partial source error = %v, want prefix %q", err, tt.wantPrefix)
+			}
+		})
 	}
 }
 

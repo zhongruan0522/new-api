@@ -153,6 +153,7 @@ const DEFAULT_CONTEXT_TIER_WIDTH = 200000
 const MAX_MODEL_NAME_LENGTH = 255
 const MAX_SCOPE_LENGTH = 128
 const MAX_PRICE_PLAN_PRECISION = 18
+const MAX_PRICE_PLAN_VALUE = 1_000_000_000_000
 
 function createEmptyPricePlan(): ModelPricePlan {
   return {
@@ -389,7 +390,11 @@ function isValidDecimal(value: string, scale: number, positive = false) {
   const trimmed = value.trim()
   if (!DECIMAL_PATTERN.test(trimmed)) return false
   const decimal = Number(trimmed)
-  if (!Number.isFinite(decimal) || (positive ? decimal <= 0 : decimal < 0)) {
+  if (
+    !Number.isFinite(decimal) ||
+    Math.abs(decimal) > MAX_PRICE_PLAN_VALUE ||
+    (positive ? decimal <= 0 : decimal < 0)
+  ) {
     return false
   }
   const fraction = trimmed.split('.')[1]
@@ -510,7 +515,7 @@ function validateDraftPlans(plans: DraftPlan[], t: (key: string) => string) {
         plan.components.length !== 1 ||
         !request ||
         request.unit !== 'per_request' ||
-        !isValidDecimal(request.unit_price, plan.price_precision)
+        !isValidDecimal(request.unit_price, plan.price_precision, true)
       ) {
         errors.push(
           `${label}: ${t('systemSettings.errors.priceTableRequestPriceInvalid')}`
@@ -534,7 +539,9 @@ function validateDraftPlans(plans: DraftPlan[], t: (key: string) => string) {
           !isValidDecimal(component.unit_price, plan.price_precision)
         ) {
           errors.push(
-            `${label}: ${t('systemSettings.errors.priceTableTokenPriceInvalid')}`
+            `${label} / ${t(componentLabelKey(component.component))}: ${t(
+              'systemSettings.errors.priceTableTokenPriceInvalid'
+            )}`
           )
           break
         }

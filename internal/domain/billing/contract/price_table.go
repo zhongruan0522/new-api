@@ -162,6 +162,11 @@ type ResolvedModelPriceComponent struct {
 	Component   ModelPriceComponent `json:"component"`
 	PlanSource  PricePlanSource     `json:"plan_source"`
 	BillingMode BillingMode         `json:"billing_mode"`
+	// Plan carries the settlement context of the plan that supplied the
+	// component. Component-level fallback can cross plan boundaries, so the
+	// caller must never combine a component with another plan's exchange rate,
+	// precision, rounding rule, or group-multiplier source.
+	Plan ModelPricePlan `json:"plan"`
 }
 
 // LegacyPriceInput is the lossless bridge from the existing ratio maps into

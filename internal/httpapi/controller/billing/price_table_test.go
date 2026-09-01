@@ -42,6 +42,24 @@ func TestModelPriceTableConfigurationRequiresAdminAndAuditsSuccessfulWrites(t *t
 	router.GET("/api/pricing/configuration", middleware.AdminAuth(), GetModelPriceTableConfiguration)
 	router.PUT("/api/pricing/configuration", middleware.AdminAuth(), UpdateModelPriceTableConfiguration)
 
+	marketplaceChannel := channelstore.Channel{
+		Id:     3,
+		Status: common.ChannelStatusEnabled,
+		Group:  "default",
+		Models: "model-admin",
+	}
+	if err := dbstore.DB.Create(&marketplaceChannel).Error; err != nil {
+		t.Fatalf("create marketplace channel: %v", err)
+	}
+	if err := dbstore.DB.Create(&channelstore.Ability{
+		Group:     "default",
+		Model:     "model-admin",
+		ChannelId: marketplaceChannel.Id,
+		Enabled:   true,
+	}).Error; err != nil {
+		t.Fatalf("create marketplace ability: %v", err)
+	}
+
 	validPlan := testControllerPricePlan("model-admin")
 	requestBody, err := jsonx.Marshal(map[string]any{"plans": []contract.ModelPricePlan{validPlan}})
 	if err != nil {
@@ -83,6 +101,22 @@ func TestModelPriceTableConfigurationRequiresAdminAndAuditsSuccessfulWrites(t *t
 	}
 	if len(plans) != 1 || plans[0].ModelName != "model-admin" {
 		t.Fatalf("admin update did not persist expected plan: %+v", plans)
+	}
+	marketplacePlans := pricingstore.GetPricing()
+	var savedMarketplacePlan *contract.ModelPricePlan
+	for _, marketplaceItem := range marketplacePlans {
+		if marketplaceItem.ModelName != "model-admin" {
+			continue
+		}
+		for i := range marketplaceItem.PricePlans {
+			if marketplaceItem.PricePlans[i].Source == contract.PricePlanSourceExplicit {
+				savedMarketplacePlan = &marketplaceItem.PricePlans[i]
+				break
+			}
+		}
+	}
+	if savedMarketplacePlan == nil || savedMarketplacePlan.BillingMode != contract.BillingModeToken {
+		t.Fatalf("admin update did not refresh the marketplace component price plan: %+v", marketplacePlans)
 	}
 	waitForPricingAudit(t, admin.Username)
 

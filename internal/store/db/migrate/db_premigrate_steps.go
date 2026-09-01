@@ -22,6 +22,7 @@ type gormTableCopyStep[T any] struct {
 	name                     string
 	batchSize                int
 	skipIfSourceTableMissing bool
+	requiredSourceTables     []string
 }
 
 func (s gormTableCopyStep[T]) Name() string { return s.name }
@@ -30,6 +31,11 @@ func (s gormTableCopyStep[T]) Run(ctx context.Context, job *DBPreMigrateJob, src
 	job.setStep("迁移表：" + s.name)
 	job.appendLog(fmt.Sprintf("[%s] 开始迁移表 %s", time.Now().Format(time.RFC3339), s.name))
 	if s.skipIfSourceTableMissing && src != nil && !src.Migrator().HasTable(new(T)) {
+		for _, requiredTable := range s.requiredSourceTables {
+			if src.Migrator().HasTable(requiredTable) {
+				return fmt.Errorf("source database has %s but is missing %s; both component price tables must be present together", requiredTable, s.name)
+			}
+		}
 		job.setTableProgress(s.name, 0, 0)
 		job.appendLog(fmt.Sprintf("[%s] 源库不存在新表 %s，跳过复制", time.Now().Format(time.RFC3339), s.name))
 		return nil

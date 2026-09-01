@@ -66,6 +66,20 @@ func TestNormalizeAndValidateModelPricePlansRejectsInvalidConfiguration(t *testi
 			contains: "exchange_rate must be greater than zero",
 		},
 		{
+			name: "per-request plans cannot encode free as zero",
+			plans: []contract.ModelPricePlan{func() contract.ModelPricePlan {
+				plan := validPlan()
+				plan.BillingMode = contract.BillingModePerRequest
+				plan.Components = []contract.ModelPriceComponent{{
+					Component: contract.PriceComponentRequest,
+					Unit:      contract.PriceUnitPerRequest,
+					UnitPrice: "0",
+				}}
+				return plan
+			}()},
+			contains: "request unit_price must be greater than zero",
+		},
+		{
 			name: "currency must be a recognized ISO code",
 			plans: []contract.ModelPricePlan{func() contract.ModelPricePlan {
 				plan := validPlan()
@@ -196,9 +210,18 @@ func TestResolveModelPriceComponentFallsBackAcrossExplicitAndLegacyPlans(t *test
 	if !ok || image.Component.UnitPrice != "2" || image.PlanID != 9 || image.Component.Component != contract.PriceComponentInput {
 		t.Fatalf("image component = %+v (exists=%t), want legacy parent fallback", image, ok)
 	}
+	if image.Plan.Currency != legacy.Currency || image.Plan.ExchangeRate != legacy.ExchangeRate || image.Plan.PricePrecision != legacy.PricePrecision {
+		t.Fatalf("image fallback lost its plan settlement context: %+v", image.Plan)
+	}
+	if aggregateInput, ok := ResolveModelPriceComponent([]contract.ModelPricePlan{legacy, explicit}, query, contract.PriceComponentInput); ok || aggregateInput != nil {
+		t.Fatalf("aggregate input must not combine with split input components: %+v (exists=%t)", aggregateInput, ok)
+	}
 	output, ok := ResolveModelPriceComponent([]contract.ModelPricePlan{legacy, explicit}, query, contract.PriceComponentAudioOutput)
 	if !ok || output.Component.UnitPrice != "3" || output.Component.Component != contract.PriceComponentOutput {
 		t.Fatalf("output component = %+v (exists=%t), want legacy output fallback", output, ok)
+	}
+	if aggregateOutput, ok := ResolveModelPriceComponent([]contract.ModelPricePlan{legacy, explicit}, query, contract.PriceComponentOutput); ok || aggregateOutput != nil {
+		t.Fatalf("aggregate output must not combine with split output components: %+v (exists=%t)", aggregateOutput, ok)
 	}
 	reasoning, ok := ResolveModelPriceComponent([]contract.ModelPricePlan{legacy, explicit}, query, contract.PriceComponentReasoningOutput)
 	if !ok || reasoning.Component.UnitPrice != "11" || reasoning.Component.Component != contract.PriceComponentTextOutput || reasoning.PlanID != 1 {
@@ -282,6 +305,35 @@ func TestResolveModelPriceComponentStopsForFreeAndPerRequestPlans(t *testing.T) 
 	}
 	if component, ok := ResolveModelPriceComponent([]contract.ModelPricePlan{legacy, perRequest}, query, contract.PriceComponentInput); ok || component != nil {
 		t.Fatalf("per-request plan must not fall back to a token component: %+v", component)
+	}
+}
+
+func TestSameModelCanCombineTokenAndPerRequestPlansInDifferentScopes(t *testing.T) {
+	tokenPlan := testTokenPricePlan(1, contract.PricePlanSourceExplicit, contract.PriceComponentInput, "1")
+	perRequest := testTokenPricePlan(2, contract.PricePlanSourceExplicit, contract.PriceComponentInput, "1")
+	perRequest.Endpoint = "image-generation"
+	perRequest.BillingMode = contract.BillingModePerRequest
+	perRequest.Components = []contract.ModelPriceComponent{{
+		Component: contract.PriceComponentRequest,
+		Unit:      contract.PriceUnitPerRequest,
+		UnitPrice: "0.02",
+	}}
+	plans, err := NormalizeAndValidateModelPricePlans([]contract.ModelPricePlan{tokenPlan, perRequest})
+	if err != nil {
+		t.Fatalf("same model should retain mode-specific plans in different endpoint scopes: %v", err)
+	}
+
+	selected, ok := ResolveModelPricePlan(plans, contract.ModelPricePlanQuery{
+		ModelName: "model-a", Endpoint: "image-generation", EffectiveAt: 10,
+	})
+	if !ok || selected.BillingMode != contract.BillingModePerRequest {
+		t.Fatalf("endpoint-scoped per-request plan = %+v (exists=%t)", selected, ok)
+	}
+	selected, ok = ResolveModelPricePlan(plans, contract.ModelPricePlanQuery{
+		ModelName: "model-a", Endpoint: "chat", EffectiveAt: 10,
+	})
+	if !ok || selected.BillingMode != contract.BillingModeToken {
+		t.Fatalf("fallback token plan = %+v (exists=%t)", selected, ok)
 	}
 }
 

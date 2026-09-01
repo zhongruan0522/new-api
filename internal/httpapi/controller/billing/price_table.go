@@ -74,13 +74,23 @@ func UpdateModelPriceTableConfiguration(c *gin.Context) {
 		httpapi.ApiErrorI18n(c, i18n.MsgPricingPriceTableSaveFailed)
 		return
 	}
+	after := normalizedPlans
+	if persisted, err := pricingstore.GetModelPricePlans(); err != nil {
+		common.SysError("load persisted component price table for audit: " + err.Error())
+	} else {
+		after = persisted
+	}
 
+	audit.RecordAudit(c, auditstore.AuditModulePricing, auditstore.AuditActionUpdate, "更新组件化模型价格表", before, after)
 	// ReplaceModelPricePlans invalidates its own table cache. RefreshPricing
 	// rebuilds the marketplace cache after the write has committed.
-	pricingstore.RefreshPricing()
-	audit.RecordAudit(c, auditstore.AuditModulePricing, auditstore.AuditActionUpdate, "更新组件化模型价格表", before, normalizedPlans)
+	if err := pricingstore.RefreshPricing(); err != nil {
+		common.SysError("refresh pricing after component price table update: " + err.Error())
+		httpapi.ApiErrorI18n(c, i18n.MsgPricingPriceTableRefreshFailed)
+		return
+	}
 	httpapi.ApiSuccessI18n(c, i18n.MsgPricingPriceTableSaved, contract.ModelPriceTableConfiguration{
-		Plans:       normalizedPlans,
+		Plans:       after,
 		LegacyPlans: pricingstore.GetLegacyModelPricePlans(),
 	})
 }
