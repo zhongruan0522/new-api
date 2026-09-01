@@ -8,8 +8,8 @@
 
 | 子包 | 内容 |
 |---|---|
-| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`usage.go`（`CalculateUsage` 通用文本路径 usage 计算 + `ApplyQuota` 落账，阶段 6 自 relay/handler 下沉）、`billing_usage.go`（三规范 Usage 归一化为 `BillingUsage`，计费 PRD 阶段 1；负数/溢出/缓存矛盾显式失败，矛盾明细保留诊断告警）、`billing_details_json.go`（`billing_details` canonical JSON 序列化与严格解析，schema v1 三组必在）、`billing_quota.go`（阶段 2 归一化计费核心：四入口共享的 PRD 3.4 公式，含音频两种计价模式与聚合兜底构造）、`billing_shadow.go`（迁移期旧公式影子对拍，差异分类告警，迁移完成后整文件删除）、`pricing.go`（上下文阶梯计价，阶段 2 起档位 tokens = 普通输入+输出+缓存读写）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
-| `billing/contract/` | 计费契约叶子包：`PriceData`、`GroupRatioInfo`、`ContextPricing*`。供 config/ratio、store/pricing、relay 引用（见"依赖方向约束"）。 |
+| `billing/` | ★ 计费核心：`service.go`（PreConsumeBilling / SettleBilling / BillingSession 会话）、`quota.go`（预扣/后扣/用量重试）、`usage.go`（`CalculateUsage` 通用文本路径 usage 计算 + `ApplyQuota` 落账，阶段 6 自 relay/handler 下沉）、`billing_usage.go`（三规范 Usage 归一化为 `BillingUsage`，计费 PRD 阶段 1；负数/溢出/缓存矛盾显式失败，矛盾明细保留诊断告警）、`billing_details_json.go`（`billing_details` canonical JSON 序列化与严格解析，schema v1 三组必在）、`billing_quota.go`（阶段 2 归一化计费核心：四入口共享的 PRD 3.4 公式，含音频两种计价模式与聚合兜底构造）、`billing_shadow.go`（迁移期旧公式影子对拍，差异分类告警，迁移完成后整文件删除）、`pricing.go`（上下文阶梯计价，阶段 2 起档位 tokens = 普通输入+输出+缓存读写）、[price_table.go](billing/price_table.go)（阶段 3 组件价格表的归一化、验证与解析，不接入结算）、`violation_fee.go`、`usage_helper.go`、`gemini_usage.go`、`log_info.go`、`funding_source.go`。 |
+| `billing/contract/` | 计费契约叶子包：`PriceData`、`GroupRatioInfo`、`ContextPricing*`、[price_table.go](billing/contract/price_table.go)（组件价格表模型、旧 ratio 只读投影）。供 config/ratio、store/pricing、relay 引用（见"依赖方向约束"）。 |
 | `billing/plan_quota/` | 供应商套餐配额（GLM / Kimi / MiniMax）拉取与归一化。 |
 | `channel/` | 渠道域服务：自动禁用/启用、加权随机选择与重试、渠道亲和性缓存；含 `channel_error.go`（`ChannelError`）。 |
 | `channel/constant/` | 渠道域常量（`APIType*`、`ChannelType*`、`EndpointType`、`MultiKeyMode`、Azure 时间点、套餐 BaseURL 表）。 |
@@ -50,6 +50,7 @@
 - 领域服务承载业务规则；契约子包只做契约（结构体、常量、错误类型、纯函数），不写 I/O、不碰数据库。
 - 控制器输入已校验也不能假设内部状态可信；跨系统边界继续校验。
 - 计费、quota、usage、渠道选择、动态倍率、违规费用等逻辑必须保持可追踪和可测试。
+- 组件价格表的输入在 [billing/price_table.go](billing/price_table.go) 统一校验价格单位、精度、汇率、取整、作用域与父子组件冲突；`reasoning_output` 只能复用输出价格，不能成为独立收费组件。阶段 3 只维护配置和解析，禁止提前修改 quota、结算或 `billing_details`。
 - 外部 HTTP 调用复用现有客户端和超时配置（`infra/httpclient`）；不要无超时请求或吞掉上游错误。
 - 不要模拟成功或生成假 usage 来掩盖上游/业务失败。
 - 迁移文件进/出时同步更新本文件子包表与根 `AGENTS.md` 的结构概览。

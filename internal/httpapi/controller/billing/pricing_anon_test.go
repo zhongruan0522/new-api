@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/infra/redis"
 	"github.com/NookMux/NookMux/internal/store/channel"
 	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/NookMux/NookMux/internal/store/vendor_meta"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -27,20 +29,110 @@ func setupPricingTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&channelstore.Ability{}, &channelstore.Channel{}, &vendormetastore.Model{}); err != nil {
+	if err := db.AutoMigrate(
+		&channelstore.Ability{},
+		&channelstore.Channel{},
+		&vendormetastore.Model{},
+		&pricingstore.ModelPricePlan{},
+		&pricingstore.ModelPriceComponent{},
+	); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
 	dbstore.DB = db
 	dbstore.LOG_DB = db
 	redis.RedisEnabled = false
 	common.MemoryCacheEnabled = false
+	pricingstore.InvalidateModelPricePlanCache()
 
 	t.Cleanup(func() {
+		pricingstore.InvalidateModelPricePlanCache()
 		dbstore.DB = oldDB
 		dbstore.LOG_DB = oldLogDB
 		redis.RedisEnabled = oldRedisEnabled
 		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
+}
+
+func TestGetPricingAnonymousStripsGroupScopedComponentPlans(t *testing.T) {
+	setupPricingTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	channel := channelstore.Channel{
+		Id:     2,
+		Status: common.ChannelStatusEnabled,
+		Group:  "default",
+		Models: "component-price-model",
+	}
+	if err := dbstore.DB.Create(&channel).Error; err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+	ability := channelstore.Ability{
+		Group:     "default",
+		Model:     "component-price-model",
+		ChannelId: channel.Id,
+		Enabled:   true,
+	}
+	if err := dbstore.DB.Create(&ability).Error; err != nil {
+		t.Fatalf("create ability: %v", err)
+	}
+	if err := pricingstore.ReplaceModelPricePlans([]contract.ModelPricePlan{
+		testMarketplacePricePlan("component-price-model", "", "1"),
+		testMarketplacePricePlan("component-price-model", "internal", "2"),
+	}); err != nil {
+		t.Fatalf("persist price plans: %v", err)
+	}
+	pricingstore.RefreshPricing()
+
+	response := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(response)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/pricing", nil)
+	GetPricing(context)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", response.Code)
+	}
+
+	var body struct {
+		Data []struct {
+			ModelName  string                    `json:"model_name"`
+			PricePlans []contract.ModelPricePlan `json:"price_plans"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode pricing response: %v", err)
+	}
+	for _, item := range body.Data {
+		if item.ModelName != "component-price-model" {
+			continue
+		}
+		if len(item.PricePlans) != 1 || item.PricePlans[0].EffectiveGroup != "" {
+			t.Fatalf("anonymous response exposed group-scoped price plans: %+v", item.PricePlans)
+		}
+		for _, cached := range pricingstore.GetPricing() {
+			if cached.ModelName == "component-price-model" && len(cached.PricePlans) == 2 {
+				return
+			}
+		}
+		t.Fatal("anonymous filtering mutated the shared marketplace price-plan cache")
+	}
+	t.Fatal("component-price-model was missing from anonymous pricing response")
+}
+
+func testMarketplacePricePlan(modelName, effectiveGroup, unitPrice string) contract.ModelPricePlan {
+	return contract.ModelPricePlan{
+		ModelName:             modelName,
+		EffectiveGroup:        effectiveGroup,
+		BillingMode:           contract.BillingModeToken,
+		Currency:              "USD",
+		ExchangeRate:          "1",
+		PricePrecision:        12,
+		RoundingMode:          contract.PriceRoundingHalfUp,
+		GroupMultiplierSource: contract.GroupMultiplierSourceInherit,
+		Components: []contract.ModelPriceComponent{{
+			Component: contract.PriceComponentInput,
+			Unit:      contract.PriceUnitPerMillionTokens,
+			UnitPrice: unitPrice,
+		}},
+	}
 }
 
 // 匿名访问 pricing 时 enable_groups 不应携带内部组名（exists=false 路径），

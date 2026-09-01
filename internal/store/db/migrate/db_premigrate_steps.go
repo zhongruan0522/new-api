@@ -19,8 +19,9 @@ type dbPreMigrateStep interface {
 }
 
 type gormTableCopyStep[T any] struct {
-	name      string
-	batchSize int
+	name                     string
+	batchSize                int
+	skipIfSourceTableMissing bool
 }
 
 func (s gormTableCopyStep[T]) Name() string { return s.name }
@@ -28,6 +29,11 @@ func (s gormTableCopyStep[T]) Name() string { return s.name }
 func (s gormTableCopyStep[T]) Run(ctx context.Context, job *DBPreMigrateJob, src *gorm.DB, dst *gorm.DB, params DBPreMigrateStartParams) error {
 	job.setStep("迁移表：" + s.name)
 	job.appendLog(fmt.Sprintf("[%s] 开始迁移表 %s", time.Now().Format(time.RFC3339), s.name))
+	if s.skipIfSourceTableMissing && src != nil && !src.Migrator().HasTable(new(T)) {
+		job.setTableProgress(s.name, 0, 0)
+		job.appendLog(fmt.Sprintf("[%s] 源库不存在新表 %s，跳过复制", time.Now().Format(time.RFC3339), s.name))
+		return nil
+	}
 
 	copied, total, err := copyTable[T](ctx, src, dst, copyTableOptions{
 		ClearDst:  params.Force,

@@ -292,6 +292,10 @@ custom_voice.upload_audio_required: "Please upload an audio file"
 # Pricing messages
 pricing.reset_model_ratio_success: "Model ratios reset successfully"
 pricing.reset_tool_billing_rules_success: "Tool billing rules reset successfully"
+pricing.price_table_invalid: "Price table validation failed: {{.Reason}}"
+pricing.price_table_read_failed: "Unable to load the component price table"
+pricing.price_table_save_failed: "Unable to save the component price table"
+pricing.price_table_saved: "Component price table saved successfully"
 
 # Quota messages
 quota.threshold_gt_zero: "Warning threshold must be greater than 0"

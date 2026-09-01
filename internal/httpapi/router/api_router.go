@@ -67,6 +67,8 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/about", misccontroller.GetAbout)
 		apiRouter.GET("/home_page_content", misccontroller.GetHomePageContent)
 		apiRouter.GET("/pricing", middleware.HeaderNavModuleAuth("pricing"), billingcontroller.GetPricing)
+		apiRouter.GET("/pricing/configuration", middleware.AdminAuth(), billingcontroller.GetModelPriceTableConfiguration)
+		apiRouter.PUT("/pricing/configuration", middleware.AdminAuth(), billingcontroller.UpdateModelPriceTableConfiguration)
 		apiRouter.GET("/rankings", middleware.HeaderNavModuleAuth("rankings"), rankingscontroller.GetRankings)
 		apiRouter.GET("/verification", middleware.EmailVerificationRateLimit(), middleware.TurnstileCheck(), misccontroller.SendEmailVerification)
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), misccontroller.SendPasswordResetEmail)

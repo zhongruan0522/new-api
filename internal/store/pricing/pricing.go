@@ -41,6 +41,10 @@ type Pricing struct {
 	AudioRatio           *float64                       `json:"audio_ratio,omitempty"`
 	AudioCompletionRatio *float64                       `json:"audio_completion_ratio,omitempty"`
 	ContextPricing       *contract.ContextPricingConfig `json:"context_pricing,omitempty"`
+	// PricePlans contains explicit component plans followed by read-only legacy
+	// projections. Stage 3 exposes the same configuration that management edits;
+	// it does not change the existing ratio fields or settlement path.
+	PricePlans []contract.ModelPricePlan `json:"price_plans,omitempty"`
 	// omitempty：匿名 pricing 响应置 nil 时整个字段不出现在 JSON 中，
 	// 避免输出 "enable_groups": null。
 	EnableGroup            []string                `json:"enable_groups,omitempty"`
@@ -88,6 +92,34 @@ func GetPricing() []Pricing {
 	return pricingMap
 }
 
+// ClonePricing returns independent records for caller-side filtering. Pricing
+// is cached globally, so controller code must never mutate the shared slice or
+// its price-plan components while tailoring a response to one caller.
+func ClonePricing(pricings []Pricing) []Pricing {
+	clones := make([]Pricing, len(pricings))
+	for index, pricing := range pricings {
+		clones[index] = pricing
+		clones[index].InputModalities = append([]string(nil), pricing.InputModalities...)
+		clones[index].OutputModalities = append([]string(nil), pricing.OutputModalities...)
+		clones[index].Capabilities = append([]string(nil), pricing.Capabilities...)
+		clones[index].EnableGroup = append([]string(nil), pricing.EnableGroup...)
+		clones[index].SupportedEndpointTypes = append([]constant.EndpointType(nil), pricing.SupportedEndpointTypes...)
+		clones[index].PricePlans = CloneModelPricePlans(pricing.PricePlans)
+		if pricing.ContextPricing != nil {
+			contextPricing := *pricing.ContextPricing
+			contextPricing.Tiers = append([]contract.ContextPricingTier(nil), pricing.ContextPricing.Tiers...)
+			for tierIndex := range contextPricing.Tiers {
+				if pricing.ContextPricing.Tiers[tierIndex].MaxTokens != nil {
+					maxTokens := *pricing.ContextPricing.Tiers[tierIndex].MaxTokens
+					contextPricing.Tiers[tierIndex].MaxTokens = &maxTokens
+				}
+			}
+			clones[index].ContextPricing = &contextPricing
+		}
+	}
+	return clones
+}
+
 // GetVendors 返回当前定价接口使用到的供应商信息
 func GetVendors() []PricingVendor {
 	if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
@@ -115,6 +147,15 @@ func updatePricing() {
 	if err != nil {
 		common.SysLog(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
 		return
+	}
+	explicitPricePlans, err := GetModelPricePlans()
+	if err != nil {
+		common.SysError(fmt.Sprintf("load component model price plans for marketplace: %v", err))
+		explicitPricePlans = nil
+	}
+	explicitPlansByModel := make(map[string][]contract.ModelPricePlan)
+	for _, plan := range explicitPricePlans {
+		explicitPlansByModel[plan.ModelName] = append(explicitPlansByModel[plan.ModelName], plan)
 	}
 	// 预加载模型元数据与供应商一次，避免循环查询
 	var allMeta []vendormetastore.Model
@@ -295,6 +336,10 @@ func updatePricing() {
 			ModelName:              model,
 			EnableGroup:            groups.Items(),
 			SupportedEndpointTypes: modelSupportEndpointTypes[model],
+			PricePlans: append(
+				CloneModelPricePlans(explicitPlansByModel[model]),
+				GetLegacyModelPricePlansForModel(model)...,
+			),
 		}
 
 		// 补充模型元数据（描述、标签、供应商、状态）

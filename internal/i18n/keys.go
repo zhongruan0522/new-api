@@ -336,6 +336,10 @@ const (
 const (
 	MsgPricingResetModelRatioSuccess       = "pricing.reset_model_ratio_success"
 	MsgPricingResetToolBillingRulesSuccess = "pricing.reset_tool_billing_rules_success"
+	MsgPricingPriceTableInvalid            = "pricing.price_table_invalid"
+	MsgPricingPriceTableReadFailed         = "pricing.price_table_read_failed"
+	MsgPricingPriceTableSaveFailed         = "pricing.price_table_save_failed"
+	MsgPricingPriceTableSaved              = "pricing.price_table_saved"
 )
 
 // Quota related messages

@@ -293,6 +293,10 @@ custom_voice.upload_audio_required: "请上传音频文件"
 # Pricing messages
 pricing.reset_model_ratio_success: "重置模型倍率成功"
 pricing.reset_tool_billing_rules_success: "重置工具计费规则成功"
+pricing.price_table_invalid: "价格表校验失败：{{.Reason}}"
+pricing.price_table_read_failed: "无法加载组件化价格表"
+pricing.price_table_save_failed: "无法保存组件化价格表"
+pricing.price_table_saved: "组件化价格表保存成功"
 
 # Quota messages
 quota.threshold_gt_zero: "预警阈值必须大于0"

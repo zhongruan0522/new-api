@@ -27,10 +27,12 @@ import type {
   DatabaseMigrationStartResponse,
   DeleteOptionJsonArrayEntryRequest,
   DeleteOptionJsonMapEntryRequest,
+  ModelPriceTableConfigurationResponse,
   OptionJsonArrayResponse,
   OptionJsonMapResponse,
   SystemOptionValueResponse,
   SystemOptionsResponse,
+  UpdateModelPriceTableConfigurationRequest,
   UpdateOptionRequest,
   UpdateOptionResponse,
   UpsertOptionJsonArrayEntryRequest,
@@ -173,6 +175,23 @@ export async function getDatabaseMigrationJob(
 ) {
   const res = await api.get<DatabaseMigrationJobResponse>(
     `/api/db/${mode}/${jobId}`
+  )
+  return res.data
+}
+
+export async function getModelPriceTableConfiguration() {
+  const res = await api.get<ModelPriceTableConfigurationResponse>(
+    '/api/pricing/configuration'
+  )
+  return res.data
+}
+
+export async function updateModelPriceTableConfiguration(
+  request: UpdateModelPriceTableConfigurationRequest
+) {
+  const res = await api.put<ModelPriceTableConfigurationResponse>(
+    '/api/pricing/configuration',
+    request
   )
   return res.data
 }

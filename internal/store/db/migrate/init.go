@@ -14,6 +14,7 @@ import (
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/passkey"
 	"github.com/NookMux/NookMux/internal/store/prefill_group"
+	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/NookMux/NookMux/internal/store/redemption"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/NookMux/NookMux/internal/store/ticket"
@@ -55,6 +56,9 @@ func InitDB() (err error) {
 
 		if !common.IsMasterNode {
 			if err := ensureLogBillingDetailsColumn(dbstore.DB, "main"); err != nil {
+				return err
+			}
+			if err := ensureModelPriceTableTables(dbstore.DB, "main"); err != nil {
 				return err
 			}
 			return nil
@@ -152,6 +156,8 @@ func migrateDB() error {
 		&usedatastore.QuotaData{},
 		&vendormetastore.Model{},
 		&vendormetastore.Vendor{},
+		&pricingstore.ModelPricePlan{},
+		&pricingstore.ModelPriceComponent{},
 		&prefillgroupstore.PrefillGroup{},
 		&optionstore.Setup{},
 		&twofastore.TwoFA{},

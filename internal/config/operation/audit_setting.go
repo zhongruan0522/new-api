@@ -25,6 +25,7 @@ func defaultAuditModules() string {
 		"token":            true,
 		"redemption":       true,
 		"model":            true,
+		"pricing":          true,
 		"vendor":           true,
 		"dynamic_ratio":    true,
 		"prefill_group":    true,
@@ -73,6 +74,12 @@ func IsAuditModuleEnabled(module string) bool {
 		return false
 	}
 	enabled, ok := m[module]
+	if !ok && module == "pricing" {
+		// Persisted module maps created before the component price table do not
+		// contain this key. The UI treats omitted known modules as enabled, so
+		// preserve that behavior until an administrator explicitly saves false.
+		return true
+	}
 	return ok && enabled
 }
 

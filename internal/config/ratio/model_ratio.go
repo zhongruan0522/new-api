@@ -979,12 +979,20 @@ func AudioRatio2JSONString() string {
 	return audioRatioMap.MarshalJSONString()
 }
 
+func GetAudioRatioCopy() map[string]float64 {
+	return audioRatioMap.ReadAll()
+}
+
 func UpdateAudioRatioByJSONString(jsonStr string) error {
 	return shared.LoadFromJsonString(audioRatioMap, jsonStr)
 }
 
 func AudioCompletionRatio2JSONString() string {
 	return audioCompletionRatioMap.MarshalJSONString()
+}
+
+func GetAudioCompletionRatioCopy() map[string]float64 {
+	return audioCompletionRatioMap.ReadAll()
 }
 
 func UpdateAudioCompletionRatioByJSONString(jsonStr string) error {

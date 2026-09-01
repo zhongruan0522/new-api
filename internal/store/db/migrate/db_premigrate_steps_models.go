@@ -9,6 +9,7 @@ import (
 	"github.com/NookMux/NookMux/internal/store/option"
 	"github.com/NookMux/NookMux/internal/store/passkey"
 	"github.com/NookMux/NookMux/internal/store/prefill_group"
+	"github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/NookMux/NookMux/internal/store/redemption"
 	"github.com/NookMux/NookMux/internal/store/stored_media"
 	"github.com/NookMux/NookMux/internal/store/ticket"
@@ -34,6 +35,11 @@ var dbPreMigrateMainSteps = []dbPreMigrateStep{
 	gormTableCopyStep[usedatastore.QuotaData]{name: "quota_data", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[vendormetastore.Model]{name: "models", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[vendormetastore.Vendor]{name: "vendors", batchSize: dbPreMigrateBatchDefault},
+	// These tables are introduced with the component price table. Historical
+	// source databases legitimately do not have them yet, so their copy steps
+	// must not prevent a pre-/same-type migration from completing.
+	gormTableCopyStep[pricingstore.ModelPricePlan]{name: "model_price_plans", batchSize: dbPreMigrateBatchDefault, skipIfSourceTableMissing: true},
+	gormTableCopyStep[pricingstore.ModelPriceComponent]{name: "model_price_components", batchSize: dbPreMigrateBatchDefault, skipIfSourceTableMissing: true},
 	gormTableCopyStep[prefillgroupstore.PrefillGroup]{name: "prefill_groups", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[optionstore.Setup]{name: "setups", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[twofastore.TwoFA]{name: "two_fas", batchSize: dbPreMigrateBatchDefault},

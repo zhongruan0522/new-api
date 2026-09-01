@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { CheckinSettingsSection } from '../general/checkin-settings-section'
 import { QuotaSettingsSection } from '../general/quota-settings-section'
 import { PaymentSettingsSection } from '../integrations/payment-settings-section'
+import { ComponentPriceTableSection } from '../models/component-price-table-section'
 import { RatioSettingsCard } from '../models/ratio-settings-card'
 import type { BillingSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
@@ -90,6 +91,11 @@ const BILLING_SECTIONS = [
         serverAddress={settings.ServerAddress}
       />
     ),
+  },
+  {
+    id: 'component-price-table',
+    titleKey: 'systemSettings.titles.componentPriceTable',
+    build: () => <ComponentPriceTableSection />,
   },
   {
     id: 'model-pricing',

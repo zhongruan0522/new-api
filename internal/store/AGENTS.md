@@ -17,7 +17,7 @@
 | `user/` | `userstore` | 用户、用户缓存、用户动作日志（RecordLog*） |
 | `token/` | `tokenstore` | 令牌、令牌缓存、窗口/周期配额 |
 | `log/` | `logstore` | 消费/错误日志查询与统计 |
-| `pricing/` | `pricingstore` | 定价缓存与刷新（含 model_extra 查询） |
+| `pricing/` | `pricingstore` | 定价缓存、模型广场刷新与 [model_price_table.go](pricing/model_price_table.go) 的组件价格表持久化（含旧 ratio 的只读投影） |
 | `option/` | `optionstore` | option KV、setup 记录、数据迁移 marker |
 | 其余单资源目录 | `<资源>store` | redemption/ticket/topup/checkin/usedata/audit/twofa/passkey/minimax_voice/missing_models/prefill_group/stored_media/vendor_meta |
 
@@ -57,10 +57,13 @@
 ## 缓存与配置
 
 - `OptionMap`、channel cache、dynamic ratio cache 等全局缓存要注意锁、同步频率和多节点行为。
+- 组件价格表的 `model_price_plans`/`model_price_components` 必须保持分表关系；[model_price_table.go](pricing/model_price_table.go) 的全量替换必须在一个事务中完成，提交后失效表缓存并调用 `RefreshPricing` 重建模型广场。不得写回或删除旧 `ModelRatio`/`ModelPrice`/缓存和音频 ratio 配置。
+- 新增组件价格表物理模型时，同步更新主库 `AutoMigrate`、目标库 schema 与 pre-/same-type migration 的复制步骤；父表必须先于组件子表复制。
 - 迁移和 cleanup 必须幂等，可重复运行。
-- 从节点不执行迁移。模型新增物理列后，从节点启动必须校验共享主库/独立日志库
-  已具备该列；缺列时显式阻断启动，避免 GORM INSERT 带新列导致日志静默丢失
-  （如 `billing_details` 的 `ensureLogBillingDetailsColumn`）。
+- 从节点不执行迁移。新增物理模型或列后，从节点启动必须校验共享主库/独立日志库
+  已具备对应表或列；缺失时显式阻断启动，避免 GORM 读写在滚动升级中静默退化或丢失
+  数据（如 `billing_details` 的 `ensureLogBillingDetailsColumn` 与组件价格表的
+  `ensureModelPriceTableTables`）。
 
 ## 测试
 

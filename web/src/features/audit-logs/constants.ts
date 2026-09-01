@@ -31,6 +31,7 @@ export const AUDIT_MODULES = [
   { value: 'token', label: 'common.fields.auditModuleTokens' },
   { value: 'redemption', label: 'common.fields.auditModuleRedemptionCodes' },
   { value: 'model', label: 'common.titles.auditModuleModels' },
+  { value: 'pricing', label: 'auditLogs.titles.moduleComponentPricing' },
   { value: 'voice', label: 'auditLogs.titles.moduleVoiceManagement' },
   { value: 'vendor', label: 'common.fields.auditModuleVendors' },
   { value: 'dynamic_ratio', label: 'common.fields.auditModuleDynamicRatio' },

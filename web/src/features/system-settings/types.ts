@@ -99,6 +99,83 @@ export type UpdateOptionResponse = {
   message: string
 }
 
+export type ModelPriceBillingMode = 'token' | 'per_request' | 'free'
+
+export type ModelPriceComponentName =
+  | 'input'
+  | 'text_input'
+  | 'image_input'
+  | 'audio_input'
+  | 'video_input'
+  | 'document_input'
+  | 'output'
+  | 'text_output'
+  | 'audio_output'
+  | 'image_output'
+  | 'cache_read'
+  | 'cache_write_5m'
+  | 'cache_write_1h'
+  | 'request'
+
+export type ModelPriceUnit = 'per_1m_tokens' | 'per_request'
+
+export type ModelPriceRoundingMode =
+  | 'half_up'
+  | 'half_even'
+  | 'floor'
+  | 'ceil'
+
+export type ModelPriceGroupMultiplierSource =
+  | 'inherit_group_ratio'
+  | 'fixed'
+
+export type ModelPricePlanSource = 'explicit' | 'legacy'
+
+export type ModelPriceComponent = {
+  component: ModelPriceComponentName
+  unit: ModelPriceUnit
+  unit_price: string
+}
+
+export type ModelPricePlan = {
+  id?: number
+  model_name: string
+  endpoint?: string
+  effective_group?: string
+  service_tier?: string
+  context_min_tokens: number
+  context_max_tokens?: number
+  effective_from?: number
+  effective_until?: number
+  billing_mode: ModelPriceBillingMode
+  currency: string
+  exchange_rate: string
+  price_precision: number
+  rounding_mode: ModelPriceRoundingMode
+  group_multiplier_source: ModelPriceGroupMultiplierSource
+  group_multiplier?: string
+  components: ModelPriceComponent[]
+  source?: ModelPricePlanSource
+  read_only?: boolean
+  created_at?: number
+  updated_at?: number
+}
+
+export type ModelPriceTableConfiguration = {
+  plans: ModelPricePlan[]
+  legacy_plans: ModelPricePlan[]
+}
+
+export type ModelPriceTableConfigurationResponse = {
+  success: boolean
+  message: string
+  data: ModelPriceTableConfiguration
+}
+
+export type UpdateModelPriceTableConfigurationRequest = {
+  plans: ModelPricePlan[]
+}
+
 export type CleanLogsParams = {
   start_timestamp?: number
   end_timestamp: number

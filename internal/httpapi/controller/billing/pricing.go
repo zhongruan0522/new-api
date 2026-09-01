@@ -4,6 +4,7 @@ import (
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/config/ratio"
 	audit "github.com/NookMux/NookMux/internal/domain/audit"
+	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	domaingroup "github.com/NookMux/NookMux/internal/domain/group"
 	"github.com/NookMux/NookMux/internal/httpapi"
 	"github.com/NookMux/NookMux/internal/i18n"
@@ -15,7 +16,10 @@ import (
 )
 
 func GetPricing(c *gin.Context) {
-	pricing := pricingstore.GetPricing()
+	// Pricing is a shared cache. Clone every nested plan before applying caller
+	// visibility rules so an anonymous response can never strip or retain data
+	// for a concurrent authenticated request.
+	pricing := pricingstore.ClonePricing(pricingstore.GetPricing())
 	userId, exists := c.Get("id")
 	var usableGroup map[string]string
 	groupRatio := map[string]float64{}
@@ -44,16 +48,13 @@ func GetPricing(c *gin.Context) {
 		}
 	}
 
-	// enable_groups 是内部组分类信息，只对已识别身份的调用者返回；
-	// pricing 配置为匿名公开时不暴露各组内部组名。
-	// GetPricing 返回共享缓存切片，必须复制后清空，不能就地修改缓存。
-	if !exists {
-		anonPricing := make([]pricingstore.Pricing, len(pricing))
-		for i, p := range pricing {
-			anonPricing[i] = p
-			anonPricing[i].EnableGroup = nil
+	// enable_groups 是内部组分类信息，只对已识别身份的调用者返回；组件价格表
+	// 也按同一组可见性裁剪，避免匿名响应泄露内部生效分组。
+	for i := range pricing {
+		if !exists {
+			pricing[i].EnableGroup = nil
 		}
-		pricing = anonPricing
+		pricing[i].PricePlans = filterVisibleModelPricePlans(pricing[i].PricePlans, exists, usableGroup)
 	}
 
 	c.JSON(200, gin.H{
@@ -65,6 +66,22 @@ func GetPricing(c *gin.Context) {
 		"supported_endpoint": pricingstore.GetSupportedEndpointMap(),
 		"auto_groups":        domaingroup.GetUserAutoGroup(group),
 	})
+}
+
+func filterVisibleModelPricePlans(plans []contract.ModelPricePlan, authenticated bool, usableGroups map[string]string) []contract.ModelPricePlan {
+	visiblePlans := make([]contract.ModelPricePlan, 0, len(plans))
+	for _, plan := range plans {
+		if plan.EffectiveGroup != "" {
+			if !authenticated {
+				continue
+			}
+			if _, usable := usableGroups[plan.EffectiveGroup]; !usable {
+				continue
+			}
+		}
+		visiblePlans = append(visiblePlans, plan)
+	}
+	return visiblePlans
 }
 
 func ResetModelRatio(c *gin.Context) {

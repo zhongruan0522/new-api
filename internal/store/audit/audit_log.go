@@ -26,6 +26,7 @@ const (
 	AuditModuleToken           = "token"            // 令牌
 	AuditModuleRedemption      = "redemption"       // 兑换码
 	AuditModuleModel           = "model"            // 模型
+	AuditModulePricing         = "pricing"          // 组件化价格表
 	AuditModuleVendor          = "vendor"           // 供应商
 	AuditModuleDynamicRatio    = "dynamic_ratio"    // 动态倍率
 	AuditModulePrefillGroup    = "prefill_group"    // 预填充分组
@@ -58,6 +59,7 @@ var AuditModuleList = []AuditModuleInfo{
 	{AuditModuleToken, "令牌"},
 	{AuditModuleRedemption, "兑换码"},
 	{AuditModuleModel, "模型"},
+	{AuditModulePricing, "组件化价格表"},
 	{AuditModuleVendor, "供应商"},
 	{AuditModuleDynamicRatio, "动态倍率"},
 	{AuditModulePrefillGroup, "预填充分组"},
