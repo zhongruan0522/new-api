@@ -16,7 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Copy, Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -293,7 +299,7 @@ function timestampToLocalInput(timestamp?: number) {
   const date = new Date(timestamp * 1000)
   if (Number.isNaN(date.getTime())) return ''
   const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 function localInputToTimestamp(value: string) {
@@ -1046,6 +1052,7 @@ function PricePlanEditor({
         <PriceField label={t('systemSettings.fields.effectiveFrom')}>
           <Input
             type='datetime-local'
+            step={1}
             value={timestampToLocalInput(plan.effective_from)}
             onChange={(event) =>
               update({
@@ -1058,6 +1065,7 @@ function PricePlanEditor({
         <PriceField label={t('systemSettings.fields.effectiveUntil')}>
           <Input
             type='datetime-local'
+            step={1}
             value={timestampToLocalInput(plan.effective_until)}
             onChange={(event) =>
               update({
@@ -1200,18 +1208,19 @@ function PricePlanEditor({
       ) : null}
 
       {plan.billing_mode === 'per_request' ? (
-        <div className='max-w-sm space-y-2'>
-          <Label>{t('systemSettings.fields.pricePerRequest')}</Label>
-          <Input
-            inputMode='decimal'
-            value={getComponent(plan, 'request')?.unit_price ?? ''}
-            onChange={(event) =>
-              onChange((current) =>
-                updateComponentPrice(current, 'request', event.target.value)
-              )
-            }
-            disabled={disabled}
-          />
+        <div className='max-w-sm'>
+          <PriceField label={t('systemSettings.fields.pricePerRequest')}>
+            <Input
+              inputMode='decimal'
+              value={getComponent(plan, 'request')?.unit_price ?? ''}
+              onChange={(event) =>
+                onChange((current) =>
+                  updateComponentPrice(current, 'request', event.target.value)
+                )
+              }
+              disabled={disabled}
+            />
+          </PriceField>
         </div>
       ) : null}
     </div>
@@ -1359,9 +1368,9 @@ function PriceField({
   children: ReactNode
 }) {
   return (
-    <div className='min-w-0 space-y-1.5'>
-      <Label>{label}</Label>
+    <Label className='flex min-w-0 flex-col items-start gap-1.5'>
+      <span>{label}</span>
       {children}
-    </div>
+    </Label>
   )
 }

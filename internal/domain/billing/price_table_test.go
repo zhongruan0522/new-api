@@ -229,6 +229,22 @@ func TestResolveModelPriceComponentFallsBackAcrossExplicitAndLegacyPlans(t *test
 	}
 }
 
+func TestAggregateParentCanOutrankLowerPrecedenceSplitPlan(t *testing.T) {
+	legacy := testTokenPricePlan(9, contract.PricePlanSourceLegacy, contract.PriceComponentTextInput, "2")
+	explicit := testTokenPricePlan(1, contract.PricePlanSourceExplicit, contract.PriceComponentInput, "1")
+	plans := []contract.ModelPricePlan{legacy, explicit}
+	query := contract.ModelPricePlanQuery{ModelName: "model-a", ContextTokens: 12, EffectiveAt: 100}
+
+	aggregate, ok := ResolveModelPriceComponent(plans, query, contract.PriceComponentInput)
+	if !ok || aggregate.Component.UnitPrice != "1" || aggregate.PlanID != explicit.ID {
+		t.Fatalf("aggregate input = %+v (exists=%t), want higher-precedence explicit parent", aggregate, ok)
+	}
+	text, ok := ResolveModelPriceComponent(plans, query, contract.PriceComponentTextInput)
+	if !ok || text.Component.Component != contract.PriceComponentInput || text.Component.UnitPrice != "1" || text.PlanID != explicit.ID {
+		t.Fatalf("text input = %+v (exists=%t), want explicit parent without lower-precedence split fallback", text, ok)
+	}
+}
+
 func TestResolveModelPricePlanHonorsScopeContextAndTimePrecedence(t *testing.T) {
 	global := testTokenPricePlan(1, contract.PricePlanSourceExplicit, contract.PriceComponentInput, "1")
 	endpoint := testTokenPricePlan(2, contract.PricePlanSourceExplicit, contract.PriceComponentInput, "2")
