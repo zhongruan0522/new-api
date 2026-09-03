@@ -8,11 +8,13 @@ import (
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 	dbstore "github.com/NookMux/NookMux/internal/store/db"
 	logstore "github.com/NookMux/NookMux/internal/store/log"
 	pricingstore "github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/glebarez/sqlite"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -229,7 +231,7 @@ func TestStage4FixedMultiplierExchangeAndFinalRounding(t *testing.T) {
 	if got := result.PriceSnapshot.GroupMultiplier; got != "1.1" {
 		t.Fatalf("snapshot multiplier = %s, want 1.1", got)
 	}
-	if got := roundEntryQuota(result.TokenTotal, result); got != 55555 {
+	if got := roundEntryQuota(result.TokenTotal, result, false); got != 55555 {
 		t.Fatalf("explicit floor rounding = %d", got)
 	}
 }
@@ -495,6 +497,218 @@ func TestStage4ExplicitServiceTierAndContextProductionPath(t *testing.T) {
 		settlement.priceSnapshot.ContextMinTokens != 1000 ||
 		settlement.priceSnapshot.ContextTokens != 1100 {
 		t.Fatalf("scoped snapshot = %+v", settlement.priceSnapshot)
+	}
+}
+
+// 旧 ratio 投影的最终取整必须逐入口保持阶段 4 之前的行为：通用/audio/
+// realtime 对按量结果 half-up、按次截断；Claude 两种模式都截断。显式价格表
+// 按计划配置的 rounding_mode 取整，不受入口行为约束。
+func TestStage4LegacyEntryRoundingMatchesPreStage4Behavior(t *testing.T) {
+	fractional := decimal.NewFromFloat(7.5)
+	legacy := &BillingPriceSnapshot{Source: contract.PricePlanSourceLegacy}
+	explicit := &BillingPriceSnapshot{Source: contract.PricePlanSourceExplicit}
+	legacyResult := BillingQuotaResult{PriceSnapshot: legacy}
+	legacyUsePrice := BillingQuotaResult{PriceSnapshot: legacy, UsePrice: true}
+	explicitHalfUp := BillingQuotaResult{PriceSnapshot: explicit, RoundingMode: contract.PriceRoundingHalfUp}
+	explicitFloor := BillingQuotaResult{PriceSnapshot: explicit, RoundingMode: contract.PriceRoundingFloor}
+
+	// Claude 入口：截断（与阶段 2 前 int(float64) 与阶段 2 IntPart 一致）。
+	assert.Equal(t, 7, roundEntryQuota(fractional, legacyResult, true), "claude legacy must truncate")
+	assert.Equal(t, 7, roundEntryQuota(fractional, legacyUsePrice, true), "claude legacy per-price must truncate")
+	// audio/realtime 入口：按量 half-up、按次截断。
+	assert.Equal(t, 8, roundEntryQuota(fractional, legacyResult, false), "ratio legacy must round half-up")
+	assert.Equal(t, 7, roundEntryQuota(fractional, legacyUsePrice, false), "per-price legacy must truncate")
+	// 显式价格表拥有自己的取整规则。
+	assert.Equal(t, 8, roundEntryQuota(fractional, explicitHalfUp, true))
+	assert.Equal(t, 7, roundEntryQuota(fractional, explicitFloor, false))
+}
+
+// Claude 入口端到端：旧 ratio 路径最终 quota 截断（7.5 → 7），若误改为
+// half-up 会得到 8 并与影子基线 int(float) 产生未分类对拍告警。
+func TestPostClaudeConsumeQuotaLegacyTruncatesFractionalQuota(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	ctx := newEntryTestContext("tk-claude-truncate")
+	relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceClaude)
+	relayInfo.PriceData.ModelRatio = 1.25
+
+	usage := &shared.Usage{PromptTokens: 3, CompletionTokens: 1, TotalTokens: 4}
+	require.Nil(t, PostClaudeConsumeQuota(ctx, relayInfo, usage))
+
+	stored := waitForConsumeLogByTokenName(t, "tk-claude-truncate")
+	// (3×1 + 1×3) × 1.25 = 7.5 → 旧口径截断为 7。
+	assert.Equal(t, 7, stored.Quota)
+}
+
+// 未配置组件的显式回退规则：组件级解析先跨计划回退（含 legacy 投影），
+// 全部候选都无法提供组件时必须报 ErrBillingPriceConfigMissing，而不是
+// 静默按 0 计费。
+func TestStage4UnconfiguredComponentsFailExplicitly(t *testing.T) {
+	bu := &BillingUsage{
+		PromptAggregateTokens: 1000,
+		OutputTokens:          500,
+		CacheReadTokens:       100,
+		CacheWriteTokens:      50,
+	}
+	priceData := normalizedQuotaTestPriceData()
+
+	t.Run("missing cache component errors instead of silent zero", func(t *testing.T) {
+		plan := stage4TokenPlan(60,
+			stage4Component(contract.PriceComponentTextInput, "4"),
+			stage4Component(contract.PriceComponentTextOutput, "12"),
+		)
+		_, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute,
+			[]contract.ModelPricePlan{plan}, contract.ModelPricePlanQuery{ModelName: "model-a"})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrBillingPriceConfigMissing)
+		require.Contains(t, err.Error(), string(contract.PriceComponentCacheRead))
+	})
+
+	t.Run("missing input side errors", func(t *testing.T) {
+		plan := stage4TokenPlan(61,
+			stage4Component(contract.PriceComponentTextOutput, "12"),
+			stage4Component(contract.PriceComponentCacheRead, "1"),
+			stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+			stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+		)
+		_, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute,
+			[]contract.ModelPricePlan{plan}, contract.ModelPricePlanQuery{ModelName: "model-a"})
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrBillingPriceConfigMissing)
+	})
+}
+
+// service tier 必须真正改变结算金额，而不只是决定选哪个计划。
+func TestStage4ServiceTierPriceChangesSettlement(t *testing.T) {
+	bu := stage4Usage()
+	priceData := normalizedQuotaTestPriceData()
+	defaultPlan := stage4TokenPlan(70,
+		stage4Component(contract.PriceComponentInput, "4"),
+		stage4Component(contract.PriceComponentOutput, "12"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	priorityPlan := stage4TokenPlan(71,
+		stage4Component(contract.PriceComponentInput, "8"),
+		stage4Component(contract.PriceComponentOutput, "24"),
+		stage4Component(contract.PriceComponentCacheRead, "2"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "8"),
+	)
+	priorityPlan.ServiceTier = "priority"
+	plans := []contract.ModelPricePlan{priorityPlan, defaultPlan}
+
+	priorityResult, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute, plans,
+		contract.ModelPricePlanQuery{ModelName: "model-a", ServiceTier: "priority"})
+	if err != nil {
+		t.Fatalf("priority tier quota: %v", err)
+	}
+	// (700×8 + 500×24 + 100×2 + 50×5) × QuotaPerUnit/1e6 = 9025
+	// （InputTokens = 850 聚合 − 100 缓存读取 − 50 缓存写入）
+	assertQuotaTotal(t, priorityResult, 9025)
+	if priorityResult.PriceSnapshot.ServiceTier != "priority" ||
+		priorityResult.PriceSnapshot.Components[0].UnitPrice != "8" {
+		t.Fatalf("priority snapshot = %+v", priorityResult.PriceSnapshot)
+	}
+
+	defaultResult, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute, plans,
+		contract.ModelPricePlanQuery{ModelName: "model-a"})
+	if err != nil {
+		t.Fatalf("default tier quota: %v", err)
+	}
+	// 默认档价格为 priority 一半：9025 / 2 = 4512.5，未取整中间结果保留。
+	if defaultResult.TokenTotal.Cmp(decimal.NewFromFloat(4512.5)) != 0 {
+		t.Fatalf("default tier quota = %s, want 4512.5", defaultResult.TokenTotal)
+	}
+	if defaultResult.PriceSnapshot.ServiceTier != "" ||
+		defaultResult.PriceSnapshot.Components[0].UnitPrice != "4" {
+		t.Fatalf("default snapshot = %+v", defaultResult.PriceSnapshot)
+	}
+}
+
+// image/video/document 与 image 输出组件按各自单价结算，并从父级
+// input/output 计费基数中移除，禁止父子重复计费。
+func TestStage4ModalComponentPricesSettleAndExcludeParents(t *testing.T) {
+	bu := &BillingUsage{
+		PromptAggregateTokens: 3000, // text 1000 + image 800 + video 600 + document 600
+		OutputTokens:          2000, // text 1500 + image 500
+		ImageInputTokens:      intPtr(800),
+		VideoInputTokens:      intPtr(600),
+		DocumentInputTokens:   intPtr(600),
+		ImageOutputTokens:     intPtr(500),
+	}
+	priceData := normalizedQuotaTestPriceData()
+	plan := stage4TokenPlan(80,
+		stage4Component(contract.PriceComponentTextInput, "4"),
+		stage4Component(contract.PriceComponentImageInput, "10"),
+		stage4Component(contract.PriceComponentVideoInput, "20"),
+		stage4Component(contract.PriceComponentDocumentInput, "40"),
+		stage4Component(contract.PriceComponentTextOutput, "12"),
+		stage4Component(contract.PriceComponentImageOutput, "24"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	result, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute,
+		[]contract.ModelPricePlan{plan}, contract.ModelPricePlanQuery{ModelName: "model-a"})
+	if err != nil {
+		t.Fatalf("modal component quota: %v", err)
+	}
+	// (1000×4 + 800×10 + 600×20 + 600×40 + 1500×12 + 500×24) × 0.5 = 39000
+	assertQuotaTotal(t, result, 39000)
+	components := make(map[contract.PriceComponent]BillingPriceComponentSnapshot)
+	for _, component := range result.PriceSnapshot.Components {
+		components[component.Component] = component
+	}
+	for component, price := range map[contract.PriceComponent]string{
+		contract.PriceComponentTextInput:     "4",
+		contract.PriceComponentImageInput:    "10",
+		contract.PriceComponentVideoInput:    "20",
+		contract.PriceComponentDocumentInput: "40",
+		contract.PriceComponentTextOutput:    "12",
+		contract.PriceComponentImageOutput:   "24",
+	} {
+		got, ok := components[component]
+		if !ok {
+			t.Fatalf("missing %s snapshot component", component)
+		}
+		if got.UnitPrice != price {
+			t.Fatalf("%s unit price = %s, want %s", component, got.UnitPrice, price)
+		}
+	}
+	if _, ok := components[contract.PriceComponentInput]; ok {
+		t.Fatal("parent input must not appear next to settled children")
+	}
+	if _, ok := components[contract.PriceComponentOutput]; ok {
+		t.Fatal("parent output must not appear next to settled children")
+	}
+}
+
+// 汇率参与结算金额并写入快照，价格修改后历史日志可据此解释当时结算。
+func TestStage4ExchangeRateAppliesAndIsSnapshotted(t *testing.T) {
+	bu := &BillingUsage{PromptAggregateTokens: 1_000_000}
+	priceData := normalizedQuotaTestPriceData()
+	plan := stage4TokenPlan(90,
+		stage4Component(contract.PriceComponentInput, "4"),
+		stage4Component(contract.PriceComponentOutput, "12"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	plan.ExchangeRate = "7.2"
+	result, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute,
+		[]contract.ModelPricePlan{plan}, contract.ModelPricePlanQuery{ModelName: "model-a"})
+	if err != nil {
+		t.Fatalf("exchange rate quota: %v", err)
+	}
+	// 1,000,000 × 4 / 1e6 × 7.2 × 1 × 500,000 = 14,400,000
+	if result.TokenTotal.Cmp(decimal.NewFromInt(14_400_000)) != 0 {
+		t.Fatalf("exchange rate total = %s, want 14400000", result.TokenTotal)
+	}
+	for _, component := range result.PriceSnapshot.Components {
+		if component.ExchangeRate != "7.2" {
+			t.Fatalf("%s snapshot exchange rate = %s, want 7.2", component.Component, component.ExchangeRate)
+		}
 	}
 }
 

@@ -119,31 +119,37 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	usage *shared.RealtimeUsage, extraContent string) *shared.NookMuxError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
-	recordWssBillingFailure := func(reason string) *shared.NookMuxError {
+	recordWssBillingFailure := func(causeErr error) *shared.NookMuxError {
 		// 会话内已按事件增量实扣的资金必须有日志可对账（预扣不走
 		// BillingSession，退款 defer 只覆盖会话前预扣部分），落一条
-		// LogTypeError 日志后再返回显式错误。
+		// LogTypeError 日志后再返回显式错误；失败原因必须区分计费配置
+		// 缺失与归一化失败，不能都归因归一化（PRD：三类可观测原因）。
+		cause := billingQuotaFailureCause(causeErr)
+		prefix := "realtime 归一化失败"
+		if cause == "billing_config_missing" {
+			prefix = "realtime 计费配置缺失"
+		}
 		logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 			ChannelId:    relayInfo.ChannelId,
 			ModelName:    modelName,
 			TokenName:    ctx.GetString("token_name"),
 			Quota:        0,
-			Content:      "realtime 归一化失败，已按事件预扣的资金见 pre-consumed quota（" + reason + "）",
+			Content:      prefix + "，已按事件预扣的资金见 pre-consumed quota（" + causeErr.Error() + "）",
 			TokenId:      relayInfo.TokenId,
 			UseTimeMs:    int(useTimeMs),
 			IsStream:     relayInfo.IsStream,
 			Group:        relayInfo.UsingGroup,
-			Other:        map[string]interface{}{"ws": true, "billing_cause": "normalization_failed", "pre_consumed_quota": relayInfo.FinalPreConsumedQuota},
+			Other:        map[string]interface{}{"ws": true, "billing_cause": cause, "pre_consumed_quota": relayInfo.FinalPreConsumedQuota},
 			LogType:      logstore.LogTypeError,
 			PromptTokens: usage.InputTokens,
 		})
-		log.LogError(ctx, "billing normalization failed (cause=normalization_failed): "+reason+
+		log.LogError(ctx, "billing wss settlement failed (cause="+cause+"): "+causeErr.Error()+
 			fmt.Sprintf(", preConsumedQuota=%d", relayInfo.FinalPreConsumedQuota))
-		return normalizationFailedError(ctx)
+		return billingQuotaFailedError(ctx, causeErr)
 	}
 	bu, warnings, normErr := BuildRealtimeBillingUsage(relayInfo.UsageSource, usage)
 	if normErr != nil {
-		return recordWssBillingFailure(normErr.Error())
+		return recordWssBillingFailure(normErr)
 	}
 	for _, warning := range warnings {
 		log.LogWarn(ctx, "billing_details anomaly: "+warning)
@@ -156,13 +162,13 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 
 	quota, quotaLines, quotaSnapshot, quotaErr := normalizedRealtimeQuota(bu, modelName, relayInfo.PriceData, relayInfo)
 	if quotaErr != nil {
-		return recordWssBillingFailure(quotaErr.Error())
+		return recordWssBillingFailure(quotaErr)
 	}
 	var billingDetailsJSON string
 	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && usage.TotalTokens != 0 {
 		payload, serializeErr := SerializeBillingUsage(bu)
 		if serializeErr != nil {
-			return recordWssBillingFailure("billing_details serialization failed: " + serializeErr.Error())
+			return recordWssBillingFailure(fmt.Errorf("billing_details serialization failed: %w", serializeErr))
 		}
 		billingDetailsJSON = payload
 	}
@@ -268,25 +274,28 @@ func normalizedRealtimeQuota(bu *BillingUsage, modelName string, priceData contr
 		return 0, nil, nil, err
 	}
 	if result.UsePrice {
-		return roundEntryQuota(result.TokenTotal, result), result.Lines, result.PriceSnapshot, nil
+		return roundEntryQuota(result.TokenTotal, result, false), result.Lines, result.PriceSnapshot, nil
 	}
 	ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 	total := result.TokenTotal
 	if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 		total = decimal.NewFromInt(1)
 	}
-	return roundEntryQuota(total, result), result.Lines, result.PriceSnapshot, nil
+	return roundEntryQuota(total, result, false), result.Lines, result.PriceSnapshot, nil
 }
 
 // roundEntryQuota preserves each pre-stage-4 entry point's rounding behavior
-// for legacy projections. Explicit price tables own their configured final
-// rounding mode, even when that mode differs from the legacy entry point.
-func roundEntryQuota(value decimal.Decimal, result BillingQuotaResult) int {
+// for legacy projections: the Claude entry truncated the final decimal in both
+// per-price and ratio modes (legacyTruncates), while audio/realtime truncated
+// only per-price plans and rounded token totals half-up. Explicit price tables
+// own their configured final rounding mode, even when that mode differs from
+// the legacy entry point.
+func roundEntryQuota(value decimal.Decimal, result BillingQuotaResult, legacyTruncates bool) int {
 	if result.PriceSnapshot != nil &&
 		result.PriceSnapshot.Source == contract.PricePlanSourceExplicit {
 		return RoundBillingQuota(value, result.RoundingMode)
 	}
-	if result.UsePrice {
+	if legacyTruncates || result.UsePrice {
 		return int(value.IntPart())
 	}
 	return int(value.Round(0).IntPart())
@@ -322,10 +331,11 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(quotaErr)+"): "+quotaErr.Error())
 		return billingQuotaFailedError(ctx, quotaErr)
 	}
-	// 旧口径：最低消费判断看模型倍率，取整为截断。UsePrice 分支不加最低
-	// 消费（旧代码 UsePrice 时 ModelRatio 恒为 0，条件不可达；显式守卫防止
-	// 未来构造出 UsePrice=true 且 ModelRatio≠0 的 PriceData 时误抬额）。
-	quota := roundEntryQuota(quotaResult.TokenTotal, quotaResult)
+	// 旧口径：最低消费判断看模型倍率，最终 quota 截断（UsePrice 与按量一致）。
+	// UsePrice 分支不加最低消费（旧代码 UsePrice 时 ModelRatio 恒为 0，条件不
+	// 可达；显式守卫防止未来构造出 UsePrice=true 且 ModelRatio≠0 的 PriceData
+	// 时误抬额）。
+	quota := roundEntryQuota(quotaResult.TokenTotal, quotaResult, true)
 	if !quotaResult.UsePrice && relayInfo.PriceData.ModelRatio != 0 && quotaResult.TokenTotal.LessThanOrEqual(decimal.Zero) {
 		quota = 1
 	}
@@ -447,14 +457,14 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	}
 	var quota int
 	if quotaResult.UsePrice {
-		quota = roundEntryQuota(quotaResult.TokenTotal, quotaResult)
+		quota = roundEntryQuota(quotaResult.TokenTotal, quotaResult, false)
 	} else {
 		ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 		total := quotaResult.TokenTotal
 		if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 			total = decimal.NewFromInt(1)
 		}
-		quota = roundEntryQuota(total, quotaResult)
+		quota = roundEntryQuota(total, quotaResult, false)
 	}
 
 	totalTokens := usage.TotalTokens

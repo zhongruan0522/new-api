@@ -67,14 +67,19 @@ func TestStage4ConcurrentBillingSettleIsIdempotent(t *testing.T) {
 	}
 	var wg sync.WaitGroup
 	const goroutines = 8
+	settleErrs := make(chan error, goroutines)
 	wg.Add(goroutines)
 	for range goroutines {
 		go func() {
 			defer wg.Done()
-			require.NoError(t, session.Settle(120))
+			settleErrs <- session.Settle(120)
 		}()
 	}
 	wg.Wait()
+	close(settleErrs)
+	for err := range settleErrs {
+		require.NoError(t, err)
+	}
 
 	var settledCount, refundedCount int
 	require.Eventually(t, func() bool {
@@ -117,6 +122,44 @@ func TestStage4RefundPreventsLateSettlement(t *testing.T) {
 	require.NoError(t, session.Settle(120))
 	assert.Zero(t, len(funding.settled), "settlement must not race a completed refund")
 	assert.False(t, session.NeedsRefund())
+}
+
+// Refund must actually roll back both legs of the pre-consume: the funding
+// source gets its asynchronous Refund call and the token's recorded usage is
+// returned. A late Settle after the refund must stay a no-op.
+func TestStage4RefundRollsBackFundingAndTokenUsage(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	ctx := newEntryTestContext("tk-stage4-refund")
+	relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+	funding := &stage4FundingSource{}
+	session := &BillingSession{
+		relayInfo:        relayInfo,
+		funding:          funding,
+		preConsumedQuota: 100,
+		// tokenConsumed > 0 is the needsRefund precondition; simulate the
+		// pre-consume's recorded usage so the rollback has something to undo.
+		tokenConsumed: 100,
+	}
+	require.NoError(t, dbstore.DB.Model(&tokenstore.Token{}).
+		Where("id = ?", applyQuotaTestTokenId).
+		Update("used_quota", 100).Error)
+
+	session.Refund(ctx)
+	require.False(t, session.NeedsRefund(), "refund must close the lifecycle")
+
+	require.Eventually(t, func() bool {
+		_, refunded := funding.operations()
+		return refunded == 1
+	}, 10*time.Second, 5*time.Millisecond, "funding refund must run exactly once")
+
+	var token tokenstore.Token
+	require.NoError(t, dbstore.DB.First(&token, applyQuotaTestTokenId).Error)
+	assert.Zero(t, token.UsedQuota, "token used quota must be rolled back by the refund")
+
+	require.NoError(t, session.Settle(120))
+	_, refunded := funding.operations()
+	assert.Equal(t, 1, refunded, "late settle must not add funding operations after refund")
+	assert.Zero(t, len(funding.settled))
 }
 
 // Realtime charges each event directly. The request-level session only holds

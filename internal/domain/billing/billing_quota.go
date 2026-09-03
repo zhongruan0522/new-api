@@ -26,8 +26,8 @@ import (
 //   - audio/realtime 路径的缓存读取按缓存单价计费（旧公式静默漏计）；
 //   - OpenRouter 专属的 cost 反推缓存写入减法删除（PRD 阶段 2 指令）。
 
-// AudioPricingMode 决定音频模态接入计费公式的价格维度。阶段 2 价格表仍为
-// 倍率制，音频存在两种既有计价机制（阶段 3 组件价格表上线后收敛）。
+// AudioPricingMode 决定音频模态接入计费公式的价格维度。阶段 4 起显式价格表
+// 可直接给出音频组件价；两种既有机制保留为旧 ratio 投影的回退口径。
 type AudioPricingMode int
 
 const (
@@ -95,7 +95,8 @@ type BillingQuotaResult struct {
 	// AudioInputPrice 记录本次结算实际使用的每百万音频输入单价（0 表示未
 	// 差异化计价），供计费快照 other["audio_input_price"] 写入。
 	AudioInputPrice float64
-	// RoundingMode 来自生效计划；旧 ratio 路径保持既有 half-up 行为。
+	// RoundingMode 来自生效计划；旧 ratio 投影由各入口 roundEntryQuota 保持
+	// 既有取整口径（通用/audio/realtime half-up，Claude 截断）。
 	RoundingMode contract.PriceRoundingMode
 	// PriceSnapshot 记录实际价格依据，写入 Log.Other 而不是 billing_details。
 	PriceSnapshot *BillingPriceSnapshot

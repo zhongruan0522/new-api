@@ -165,10 +165,8 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 
 	quotaResult, quotaErr := CalculateNormalizedQuotaForRelay(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName, relayInfo)
 	if quotaErr != nil {
-		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
-		return nil, shared.NewOpenAIError(
-			fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)),
-			shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
+		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(quotaErr)+"): "+quotaErr.Error())
+		return nil, billingQuotaFailedError(ctx, quotaErr)
 	}
 
 	// 序列化失败不能伪装成“无明细的成功消费”：先显式失败，调用方保留预扣
