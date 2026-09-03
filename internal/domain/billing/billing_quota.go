@@ -1,12 +1,16 @@
 package billing
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/domain/shared"
+	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
+	pricingstore "github.com/NookMux/NookMux/internal/store/pricing"
 	"github.com/shopspring/decimal"
 )
 
@@ -38,11 +42,42 @@ const (
 	AudioPricingAbsolute
 )
 
+// ErrBillingPriceConfigMissing separates malformed/missing settlement pricing
+// from invalid upstream usage normalization. Callers must preserve this cause
+// so operators can distinguish configuration failures from provider data.
+var ErrBillingPriceConfigMissing = errors.New("billing price configuration missing")
+
 // BillingQuotaLine 是单个计价行项，用于消费日志解释与影子对拍差异定位。
 type BillingQuotaLine struct {
 	Label  string
 	Tokens int
 	Quota  decimal.Decimal
+}
+
+type BillingPriceComponentSnapshot struct {
+	Component       contract.PriceComponent  `json:"component"`
+	Unit            contract.PriceUnit       `json:"unit"`
+	UnitPrice       string                   `json:"unit_price"`
+	Currency        string                   `json:"currency"`
+	ExchangeRate    string                   `json:"exchange_rate"`
+	GroupMultiplier string                   `json:"group_multiplier"`
+	PlanSource      contract.PricePlanSource `json:"plan_source"`
+	PlanID          int64                    `json:"plan_id,omitempty"`
+}
+
+type BillingPriceSnapshot struct {
+	Source                contract.PricePlanSource        `json:"source"`
+	BillingMode           contract.BillingMode            `json:"billing_mode"`
+	Endpoint              string                          `json:"endpoint"`
+	ServiceTier           string                          `json:"service_tier"`
+	ContextTokens         int                             `json:"context_tokens"`
+	ContextMinTokens      int                             `json:"context_min_tokens"`
+	ContextMaxTokens      *int                            `json:"context_max_tokens,omitempty"`
+	GroupMultiplierSource contract.GroupMultiplierSource  `json:"group_multiplier_source"`
+	GroupMultiplier       string                          `json:"group_multiplier"`
+	RoundingMode          contract.PriceRoundingMode      `json:"rounding_mode"`
+	PricePrecision        int                             `json:"price_precision"`
+	Components            []BillingPriceComponentSnapshot `json:"components"`
 }
 
 // BillingQuotaResult 是归一化公式的未取整结果。
@@ -60,9 +95,612 @@ type BillingQuotaResult struct {
 	// AudioInputPrice 记录本次结算实际使用的每百万音频输入单价（0 表示未
 	// 差异化计价），供计费快照 other["audio_input_price"] 写入。
 	AudioInputPrice float64
+	// RoundingMode 来自生效计划；旧 ratio 路径保持既有 half-up 行为。
+	RoundingMode contract.PriceRoundingMode
+	// PriceSnapshot 记录实际价格依据，写入 Log.Other 而不是 billing_details。
+	PriceSnapshot *BillingPriceSnapshot
 }
 
-// CalculateNormalizedQuota 按 PRD 3.4 节公式从归一化 BillingUsage 计算费用。
+func CalculateNormalizedQuotaForRelay(
+	bu *BillingUsage,
+	priceData contract.PriceData,
+	mode AudioPricingMode,
+	modelName string,
+	relayInfo *relaycommon.RelayInfo,
+) (BillingQuotaResult, error) {
+	if bu == nil {
+		return BillingQuotaResult{}, fmt.Errorf("billing usage is nil")
+	}
+	if relayInfo == nil {
+		return BillingQuotaResult{}, fmt.Errorf("relay info is nil")
+	}
+	explicitPlans, err := pricingstore.GetModelPricePlans()
+	if err != nil {
+		return BillingQuotaResult{}, fmt.Errorf("load explicit model price plans: %w", err)
+	}
+	plans := append(explicitPlans, legacyPricePlansForRelay(modelName, priceData)...)
+	query := contract.ModelPricePlanQuery{
+		ModelName:      modelName,
+		Endpoint:       relayInfo.RequestURLPath,
+		EffectiveGroup: relayInfo.UsingGroup,
+		ServiceTier:    relayInfo.ServiceTierEffective,
+		ContextTokens:  ContextTokensForTier(bu),
+		EffectiveAt:    common.GetTimestamp(),
+	}
+	return calculateNormalizedQuotaWithPlans(bu, priceData, mode, plans, query)
+}
+
+func legacyPricePlansForRelay(modelName string, priceData contract.PriceData) []contract.ModelPricePlan {
+	input := contract.LegacyPriceInput{
+		ModelName:            modelName,
+		HasModelRatio:        !priceData.UsePrice,
+		ModelRatio:           priceData.ModelRatio,
+		CompletionRatio:      priceData.CompletionRatio,
+		CacheRatio:           priceData.CacheRatio,
+		CacheCreationRatio:   priceData.CacheCreation5mRatio,
+		CacheCreation1hRatio: priceData.CacheCreation1hRatio,
+		AudioRatio:           priceData.AudioRatio,
+		AudioCompletionRatio: priceData.AudioCompletionRatio,
+		QuotaPerUnit:         common.QuotaPerUnit,
+	}
+	if priceData.UsePrice {
+		modelPrice := priceData.ModelPrice
+		input.ModelPrice = &modelPrice
+	}
+	if result := priceData.ContextPricing; result != nil && result.Enabled {
+		input.ContextPricing = &contract.ContextPricingConfig{
+			Enabled: true,
+			Tiers: []contract.ContextPricingTier{{
+				MinTokens:            result.MinTokens,
+				MaxTokens:            result.MaxTokens,
+				ModelRatio:           priceData.ModelRatio,
+				CompletionRatio:      priceData.CompletionRatio,
+				CacheRatio:           priceData.CacheRatio,
+				CreateCacheRatio:     priceData.CacheCreation5mRatio,
+				AudioRatio:           priceData.AudioRatio,
+				AudioCompletionRatio: priceData.AudioCompletionRatio,
+			}},
+		}
+	}
+	return contract.LegacyPricePlans(input)
+}
+
+// CalculateNormalizedQuota 是生产入口包装；价格表与旧配置的优先级在
+// calculateNormalizedQuotaWithPlans 内固定，调用方不能自行选择。
+func CalculateNormalizedQuota(bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) (BillingQuotaResult, error) {
+	return calculateNormalizedQuotaWithPlans(
+		bu, priceData, mode,
+		legacyPricePlansForRelay(modelName, priceData),
+		contract.ModelPricePlanQuery{ModelName: modelName},
+	)
+}
+
+func calculateNormalizedQuotaWithPlans(
+	bu *BillingUsage,
+	priceData contract.PriceData,
+	mode AudioPricingMode,
+	plans []contract.ModelPricePlan,
+	query contract.ModelPricePlanQuery,
+) (BillingQuotaResult, error) {
+	if bu == nil {
+		return BillingQuotaResult{}, fmt.Errorf("billing usage is nil")
+	}
+	if mode != AudioPricingAbsolute && mode != AudioPricingRatioModel {
+		return BillingQuotaResult{}, fmt.Errorf("unknown audio pricing mode: %d", mode)
+	}
+	effectivePlan, hasPlan := ResolveModelPricePlan(plans, query)
+	if !hasPlan {
+		return BillingQuotaResult{}, fmt.Errorf("%w: model price plan is missing", ErrBillingPriceConfigMissing)
+	}
+	plan := *effectivePlan
+	if normalizedPricePlanSource(plan.Source) != contract.PricePlanSourceExplicit {
+		switch plan.BillingMode {
+		case contract.BillingModePerRequest:
+			return perRequestQuotaWithSnapshot(plans, query, plan, priceData)
+		case contract.BillingModeFree:
+			return freeQuotaWithSnapshot(plan, query, priceData), nil
+		case contract.BillingModeToken:
+			return legacyQuotaWithSnapshot(bu, priceData, mode, plan, query)
+		default:
+			return BillingQuotaResult{}, fmt.Errorf("%w: billing mode is invalid", ErrBillingPriceConfigMissing)
+		}
+	}
+
+	switch effectivePlan.BillingMode {
+	case contract.BillingModePerRequest:
+		return perRequestQuotaWithSnapshot(plans, query, plan, priceData)
+	case contract.BillingModeFree:
+		return freeQuotaWithSnapshot(plan, query, priceData), nil
+	case contract.BillingModeToken:
+		return explicitTokenQuotaWithSnapshot(bu, plans, query, plan, priceData, mode)
+	default:
+		return BillingQuotaResult{}, fmt.Errorf("%w: billing mode is invalid", ErrBillingPriceConfigMissing)
+	}
+}
+
+func legacyQuotaWithSnapshot(
+	bu *BillingUsage,
+	priceData contract.PriceData,
+	mode AudioPricingMode,
+	plan contract.ModelPricePlan,
+	query contract.ModelPricePlanQuery,
+) (BillingQuotaResult, error) {
+	// Absolute legacy audio pricing is the one pre-component fee whose unit
+	// price lives outside the ratio projection. Keep its exact old path.
+	if mode == AudioPricingAbsolute && intValue(bu.AudioInputTokens) != 0 &&
+		operation.GetGeminiInputAudioPricePerMillionTokens(query.ModelName) > 0 {
+		result, err := legacyNormalizedQuota(bu, priceData, mode, query.ModelName)
+		if err != nil {
+			return BillingQuotaResult{}, err
+		}
+		groupMultiplier := decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio)
+		result.RoundingMode = contract.PriceRoundingHalfUp
+		result.PriceSnapshot = newBillingPriceSnapshot(plan, query, plan.GroupMultiplierSource, groupMultiplier, result.RoundingMode, plan.PricePrecision)
+		appendLegacyComponentSnapshots(result.PriceSnapshot, plan, groupMultiplier, bu, result.AudioInputPrice)
+		perMillionPrice := decimal.NewFromFloat(result.AudioInputPrice)
+		result.PriceSnapshot.Components = append(result.PriceSnapshot.Components, BillingPriceComponentSnapshot{
+			Component:       contract.PriceComponentAudioInput,
+			Unit:            contract.PriceUnitPerMillionTokens,
+			UnitPrice:       perMillionPrice.String(),
+			Currency:        plan.Currency,
+			ExchangeRate:    plan.ExchangeRate,
+			GroupMultiplier: groupMultiplier.String(),
+			PlanSource:      contract.PricePlanSourceLegacy,
+		})
+		return result, nil
+	}
+	return explicitTokenQuotaWithSnapshot(bu, []contract.ModelPricePlan{plan}, query, plan, priceData, mode)
+}
+
+func appendLegacyComponentSnapshots(
+	snapshot *BillingPriceSnapshot,
+	plan contract.ModelPricePlan,
+	groupMultiplier decimal.Decimal,
+	bu *BillingUsage,
+	audioInputPrice float64,
+) {
+	absoluteAudioInput := audioInputPrice > 0
+	inputTokens := bu.InputTokens()
+	outputTokens := bu.OutputTokens
+	if absoluteAudioInput {
+		inputTokens -= intValue(bu.AudioInputTokens)
+	}
+	tokenCounts := map[contract.PriceComponent]int{
+		contract.PriceComponentInput:         inputTokens,
+		contract.PriceComponentOutput:        outputTokens,
+		contract.PriceComponentCacheRead:     bu.CacheReadTokens,
+		contract.PriceComponentCacheWrite5m:  bu.CacheWriteTokens - intValue(bu.CacheWrite1hTokens),
+		contract.PriceComponentCacheWrite1h:  intValue(bu.CacheWrite1hTokens),
+		contract.PriceComponentAudioInput:    intValue(bu.AudioInputTokens),
+		contract.PriceComponentAudioOutput:   intValue(bu.AudioOutputTokens),
+		contract.PriceComponentTextInput:     intValue(bu.TextInputTokens),
+		contract.PriceComponentTextOutput:    intValue(bu.TextOutputTokens),
+		contract.PriceComponentImageInput:    intValue(bu.ImageInputTokens),
+		contract.PriceComponentImageOutput:   intValue(bu.ImageOutputTokens),
+		contract.PriceComponentVideoInput:    intValue(bu.VideoInputTokens),
+		contract.PriceComponentDocumentInput: intValue(bu.DocumentInputTokens),
+	}
+	for _, component := range plan.Components {
+		tokens := tokenCounts[component.Component]
+		switch component.Component {
+		case contract.PriceComponentAudioInput:
+			if absoluteAudioInput {
+				// Absolute legacy audio input is recorded separately below with
+				// its operation-level unit price.
+				continue
+			}
+		case contract.PriceComponentTextInput:
+			if absoluteAudioInput {
+				tokenCounts[component.Component] = inputTokens
+				tokens = inputTokens
+			}
+		case contract.PriceComponentTextOutput, contract.PriceComponentAudioOutput:
+			// The special Absolute path intentionally charges all output at the
+			// generic output price. Projected children cannot explain that
+			// settlement, so the generic output snapshot above remains
+			// authoritative even when audio completion ratios caused a split.
+			if component.Component == contract.PriceComponentTextOutput && absoluteAudioInput {
+				tokenCounts[component.Component] = outputTokens
+				tokens = outputTokens
+			} else {
+				continue
+			}
+		}
+		if tokens == 0 {
+			continue
+		}
+		snapshot.Components = append(snapshot.Components, BillingPriceComponentSnapshot{
+			Component:       component.Component,
+			Unit:            component.Unit,
+			UnitPrice:       component.UnitPrice,
+			Currency:        plan.Currency,
+			ExchangeRate:    plan.ExchangeRate,
+			GroupMultiplier: groupMultiplier.String(),
+			PlanSource:      contract.PricePlanSourceLegacy,
+		})
+	}
+}
+
+func perRequestQuotaWithSnapshot(
+	plans []contract.ModelPricePlan,
+	query contract.ModelPricePlanQuery,
+	plan contract.ModelPricePlan,
+	priceData contract.PriceData,
+) (BillingQuotaResult, error) {
+	resolved := &contract.ResolvedModelPriceComponent{Plan: plan, PlanSource: plan.Source, BillingMode: plan.BillingMode}
+	found := false
+	for _, component := range plan.Components {
+		if component.Component == contract.PriceComponentRequest {
+			resolved.Component = component
+			found = true
+			break
+		}
+	}
+	if !found {
+		return BillingQuotaResult{}, fmt.Errorf("%w: request price component is missing", ErrBillingPriceConfigMissing)
+	}
+	unitPrice, exchangeRate, err := parseComponentDecimals(resolved.Component, resolved.Plan)
+	if err != nil {
+		return BillingQuotaResult{}, err
+	}
+	groupMultiplier, err := effectiveGroupMultiplier(plan, priceData)
+	if err != nil {
+		return BillingQuotaResult{}, err
+	}
+	quota := unitPrice.Mul(exchangeRate).Mul(groupMultiplier).Mul(decimal.NewFromFloat(common.QuotaPerUnit))
+	result := BillingQuotaResult{
+		UsePrice:     true,
+		TokenTotal:   quota,
+		RoundingMode: plan.RoundingMode,
+	}
+	result.PriceSnapshot = newBillingPriceSnapshot(plan, query, plan.GroupMultiplierSource, groupMultiplier, result.RoundingMode, plan.PricePrecision)
+	result.PriceSnapshot.Components = append(result.PriceSnapshot.Components, newPriceComponentSnapshot(resolved, groupMultiplier))
+	return result, nil
+}
+
+func freeQuotaWithSnapshot(plan contract.ModelPricePlan, query contract.ModelPricePlanQuery, priceData contract.PriceData) BillingQuotaResult {
+	groupMultiplier := decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio)
+	if plan.GroupMultiplierSource == contract.GroupMultiplierSourceFixed {
+		groupMultiplier = decimal.RequireFromString(plan.GroupMultiplier)
+	}
+	result := BillingQuotaResult{RoundingMode: plan.RoundingMode}
+	result.PriceSnapshot = newBillingPriceSnapshot(plan, query, plan.GroupMultiplierSource, groupMultiplier, plan.RoundingMode, plan.PricePrecision)
+	return result
+}
+
+func explicitTokenQuotaWithSnapshot(
+	bu *BillingUsage,
+	plans []contract.ModelPricePlan,
+	query contract.ModelPricePlanQuery,
+	plan contract.ModelPricePlan,
+	priceData contract.PriceData,
+	mode AudioPricingMode,
+) (BillingQuotaResult, error) {
+	groupMultiplier, err := effectiveGroupMultiplier(plan, priceData)
+	if err != nil {
+		return BillingQuotaResult{}, err
+	}
+	inheritedGroupMultiplier := decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio)
+	result := BillingQuotaResult{
+		Lines:        []BillingQuotaLine{},
+		TokenTotal:   decimal.Zero,
+		RoundingMode: plan.RoundingMode,
+	}
+	snapshot := newBillingPriceSnapshot(plan, query, plan.GroupMultiplierSource, groupMultiplier, result.RoundingMode, plan.PricePrecision)
+	addLine := func(label string, tokens int, resolved *contract.ResolvedModelPriceComponent) error {
+		if tokens == 0 {
+			return nil
+		}
+		quota, err := resolvedTokenQuota(resolved, tokens, groupMultiplier)
+		if err != nil {
+			return err
+		}
+		componentMultiplier, multiplierErr := componentGroupMultiplier(resolved, inheritedGroupMultiplier)
+		if multiplierErr != nil {
+			return multiplierErr
+		}
+		result.Lines = append(result.Lines, BillingQuotaLine{Label: label, Tokens: tokens, Quota: quota})
+		result.TokenTotal = result.TokenTotal.Add(quota)
+		snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, componentMultiplier))
+		return nil
+	}
+
+	inputTokens := bu.InputTokens()
+	outputTokens := bu.OutputTokens
+	audioInputTokens := intValue(bu.AudioInputTokens)
+	audioOutputTokens := intValue(bu.AudioOutputTokens)
+	inputParent := contract.PriceComponentInput
+	outputParent := contract.PriceComponentOutput
+	if anyMatchingPlanHasChild(plans, query, contract.InputChildPriceComponents) {
+		inputParent = contract.PriceComponentTextInput
+	}
+	if anyMatchingPlanHasChild(plans, query, contract.OutputChildPriceComponents) {
+		outputParent = contract.PriceComponentTextOutput
+	}
+
+	if audioInputTokens != 0 {
+		resolved, ok := directMatchingComponent(plans, query, contract.PriceComponentAudioInput)
+		// Legacy audio-ratio children only apply on the relative audio path;
+		// Absolute mode either used its dedicated legacy price above or treats
+		// audio as ordinary input.
+		if ok && (mode == AudioPricingRatioModel ||
+			normalizedPricePlanSource(resolved.Plan.Source) == contract.PricePlanSourceExplicit) {
+			quota, quotaErr := resolvedTokenQuota(resolved, audioInputTokens, groupMultiplier)
+			if quotaErr != nil {
+				return BillingQuotaResult{}, quotaErr
+			}
+			audioMultiplier, multiplierErr := componentGroupMultiplier(resolved, inheritedGroupMultiplier)
+			if multiplierErr != nil {
+				return BillingQuotaResult{}, multiplierErr
+			}
+			if mode == AudioPricingRatioModel {
+				result.Lines = append(result.Lines, BillingQuotaLine{Label: "音频输入", Tokens: audioInputTokens, Quota: quota})
+				result.TokenTotal = result.TokenTotal.Add(quota)
+			} else {
+				result.AudioInputQuota = quota
+				result.AudioInputPrice = unitPriceFloat(resolved.Component.UnitPrice)
+			}
+			snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, audioMultiplier))
+			inputTokens -= audioInputTokens
+		}
+	}
+	if audioOutputTokens != 0 {
+		if resolved, ok := directMatchingComponent(plans, query, contract.PriceComponentAudioOutput); ok {
+			// Legacy ratio children are relative-mode dimensions. In Absolute
+			// mode their price is the ordinary output price, so subtracting and
+			// re-adding them separately is unnecessary and can shift rounding.
+			if mode == AudioPricingRatioModel ||
+				normalizedPricePlanSource(resolved.Plan.Source) == contract.PricePlanSourceExplicit {
+				if err := addLine("音频输出", audioOutputTokens, resolved); err != nil {
+					return BillingQuotaResult{}, err
+				}
+				outputTokens -= audioOutputTokens
+			}
+		}
+	}
+	for _, component := range []contract.PriceComponent{
+		contract.PriceComponentImageInput,
+		contract.PriceComponentVideoInput,
+		contract.PriceComponentDocumentInput,
+	} {
+		if resolved, ok := directMatchingComponent(plans, query, component); ok {
+			tokens := inputChildTokens(bu, component)
+			if err := addLine(componentLabel(component), tokens, resolved); err != nil {
+				return BillingQuotaResult{}, err
+			}
+			inputTokens -= tokens
+		}
+	}
+	if resolved, ok := directMatchingComponent(plans, query, contract.PriceComponentImageOutput); ok {
+		tokens := intValue(bu.ImageOutputTokens)
+		if err := addLine("图像输出", tokens, resolved); err != nil {
+			return BillingQuotaResult{}, err
+		}
+		outputTokens -= tokens
+	}
+
+	inputResolved, ok := ResolveModelPriceComponent(plans, query, inputParent)
+	if !ok {
+		return BillingQuotaResult{}, fmt.Errorf("%w: %s price component is missing", ErrBillingPriceConfigMissing, inputParent)
+	}
+	if err := addLine("普通输入", inputTokens, inputResolved); err != nil {
+		return BillingQuotaResult{}, err
+	}
+	outputResolved, ok := ResolveModelPriceComponent(plans, query, outputParent)
+	if !ok {
+		return BillingQuotaResult{}, fmt.Errorf("%w: %s price component is missing", ErrBillingPriceConfigMissing, outputParent)
+	}
+	if err := addLine("输出文本", outputTokens, outputResolved); err != nil {
+		return BillingQuotaResult{}, err
+	}
+	for _, item := range []struct {
+		component contract.PriceComponent
+		tokens    int
+		label     string
+	}{
+		{contract.PriceComponentCacheRead, bu.CacheReadTokens, "缓存读取"},
+		{contract.PriceComponentCacheWrite5m, bu.CacheWriteTokens - intValue(bu.CacheWrite1hTokens), "缓存写入(5m/未分档)"},
+		{contract.PriceComponentCacheWrite1h, intValue(bu.CacheWrite1hTokens), "缓存写入(1h)"},
+	} {
+		resolved, ok := ResolveModelPriceComponent(plans, query, item.component)
+		if !ok {
+			return BillingQuotaResult{}, fmt.Errorf("%w: %s price component is missing", ErrBillingPriceConfigMissing, item.component)
+		}
+		if err := addLine(item.label, item.tokens, resolved); err != nil {
+			return BillingQuotaResult{}, err
+		}
+	}
+	result.PriceSnapshot = snapshot
+	return result, nil
+}
+
+func effectiveGroupMultiplier(plan contract.ModelPricePlan, priceData contract.PriceData) (decimal.Decimal, error) {
+	if plan.GroupMultiplierSource != contract.GroupMultiplierSourceFixed {
+		return decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio), nil
+	}
+	value, err := decimal.NewFromString(plan.GroupMultiplier)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("parse effective group multiplier: %w", err)
+	}
+	return value, nil
+}
+
+func resolvedTokenQuota(resolved *contract.ResolvedModelPriceComponent, tokens int, groupMultiplier decimal.Decimal) (decimal.Decimal, error) {
+	unitPrice, exchangeRate, err := parseComponentDecimals(resolved.Component, resolved.Plan)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	componentMultiplier, err := componentGroupMultiplier(resolved, groupMultiplier)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	return tokenComponentQuota(tokens, unitPrice, exchangeRate, componentMultiplier, decimal.NewFromFloat(common.QuotaPerUnit)), nil
+}
+
+func componentGroupMultiplier(resolved *contract.ResolvedModelPriceComponent, inheritedGroupMultiplier decimal.Decimal) (decimal.Decimal, error) {
+	if resolved.Plan.GroupMultiplierSource != contract.GroupMultiplierSourceFixed {
+		return inheritedGroupMultiplier, nil
+	}
+	value, err := decimal.NewFromString(resolved.Plan.GroupMultiplier)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("parse component group multiplier: %w", err)
+	}
+	return value, nil
+}
+
+func directMatchingComponent(plans []contract.ModelPricePlan, query contract.ModelPricePlanQuery, component contract.PriceComponent) (*contract.ResolvedModelPriceComponent, bool) {
+	for _, plan := range plans {
+		if plan.BillingMode != contract.BillingModeToken || !modelPricePlanMatches(plan, query) {
+			continue
+		}
+		for _, candidate := range plan.Components {
+			if candidate.Component != component {
+				continue
+			}
+			return &contract.ResolvedModelPriceComponent{
+				Component:   candidate,
+				PlanSource:  plan.Source,
+				BillingMode: plan.BillingMode,
+				Plan:        plan,
+			}, true
+		}
+	}
+	return nil, false
+}
+
+func anyMatchingPlanHasChild(plans []contract.ModelPricePlan, query contract.ModelPricePlanQuery, children []contract.PriceComponent) bool {
+	for _, child := range children {
+		if _, ok := directMatchingComponent(plans, query, child); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func inputChildTokens(bu *BillingUsage, component contract.PriceComponent) int {
+	switch component {
+	case contract.PriceComponentImageInput:
+		return intValue(bu.ImageInputTokens)
+	case contract.PriceComponentVideoInput:
+		return intValue(bu.VideoInputTokens)
+	case contract.PriceComponentDocumentInput:
+		return intValue(bu.DocumentInputTokens)
+	default:
+		return 0
+	}
+}
+
+func componentLabel(component contract.PriceComponent) string {
+	switch component {
+	case contract.PriceComponentImageInput:
+		return "图像输入"
+	case contract.PriceComponentVideoInput:
+		return "视频输入"
+	case contract.PriceComponentDocumentInput:
+		return "文档输入"
+	default:
+		return string(component)
+	}
+}
+
+func tokenComponentQuota(tokens int, unitPrice, exchangeRate, groupMultiplier, quotaPerUnit decimal.Decimal) decimal.Decimal {
+	return decimal.NewFromInt(int64(tokens)).
+		Div(decimal.NewFromInt(1_000_000)).
+		Mul(unitPrice).
+		Mul(exchangeRate).
+		Mul(groupMultiplier).
+		Mul(quotaPerUnit)
+}
+
+func parseComponentDecimals(component contract.ModelPriceComponent, plan contract.ModelPricePlan) (decimal.Decimal, decimal.Decimal, error) {
+	unitPrice, err := decimal.NewFromString(component.UnitPrice)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("parse %s unit price: %w", component.Component, err)
+	}
+	exchangeRate, err := decimal.NewFromString(plan.ExchangeRate)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("parse exchange rate: %w", err)
+	}
+	return unitPrice, exchangeRate, nil
+}
+
+func unitPriceFloat(value string) float64 {
+	parsed, err := decimal.NewFromString(strings.TrimSpace(value))
+	if err != nil {
+		return 0
+	}
+	return parsed.InexactFloat64()
+}
+
+func cloneIntPointer(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
+}
+
+func RoundBillingQuota(value decimal.Decimal, mode contract.PriceRoundingMode) int {
+	switch mode {
+	case contract.PriceRoundingHalfEven:
+		return int(value.RoundBank(0).IntPart())
+	case contract.PriceRoundingFloor:
+		return int(value.Floor().IntPart())
+	case contract.PriceRoundingCeil:
+		return int(value.Ceil().IntPart())
+	default:
+		return int(value.Round(0).IntPart())
+	}
+}
+
+// AppendBillingPriceSnapshot adds settlement pricing to the existing Other
+// snapshot. It is additive: every legacy pricing key remains authoritative for
+// old frontend paths and historical-log compatibility.
+func AppendBillingPriceSnapshot(other map[string]interface{}, result *BillingQuotaResult) {
+	if other == nil || result == nil || result.PriceSnapshot == nil {
+		return
+	}
+	other["billing_price_snapshot"] = result.PriceSnapshot
+}
+
+func newPriceComponentSnapshot(resolved *contract.ResolvedModelPriceComponent, groupMultiplier decimal.Decimal) BillingPriceComponentSnapshot {
+	return BillingPriceComponentSnapshot{
+		Component:       resolved.Component.Component,
+		Unit:            resolved.Component.Unit,
+		UnitPrice:       resolved.Component.UnitPrice,
+		Currency:        resolved.Plan.Currency,
+		ExchangeRate:    resolved.Plan.ExchangeRate,
+		GroupMultiplier: groupMultiplier.String(),
+		PlanSource:      normalizedPricePlanSource(resolved.Plan.Source),
+		PlanID:          resolved.Plan.ID,
+	}
+}
+
+func newBillingPriceSnapshot(
+	plan contract.ModelPricePlan,
+	query contract.ModelPricePlanQuery,
+	groupMultiplierSource contract.GroupMultiplierSource,
+	groupMultiplier decimal.Decimal,
+	roundingMode contract.PriceRoundingMode,
+	precision int,
+) *BillingPriceSnapshot {
+	return &BillingPriceSnapshot{
+		Source:                normalizedPricePlanSource(plan.Source),
+		BillingMode:           plan.BillingMode,
+		Endpoint:              query.Endpoint,
+		ServiceTier:           query.ServiceTier,
+		ContextTokens:         query.ContextTokens,
+		ContextMinTokens:      plan.ContextMinTokens,
+		ContextMaxTokens:      cloneIntPointer(plan.ContextMaxTokens),
+		GroupMultiplierSource: groupMultiplierSource,
+		GroupMultiplier:       groupMultiplier.String(),
+		RoundingMode:          roundingMode,
+		PricePrecision:        precision,
+		Components:            []BillingPriceComponentSnapshot{},
+	}
+}
+
+// legacyNormalizedQuota 按 PRD 3.4 节公式从归一化 BillingUsage 计算费用。
 //
 // 口径约定：
 //   - 普通输入 = InputTokens()（raw 总量扣除缓存读取/写入），模态明细只在
@@ -72,7 +710,7 @@ type BillingQuotaResult struct {
 //     输出审计拆分，包含在输出内按输出文本价计，不额外累加；
 //   - 缓存写入 5m 档承担"官方 5m 档 + 未分档写入"（未分档按 5m 档计价）；
 //   - Gemini toolUsePromptTokens 是审计字段，不进入任何计价行项。
-func CalculateNormalizedQuota(bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) (BillingQuotaResult, error) {
+func legacyNormalizedQuota(bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) (BillingQuotaResult, error) {
 	if bu == nil {
 		return BillingQuotaResult{}, fmt.Errorf("billing usage is nil")
 	}

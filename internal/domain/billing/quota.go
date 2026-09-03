@@ -42,6 +42,29 @@ func normalizationFailedError(ctx *gin.Context) *shared.NookMuxError {
 		shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
 }
 
+func billingQuotaFailedError(ctx *gin.Context, cause error) *shared.NookMuxError {
+	if errors.Is(cause, ErrBillingPriceConfigMissing) {
+		return shared.NewOpenAIError(
+			fmt.Errorf("%s", billingQuotaFailureMessage(ctx, cause)),
+			shared.ErrorCodeBadResponse, http.StatusBadGateway, shared.ErrOptionWithSkipRetry())
+	}
+	return normalizationFailedError(ctx)
+}
+
+func billingQuotaFailureCause(err error) string {
+	if errors.Is(err, ErrBillingPriceConfigMissing) {
+		return "billing_config_missing"
+	}
+	return "normalization_failed"
+}
+
+func billingQuotaFailureMessage(ctx *gin.Context, err error) string {
+	if errors.Is(err, ErrBillingPriceConfigMissing) {
+		return i18n.T(ctx, i18n.MsgQuotaBillingPriceConfigFailed)
+	}
+	return i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed)
+}
+
 // PreWssConsumeQuota realtime 会话按事件增量预扣：按归一化用量（含缓存读取）
 // 计算本轮增量额度并实扣（计费 PRD 阶段 2）。
 func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.RealtimeUsage) error {
@@ -66,10 +89,10 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 		return err
 	}
 
-	quota, _, err := normalizedRealtimeQuota(bu, relayInfo.OriginModelName, relayInfo.PriceData)
+	quota, _, _, err := normalizedRealtimeQuota(bu, relayInfo.OriginModelName, relayInfo.PriceData, relayInfo)
 	if err != nil {
-		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+err.Error())
-		return fmt.Errorf("%s", i18n.T(ctx, i18n.MsgQuotaBillingNormalizationFailed))
+		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(err)+"): "+err.Error())
+		return fmt.Errorf("%s", billingQuotaFailureMessage(ctx, err))
 	}
 
 	if userQuota < quota {
@@ -131,7 +154,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		}
 	}
 
-	quota, quotaLines, quotaErr := normalizedRealtimeQuota(bu, modelName, relayInfo.PriceData)
+	quota, quotaLines, quotaSnapshot, quotaErr := normalizedRealtimeQuota(bu, modelName, relayInfo.PriceData, relayInfo)
 	if quotaErr != nil {
 		return recordWssBillingFailure(quotaErr.Error())
 	}
@@ -171,6 +194,15 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		channelstore.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
+	// Per-event realtime charges have already settled funding. A surviving
+	// request-level BillingSession represents only the initial preconsume and
+	// must settle at zero so it is released without charging the summary again.
+	if relayInfo.Billing != nil {
+		if err := relayInfo.Billing.Settle(0); err != nil {
+			log.LogError(ctx, "error settling realtime billing session: "+err.Error())
+		}
+	}
+
 	logModel := modelName
 	if extraContent != "" {
 		logContent += ", " + extraContent
@@ -183,6 +215,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		// group_ratio 记录原始分组倍率（不含动态倍率）
 		other["group_ratio"] = relayInfo.PriceData.GroupRatioInfo.GroupRatio / relayInfo.PriceData.GroupRatioInfo.DynamicRatio
 	}
+	AppendBillingPriceSnapshot(other, &BillingQuotaResult{PriceSnapshot: quotaSnapshot})
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.InputTokens,
@@ -229,20 +262,34 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 
 // normalizedRealtimeQuota 用归一化公式计算 realtime/WSS 额度，复刻旧
 // calculateAudioQuota 的最低消费与取整口径（UsePrice 截断、按量四舍五入）。
-func normalizedRealtimeQuota(bu *BillingUsage, modelName string, priceData contract.PriceData) (int, []BillingQuotaLine, error) {
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, modelName)
+func normalizedRealtimeQuota(bu *BillingUsage, modelName string, priceData contract.PriceData, relayInfo *relaycommon.RelayInfo) (int, []BillingQuotaLine, *BillingPriceSnapshot, error) {
+	result, err := CalculateNormalizedQuotaForRelay(bu, priceData, AudioPricingRatioModel, modelName, relayInfo)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 	if result.UsePrice {
-		return int(result.TokenTotal.IntPart()), result.Lines, nil
+		return roundEntryQuota(result.TokenTotal, result), result.Lines, result.PriceSnapshot, nil
 	}
 	ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 	total := result.TokenTotal
 	if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 		total = decimal.NewFromInt(1)
 	}
-	return int(total.Round(0).IntPart()), result.Lines, nil
+	return roundEntryQuota(total, result), result.Lines, result.PriceSnapshot, nil
+}
+
+// roundEntryQuota preserves each pre-stage-4 entry point's rounding behavior
+// for legacy projections. Explicit price tables own their configured final
+// rounding mode, even when that mode differs from the legacy entry point.
+func roundEntryQuota(value decimal.Decimal, result BillingQuotaResult) int {
+	if result.PriceSnapshot != nil &&
+		result.PriceSnapshot.Source == contract.PricePlanSourceExplicit {
+		return RoundBillingQuota(value, result.RoundingMode)
+	}
+	if result.UsePrice {
+		return int(value.IntPart())
+	}
+	return int(value.Round(0).IntPart())
 }
 
 // PostClaudeConsumeQuota Claude Messages 语义消费入口：quota 由归一化用量按
@@ -270,15 +317,15 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		}
 	}
 
-	quotaResult, quotaErr := CalculateNormalizedQuota(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName)
+	quotaResult, quotaErr := CalculateNormalizedQuotaForRelay(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName, relayInfo)
 	if quotaErr != nil {
-		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
-		return normalizationFailedError(ctx)
+		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(quotaErr)+"): "+quotaErr.Error())
+		return billingQuotaFailedError(ctx, quotaErr)
 	}
 	// 旧口径：最低消费判断看模型倍率，取整为截断。UsePrice 分支不加最低
 	// 消费（旧代码 UsePrice 时 ModelRatio 恒为 0，条件不可达；显式守卫防止
 	// 未来构造出 UsePrice=true 且 ModelRatio≠0 的 PriceData 时误抬额）。
-	quota := quotaResult.TokenTotal.IntPart()
+	quota := roundEntryQuota(quotaResult.TokenTotal, quotaResult)
 	if !quotaResult.UsePrice && relayInfo.PriceData.ModelRatio != 0 && quotaResult.TokenTotal.LessThanOrEqual(decimal.Zero) {
 		quota = 1
 	}
@@ -330,6 +377,7 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
 		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
 	}
+	AppendBillingPriceSnapshot(other, &quotaResult)
 	// 共享流式日志指标，避免 Claude /v1/messages 丢失吐字速度展示。
 	AppendStreamMetrics(other, relayInfo, useTimeMs, completionTokens)
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
@@ -383,10 +431,10 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	}
 	priceData := relayInfo.PriceData
 
-	quotaResult, quotaErr := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, modelName)
+	quotaResult, quotaErr := CalculateNormalizedQuotaForRelay(bu, priceData, AudioPricingRatioModel, modelName, relayInfo)
 	if quotaErr != nil {
-		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
-		return normalizationFailedError(ctx)
+		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(quotaErr)+"): "+quotaErr.Error())
+		return billingQuotaFailedError(ctx, quotaErr)
 	}
 	var billingDetailsJSON string
 	if !httpapi.GetContextKeyBool(ctx, common.ContextKeyLocalCountTokens) && usage.TotalTokens != 0 {
@@ -399,14 +447,14 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	}
 	var quota int
 	if quotaResult.UsePrice {
-		quota = int(quotaResult.TokenTotal.IntPart())
+		quota = roundEntryQuota(quotaResult.TokenTotal, quotaResult)
 	} else {
 		ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 		total := quotaResult.TokenTotal
 		if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 			total = decimal.NewFromInt(1)
 		}
-		quota = int(total.Round(0).IntPart())
+		quota = roundEntryQuota(total, quotaResult)
 	}
 
 	totalTokens := usage.TotalTokens
@@ -451,6 +499,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
 		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
 	}
+	AppendBillingPriceSnapshot(other, &quotaResult)
 	logstore.RecordConsumeLog(ctx, relayInfo.UserId, logstore.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     usage.PromptTokens,

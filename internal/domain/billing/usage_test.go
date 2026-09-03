@@ -39,6 +39,7 @@ func newUsageTestRelayInfo() *relaycommon.RelayInfo {
 
 // 常规倍率路径：prompt_tokens 含缓存 tokens 时先扣除再按 CacheRatio 计入。
 func TestCalculateUsageTextQuotaWithCacheTokens(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	usage := &shared.Usage{
 		PromptTokens:     100,
@@ -64,6 +65,7 @@ func TestCalculateUsageTextQuotaWithCacheTokens(t *testing.T) {
 // OpenAI Chat 语义（prompt_tokens 含缓存）即使客户端走 Claude 格式请求，
 // 也按归一化口径扣除缓存； quota 与 PRD 3.4 OpenAI Chat 公式一致。
 func TestCalculateUsageCacheSubtractionFollowsUsageSource(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.FinalRequestRelayFormat = relayconstant.RelayFormatClaude
 	usage := &shared.Usage{
@@ -102,6 +104,7 @@ func TestCalculateUsageMissingUsageSourceFailsExplicitly(t *testing.T) {
 // 全零用量 + 来源未标识：属于"上游无 usage"而非归一化失败，
 // 原生请求保持可重试语义。
 func TestCalculateUsageZeroUsageWithoutSourceKeepsRetrySemantics(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.UsageSource = relayconstant.UsageSourceNone
 
@@ -117,6 +120,7 @@ func TestCalculateUsageZeroUsageWithoutSourceKeepsRetrySemantics(t *testing.T) {
 // 本地计数伪 usage（Gemini 流式兜底：source=Gemini 但无原始 metadata）：
 // 按聚合口径计费，不因 metadata 缺失而失败，billing_details 不落列。
 func TestCalculateUsageLocalCountFallbackUsesAggregate(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.UsageSource = relayconstant.UsageSourceGemini
 	relayInfo.UsageGeminiMetadata = nil
@@ -139,6 +143,7 @@ func TestCalculateUsageLocalCountFallbackUsesAggregate(t *testing.T) {
 
 // 按次计费路径：ModelPrice * QuotaPerUnit * GroupRatio，token 数不参与计算。
 func TestCalculateUsageUsePricePath(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.PriceData.UsePrice = true
 	relayInfo.PriceData.ModelPrice = 0.02
@@ -155,6 +160,7 @@ func TestCalculateUsageUsePricePath(t *testing.T) {
 
 // usage 为 nil 时按预估 prompt tokens 兜底并追加提示文案。
 func TestCalculateUsageNilUsageFallsBackToEstimate(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.SetEstimatePromptTokens(30)
 
@@ -173,6 +179,7 @@ func TestCalculateUsageNilUsageFallsBackToEstimate(t *testing.T) {
 
 // 未发生规范转换且 totalTokens == 0：返回可重试错误，调用方不应继续落账。
 func TestCalculateUsageEmptyUsageNativeReturnsRetryError(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 
 	settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, &shared.Usage{})
@@ -186,6 +193,7 @@ func TestCalculateUsageEmptyUsageNativeReturnsRetryError(t *testing.T) {
 
 // 发生规范转换后 totalTokens == 0：不触发重试，返回零额度结算（由 ApplyQuota 记日志）。
 func TestCalculateUsageEmptyUsageConvertedContinues(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.RequestConversionChain = []relayconstant.RelayFormat{
 		relayconstant.RelayFormatOpenAI,
@@ -206,6 +214,7 @@ func TestCalculateUsageEmptyUsageConvertedContinues(t *testing.T) {
 
 // 倍率非零但算出的额度为 0 时抬升为 1（最小计费粒度）。
 func TestCalculateUsageFloorsQuotaToOneWhenRatioNonZero(t *testing.T) {
+	setupEmptyExplicitPricePlans(t)
 	relayInfo := newUsageTestRelayInfo()
 	relayInfo.PriceData.ModelRatio = 0.4
 	usage := &shared.Usage{PromptTokens: 1, CompletionTokens: 0, TotalTokens: 1}

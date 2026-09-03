@@ -354,6 +354,7 @@ const (
 	MsgQuotaRelayInfoNil               = "quota.relay_info_nil"
 	MsgQuotaEmptyUsage                 = "quota.empty_usage"
 	MsgQuotaBillingNormalizationFailed = "quota.billing_normalization_failed"
+	MsgQuotaBillingPriceConfigFailed   = "quota.billing_price_config_failed"
 )
 
 // Setting related messages

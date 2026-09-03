@@ -13,6 +13,7 @@ import (
 	channelstore "github.com/NookMux/NookMux/internal/store/channel"
 	dbstore "github.com/NookMux/NookMux/internal/store/db"
 	logstore "github.com/NookMux/NookMux/internal/store/log"
+	pricingstore "github.com/NookMux/NookMux/internal/store/pricing"
 	tokenstore "github.com/NookMux/NookMux/internal/store/token"
 	userstore "github.com/NookMux/NookMux/internal/store/user"
 	"github.com/gin-gonic/gin"
@@ -51,9 +52,10 @@ func setupApplyQuotaTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := testDB.AutoMigrate(&userstore.User{}, &channelstore.Channel{}, &tokenstore.Token{}, &logstore.Log{}); err != nil {
+	if err := testDB.AutoMigrate(&userstore.User{}, &channelstore.Channel{}, &tokenstore.Token{}, &logstore.Log{}, &pricingstore.ModelPricePlan{}, &pricingstore.ModelPriceComponent{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
+	pricingstore.InvalidateModelPricePlanCache()
 	dbstore.DB = testDB
 	dbstore.LOG_DB = testDB
 	redis.RedisEnabled = false
@@ -190,6 +192,31 @@ func TestApplyQuotaUpdatesCountersAndWritesConsumeLog(t *testing.T) {
 	assert.Equal(t, float64(3), other["completion_ratio"])
 	assert.Equal(t, float64(40), other["cache_tokens"])
 	assert.Equal(t, "/v1/chat/completions", other["request_path"])
+	snapshot, ok := other["billing_price_snapshot"].(map[string]interface{})
+	require.True(t, ok, "stage 4 price snapshot should be written to Other")
+	assert.Equal(t, "legacy", snapshot["source"])
+	assert.Equal(t, "token", snapshot["billing_mode"])
+	components, ok := snapshot["components"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, components, 3)
+	componentByComponent := make(map[string]map[string]interface{}, len(components))
+	for _, raw := range components {
+		component, ok := raw.(map[string]interface{})
+		require.True(t, ok)
+		name, ok := component["component"].(string)
+		require.True(t, ok)
+		componentByComponent[name] = component
+	}
+	for name, price := range map[string]string{
+		"text_input":  "4",
+		"text_output": "12",
+		"cache_read":  "2",
+	} {
+		component, ok := componentByComponent[name]
+		require.True(t, ok, "missing %s price component", name)
+		assert.Equal(t, price, component["unit_price"])
+		assert.Equal(t, "1", component["group_multiplier"])
+	}
 	adminInfo, ok := other["admin_info"].(map[string]interface{})
 	require.True(t, ok, "admin_info should be assembled into Other")
 	assert.Equal(t, []interface{}{"7"}, adminInfo["use_channel"])

@@ -309,6 +309,7 @@ quota.token_cycle_not_enough: "令牌额度不足，剩余额度：{{.TokenQuota
 quota.relay_info_nil: "中继信息为空"
 quota.empty_usage: "上游没有返回计费信息，无法扣费（可能是上游超时）"
 quota.billing_normalization_failed: "计费用量归一化失败，已停止扣费（请联系管理员查看服务端日志）"
+quota.billing_price_config_failed: "计费价格配置缺失或无效，已停止扣费（请联系管理员检查价格表）"
 
 # Setting messages
 setting.invalid_type: "无效的预警类型"

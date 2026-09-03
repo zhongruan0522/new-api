@@ -8,6 +8,7 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
+	billingcontract "github.com/NookMux/NookMux/internal/domain/billing/contract"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/httpapi"
@@ -78,6 +79,9 @@ type UsageSettlement struct {
 	billingDetailsJSON string
 	// quotaLines 是归一化计价行项，供影子对拍差异定位与日志解释。
 	quotaLines []BillingQuotaLine
+	// priceSnapshot 保留实际结算价格依据；quotaLines 只有金额，不足以解释
+	// 价格配置后续变化时的汇率、分组倍率与上下文档位。
+	priceSnapshot *BillingPriceSnapshot
 }
 
 // normalizeUsageForBilling 是通用入口的归一化单点：真实上游 usage 必须携带
@@ -159,7 +163,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		}
 	}
 
-	quotaResult, quotaErr := CalculateNormalizedQuota(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName)
+	quotaResult, quotaErr := CalculateNormalizedQuotaForRelay(bu, relayInfo.PriceData, AudioPricingAbsolute, modelName, relayInfo)
 	if quotaErr != nil {
 		log.LogError(ctx, "billing normalized quota failed (cause=normalization_failed): "+quotaErr.Error())
 		return nil, shared.NewOpenAIError(
@@ -294,7 +298,9 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 
 	// token 部分费用只来自归一化结果；工具费/图片调用费/音频独立费继续走独立路径。
 	quotaCalculateDecimal := quotaResult.TokenTotal
-	if !quotaResult.UsePrice && !dRatio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
+	if !quotaResult.UsePrice && quotaResult.PriceSnapshot != nil &&
+		quotaResult.PriceSnapshot.Source == billingcontract.PricePlanSourceLegacy &&
+		!dRatio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
 		quotaCalculateDecimal = decimal.NewFromInt(1)
 	}
 	// 添加 responses tools call 调用的配额
@@ -336,6 +342,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		bu:                   bu,
 		billingDetailsJSON:   billingDetailsJSON,
 		quotaLines:           quotaResult.Lines,
+		priceSnapshot:        quotaResult.PriceSnapshot,
 
 		webSearchPrice:           webSearchPrice,
 		claudeWebSearchPrice:     claudeWebSearchPrice,
@@ -356,7 +363,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 		extraContent: extraContent,
 	}
 
-	quota := int(quotaCalculateDecimal.Round(0).IntPart())
+	quota := RoundBillingQuota(quotaCalculateDecimal, quotaResult.RoundingMode)
 	totalTokens := promptTokens + completionTokens
 
 	// record all the consume log even if quota is 0
@@ -379,7 +386,8 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			settlement.extraContent = append(settlement.extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
 		}
 	} else {
-		if !dRatio.IsZero() && quota == 0 {
+		if !dRatio.IsZero() && quota == 0 && settlement.priceSnapshot != nil &&
+			settlement.priceSnapshot.Source == billingcontract.PricePlanSourceLegacy {
 			quota = 1
 		}
 		settlement.quota = quota
@@ -439,6 +447,7 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 		originalGroupRatio = groupRatio / dynamicRatio
 	}
 	other := GenerateTextOtherInfo(ctx, relayInfo, settlement.modelRatio, originalGroupRatio, settlement.completionRatio, settlement.cacheTokens, settlement.cacheRatio, settlement.modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
+	AppendBillingPriceSnapshot(other, &BillingQuotaResult{PriceSnapshot: settlement.priceSnapshot})
 	if settlement.adminRejectReason != "" {
 		other["reject_reason"] = settlement.adminRejectReason
 	}
