@@ -238,7 +238,7 @@ func legacyAudioQuota(info QuotaInfo) int {
 // reportBillingShadowMismatch 输出影子对拍差异告警。差异必须先定位为旧公式
 // bug 或新语义 bug（PRD 阶段 2）；已知预期差异类别在此标注，其余需要人工
 // 定位后补充分类，不允许静默吸收。
-func reportBillingShadowMismatch(ctx *gin.Context, entry string, relayInfo *relaycommon.RelayInfo, legacyQuota int, normalizedQuota int, bu *BillingUsage, lines []BillingQuotaLine, openRouter bool) {
+func reportBillingShadowMismatch(ctx *gin.Context, entry string, relayInfo *relaycommon.RelayInfo, legacyQuota int, normalizedQuota int, bu *BillingUsage, lines []BillingQuotaLine, openRouter bool, snapshot *BillingPriceSnapshot) {
 	tokenLines := make([]string, 0, len(lines))
 	for _, line := range lines {
 		tokenLines = append(tokenLines, fmt.Sprintf("%s:%d", line.Label, line.Tokens))
@@ -246,11 +246,15 @@ func reportBillingShadowMismatch(ctx *gin.Context, entry string, relayInfo *rela
 	log.LogWarn(ctx, fmt.Sprintf(
 		"billing shadow mismatch (entry=%s, model=%s, source=%s): legacy_quota=%d normalized_quota=%d, tokens=[%s], hint=%s",
 		entry, relayInfo.OriginModelName, relayInfo.UsageSource, legacyQuota, normalizedQuota,
-		strings.Join(tokenLines, ", "), classifyShadowDiff(entry, relayInfo, bu, openRouter)))
+		strings.Join(tokenLines, ", "), classifyShadowDiff(entry, relayInfo, bu, openRouter, snapshot)))
 }
 
-func classifyShadowDiff(entry string, relayInfo *relaycommon.RelayInfo, bu *BillingUsage, openRouter bool) string {
+func classifyShadowDiff(entry string, relayInfo *relaycommon.RelayInfo, bu *BillingUsage, openRouter bool, snapshot *BillingPriceSnapshot) string {
 	var hints []string
+	if snapshot != nil && normalizedPricePlanSource(snapshot.Source) == contract.PricePlanSourceExplicit {
+		// 显式价格表拥有独立定价权（含 0 价格计划），与旧 ratio 公式天然不一致。
+		hints = append(hints, "显式价格表结算与旧 ratio 公式独立定价（预期差异）")
+	}
 	if bu != nil {
 		switch {
 		case entry == "claude" && openRouter && (bu.CacheReadTokens > 0 || bu.CacheWriteTokens > 0):

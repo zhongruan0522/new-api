@@ -2,6 +2,7 @@ package billing
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -710,6 +711,135 @@ func TestStage4ExchangeRateAppliesAndIsSnapshotted(t *testing.T) {
 			t.Fatalf("%s snapshot exchange rate = %s, want 7.2", component.Component, component.ExchangeRate)
 		}
 	}
+}
+
+// 显式免模型计划拥有最终定价权：最低消费 quota=1 是旧 ratio 配置的安全网，
+// 只允许作用于 legacy 投影结算。显式 free 计划在所有入口都必须结算 0，
+// 即使旧 ModelRatio 仍配置为非零（优先级固定，不允许入口各自选择）。
+func TestStage4ExplicitFreePlanStaysZeroAtEveryEntry(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	free := stage4TokenPlan(0)
+	free.ModelName = "gpt-4o"
+	free.BillingMode = contract.BillingModeFree
+	free.Components = nil
+	installStage4Plans(t, free)
+
+	t.Run("claude entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-free-claude")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceClaude)
+		usage := &shared.Usage{PromptTokens: 3, CompletionTokens: 1, TotalTokens: 4}
+		require.Nil(t, PostClaudeConsumeQuota(ctx, relayInfo, usage))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-free-claude").Quota,
+			"explicit free plan must not be bumped to the legacy minimum quota")
+	})
+
+	t.Run("audio entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-free-audio")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+		usage := &shared.Usage{PromptTokens: 100, CompletionTokens: 100, TotalTokens: 200}
+		usage.PromptTokensDetails.TextTokens = 100
+		usage.CompletionTokenDetails.TextTokens = 100
+		require.Nil(t, PostAudioConsumeQuota(ctx, relayInfo, usage, ""))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-free-audio").Quota,
+			"explicit free plan must not be bumped to the legacy minimum quota")
+	})
+
+	t.Run("realtime wss entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-free-wss")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIResponses)
+		usage := &shared.RealtimeUsage{
+			TotalTokens:  200,
+			InputTokens:  100,
+			OutputTokens: 100,
+			InputTokenDetails: shared.InputTokenDetails{
+				TextTokens: 100,
+			},
+			OutputTokenDetails: shared.OutputTokenDetails{
+				TextTokens: 100,
+			},
+		}
+		require.Nil(t, PostWssConsumeQuota(ctx, relayInfo, relayInfo.OriginModelName, usage, ""))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-free-wss").Quota,
+			"explicit free plan must not be bumped to the legacy minimum quota")
+	})
+}
+
+// 音频入口的旧路径与价格表路径等价性（PRD 验收标准）：把旧 ratio 投影原样
+// 转换为显式计划（等价配置）后，同一 usage 走 PostAudioConsumeQuota，
+// quota 必须与旧投影路径一致，且价格来源切换为 explicit。
+func TestStage4AudioEntryExplicitPlanMatchesLegacyQuota(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	newAudioUsage := func() *shared.Usage {
+		usage := &shared.Usage{
+			PromptTokens:     1000, // text(700) + audio(200) + cached(100)
+			CompletionTokens: 500,  // text(400) + audio(100)
+			TotalTokens:      1500,
+		}
+		usage.PromptTokensDetails.TextTokens = 700
+		usage.PromptTokensDetails.AudioTokens = 200
+		usage.PromptTokensDetails.CachedTokens = 100
+		usage.CompletionTokenDetails.TextTokens = 400
+		usage.CompletionTokenDetails.AudioTokens = 100
+		return usage
+	}
+
+	legacyRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+	require.Nil(t, PostAudioConsumeQuota(newEntryTestContext("tk-audio-equiv-legacy"), legacyRelayInfo, newAudioUsage(), ""))
+	legacyLog := waitForConsumeLogByTokenName(t, "tk-audio-equiv-legacy")
+	// 独立期望值：(200×32 + 700×4 + 100×2 + 400×12 + 100×64) × 0.5 = 10300。
+	// 固定数值让等价性断言可失败：投影或组件结算任一侧漂移都会暴露。
+	require.Equal(t, 10300, legacyLog.Quota)
+
+	// 旧投影转等价显式计划：价格与作用域原样保留，仅来源切换。
+	legacyPlans := legacyPricePlansForRelay(legacyRelayInfo.OriginModelName, legacyRelayInfo.PriceData)
+	require.NotEmpty(t, legacyPlans)
+	equivalent := legacyPlans[0]
+	equivalent.ID = 0
+	equivalent.Source = contract.PricePlanSourceExplicit
+	equivalent.ReadOnly = false
+	installStage4Plans(t, equivalent)
+
+	explicitRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+	require.Nil(t, PostAudioConsumeQuota(newEntryTestContext("tk-audio-equiv-explicit"), explicitRelayInfo, newAudioUsage(), ""))
+	explicitLog := waitForConsumeLogByTokenName(t, "tk-audio-equiv-explicit")
+	assert.Equal(t, legacyLog.Quota, explicitLog.Quota,
+		"等价配置下价格表路径的 quota 必须与旧 ratio 路径一致")
+}
+
+// 入口级显式失败：UsePrice 模型挂显式 token 计划但缺缓存组件时，legacy 按
+// 次投影不能作为组件回退（组件级候选只含 token 计划），必须以
+// billing_config_missing 显式失败（502、不重试、不落消费日志），而不是
+// 静默按 0 计费或误用按次价格。
+func TestStage4MissingComponentFailsAtEntry(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	plan := stage4TokenPlan(0,
+		stage4Component(contract.PriceComponentTextInput, "4"),
+		stage4Component(contract.PriceComponentTextOutput, "12"),
+	)
+	plan.ModelName = "gpt-4o"
+	installStage4Plans(t, plan)
+
+	relayInfo := newApplyQuotaTestRelayInfo()
+	relayInfo.PriceData.UsePrice = true
+	relayInfo.PriceData.ModelPrice = 0.01
+	relayInfo.PriceData.ModelRatio = 0
+	relayInfo.PriceData.CompletionRatio = 0
+	relayInfo.PriceData.CacheRatio = 0
+	relayInfo.PriceData.CacheCreationRatio = 0
+	relayInfo.PriceData.CacheCreation5mRatio = 0
+	relayInfo.PriceData.CacheCreation1hRatio = 0
+
+	settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, newApplyQuotaTestUsage())
+	require.NotNil(t, apiErr, "missing cache component must fail the settlement explicitly")
+	require.Nil(t, settlement)
+	assert.Equal(t, http.StatusBadGateway, apiErr.StatusCode)
+
+	// 失败路径不落任何消费日志（调用方保留预扣退款）。
+	var count int64
+	require.Never(t, func() bool {
+		dbstore.LOG_DB.Model(&logstore.Log{}).Where("user_id = ?", applyQuotaTestUserId).Count(&count)
+		return count != 0
+	}, 300*time.Millisecond, 50*time.Millisecond, "failed settlement must not write a consume log")
 }
 
 func intPtr(value int) *int {

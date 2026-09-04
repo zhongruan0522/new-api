@@ -39,7 +39,7 @@ func TestShadowGenericParityWithoutCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildAggregateBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "gpt-4o")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "gpt-4o")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestShadowGenericDeepSeekCacheHitTokensDifference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "deepseek-chat")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "deepseek-chat")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestShadowClaudeCacheDoubleBillingDifference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "claude-sonnet-4-5")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "claude-sonnet-4-5")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestShadowClaudeParityWithoutCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "claude-sonnet-4-5")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingAbsolute, "claude-sonnet-4-5")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -175,7 +175,7 @@ func TestShadowAudioParityWithConsistentDetails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, "gpt-4o-audio-preview")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, "gpt-4o-audio-preview")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -211,7 +211,7 @@ func TestShadowAudioParityForLocalCharacterUsage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	result, err := CalculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, "minimax-tts")
+	result, err := calculateNormalizedQuota(bu, priceData, AudioPricingRatioModel, "minimax-tts")
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestClassifyShadowDiffKnownClasses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	hint := classifyShadowDiff("claude", nil, claudeBU, false)
+	hint := classifyShadowDiff("claude", nil, claudeBU, false, nil)
 	if !strings.Contains(hint, "PRD 3.4") {
 		t.Fatalf("claude cache hint = %q, want PRD 3.4 reference", hint)
 	}
@@ -241,8 +241,15 @@ func TestClassifyShadowDiffKnownClasses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBillingUsage: %v", err)
 	}
-	hint = classifyShadowDiff("generic", nil, plainBU, false)
+	hint = classifyShadowDiff("generic", nil, plainBU, false, nil)
 	if !strings.Contains(hint, "unclassified") {
 		t.Fatalf("plain generic hint = %q, want unclassified", hint)
+	}
+
+	// 显式价格表结算与旧公式必然不同，必须归类为预期差异而不是 unclassified。
+	explicitSnapshot := &BillingPriceSnapshot{Source: contract.PricePlanSourceExplicit}
+	hint = classifyShadowDiff("claude", nil, claudeBU, false, explicitSnapshot)
+	if !strings.Contains(hint, "显式价格表") {
+		t.Fatalf("explicit plan hint = %q, want explicit price table class", hint)
 	}
 }

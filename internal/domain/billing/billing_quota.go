@@ -166,9 +166,10 @@ func legacyPricePlansForRelay(modelName string, priceData contract.PriceData) []
 	return contract.LegacyPricePlans(input)
 }
 
-// CalculateNormalizedQuota 是生产入口包装；价格表与旧配置的优先级在
-// calculateNormalizedQuotaWithPlans 内固定，调用方不能自行选择。
-func CalculateNormalizedQuota(bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) (BillingQuotaResult, error) {
+// calculateNormalizedQuota 仅用于测试的旧配置直算包装；生产结算必须走
+// CalculateNormalizedQuotaForRelay（价格表与旧配置的优先级、分组倍率与
+// service tier 匹配都在单点内固定）。不导出以防止调用方绕过价格表。
+func calculateNormalizedQuota(bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) (BillingQuotaResult, error) {
 	return calculateNormalizedQuotaWithPlans(
 		bu, priceData, mode,
 		legacyPricePlansForRelay(modelName, priceData),
@@ -662,6 +663,16 @@ func AppendBillingPriceSnapshot(other map[string]interface{}, result *BillingQuo
 		return
 	}
 	other["billing_price_snapshot"] = result.PriceSnapshot
+}
+
+// IsLegacyPriceSettlement reports whether the result was settled from the
+// legacy ratio projection. The legacy minimum-quota rule is a safety net for
+// ratio misconfiguration; explicit price tables own their pricing, including
+// legitimately zero-cost plans, so every entry must gate that rule on this
+// check instead of re-deriving it from PriceData.
+func IsLegacyPriceSettlement(result BillingQuotaResult) bool {
+	return result.PriceSnapshot != nil &&
+		normalizedPricePlanSource(result.PriceSnapshot.Source) == contract.PricePlanSourceLegacy
 }
 
 func newPriceComponentSnapshot(resolved *contract.ResolvedModelPriceComponent, groupMultiplier decimal.Decimal) BillingPriceComponentSnapshot {

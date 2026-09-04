@@ -29,7 +29,7 @@ func normalizedQuotaTestPriceData() contract.PriceData {
 
 func mustQuota(t *testing.T, bu *BillingUsage, priceData contract.PriceData, mode AudioPricingMode, modelName string) BillingQuotaResult {
 	t.Helper()
-	result, err := CalculateNormalizedQuota(bu, priceData, mode, modelName)
+	result, err := calculateNormalizedQuota(bu, priceData, mode, modelName)
 	if err != nil {
 		t.Fatalf("CalculateNormalizedQuota returned error: %v", err)
 	}

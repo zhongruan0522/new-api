@@ -8,7 +8,6 @@ import (
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/config/operation"
-	billingcontract "github.com/NookMux/NookMux/internal/domain/billing/contract"
 	domainchannel "github.com/NookMux/NookMux/internal/domain/channel"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	"github.com/NookMux/NookMux/internal/httpapi"
@@ -296,8 +295,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 
 	// token 部分费用只来自归一化结果；工具费/图片调用费/音频独立费继续走独立路径。
 	quotaCalculateDecimal := quotaResult.TokenTotal
-	if !quotaResult.UsePrice && quotaResult.PriceSnapshot != nil &&
-		quotaResult.PriceSnapshot.Source == billingcontract.PricePlanSourceLegacy &&
+	if !quotaResult.UsePrice && IsLegacyPriceSettlement(quotaResult) &&
 		!dRatio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
 		quotaCalculateDecimal = decimal.NewFromInt(1)
 	}
@@ -384,8 +382,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			settlement.extraContent = append(settlement.extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
 		}
 	} else {
-		if !dRatio.IsZero() && quota == 0 && settlement.priceSnapshot != nil &&
-			settlement.priceSnapshot.Source == billingcontract.PricePlanSourceLegacy {
+		if !dRatio.IsZero() && quota == 0 && IsLegacyPriceSettlement(quotaResult) {
 			quota = 1
 		}
 		settlement.quota = quota
@@ -399,7 +396,7 @@ func CalculateUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, rawUsage
 			Add(dFileSearchQuota).Add(dImageGenerationCallQuota)
 		legacyQuota := legacyGenericFinalQuota(usage, claudeSemantic, relayInfo.PriceData, modelName, toolQuota, relayInfo.PriceData.OtherRatios)
 		if legacyQuota != settlement.quota {
-			reportBillingShadowMismatch(ctx, "generic", relayInfo, legacyQuota, settlement.quota, bu, quotaResult.Lines, false)
+			reportBillingShadowMismatch(ctx, "generic", relayInfo, legacyQuota, settlement.quota, bu, quotaResult.Lines, false, quotaResult.PriceSnapshot)
 		}
 	}
 

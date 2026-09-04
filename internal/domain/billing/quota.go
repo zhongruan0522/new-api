@@ -260,7 +260,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 			AudioCompletionRatio: relayInfo.PriceData.AudioCompletionRatio,
 		})
 		if legacyQuota != quota {
-			reportBillingShadowMismatch(ctx, "wss", relayInfo, legacyQuota, quota, bu, quotaLines, false)
+			reportBillingShadowMismatch(ctx, "wss", relayInfo, legacyQuota, quota, bu, quotaLines, false, quotaSnapshot)
 		}
 	}
 	return nil
@@ -278,7 +278,8 @@ func normalizedRealtimeQuota(bu *BillingUsage, modelName string, priceData contr
 	}
 	ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 	total := result.TokenTotal
-	if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
+	// 最低消费仅约束旧 ratio 投影；显式价格表的 0 价格结算不被抬额。
+	if IsLegacyPriceSettlement(result) && !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 		total = decimal.NewFromInt(1)
 	}
 	return roundEntryQuota(total, result, false), result.Lines, result.PriceSnapshot, nil
@@ -331,12 +332,19 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		log.LogError(ctx, "billing normalized quota failed (cause="+billingQuotaFailureCause(quotaErr)+"): "+quotaErr.Error())
 		return billingQuotaFailedError(ctx, quotaErr)
 	}
+	// Claude 语义映射没有标准音频字段（PRD 3.1），Absolute 模式下音频输入
+	// 独立费用不应出现；出现即归一化或入口装配 bug，显式失败而不是静默漏计。
+	if !quotaResult.AudioInputQuota.IsZero() {
+		log.LogError(ctx, "billing claude entry produced unexpected audio input fee (cause=normalization_failed)")
+		return normalizationFailedError(ctx)
+	}
 	// 旧口径：最低消费判断看模型倍率，最终 quota 截断（UsePrice 与按量一致）。
 	// UsePrice 分支不加最低消费（旧代码 UsePrice 时 ModelRatio 恒为 0，条件不
 	// 可达；显式守卫防止未来构造出 UsePrice=true 且 ModelRatio≠0 的 PriceData
-	// 时误抬额）。
+	// 时误抬额）。最低消费是旧 ratio 配置的安全网，显式价格表拥有自己的定价
+	// （含合法的 0 价格计划），不得被抬额。
 	quota := roundEntryQuota(quotaResult.TokenTotal, quotaResult, true)
-	if !quotaResult.UsePrice && relayInfo.PriceData.ModelRatio != 0 && quotaResult.TokenTotal.LessThanOrEqual(decimal.Zero) {
+	if !quotaResult.UsePrice && IsLegacyPriceSettlement(quotaResult) && relayInfo.PriceData.ModelRatio != 0 && quotaResult.TokenTotal.LessThanOrEqual(decimal.Zero) {
 		quota = 1
 	}
 
@@ -412,7 +420,7 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 	if totalTokens != 0 {
 		legacyQuota := legacyClaudeQuota(usage, openRouter, relayInfo.PriceData, modelName)
 		if legacyQuota != int(quota) {
-			reportBillingShadowMismatch(ctx, "claude", relayInfo, legacyQuota, int(quota), bu, quotaResult.Lines, openRouter)
+			reportBillingShadowMismatch(ctx, "claude", relayInfo, legacyQuota, int(quota), bu, quotaResult.Lines, openRouter, quotaResult.PriceSnapshot)
 		}
 	}
 	return nil
@@ -461,7 +469,8 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	} else {
 		ratio := decimal.NewFromFloat(priceData.ModelRatio).Mul(decimal.NewFromFloat(priceData.GroupRatioInfo.GroupRatio))
 		total := quotaResult.TokenTotal
-		if !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
+		// 最低消费仅约束旧 ratio 投影；显式价格表的 0 价格结算不被抬额。
+		if IsLegacyPriceSettlement(quotaResult) && !ratio.IsZero() && total.LessThanOrEqual(decimal.Zero) {
 			total = decimal.NewFromInt(1)
 		}
 		quota = roundEntryQuota(total, quotaResult, false)
@@ -548,7 +557,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 			AudioCompletionRatio: priceData.AudioCompletionRatio,
 		})
 		if legacyQuota != quota {
-			reportBillingShadowMismatch(ctx, "audio", relayInfo, legacyQuota, quota, bu, quotaResult.Lines, false)
+			reportBillingShadowMismatch(ctx, "audio", relayInfo, legacyQuota, quota, bu, quotaResult.Lines, false, quotaResult.PriceSnapshot)
 		}
 	}
 	return nil
