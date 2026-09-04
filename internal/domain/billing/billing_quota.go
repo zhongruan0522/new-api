@@ -3,6 +3,7 @@ package billing
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
@@ -117,7 +118,10 @@ func CalculateNormalizedQuotaForRelay(
 	}
 	explicitPlans, err := pricingstore.GetModelPricePlans()
 	if err != nil {
-		return BillingQuotaResult{}, fmt.Errorf("load explicit model price plans: %w", err)
+		// 价格表加载失败意味着结算无法看到任何计价配置，归因为
+		// billing_config_missing 而不是 normalization_failed（PRD 三类
+		// 可观测原因），调用方的失败日志与对账排查按配置问题分组。
+		return BillingQuotaResult{}, fmt.Errorf("%w: load explicit model price plans: %v", ErrBillingPriceConfigMissing, err)
 	}
 	plans := append(explicitPlans, legacyPricePlansForRelay(modelName, priceData)...)
 	query := contract.ModelPricePlanQuery{
@@ -551,10 +555,13 @@ func componentGroupMultiplier(resolved *contract.ResolvedModelPriceComponent, in
 }
 
 func directMatchingComponent(plans []contract.ModelPricePlan, query contract.ModelPricePlanQuery, component contract.PriceComponent) (*contract.ResolvedModelPriceComponent, bool) {
-	for _, plan := range plans {
-		if plan.BillingMode != contract.BillingModeToken || !modelPricePlanMatches(plan, query) {
-			continue
-		}
+	// 子组件与计划解析遵循同一固定优先级（modelPricePlanPrecedes）：多个
+	// 匹配计划都配置该组件时按特异性取价，不随持久化顺序漂移。
+	candidates := matchingModelPricePlans(plans, query, true)
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return modelPricePlanPrecedes(candidates[i], candidates[j])
+	})
+	for _, plan := range candidates {
 		for _, candidate := range plan.Components {
 			if candidate.Component != component {
 				continue

@@ -152,9 +152,15 @@ func TestStage4RefundRollsBackFundingAndTokenUsage(t *testing.T) {
 		return refunded == 1
 	}, 10*time.Second, 5*time.Millisecond, "funding refund must run exactly once")
 
+	// funding.Refund 与 token 回滚在同一个异步 goroutine 内先后执行；
+	// token 断言必须等待回滚真正落库，不能在 funding 计数出现后立即读取。
 	var token tokenstore.Token
-	require.NoError(t, dbstore.DB.First(&token, applyQuotaTestTokenId).Error)
-	assert.Zero(t, token.UsedQuota, "token used quota must be rolled back by the refund")
+	require.Eventually(t, func() bool {
+		if err := dbstore.DB.First(&token, applyQuotaTestTokenId).Error; err != nil {
+			return false
+		}
+		return token.UsedQuota == 0
+	}, 10*time.Second, 5*time.Millisecond, "token used quota must be rolled back by the refund")
 
 	require.NoError(t, session.Settle(120))
 	_, refunded := funding.operations()

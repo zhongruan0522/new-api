@@ -252,4 +252,26 @@ func TestClassifyShadowDiffKnownClasses(t *testing.T) {
 	if !strings.Contains(hint, "显式价格表") {
 		t.Fatalf("explicit plan hint = %q, want explicit price table class", hint)
 	}
+
+	// 仅缓存写入（无缓存读取）也必须命中预期类别：audio/wss 旧公式完全
+	// 无缓存项，generic 旧公式缺 5m/1h 分档口径；写入-only 差异不应落入
+	// unclassified 告警噪音。
+	writeOnlyUsage := &shared.Usage{PromptTokens: 1000, CompletionTokens: 500}
+	writeOnlyUsage.PromptTokensDetails.CachedCreationTokens = 100
+	writeOnlyBU, _, err := BuildBillingUsage(relayconstant.UsageSourceOpenAIChat, writeOnlyUsage, nil)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage write-only: %v", err)
+	}
+	hint = classifyShadowDiff("audio", nil, writeOnlyBU, false, nil)
+	if !strings.Contains(hint, "PRD 3.4") {
+		t.Fatalf("audio write-only cache hint = %q, want PRD 3.4 reference", hint)
+	}
+	hint = classifyShadowDiff("wss", nil, writeOnlyBU, false, nil)
+	if !strings.Contains(hint, "PRD 3.4") {
+		t.Fatalf("wss write-only cache hint = %q, want PRD 3.4 reference", hint)
+	}
+	hint = classifyShadowDiff("generic", nil, writeOnlyBU, false, nil)
+	if strings.Contains(hint, "unclassified") {
+		t.Fatalf("generic write-only cache hint = %q, want classified cache diff", hint)
+	}
 }

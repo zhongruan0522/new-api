@@ -50,7 +50,7 @@
 - 领域服务承载业务规则；契约子包只做契约（结构体、常量、错误类型、纯函数），不写 I/O、不碰数据库。
 - 控制器输入已校验也不能假设内部状态可信；跨系统边界继续校验。
 - 计费、quota、usage、渠道选择、动态倍率、违规费用等逻辑必须保持可追踪和可测试。
-- 组件价格表的输入在 [billing/price_table.go](billing/price_table.go) 统一校验价格单位、精度、汇率、取整、作用域与父子组件冲突；`reasoning_output` 只能复用输出价格，不能成为独立收费组件。生产结算必须走 `CalculateNormalizedQuotaForRelay` 单点，显式价格表优先于旧 ratio 投影；未命中的组件只能走固定 legacy 回退或显式错误（配置问题归类 `billing_config_missing`），禁止静默按 0。显式计划用自身 `rounding_mode` 做最终取整；legacy 投影保留各入口既有取整口径。价格组件、来源、倍率、文档位和 service tier 写入 `Other.billing_price_snapshot`，`billing_details` 仍只存 token 用量。WSS 按事件实扣后，成功收尾只把请求级初始 `BillingSession` 按 0 结算释放，不重复收取汇总 quota。
+- 组件价格表的输入在 [billing/price_table.go](billing/price_table.go) 统一校验价格单位、精度、汇率、取整、作用域与父子组件冲突；`reasoning_output` 只能复用输出价格，不能成为独立收费组件。生产结算必须走 `CalculateNormalizedQuotaForRelay` 单点，显式价格表优先于旧 ratio 投影；计划解析与子组件匹配共用同一 `modelPricePlanPrecedes` 固定优先级（分组 > 端点 > service tier > 上下文档位 > 生效时间），不随持久化顺序漂移；未命中的组件只能走固定 legacy 回退或显式错误（配置缺失与价格表加载失败归类 `billing_config_missing`），禁止静默按 0。显式计划用自身 `rounding_mode` 做最终取整；legacy 投影保留各入口既有取整口径。价格组件、来源、倍率、文档位和 service tier 写入 `Other.billing_price_snapshot`，`billing_details` 仍只存 token 用量。WSS 按事件实扣后，成功收尾只把请求级初始 `BillingSession` 按 0 结算释放，不重复收取汇总 quota。
 - 外部 HTTP 调用复用现有客户端和超时配置（`infra/httpclient`）；不要无超时请求或吞掉上游错误。
 - 不要模拟成功或生成假 usage 来掩盖上游/业务失败。
 - 迁移文件进/出时同步更新本文件子包表与根 `AGENTS.md` 的结构概览。

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
+	"github.com/NookMux/NookMux/internal/config/ratio"
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
 	"github.com/NookMux/NookMux/internal/domain/shared"
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
@@ -840,6 +841,314 @@ func TestStage4MissingComponentFailsAtEntry(t *testing.T) {
 		dbstore.LOG_DB.Model(&logstore.Log{}).Where("user_id = ?", applyQuotaTestUserId).Count(&count)
 		return count != 0
 	}, 300*time.Millisecond, 50*time.Millisecond, "failed settlement must not write a consume log")
+}
+
+// 子组件匹配必须遵循与计划解析相同的固定优先级（PRD：优先级禁止调用方各自
+// 选择）：多个显式计划都配置同一组件时，按 分组 > 端点 > tier > 上下文 >
+// 时间的特异性取价，而不是持久化顺序（store 按 id ASC 返回）。
+func TestStage4ChildComponentResolvesByPlanPrecedence(t *testing.T) {
+	bu := &BillingUsage{
+		PromptAggregateTokens: 1800, // text 1000 + image 800
+		OutputTokens:          500,
+		ImageInputTokens:      intPtr(800),
+	}
+	priceData := normalizedQuotaTestPriceData()
+
+	plain := stage4TokenPlan(100,
+		stage4Component(contract.PriceComponentInput, "4"),
+		stage4Component(contract.PriceComponentOutput, "12"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	plain.Components = append(plain.Components, stage4Component(contract.PriceComponentImageInput, "10"))
+	groupScoped := stage4TokenPlan(101,
+		stage4Component(contract.PriceComponentTextInput, "6"),
+		stage4Component(contract.PriceComponentOutput, "12"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	groupScoped.EffectiveGroup = "svn"
+	groupScoped.Components = append(groupScoped.Components, stage4Component(contract.PriceComponentImageInput, "30"))
+
+	// 持久化顺序（id ASC）把无分组计划放在前面；分组计划必须仍按优先级胜出。
+	result, err := calculateNormalizedQuotaWithPlans(bu, priceData, AudioPricingAbsolute,
+		[]contract.ModelPricePlan{plain, groupScoped},
+		contract.ModelPricePlanQuery{ModelName: "model-a", EffectiveGroup: "svn"})
+	if err != nil {
+		t.Fatalf("precedence quota: %v", err)
+	}
+	// (1000×6 + 800×30 + 500×12) × 0.5 = 18000；若误用持久化顺序里的
+	// image_input=10，会得到 (1000×6 + 800×10 + 500×12) × 0.5 = 10000。
+	assertQuotaTotal(t, result, 18000)
+	for _, component := range result.PriceSnapshot.Components {
+		if component.Component == contract.PriceComponentImageInput && component.UnitPrice != "30" {
+			t.Fatalf("image input price = %s, want group-scoped plan price 30", component.UnitPrice)
+		}
+	}
+}
+
+// 通用文本入口的旧路径与价格表路径等价性（PRD 验收标准）：同一 usage 先走
+// 旧 ratio 投影，再把投影原样转为显式计划（价格与作用域保留、仅来源切换），
+// quota 必须一致且价格来源切换为 explicit。
+func TestStage4GenericEntryExplicitPlanMatchesLegacyQuota(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	newGenericUsage := func() *shared.Usage {
+		usage := &shared.Usage{
+			PromptTokens:     1000, // text(850) + cached(100) + write(50)
+			CompletionTokens: 500,
+			TotalTokens:      1500,
+		}
+		usage.PromptTokensDetails.CachedTokens = 100
+		usage.PromptTokensDetails.CachedCreationTokens = 50
+		return usage
+	}
+
+	legacyRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+	settlement, apiErr := CalculateUsage(newEntryTestContext("tk-generic-equiv-legacy"), legacyRelayInfo, newGenericUsage())
+	require.Nil(t, apiErr)
+	// 独立期望值：(850×2 + 100×1 + 50×2.5 + 500×6) × 1 = 4925。
+	// 固定数值让等价性断言可失败：投影或组件结算任一侧漂移都会暴露。
+	require.Equal(t, 4925, settlement.quota)
+
+	legacyPlans := legacyPricePlansForRelay(legacyRelayInfo.OriginModelName, legacyRelayInfo.PriceData)
+	require.NotEmpty(t, legacyPlans)
+	equivalent := legacyPlans[0]
+	equivalent.ID = 0
+	equivalent.Source = contract.PricePlanSourceExplicit
+	equivalent.ReadOnly = false
+	installStage4Plans(t, equivalent)
+
+	explicitRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+	explicitSettlement, apiErr := CalculateUsage(newEntryTestContext("tk-generic-equiv-explicit"), explicitRelayInfo, newGenericUsage())
+	require.Nil(t, apiErr)
+	assert.Equal(t, settlement.quota, explicitSettlement.quota,
+		"等价配置下价格表路径的 quota 必须与旧 ratio 路径一致")
+	require.NotNil(t, explicitSettlement.priceSnapshot)
+	assert.Equal(t, contract.PricePlanSourceExplicit, explicitSettlement.priceSnapshot.Source)
+}
+
+// Claude 入口的旧路径与价格表路径等价性（PRD 验收标准），含缓存读取与
+// 5m/1h 写入分档。
+func TestStage4ClaudeEntryExplicitPlanMatchesLegacyQuota(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	newClaudeUsage := func() *shared.Usage {
+		usage := &shared.Usage{
+			PromptTokens:     1000, // input(700) + read(200) + write(100)
+			CompletionTokens: 500,
+			TotalTokens:      1500,
+		}
+		usage.PromptTokensDetails.CachedTokens = 200
+		usage.PromptTokensDetails.CachedCreationTokens = 100
+		usage.ClaudeCacheCreation5mTokens = 60
+		usage.ClaudeCacheCreation1hTokens = 40
+		return usage
+	}
+
+	legacyRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceClaude)
+	require.Nil(t, PostClaudeConsumeQuota(newEntryTestContext("tk-claude-equiv-legacy"), legacyRelayInfo, newClaudeUsage()))
+	legacyLog := waitForConsumeLogByTokenName(t, "tk-claude-equiv-legacy")
+	// (700×2 + 200×1 + 60×2.5 + 40×4 + 500×6) × 1 = 4910。
+	require.Equal(t, 4910, legacyLog.Quota)
+
+	legacyPlans := legacyPricePlansForRelay(legacyRelayInfo.OriginModelName, legacyRelayInfo.PriceData)
+	require.NotEmpty(t, legacyPlans)
+	equivalent := legacyPlans[0]
+	equivalent.ID = 0
+	equivalent.Source = contract.PricePlanSourceExplicit
+	equivalent.ReadOnly = false
+	installStage4Plans(t, equivalent)
+
+	explicitRelayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceClaude)
+	require.Nil(t, PostClaudeConsumeQuota(newEntryTestContext("tk-claude-equiv-explicit"), explicitRelayInfo, newClaudeUsage()))
+	explicitLog := waitForConsumeLogByTokenName(t, "tk-claude-equiv-explicit")
+	assert.Equal(t, legacyLog.Quota, explicitLog.Quota,
+		"等价配置下价格表路径的 quota 必须与旧 ratio 路径一致")
+}
+
+// 模态组件差价的生产链路（Gemini metadata → CalculateUsage → ApplyQuota →
+// 消费日志）：image/video/document 输入与 image 输出按组件价结算，父级
+// input/output 不再重复计价；billing_details 仍只保存 token 用量，价格
+// 快照完整落入 Other。
+func TestStage4ModalComponentPricesProductionPath(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	plan := stage4TokenPlan(0,
+		stage4Component(contract.PriceComponentTextInput, "4"),
+		stage4Component(contract.PriceComponentImageInput, "10"),
+		stage4Component(contract.PriceComponentVideoInput, "20"),
+		stage4Component(contract.PriceComponentDocumentInput, "40"),
+		stage4Component(contract.PriceComponentTextOutput, "12"),
+		stage4Component(contract.PriceComponentImageOutput, "24"),
+		stage4Component(contract.PriceComponentCacheRead, "1"),
+		stage4Component(contract.PriceComponentCacheWrite5m, "2.5"),
+		stage4Component(contract.PriceComponentCacheWrite1h, "4"),
+	)
+	plan.ModelName = "gemini-2.5-flash"
+	installStage4Plans(t, plan)
+
+	ctx := newEntryTestContext("tk-modal-prod")
+	relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceGemini)
+	relayInfo.OriginModelName = "gemini-2.5-flash"
+	metadata := &shared.GeminiUsageMetadata{
+		PromptTokenCount:     3000, // text 1000 + image 800 + video 600 + document 600
+		CandidatesTokenCount: 2000, // text 1500 + image 500
+		PromptTokensDetails: []shared.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: 1000},
+			{Modality: "IMAGE", TokenCount: 800},
+			{Modality: "VIDEO", TokenCount: 600},
+			{Modality: "DOCUMENT", TokenCount: 600},
+		},
+		CandidatesTokensDetails: []shared.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: 1500},
+			{Modality: "IMAGE", TokenCount: 500},
+		},
+	}
+	usage := GeminiUsageMetadataToOpenAIUsage(*metadata)
+	relayInfo.UsageGeminiMetadata = metadata
+
+	settlement, apiErr := CalculateUsage(ctx, relayInfo, &usage)
+	require.Nil(t, apiErr)
+	// (1000×4 + 800×10 + 600×20 + 600×40 + 1500×12 + 500×24) × 0.5 = 39000
+	require.Equal(t, 39000, settlement.quota)
+	relayInfo.FinalPreConsumedQuota = settlement.quota
+	require.Nil(t, ApplyQuota(ctx, relayInfo, settlement))
+
+	stored := waitForConsumeLogByTokenName(t, "tk-modal-prod")
+	assert.Equal(t, 39000, stored.Quota)
+
+	// 价格快照逐组件可解释：六行组件价全部来自显式计划。
+	other, err := common.StrToMap(stored.Other)
+	require.NoError(t, err)
+	snapshot, ok := other["billing_price_snapshot"].(map[string]interface{})
+	require.True(t, ok, "billing price snapshot missing in %+v", other)
+	assert.Equal(t, string(contract.PricePlanSourceExplicit), snapshot["source"])
+	componentsRaw, ok := snapshot["components"].([]interface{})
+	require.True(t, ok)
+	prices := make(map[string]string)
+	for _, raw := range componentsRaw {
+		component, ok := raw.(map[string]interface{})
+		require.True(t, ok)
+		prices[component["component"].(string)] = component["unit_price"].(string)
+	}
+	wantPrices := map[string]string{
+		string(contract.PriceComponentTextInput):     "4",
+		string(contract.PriceComponentImageInput):    "10",
+		string(contract.PriceComponentVideoInput):    "20",
+		string(contract.PriceComponentDocumentInput): "40",
+		string(contract.PriceComponentTextOutput):    "12",
+		string(contract.PriceComponentImageOutput):   "24",
+	}
+	assert.Equal(t, wantPrices, prices)
+
+	// billing_details 仍只保存归一化 token 用量：模态明细完整，无价格字段。
+	require.NotNil(t, stored.BillingDetails)
+	payload, err := ParseBillingDetailsJSON(*stored.BillingDetails)
+	require.NoError(t, err)
+	require.NotNil(t, payload.Tokens.Input.VideoInput)
+	assert.Equal(t, 600, *payload.Tokens.Input.VideoInput)
+	require.NotNil(t, payload.Tokens.Input.DocumentInput)
+	assert.Equal(t, 600, *payload.Tokens.Input.DocumentInput)
+	require.NotNil(t, payload.Tokens.Input.ImageInput)
+	assert.Equal(t, 800, *payload.Tokens.Input.ImageInput)
+	require.NotNil(t, payload.Tokens.Output.ImageOutput)
+	assert.Equal(t, 500, *payload.Tokens.Output.ImageOutput)
+	assert.NotContains(t, *stored.BillingDetails, "price")
+	assert.NotContains(t, *stored.BillingDetails, "quota")
+}
+
+// legacy 免模型（ModelRatio=0 投影为 free 计划）：所有入口结算 0，最低
+// 消费规则不抬额（旧规则以 ratio!=0 为前提，投影保持该前提）。
+func TestStage4LegacyFreeModelStaysZeroAtEveryEntry(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+
+	t.Run("generic entry", func(t *testing.T) {
+		relayInfo := newApplyQuotaTestRelayInfo()
+		relayInfo.PriceData.ModelRatio = 0
+		settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, newApplyQuotaTestUsage())
+		require.Nil(t, apiErr)
+		assert.Equal(t, 0, settlement.quota)
+		require.NotNil(t, settlement.priceSnapshot)
+		assert.Equal(t, contract.BillingModeFree, settlement.priceSnapshot.BillingMode)
+	})
+
+	t.Run("claude entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-legacy-free-claude")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceClaude)
+		relayInfo.PriceData.ModelRatio = 0
+		usage := &shared.Usage{PromptTokens: 3, CompletionTokens: 1, TotalTokens: 4}
+		require.Nil(t, PostClaudeConsumeQuota(ctx, relayInfo, usage))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-legacy-free-claude").Quota,
+			"legacy free model must not be bumped to the minimum quota")
+	})
+
+	t.Run("audio entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-legacy-free-audio")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIChat)
+		relayInfo.PriceData.ModelRatio = 0
+		usage := &shared.Usage{PromptTokens: 100, CompletionTokens: 100, TotalTokens: 200}
+		usage.PromptTokensDetails.TextTokens = 100
+		usage.CompletionTokenDetails.TextTokens = 100
+		require.Nil(t, PostAudioConsumeQuota(ctx, relayInfo, usage, ""))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-legacy-free-audio").Quota,
+			"legacy free model must not be bumped to the minimum quota")
+	})
+
+	t.Run("realtime wss entry", func(t *testing.T) {
+		ctx := newEntryTestContext("tk-legacy-free-wss")
+		relayInfo := newEntryTestRelayInfo(relayconstant.UsageSourceOpenAIResponses)
+		relayInfo.PriceData.ModelRatio = 0
+		usage := &shared.RealtimeUsage{
+			TotalTokens:  200,
+			InputTokens:  100,
+			OutputTokens: 100,
+			InputTokenDetails: shared.InputTokenDetails{
+				TextTokens: 100,
+			},
+			OutputTokenDetails: shared.OutputTokenDetails{
+				TextTokens: 100,
+			},
+		}
+		require.Nil(t, PostWssConsumeQuota(ctx, relayInfo, relayInfo.OriginModelName, usage, ""))
+		assert.Equal(t, 0, waitForConsumeLogByTokenName(t, "tk-legacy-free-wss").Quota,
+			"legacy free model must not be bumped to the minimum quota")
+	})
+}
+
+// legacy 上下文分档端到端：命中档位后 quota 按档位倍率结算，未命中保持
+// 基础倍率；价格快照记录命中的文档位与档位 tokens。
+func TestStage4LegacyContextTierSettlement(t *testing.T) {
+	setupApplyQuotaTestDB(t)
+	previous := ratio.ContextPricing2JSONString()
+	t.Cleanup(func() {
+		require.NoError(t, ratio.UpdateContextPricingByJSONString(previous))
+	})
+	config := `{"gpt-4o":{"enabled":true,"tiers":[
+		{"min_tokens":0,"max_tokens":1000,"model_ratio":2,"completion_ratio":3,"cache_ratio":0.5,"create_cache_ratio":1.25,"audio_ratio":8,"audio_completion_ratio":2},
+		{"min_tokens":1000,"model_ratio":4,"completion_ratio":6,"cache_ratio":1,"create_cache_ratio":2.5,"audio_ratio":16,"audio_completion_ratio":4}
+	]}}`
+	require.NoError(t, ratio.UpdateContextPricingByJSONString(config))
+
+	t.Run("below tier boundary keeps base ratios", func(t *testing.T) {
+		relayInfo := newApplyQuotaTestRelayInfo()
+		usage := &shared.Usage{PromptTokens: 600, CompletionTokens: 300, TotalTokens: 900}
+		settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, usage)
+		require.Nil(t, apiErr)
+		// 基础档：(600 + 300×3) × 2 = 3000（补全倍率相对模型倍率）。
+		assert.Equal(t, 3000, settlement.quota)
+	})
+
+	t.Run("hit tier settles with tier ratios and records snapshot", func(t *testing.T) {
+		relayInfo := newApplyQuotaTestRelayInfo()
+		usage := &shared.Usage{PromptTokens: 1100, CompletionTokens: 500, TotalTokens: 1600}
+		settlement, apiErr := CalculateUsage(newUsageTestContext(), relayInfo, usage)
+		require.Nil(t, apiErr)
+		// 命中 [1000,∞) 档：(1100 + 500×6) × 4 = 16400。
+		assert.Equal(t, 16400, settlement.quota)
+		require.NotNil(t, settlement.priceSnapshot)
+		assert.Equal(t, 1000, settlement.priceSnapshot.ContextMinTokens)
+		assert.Equal(t, 1600, settlement.priceSnapshot.ContextTokens)
+	})
 }
 
 func intPtr(value int) *int {

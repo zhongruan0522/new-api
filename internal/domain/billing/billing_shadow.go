@@ -261,12 +261,12 @@ func classifyShadowDiff(entry string, relayInfo *relaycommon.RelayInfo, bu *Bill
 			hints = append(hints, "OpenRouter cost 反推缓存写入减法已按 PRD 删除（预期差异）")
 		case entry == "claude" && (bu.CacheReadTokens > 0 || bu.CacheWriteTokens > 0):
 			hints = append(hints, "旧公式对原生 Claude 缓存读写按基础价重复计费，新公式按 PRD 3.4 修正（预期差异）")
-		case (entry == "audio" || entry == "wss") && bu.CacheReadTokens > 0:
-			hints = append(hints, "旧公式漏计缓存读取，新公式按 PRD 3.4 计入缓存单价（预期差异）")
+		case (entry == "audio" || entry == "wss") && (bu.CacheReadTokens > 0 || bu.CacheWriteTokens > 0):
+			hints = append(hints, "旧公式完全无缓存项（读写都漏），新公式按 PRD 3.4 计入缓存单价（预期差异）")
 		case entry == "generic" && relayInfo != nil &&
-			relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude && bu.CacheReadTokens > 0:
+			relayInfo.FinalRequestRelayFormat == relayconstant.RelayFormatClaude && (bu.CacheReadTokens > 0 || bu.CacheWriteTokens > 0):
 			hints = append(hints, "旧公式按请求格式跳过缓存扣减，新公式按 usage 来源归一化（预期差异）")
-		case entry == "generic" && bu.CacheReadTokens > 0:
+		case entry == "generic" && (bu.CacheReadTokens > 0 || bu.CacheWriteTokens > 0):
 			hints = append(hints, "新公式识别 prompt_cache_hit_tokens/input_tokens_details 缓存口径（预期差异）")
 		}
 		if bu.Source == relayconstant.UsageSourceGemini && bu.ToolUsePromptTokens != nil {
