@@ -877,7 +877,10 @@ function shouldHideTieredCacheColumns(
   return !hasAnyCacheTokens(other)
 }
 
-function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
+function TokenBreakdown(props: {
+  log: UsageLog
+  other: LogOtherData | null
+}) {
   const { t } = useTranslation()
   const { log, other } = props
   const billing = parseBillingDetails(log.billing_details)
@@ -1508,10 +1511,12 @@ function DetailsDialogBody(props: {
           </DetailSection>
         )}
 
-      {/* Token breakdown (for consume/error types with token data) */}
+      {/* Token breakdown reads billing_details first; Other is only a legacy fallback. */}
       {isVisible('token_breakdown') &&
         isDisplayableType(props.log.type) &&
-        other && <TokenBreakdown log={props.log} other={other} />}
+        (other || billingDetails.status !== 'legacy') && (
+          <TokenBreakdown log={props.log} other={other} />
+        )}
 
       {/* Billing breakdown (consume type) */}
       {isVisible('billing_details') && isConsume && other && !isViolation && (

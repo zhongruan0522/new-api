@@ -1,7 +1,9 @@
 package common
 
 import (
+	"math"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -37,5 +39,24 @@ func TestGetPageQueryClampsNegativeValues(t *testing.T) {
 				t.Fatalf("start index = %d, want non-negative", pageInfo.GetStartIdx())
 			}
 		})
+	}
+}
+
+func TestGetPageQueryClampsOverflowingPage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(
+		"GET",
+		"/?p="+strconv.FormatInt(int64(math.MaxInt), 10)+"&page_size=100",
+		nil,
+	)
+
+	pageInfo := GetPageQuery(c)
+	if pageInfo.GetStartIdx() < 0 {
+		t.Fatalf("start index = %d, want non-negative", pageInfo.GetStartIdx())
+	}
+	if pageInfo.GetStartIdx() > math.MaxInt-pageInfo.GetPageSize() {
+		t.Fatalf("start index = %d, want safe integer page arithmetic", pageInfo.GetStartIdx())
 	}
 }

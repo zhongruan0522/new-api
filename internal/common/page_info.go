@@ -1,6 +1,7 @@
 package common
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -82,6 +83,12 @@ func GetPageQuery(c *gin.Context) *PageInfo {
 	}
 	if pageInfo.Page < 1 {
 		pageInfo.Page = 1
+	}
+	// Page/PageSize 的乘法必须保持有符号整数安全；超页请求收敛到最后一个
+	// 可安全计算 offset 的整页，而不是让 (Page-1)*PageSize 溢出为负数。
+	maxPage := math.MaxInt / pageInfo.PageSize
+	if pageInfo.Page > maxPage {
+		pageInfo.Page = maxPage
 	}
 
 	return pageInfo

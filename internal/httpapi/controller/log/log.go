@@ -37,6 +37,7 @@ func GetAllLogs(c *gin.Context) {
 		httpapi.ApiErrorI18n(c, i18n.MsgDatabaseError)
 		return
 	}
+	filterUsageLogFieldsForRole(logs, true)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	httpapi.ApiSuccess(c, pageInfo)
@@ -106,16 +107,18 @@ func GetUserLogs(c *gin.Context) {
 // admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 logstore.formatUserLogs 删除。
 // stream_status/billing_source/request_conversion 等独立 other 字段在 stripHiddenOtherFields 中过滤。
 // 如果配置解析失败，IsUsageLogFieldVisible 会回退到默认值，此处按默认值过滤。
-func filterHiddenUsageLogFields(logs []*logstore.Log) {
-	// 构建需要过滤的字段集合（普通用户不可见的详情弹窗独有字段）
+// filterUsageLogFieldsForRole 按当前受众落实使用日志详情字段可见性。
+// 管理员与普通用户使用同一套显式配置，避免配置只停留在前端展示层。
+func filterUsageLogFieldsForRole(logs []*logstore.Log, isAdmin bool) {
+	// 构建需要过滤的字段集合（当前角色不可见的详情弹窗独有字段）
 	hiddenFields := make(map[string]bool)
 	for _, d := range console.UsageLogFieldsDefaults() {
-		if !console.IsUsageLogFieldVisible(d.Key, false) {
+		if !console.IsUsageLogFieldVisible(d.Key, isAdmin) {
 			hiddenFields[d.Key] = true
 		}
 	}
 
-	totalSwitchOff := !console.IsUsageLogDetailsEnabled(false)
+	totalSwitchOff := !console.IsUsageLogDetailsEnabled(isAdmin)
 
 	for _, log := range logs {
 		if totalSwitchOff {
@@ -259,6 +262,11 @@ func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 	}
 
 	log.Other = common.MapToJsonStr(otherMap)
+}
+
+// filterHiddenUsageLogFields 裁剪普通用户/token 只读接口返回的日志详情字段。
+func filterHiddenUsageLogFields(logs []*logstore.Log) {
+	filterUsageLogFieldsForRole(logs, false)
 }
 
 func GetLogByKey(c *gin.Context) {

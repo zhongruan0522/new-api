@@ -76,6 +76,50 @@ func TestFilterHiddenUsageLogFieldsAppliesPriceSnapshotVisibility(t *testing.T) 
 	}
 }
 
+func TestFilterUsageLogFieldsForRoleAppliesAdminVisibility(t *testing.T) {
+	billingDetails := `{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{},"cache":{}}}`
+	other := `{"billing_price_snapshot":{"source":"legacy"}}`
+	oldFields := console.GetConsoleSetting().UsageLogFields
+	oldAdminDetailsEnabled := console.GetConsoleSetting().UsageLogFieldsAdminEnabled
+	t.Cleanup(func() {
+		console.GetConsoleSetting().UsageLogFields = oldFields
+		console.GetConsoleSetting().UsageLogFieldsAdminEnabled = oldAdminDetailsEnabled
+	})
+
+	console.GetConsoleSetting().UsageLogFields = `{
+		"billing_details":{"admin":true,"user":true},
+		"price_table":{"admin":false,"user":true}
+	}`
+
+	adminLogs := []*logstore.Log{
+		{BillingDetails: &billingDetails, Other: other},
+	}
+	filterUsageLogFieldsForRole(adminLogs, true)
+	if adminLogs[0].BillingDetails == nil || *adminLogs[0].BillingDetails != billingDetails {
+		t.Fatalf("visible admin billing_details = %v, want retained", adminLogs[0].BillingDetails)
+	}
+	if strings.Contains(adminLogs[0].Other, "billing_price_snapshot") {
+		t.Fatalf("hidden admin Other = %s, want snapshot removed", adminLogs[0].Other)
+	}
+
+	userLogs := []*logstore.Log{
+		{BillingDetails: &billingDetails, Other: other},
+	}
+	filterUsageLogFieldsForRole(userLogs, false)
+	if userLogs[0].BillingDetails == nil || userLogs[0].Other != other {
+		t.Fatalf("user projection = %v / %s, want both fields retained", userLogs[0].BillingDetails, userLogs[0].Other)
+	}
+
+	console.GetConsoleSetting().UsageLogFieldsAdminEnabled = false
+	adminDisabled := []*logstore.Log{
+		{BillingDetails: &billingDetails, Other: other},
+	}
+	filterUsageLogFieldsForRole(adminDisabled, true)
+	if adminDisabled[0].BillingDetails != nil || strings.Contains(adminDisabled[0].Other, "billing_price_snapshot") {
+		t.Fatalf("admin-disabled projection = %v / %s, want details removed", adminDisabled[0].BillingDetails, adminDisabled[0].Other)
+	}
+}
+
 func TestBillingDetailsWireProjection(t *testing.T) {
 	billingDetails := `{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{},"cache":{}}}`
 
