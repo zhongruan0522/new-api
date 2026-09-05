@@ -50,8 +50,11 @@ import { DynamicPricingBreakdown } from '@/features/pricing/components/dynamic-p
 import type { UsageLog } from '../../data/schema'
 import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 import {
+  buildTokenBreakdownGroups,
   hasOfficialCacheTokens,
   parseBillingDetails,
+  getPriceSnapshotComponentLabelKey,
+  getPriceSnapshotComponentQuantity,
   resolveDisplayTokens,
   type DisplayTokenValues,
 } from '../../lib/billing-details'
@@ -750,12 +753,15 @@ function BillingBreakdown(props: {
                 {priceSnapshot.components.map((component, idx) => (
                   <tr key={idx} className='border-t'>
                     <td className='px-2 py-1.5 font-medium'>
-                      {t(getSnapshotComponentLabelKey(component.component))}
+                      {t(
+                        getPriceSnapshotComponentLabelKey(component.component)
+                      )}
                     </td>
                     <td className='px-2 py-1.5 font-mono'>
-                      {getSnapshotComponentQuantity(
+                      {getPriceSnapshotComponentQuantity(
                         component.component,
-                        tokens
+                        tokens,
+                        formatExactTokens
                       )}
                     </td>
                     <td className='px-2 py-1.5 font-mono'>
@@ -831,56 +837,6 @@ function shouldHideTieredCacheColumns(
   return !hasAnyCacheTokens(other)
 }
 
-function getSnapshotComponentQuantity(
-  component: string | undefined,
-  tokens: DisplayTokenValues
-): string {
-  const tokenMap: Record<string, number | null | undefined> = {
-    text_input: tokens.textInput,
-    image_input: tokens.imageInput,
-    audio_input: tokens.audioInput,
-    video_input: tokens.videoInput,
-    document_input: tokens.documentInput,
-    text_output: tokens.textOutput,
-    audio_output: tokens.audioOutput,
-    image_output: tokens.imageOutput,
-    reasoning_output: tokens.reasoningOutput,
-    accepted_prediction: tokens.acceptedPrediction,
-    rejected_prediction: tokens.rejectedPrediction,
-    read_cache: tokens.cacheRead,
-    write_cache: tokens.cacheWrite,
-    write_cache_5m: tokens.cacheWrite5m,
-    write_cache_1h: tokens.cacheWrite1h,
-  }
-  if (component == null) return '—'
-  if (component === 'request') return '1'
-  const quantity = tokenMap[component]
-  return quantity == null ? '—' : formatExactTokens(quantity)
-}
-
-function getSnapshotComponentLabelKey(component: string | undefined): string {
-  const labelMap: Record<string, string> = {
-    text_input: 'usageLogs.fields.textInput',
-    image_input: 'usageLogs.fields.imageInput',
-    audio_input: 'pricing.fields.audioInput',
-    video_input: 'usageLogs.fields.videoInput',
-    document_input: 'usageLogs.fields.documentInput',
-    text_output: 'usageLogs.fields.textOutput',
-    audio_output: 'pricing.fields.audioOutput',
-    image_output: 'usageLogs.fields.imageOutput',
-    reasoning_output: 'usageLogs.fields.reasoningOutput',
-    accepted_prediction: 'usageLogs.fields.acceptedPrediction',
-    rejected_prediction: 'usageLogs.fields.rejectedPrediction',
-    read_cache: 'systemSettings.fields.cacheRead',
-    write_cache: 'systemSettings.fields.cacheCreation',
-    write_cache_5m: 'usageLogs.fields.cacheCreation5m',
-    write_cache_1h: 'usageLogs.fields.cacheCreation1h',
-  }
-  return component && labelMap[component]
-    ? labelMap[component]
-    : 'usageLogs.fields.billingItem'
-}
-
 function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
   const { t } = useTranslation()
   const { log, other } = props
@@ -904,13 +860,8 @@ function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
   const completionTokens = log.completion_tokens || 0
   const cacheRead = tokens.cacheRead ?? 0
   const cacheWrite = tokens.cacheWrite ?? 0
-  const cacheWrite5m = tokens.cacheWrite5m ?? 0
-  const cacheWrite1h = tokens.cacheWrite1h ?? 0
-  const cacheWriteUnallocated = tokens.cacheWriteUnallocated ?? 0
-  const ordinaryInput = tokens.input
   const audioInput = tokens.audioInput
   const audioOutput = tokens.audioOutput
-  const textOutput = tokens.textOutput
   const imageOutput = tokens.imageOutput
   const hasTokens =
     tokens.fromBillingDetails === false
@@ -925,158 +876,28 @@ function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
 
   if (!hasTokens) return null
 
-  const standardRows = [
-    {
-      label: t('usageLogs.fields.inputTokens'),
-      value:
-        tokens.fromBillingDetails && ordinaryInput == null
-          ? '-'
-          : formatExactTokens(ordinaryInput ?? 0),
-    },
-    {
-      label: t('usageLogs.fields.outputTokens'),
-      value:
-        tokens.fromBillingDetails && textOutput == null
-          ? '-'
-          : formatExactTokens(
-              tokens.fromBillingDetails ? (textOutput ?? 0) : completionTokens
-            ),
-    },
-  ]
-  if (cacheRead > 0 || cacheWrite > 0) {
-    standardRows.push({
-      label: t('usageLogs.fields.totalRequestInput'),
-      value: formatExactTokens(promptTokens),
-    })
-  }
-
-  const cacheRows: Array<{ label: string; value: string }> = []
-  if (cacheRead > 0) {
-    cacheRows.push({
-      label: t('systemSettings.fields.cacheRead'),
-      value: formatExactTokens(cacheRead),
-    })
-  }
-  if (cacheWrite > 0 && cacheWrite5m === 0 && cacheWrite1h === 0) {
-    cacheRows.push({
-      label: t('systemSettings.fields.cacheCreation'),
-      value: formatExactTokens(cacheWrite),
-    })
-  }
-  if (cacheWrite5m > 0) {
-    cacheRows.push({
-      label: t('usageLogs.fields.cacheCreation5m'),
-      value: formatExactTokens(cacheWrite5m),
-    })
-  }
-  if (cacheWrite1h > 0) {
-    cacheRows.push({
-      label: t('usageLogs.fields.cacheCreation1h'),
-      value: formatExactTokens(cacheWrite1h),
-    })
-  }
-  if (cacheWriteUnallocated > 0) {
-    cacheRows.push({
-      label: t('usageLogs.fields.cacheCreationUnallocated'),
-      value: formatExactTokens(cacheWriteUnallocated),
-    })
-  }
-
-  const multimodalRows: Array<{ label: string; value: string }> = []
-  if ((tokens.textInput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.textInput'),
-      value: formatExactTokens(tokens.textInput ?? 0),
-    })
-  }
-  if ((tokens.imageInput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.imageInput'),
-      value: formatExactTokens(tokens.imageInput ?? 0),
-    })
-  }
-  if ((tokens.videoInput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.videoInput'),
-      value: formatExactTokens(tokens.videoInput ?? 0),
-    })
-  }
-  if ((tokens.documentInput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.documentInput'),
-      value: formatExactTokens(tokens.documentInput ?? 0),
-    })
-  }
-  if (
-    tokens.fromBillingDetails === false &&
-    textOutput != null &&
-    textOutput > 0
-  ) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.textOutput'),
-      value: formatExactTokens(textOutput),
-    })
-  }
-  if ((tokens.audioInput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('pricing.fields.audioInput'),
-      value: formatExactTokens(tokens.audioInput ?? 0),
-    })
-  }
-  if ((tokens.audioOutput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('pricing.fields.audioOutput'),
-      value: formatExactTokens(tokens.audioOutput ?? 0),
-    })
-  }
-  if ((tokens.imageOutput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.imageOutput'),
-      value: formatExactTokens(tokens.imageOutput ?? 0),
-    })
-  }
-  if ((tokens.reasoningOutput ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.reasoningOutput'),
-      value: formatExactTokens(tokens.reasoningOutput ?? 0),
-    })
-  }
-  if ((tokens.acceptedPrediction ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.acceptedPrediction'),
-      value: formatExactTokens(tokens.acceptedPrediction ?? 0),
-    })
-  }
-  if ((tokens.rejectedPrediction ?? 0) > 0) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.rejectedPrediction'),
-      value: formatExactTokens(tokens.rejectedPrediction ?? 0),
-    })
-  }
-
-  const groups = [
-    { title: t('usageLogs.fields.standardTokens'), rows: standardRows },
-    { title: t('usageLogs.fields.cacheTokens'), rows: cacheRows },
-    { title: t('usageLogs.fields.multimodalTokens'), rows: multimodalRows },
-  ]
+  const groups = buildTokenBreakdownGroups(tokens, {
+    aggregatePromptTokens: promptTokens,
+    formatTokens: formatExactTokens,
+  })
 
   return (
     <DetailSection label={t('usageLogs.fields.tokenBreakdown')}>
-      <div className='grid gap-2 md:grid-cols-3'>
+      <div className='grid gap-2 md:grid-cols-2 xl:grid-cols-4'>
         {groups.map((group) => (
           <div
-            key={group.title}
+            key={group.titleKey}
             className='bg-background/50 min-w-0 rounded-md border p-2'
           >
             <div className='text-muted-foreground mb-1.5 text-xs font-medium'>
-              {group.title}
+              {t(group.titleKey)}
             </div>
             {group.rows.length > 0 ? (
               <div className='space-y-1'>
                 {group.rows.map((row, idx) => (
                   <DetailRow
                     key={idx}
-                    label={row.label}
+                    label={t(row.labelKey)}
                     value={row.value}
                     mono
                   />

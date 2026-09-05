@@ -254,7 +254,32 @@ export function resolveDisplayTokens(
   billing: BillingDetails,
   other: LogOtherData | null
 ): DisplayTokenValues {
-  if (billing.status !== 'valid') {
+  if (billing.status === 'invalid') {
+    return {
+      input: null,
+      output: null,
+      cacheRead: null,
+      cacheWrite: null,
+      cacheWriteUnallocated: null,
+      cacheWrite5m: null,
+      cacheWrite1h: null,
+      textInput: null,
+      imageInput: null,
+      audioInput: null,
+      videoInput: null,
+      documentInput: null,
+      textOutput: null,
+      audioOutput: null,
+      imageOutput: null,
+      reasoningOutput: null,
+      acceptedPrediction: null,
+      rejectedPrediction: null,
+      fromBillingDetails: true,
+      hasValues: false,
+    }
+  }
+
+  if (billing.status === 'legacy') {
     const cacheRead = other?.cache_tokens || 0
     const cacheWrite = legacyCacheCreationTotal(other)
     const audioInput =
@@ -328,4 +353,272 @@ function officialCacheWriteUnallocated(
     (getBillingToken(tokens, 'write_cache_5m') ?? 0) +
     (getBillingToken(tokens, 'write_cache_1h') ?? 0)
   return Math.max(total - allocated, 0)
+}
+
+export interface TokenTooltipRow {
+  labelKey: string
+  value: number
+}
+
+export function buildTokenTooltipRows(
+  tokens: DisplayTokenValues
+): TokenTooltipRow[] {
+  const rows: TokenTooltipRow[] = []
+  const officialZeroIsMeaningful = tokens.fromBillingDetails
+
+  function add(labelKey: string, value: number | null) {
+    if (value != null && (officialZeroIsMeaningful || value > 0)) {
+      rows.push({ labelKey, value })
+    }
+  }
+
+  add('usageLogs.fields.inputTokens', tokens.input)
+  add('usageLogs.fields.outputTokens', tokens.output)
+  add('systemSettings.fields.cacheRead', tokens.cacheRead)
+  add('systemSettings.fields.cacheCreation', tokens.cacheWrite)
+  add('usageLogs.fields.cacheCreation5m', tokens.cacheWrite5m)
+  add('usageLogs.fields.cacheCreation1h', tokens.cacheWrite1h)
+  if (
+    tokens.cacheWriteUnallocated != null &&
+    tokens.cacheWriteUnallocated > 0
+  ) {
+    add(
+      'usageLogs.fields.cacheCreationUnallocated',
+      tokens.cacheWriteUnallocated
+    )
+  }
+  add('usageLogs.fields.textInput', tokens.textInput)
+  add('usageLogs.fields.imageInput', tokens.imageInput)
+  add('pricing.fields.audioInput', tokens.audioInput)
+  add('usageLogs.fields.videoInput', tokens.videoInput)
+  add('usageLogs.fields.documentInput', tokens.documentInput)
+  add('usageLogs.fields.textOutput', tokens.textOutput)
+  add('pricing.fields.audioOutput', tokens.audioOutput)
+  add('usageLogs.fields.imageOutput', tokens.imageOutput)
+  add('usageLogs.fields.reasoningOutput', tokens.reasoningOutput)
+  add('usageLogs.fields.acceptedPrediction', tokens.acceptedPrediction)
+  add('usageLogs.fields.rejectedPrediction', tokens.rejectedPrediction)
+
+  return rows
+}
+
+export interface TokenBreakdownRow {
+  labelKey: string
+  value: string
+}
+
+export interface TokenBreakdownGroup {
+  titleKey: string
+  rows: TokenBreakdownRow[]
+}
+
+export function buildTokenBreakdownGroups(
+  tokens: DisplayTokenValues,
+  options: {
+    aggregatePromptTokens: number
+    formatTokens: (value: number) => string
+  }
+): TokenBreakdownGroup[] {
+  const { aggregatePromptTokens, formatTokens } = options
+  const cacheRead = tokens.cacheRead ?? 0
+  const cacheWrite = tokens.cacheWrite ?? 0
+  const cacheWrite5m = tokens.cacheWrite5m ?? 0
+  const cacheWrite1h = tokens.cacheWrite1h ?? 0
+  const cacheWriteUnallocated = tokens.cacheWriteUnallocated ?? 0
+
+  const standardRows: TokenBreakdownRow[] = [
+    {
+      labelKey: 'usageLogs.fields.inputTokens',
+      value:
+        tokens.fromBillingDetails && tokens.input == null
+          ? '-'
+          : formatTokens(tokens.input ?? 0),
+    },
+    {
+      labelKey: 'usageLogs.fields.outputTokens',
+      value:
+        tokens.fromBillingDetails && tokens.textOutput == null
+          ? '-'
+          : formatTokens(
+              tokens.fromBillingDetails
+                ? (tokens.textOutput ?? 0)
+                : (tokens.output ?? 0)
+            ),
+    },
+  ]
+  if (cacheRead > 0 || cacheWrite > 0) {
+    standardRows.push({
+      labelKey: 'usageLogs.fields.totalRequestInput',
+      value: formatTokens(aggregatePromptTokens),
+    })
+  }
+
+  const cacheRows: TokenBreakdownRow[] = []
+  if (cacheRead > 0) {
+    cacheRows.push({
+      labelKey: 'systemSettings.fields.cacheRead',
+      value: formatTokens(cacheRead),
+    })
+  }
+  if (cacheWrite > 0 && cacheWrite5m === 0 && cacheWrite1h === 0) {
+    cacheRows.push({
+      labelKey: 'systemSettings.fields.cacheCreation',
+      value: formatTokens(cacheWrite),
+    })
+  }
+  if (cacheWrite5m > 0) {
+    cacheRows.push({
+      labelKey: 'usageLogs.fields.cacheCreation5m',
+      value: formatTokens(cacheWrite5m),
+    })
+  }
+  if (cacheWrite1h > 0) {
+    cacheRows.push({
+      labelKey: 'usageLogs.fields.cacheCreation1h',
+      value: formatTokens(cacheWrite1h),
+    })
+  }
+  if (cacheWriteUnallocated > 0) {
+    cacheRows.push({
+      labelKey: 'usageLogs.fields.cacheCreationUnallocated',
+      value: formatTokens(cacheWriteUnallocated),
+    })
+  }
+
+  const modalityRows: TokenBreakdownRow[] = []
+  if ((tokens.textInput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.textInput',
+      value: formatTokens(tokens.textInput ?? 0),
+    })
+  }
+  if ((tokens.imageInput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.imageInput',
+      value: formatTokens(tokens.imageInput ?? 0),
+    })
+  }
+  if ((tokens.videoInput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.videoInput',
+      value: formatTokens(tokens.videoInput ?? 0),
+    })
+  }
+  if ((tokens.documentInput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.documentInput',
+      value: formatTokens(tokens.documentInput ?? 0),
+    })
+  }
+  if (
+    tokens.fromBillingDetails === false &&
+    tokens.textOutput != null &&
+    tokens.textOutput > 0
+  ) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.textOutput',
+      value: formatTokens(tokens.textOutput),
+    })
+  }
+  if ((tokens.audioInput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'pricing.fields.audioInput',
+      value: formatTokens(tokens.audioInput ?? 0),
+    })
+  }
+  if ((tokens.audioOutput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'pricing.fields.audioOutput',
+      value: formatTokens(tokens.audioOutput ?? 0),
+    })
+  }
+  if ((tokens.imageOutput ?? 0) > 0) {
+    modalityRows.push({
+      labelKey: 'usageLogs.fields.imageOutput',
+      value: formatTokens(tokens.imageOutput ?? 0),
+    })
+  }
+
+  const outputSplitRows: TokenBreakdownRow[] = []
+  if ((tokens.reasoningOutput ?? 0) > 0) {
+    outputSplitRows.push({
+      labelKey: 'usageLogs.fields.reasoningOutput',
+      value: formatTokens(tokens.reasoningOutput ?? 0),
+    })
+  }
+  if ((tokens.acceptedPrediction ?? 0) > 0) {
+    outputSplitRows.push({
+      labelKey: 'usageLogs.fields.acceptedPrediction',
+      value: formatTokens(tokens.acceptedPrediction ?? 0),
+    })
+  }
+  if ((tokens.rejectedPrediction ?? 0) > 0) {
+    outputSplitRows.push({
+      labelKey: 'usageLogs.fields.rejectedPrediction',
+      value: formatTokens(tokens.rejectedPrediction ?? 0),
+    })
+  }
+
+  return [
+    {
+      titleKey: 'usageLogs.fields.standardTokens',
+      rows: standardRows,
+    },
+    { titleKey: 'usageLogs.fields.cacheTokens', rows: cacheRows },
+    { titleKey: 'usageLogs.fields.multimodalTokens', rows: modalityRows },
+    { titleKey: 'usageLogs.fields.outputSplitTokens', rows: outputSplitRows },
+  ]
+}
+
+export function getPriceSnapshotComponentQuantity(
+  component: string | undefined,
+  tokens: DisplayTokenValues,
+  formatTokens: (value: number) => string
+): string {
+  const tokenMap: Record<string, number | null | undefined> = {
+    text_input: tokens.textInput,
+    image_input: tokens.imageInput,
+    audio_input: tokens.audioInput,
+    video_input: tokens.videoInput,
+    document_input: tokens.documentInput,
+    text_output: tokens.textOutput,
+    audio_output: tokens.audioOutput,
+    image_output: tokens.imageOutput,
+    reasoning_output: tokens.reasoningOutput,
+    accepted_prediction: tokens.acceptedPrediction,
+    rejected_prediction: tokens.rejectedPrediction,
+    read_cache: tokens.cacheRead,
+    write_cache: tokens.cacheWrite,
+    write_cache_5m: tokens.cacheWrite5m,
+    write_cache_1h: tokens.cacheWrite1h,
+  }
+  if (component == null) return '—'
+  if (component === 'request') return '1'
+  const quantity = tokenMap[component]
+  return quantity == null ? '—' : formatTokens(quantity)
+}
+
+export function getPriceSnapshotComponentLabelKey(
+  component: string | undefined
+): string {
+  const labelMap: Record<string, string> = {
+    text_input: 'usageLogs.fields.textInput',
+    image_input: 'usageLogs.fields.imageInput',
+    audio_input: 'pricing.fields.audioInput',
+    video_input: 'usageLogs.fields.videoInput',
+    document_input: 'usageLogs.fields.documentInput',
+    text_output: 'usageLogs.fields.textOutput',
+    audio_output: 'pricing.fields.audioOutput',
+    image_output: 'usageLogs.fields.imageOutput',
+    reasoning_output: 'usageLogs.fields.reasoningOutput',
+    accepted_prediction: 'usageLogs.fields.acceptedPrediction',
+    rejected_prediction: 'usageLogs.fields.rejectedPrediction',
+    read_cache: 'systemSettings.fields.cacheRead',
+    write_cache: 'systemSettings.fields.cacheCreation',
+    write_cache_5m: 'usageLogs.fields.cacheCreation5m',
+    write_cache_1h: 'usageLogs.fields.cacheCreation1h',
+  }
+  return component && labelMap[component]
+    ? labelMap[component]
+    : 'usageLogs.fields.billingItem'
 }

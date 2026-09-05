@@ -84,6 +84,7 @@ export interface KeyQueryLog {
   request_id?: string
   upstream_request_id?: string
   other: string
+  billing_details?: string | null
   model_icon: string
 }
 

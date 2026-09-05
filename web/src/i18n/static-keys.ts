@@ -118,6 +118,7 @@ export const STATIC_I18N_KEYS = [
   'usageLogs.errors.billingDetails.unknown_version',
   'usageLogs.errors.billingDetails.invalid_fields',
   'usageLogs.errors.billingDetails.invalid_cache_splits',
+  'usageLogs.fields.outputSplitTokens',
   'common.tips.usageLogFieldNamePriceTable',
   'common.tips.usageLogFieldDescPriceTable',
   'common.tips.usageLogFieldNameTieredPricing',

@@ -41,6 +41,7 @@ import { LOG_TYPE_ALL_VALUE } from '../../constants'
 import type { UsageLog } from '../../data/schema'
 import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 import {
+  buildTokenTooltipRows,
   parseBillingDetails,
   resolveDisplayTokens,
 } from '../../lib/billing-details'
@@ -704,7 +705,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const ordinaryInputTokens = tokens.input
         const displayedOutputTokens = tokens.output
 
-        return (
+        const cell = (
           <div className='flex flex-col gap-0.5'>
             <span className='font-mono text-xs font-medium tabular-nums'>
               {formatTableCellTokens(ordinaryInputTokens)} /{' '}
@@ -726,6 +727,33 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               </div>
             )}
           </div>
+        )
+        const tooltipRows = buildTokenTooltipRows(tokens)
+        if (tooltipRows.length === 0) {
+          return cell
+        }
+
+        return (
+          <TooltipProvider delay={300}>
+            <Tooltip>
+              <TooltipTrigger render={<div />}>{cell}</TooltipTrigger>
+              <TooltipContent side='top'>
+                <div className='flex flex-col gap-1'>
+                  {tooltipRows.map((row) => (
+                    <div
+                      key={row.labelKey}
+                      className='flex items-center justify-between gap-4'
+                    >
+                      <span>{t(row.labelKey)}</span>
+                      <span className='font-mono tabular-nums'>
+                        {row.value.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )
       },
       meta: { label: 'rankings.fields.tokens', mobileHidden: true },

@@ -20,7 +20,14 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import type { UsageLog } from '../data/schema'
 import type { LogOtherData } from '../types'
-import { parseBillingDetails, resolveDisplayTokens } from './billing-details'
+import {
+  buildTokenBreakdownGroups,
+  buildTokenTooltipRows,
+  getPriceSnapshotComponentLabelKey,
+  getPriceSnapshotComponentQuantity,
+  parseBillingDetails,
+  resolveDisplayTokens,
+} from './billing-details'
 
 function createLog(overrides: Partial<UsageLog> = {}): UsageLog {
   return {
@@ -225,5 +232,179 @@ describe('resolveDisplayTokens', () => {
     assert.equal(tokens.cacheWrite, 20)
     assert.equal(tokens.audioInput, 10)
     assert.equal(tokens.fromBillingDetails, false)
+  })
+
+  test('invalid details never leak legacy aggregate fallback', () => {
+    const tokens = resolveDisplayTokens(
+      createLog({ prompt_tokens: 120, completion_tokens: 30 }),
+      parseBillingDetails('{bad'),
+      null
+    )
+
+    assert.equal(tokens.input, null)
+    assert.equal(tokens.output, null)
+    assert.equal(tokens.cacheRead, null)
+    assert.equal(tokens.cacheWrite, null)
+    assert.equal(tokens.fromBillingDetails, true)
+    assert.equal(tokens.hasValues, false)
+    assert.deepEqual(buildTokenTooltipRows(tokens), [])
+  })
+})
+
+describe('buildTokenTooltipRows', () => {
+  test('reuses resolved official dimensions, explicit zeros and unallocated cache', () => {
+    const billing = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":2},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":11,"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
+    )
+    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const rows = buildTokenTooltipRows(tokens)
+
+    assert.deepEqual(
+      rows.filter((row) => row.labelKey === 'usageLogs.fields.inputTokens'),
+      [{ labelKey: 'usageLogs.fields.inputTokens', value: 0 }]
+    )
+    assert.ok(
+      rows.some(
+        (row) =>
+          row.labelKey === 'usageLogs.fields.imageInput' && row.value === 2
+      )
+    )
+    assert.ok(
+      rows.some(
+        (row) =>
+          row.labelKey === 'usageLogs.fields.reasoningOutput' && row.value === 3
+      )
+    )
+    assert.ok(
+      rows.some(
+        (row) =>
+          row.labelKey === 'usageLogs.fields.cacheCreationUnallocated' &&
+          row.value === 2
+      )
+    )
+  })
+
+  test('legacy tooltips retain positive values and omit unavailable dimensions', () => {
+    const tokens = resolveDisplayTokens(
+      createLog({ prompt_tokens: 120, completion_tokens: 30 }),
+      parseBillingDetails(null),
+      null
+    )
+    const rows = buildTokenTooltipRows(tokens)
+
+    assert.ok(
+      rows.some(
+        (row) =>
+          row.labelKey === 'usageLogs.fields.inputTokens' && row.value === 120
+      )
+    )
+    assert.ok(
+      rows.some(
+        (row) =>
+          row.labelKey === 'usageLogs.fields.outputTokens' && row.value === 30
+      )
+    )
+    assert.ok(
+      !rows.some((row) => row.labelKey === 'usageLogs.fields.reasoningOutput')
+    )
+  })
+})
+
+describe('buildTokenBreakdownGroups', () => {
+  test('separates official modalities, output audit splits and cache tiers', () => {
+    const billing = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":2},"output":{"text_output":7,"reasoning_output":3,"rejected_prediction":1},"cache":{"read_cache":11,"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
+    )
+    const groups = buildTokenBreakdownGroups(
+      resolveDisplayTokens(createLog(), billing, null),
+      { aggregatePromptTokens: 999, formatTokens: String }
+    )
+
+    const modality = groups.find(
+      (group) => group.titleKey === 'usageLogs.fields.multimodalTokens'
+    )
+    const outputSplits = groups.find(
+      (group) => group.titleKey === 'usageLogs.fields.outputSplitTokens'
+    )
+    assert.deepEqual(
+      modality?.rows.map((row) => row.labelKey),
+      ['usageLogs.fields.imageInput']
+    )
+    assert.deepEqual(outputSplits?.rows, [
+      {
+        labelKey: 'usageLogs.fields.reasoningOutput',
+        value: '3',
+      },
+      {
+        labelKey: 'usageLogs.fields.rejectedPrediction',
+        value: '1',
+      },
+    ])
+    assert.ok(
+      groups
+        .find((group) => group.titleKey === 'usageLogs.fields.cacheTokens')
+        ?.rows.some(
+          (row) =>
+            row.labelKey === 'usageLogs.fields.cacheCreationUnallocated' &&
+            row.value === '2'
+        )
+    )
+  })
+
+  test('legacy output uses aggregate tokens while optional Other splits stay explicit', () => {
+    const groups = buildTokenBreakdownGroups(
+      resolveDisplayTokens(
+        createLog({ prompt_tokens: 120, completion_tokens: 30 }),
+        parseBillingDetails(null),
+        null
+      ),
+      { aggregatePromptTokens: 120, formatTokens: String }
+    )
+    const standard = groups.find(
+      (group) => group.titleKey === 'usageLogs.fields.standardTokens'
+    )
+
+    assert.deepEqual(standard?.rows.slice(0, 2), [
+      { labelKey: 'usageLogs.fields.inputTokens', value: '120' },
+      { labelKey: 'usageLogs.fields.outputTokens', value: '30' },
+    ])
+  })
+})
+
+describe('price snapshot helpers', () => {
+  test('map official snapshot components without deriving absent quantities', () => {
+    const billing = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"reasoning_output":3},"cache":{"read_cache":4,"write_cache":5,"write_cache_5m":5}}}'
+    )
+    const tokens = resolveDisplayTokens(createLog(), billing, null)
+
+    assert.equal(
+      getPriceSnapshotComponentQuantity('text_input', tokens, String),
+      '12'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('reasoning_output', tokens, String),
+      '3'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('write_cache', tokens, String),
+      '5'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('request', tokens, String),
+      '1'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('image_output', tokens, String),
+      '—'
+    )
+    assert.equal(
+      getPriceSnapshotComponentLabelKey('read_cache'),
+      'systemSettings.fields.cacheRead'
+    )
+    assert.equal(
+      getPriceSnapshotComponentLabelKey('custom_component'),
+      'usageLogs.fields.billingItem'
+    )
   })
 })

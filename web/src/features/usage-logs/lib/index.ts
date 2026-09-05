@@ -33,7 +33,11 @@ export {
 
 // Billing details utilities (usage-logs specific)
 export {
+  buildTokenBreakdownGroups,
+  buildTokenTooltipRows,
   getBillingToken,
+  getPriceSnapshotComponentLabelKey,
+  getPriceSnapshotComponentQuantity,
   parseBillingDetails,
   resolveDisplayTokens,
 } from './billing-details'

@@ -41,6 +41,41 @@ func TestFilterHiddenUsageLogFieldsAppliesBillingDetailsVisibility(t *testing.T)
 	}
 }
 
+func TestFilterHiddenUsageLogFieldsAppliesPriceSnapshotVisibility(t *testing.T) {
+	other := `{"billing_price_snapshot":{"source":"legacy","service_tier":"default"},"text_input":5}`
+	oldFields := console.GetConsoleSetting().UsageLogFields
+	oldUserDetailsEnabled := console.GetConsoleSetting().UsageLogFieldsUserEnabled
+	t.Cleanup(func() {
+		console.GetConsoleSetting().UsageLogFields = oldFields
+		console.GetConsoleSetting().UsageLogFieldsUserEnabled = oldUserDetailsEnabled
+	})
+
+	console.GetConsoleSetting().UsageLogFields = `{"price_table":{"admin":true,"user":true}}`
+	visible := []*logstore.Log{{Other: other}}
+	filterHiddenUsageLogFields(visible)
+	if !strings.Contains(visible[0].Other, "billing_price_snapshot") {
+		t.Fatalf("visible price snapshot Other = %s, want snapshot retained", visible[0].Other)
+	}
+
+	console.GetConsoleSetting().UsageLogFields = `{"price_table":{"admin":true,"user":false}}`
+	hidden := []*logstore.Log{{Other: other}}
+	filterHiddenUsageLogFields(hidden)
+	if strings.Contains(hidden[0].Other, "billing_price_snapshot") {
+		t.Fatalf("hidden price snapshot Other = %s, want snapshot removed", hidden[0].Other)
+	}
+	if !strings.Contains(hidden[0].Other, `"text_input":5`) {
+		t.Fatalf("hidden price snapshot Other = %s, want unrelated token fields retained", hidden[0].Other)
+	}
+
+	console.GetConsoleSetting().UsageLogFields = ""
+	console.GetConsoleSetting().UsageLogFieldsUserEnabled = false
+	detailsDisabled := []*logstore.Log{{Other: other}}
+	filterHiddenUsageLogFields(detailsDisabled)
+	if strings.Contains(detailsDisabled[0].Other, "billing_price_snapshot") {
+		t.Fatalf("details disabled Other = %s, want price snapshot removed", detailsDisabled[0].Other)
+	}
+}
+
 func TestBillingDetailsWireProjection(t *testing.T) {
 	billingDetails := `{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{},"cache":{}}}`
 
