@@ -95,7 +95,7 @@ func GetUserLogs(c *gin.Context) {
 // filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的详情弹窗独有字段数据。
 //
 // 后端安全裁剪范围（此处处理的字段，均为详情弹窗独有、不在列表表格列中）：
-//   - 顶层独立字段：request_id、upstream_request_id、ip。
+//   - 顶层独立字段：billing_details、request_id、upstream_request_id、ip。
 //   - other JSON 内字段：通过 stripHiddenOtherFields 处理。
 //
 // 不在裁剪范围的字段（同时出现在列表表格列中，始终对普通用户可见，不可配置隐藏）：
@@ -120,6 +120,7 @@ func filterHiddenUsageLogFields(logs []*logstore.Log) {
 	for _, log := range logs {
 		if totalSwitchOff {
 			// 总开关关闭，清空所有详情弹窗独有字段
+			log.BillingDetails = nil
 			log.RequestId = ""
 			log.UpstreamRequestId = ""
 			log.Ip = ""
@@ -133,6 +134,9 @@ func filterHiddenUsageLogFields(logs []*logstore.Log) {
 		// 详情弹窗独有的顶层字段
 		if hiddenFields[console.UsageLogFieldRequestID] {
 			log.RequestId = ""
+		}
+		if hiddenFields[console.UsageLogFieldBillingDetails] {
+			log.BillingDetails = nil
 		}
 		if hiddenFields[console.UsageLogFieldUpstreamRequestID] {
 			log.UpstreamRequestId = ""

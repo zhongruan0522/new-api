@@ -117,6 +117,32 @@ export interface ContextPricingResult {
   prices?: ContextPricingPrices
 }
 
+export interface BillingPriceComponentSnapshotData {
+  component?: string
+  unit?: string
+  unit_price?: string
+  currency?: string
+  exchange_rate?: string
+  group_multiplier?: string
+  plan_source?: string
+  plan_id?: number
+}
+
+export interface BillingPriceSnapshotData {
+  source?: string
+  billing_mode?: string
+  endpoint?: string
+  service_tier?: string
+  context_tokens?: number
+  context_min_tokens?: number
+  context_max_tokens?: number | null
+  group_multiplier_source?: string
+  group_multiplier?: string
+  rounding_mode?: string
+  price_precision?: number
+  components?: BillingPriceComponentSnapshotData[]
+}
+
 export interface LogOtherData {
   admin_info?: {
     is_multi_key?: boolean
@@ -165,6 +191,7 @@ export interface LogOtherData {
   context_pricing_tier_max_tokens?: number
   context_pricing_prices?: ContextPricingPrices
   context_pricing?: ContextPricingResult
+  billing_price_snapshot?: BillingPriceSnapshotData
   is_model_mapped?: boolean
   upstream_model_name?: string
   audio_ratio?: number

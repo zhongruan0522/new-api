@@ -31,6 +31,13 @@ export {
   isViolationFeeLog,
 } from './format'
 
+// Billing details utilities (usage-logs specific)
+export {
+  getBillingToken,
+  parseBillingDetails,
+  resolveDisplayTokens,
+} from './billing-details'
+
 // Filter utilities
 export { buildSearchParams, getLogCategoryLabel } from './filter'
 

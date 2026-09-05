@@ -74,7 +74,7 @@ func UsageLogFieldsDefaults() []UsageLogFieldDefault {
 		{Key: UsageLogFieldParameterOverride, Admin: true, User: true, NameZH: "参数覆盖", Description: "请求中被覆盖的参数列表", Group: "request"},
 		// 计费
 		{Key: UsageLogFieldBillingSource, Admin: true, User: false, NameZH: "计费来源", Description: "本地计费或上游响应计费", Group: "billing"},
-		{Key: UsageLogFieldBillingDetails, Admin: true, User: true, NameZH: "计费详情", Description: "计费模式、倍率与总费用", Group: "billing"},
+		{Key: UsageLogFieldBillingDetails, Admin: true, User: true, NameZH: "计费详情", Description: "计费明细与归一化 Token 用量", Group: "billing"},
 		{Key: UsageLogFieldPriceTable, Admin: true, User: true, NameZH: "当前价格表格", Description: "各计费项的数量、单价、小计", Group: "billing"},
 		{Key: UsageLogFieldTieredPricing, Admin: true, User: true, NameZH: "阶梯定价详情", Description: "动态阶梯计费的匹配详情", Group: "billing"},
 		{Key: UsageLogFieldViolationFee, Admin: true, User: true, NameZH: "违规费用", Description: "违规扣费的代码、标记与金额", Group: "billing"},

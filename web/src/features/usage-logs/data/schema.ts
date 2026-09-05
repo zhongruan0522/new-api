@@ -46,6 +46,7 @@ export const usageLogSchema = z.object({
   x_title: z.string().default(''),
   http_referer: z.string().default(''),
   other: z.union([z.string(), z.record(z.string(), z.unknown())]).default(''),
+  billing_details: z.string().nullish().default(null),
   request_id: z.string().default(''),
   upstream_request_id: z.string().default(''),
   model_icon: z.string().default(''),

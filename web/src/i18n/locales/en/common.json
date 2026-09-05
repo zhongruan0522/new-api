@@ -906,7 +906,7 @@
   "common.tips.usageLogFieldNameBillingSource": "Billing Source",
   "common.tips.usageLogFieldDescBillingSource": "Local billing or upstream response billing",
   "common.tips.usageLogFieldNameBillingDetails": "Billing Details",
-  "common.tips.usageLogFieldDescBillingDetails": "Billing mode, multiplier and total cost",
+  "common.tips.usageLogFieldDescBillingDetails": "Billing details and normalized token usage",
   "common.tips.usageLogFieldNamePriceTable": "Current Price Table",
   "common.tips.usageLogFieldDescPriceTable": "Quantity, unit price and subtotal for each billing item",
   "common.tips.usageLogFieldNameTieredPricing": "Tiered Pricing Details",

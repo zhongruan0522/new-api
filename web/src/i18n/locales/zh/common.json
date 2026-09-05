@@ -906,7 +906,7 @@
   "common.tips.usageLogFieldNameBillingSource": "计费来源",
   "common.tips.usageLogFieldDescBillingSource": "本地计费或上游响应计费",
   "common.tips.usageLogFieldNameBillingDetails": "计费详情",
-  "common.tips.usageLogFieldDescBillingDetails": "计费模式、倍率与总费用",
+  "common.tips.usageLogFieldDescBillingDetails": "计费明细与归一化 Token 用量",
   "common.tips.usageLogFieldNamePriceTable": "当前价格表格",
   "common.tips.usageLogFieldDescPriceTable": "各计费项的数量、单价、小计",
   "common.tips.usageLogFieldNameTieredPricing": "阶梯定价详情",

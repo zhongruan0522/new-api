@@ -49,6 +49,12 @@ import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
 import { DynamicPricingBreakdown } from '@/features/pricing/components/dynamic-pricing-breakdown'
 import type { UsageLog } from '../../data/schema'
 import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
+import {
+  hasOfficialCacheTokens,
+  parseBillingDetails,
+  resolveDisplayTokens,
+  type DisplayTokenValues,
+} from '../../lib/billing-details'
 import type { UsageLogFieldKey } from '../../lib/field-visibility'
 import {
   parseLogOther,
@@ -174,36 +180,6 @@ function getDynamicRatio(other: LogOtherData): number {
   return 1
 }
 
-function getCacheCreationTotal(other: LogOtherData): number {
-  const splitTotal =
-    (other.cache_creation_tokens_5m || 0) +
-    (other.cache_creation_tokens_1h || 0)
-  if (splitTotal > 0) return splitTotal
-  return other.cache_creation_tokens || 0
-}
-
-function getAudioInputTokens(other: LogOtherData): number {
-  if (other.audio_input != null) return other.audio_input
-  if (other.audio_input_token_count != null)
-    return other.audio_input_token_count
-  return 0
-}
-
-function getOrdinaryInputTokens(log: UsageLog, other: LogOtherData): number {
-  if ((other.audio || other.ws) && other.text_input != null) {
-    return Math.max(other.text_input, 0)
-  }
-
-  const cacheRead = other.cache_tokens || 0
-  const cacheCreation = getCacheCreationTotal(other)
-  const audioInput = other.audio_input_seperate_price
-    ? other.audio_input_token_count || 0
-    : 0
-  const input =
-    (log.prompt_tokens || 0) - cacheRead - cacheCreation - audioInput
-  return Math.max(input, 0)
-}
-
 function formatExactTokens(tokens: number): string {
   return Number.isFinite(tokens) ? Math.max(tokens, 0).toLocaleString() : '-'
 }
@@ -309,8 +285,8 @@ function pushMeteredBillingRow(args: {
 }
 
 function buildBillingRows(
-  log: UsageLog,
   other: LogOtherData,
+  tokens: DisplayTokenValues,
   t: (key: string) => string
 ): BillingRow[] {
   const rows: BillingRow[] = []
@@ -349,7 +325,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'usageLogs.fields.inputTokens',
-    tokens: getOrdinaryInputTokens(log, other),
+    tokens: tokens.input ?? 0,
     unitPriceUSD: baseInputUSD,
     groupRatio,
     dynamicRatio,
@@ -359,7 +335,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'usageLogs.fields.outputTokens',
-    tokens: log.completion_tokens || 0,
+    tokens: tokens.output ?? 0,
     unitPriceUSD: baseInputUSD * (completionRatio ?? 0),
     groupRatio,
     dynamicRatio,
@@ -369,7 +345,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'systemSettings.fields.cacheRead',
-    tokens: other.cache_tokens || 0,
+    tokens: tokens.cacheRead ?? 0,
     unitPriceUSD:
       baseInputUSD * (contextPrices?.cache_ratio ?? other.cache_ratio ?? 0),
     groupRatio,
@@ -378,9 +354,12 @@ function buildBillingRows(
     formatPrice,
   })
 
-  const cacheWrite5m = other.cache_creation_tokens_5m || 0
-  const cacheWrite1h = other.cache_creation_tokens_1h || 0
+  const cacheWrite5m = tokens.cacheWrite5m ?? 0
+  const cacheWrite1h = tokens.cacheWrite1h ?? 0
   const hasSplitCacheWrite = cacheWrite5m > 0 || cacheWrite1h > 0
+  const unallocatedCacheWrite = tokens.fromBillingDetails
+    ? (tokens.cacheWriteUnallocated ?? 0)
+    : 0
   if (hasSplitCacheWrite) {
     pushTokenBillingRow({
       rows,
@@ -412,11 +391,28 @@ function buildBillingRows(
       ratioText,
       formatPrice,
     })
-  } else {
+  }
+  if (hasSplitCacheWrite && unallocatedCacheWrite > 0) {
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'usageLogs.fields.cacheCreationUnallocated',
+      tokens: unallocatedCacheWrite,
+      unitPriceUSD:
+        baseInputUSD *
+        (contextPrices?.cache_creation_ratio ??
+          other.cache_creation_ratio ??
+          0),
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+  }
+  if (!hasSplitCacheWrite) {
     pushTokenBillingRow({
       rows,
       labelKey: 'systemSettings.fields.cacheCreation',
-      tokens: other.cache_creation_tokens || 0,
+      tokens: tokens.cacheWrite ?? 0,
       unitPriceUSD:
         baseInputUSD *
         (contextPrices?.cache_creation_ratio ??
@@ -439,7 +435,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'pricing.fields.audioInput',
-    tokens: getAudioInputTokens(other),
+    tokens: tokens.audioInput ?? 0,
     unitPriceUSD: audioInputUnitPrice,
     groupRatio,
     dynamicRatio,
@@ -449,7 +445,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'pricing.fields.audioOutput',
-    tokens: other.audio_output || 0,
+    tokens: tokens.audioOutput ?? 0,
     unitPriceUSD: audioOutputUnitPrice,
     groupRatio,
     dynamicRatio,
@@ -459,7 +455,7 @@ function buildBillingRows(
   pushTokenBillingRow({
     rows,
     labelKey: 'usageLogs.fields.imageOutput',
-    tokens: other.image_output || 0,
+    tokens: tokens.imageOutput ?? 0,
     unitPriceUSD: baseInputUSD * (other.image_ratio ?? 0),
     groupRatio,
     dynamicRatio,
@@ -506,17 +502,36 @@ function buildBillingRows(
   return rows
 }
 
-function BillingBreakdown(props: { log: UsageLog; other: LogOtherData }) {
+function BillingBreakdown(props: {
+  log: UsageLog
+  other: LogOtherData
+  isVisible: (field: UsageLogFieldKey) => boolean
+}) {
   const { t } = useTranslation()
-  const { isVisible } = useUsageLogFieldVisibility()
-  const { log, other } = props
+  const { isVisible, log, other } = props
   const isPerCall = isPerCallBilling(other.model_price)
   const isTieredExpr = other.billing_mode === 'tiered_expr'
   const tieredSummary = getTieredBillingSummary(other)
   const isContextPricing = other.context_pricing_enabled === true
-  const billingRows = buildBillingRows(log, other, t)
+  const billing = parseBillingDetails(log.billing_details)
+  if (billing.status === 'invalid') {
+    return (
+      <DetailSection
+        label={t('usageLogs.titles.billingDetails')}
+        variant='danger'
+      >
+        <DetailRow
+          label={t('usageLogs.fields.billingDetails')}
+          value={t(billing.errorKey)}
+        />
+      </DetailSection>
+    )
+  }
+  const tokens = resolveDisplayTokens(log, billing, other)
+  const billingRows = buildBillingRows(other, tokens, t)
   const summaryRows: Array<{ label: string; value: string }> = []
   const multiplierRows: Array<{ label: string; value: string }> = []
+  const priceSnapshot = other.billing_price_snapshot
   const contextPrices = getContextPricingPrices(other)
   const modelRatio = contextPrices?.model_ratio ?? other.model_ratio
   const completionRatio =
@@ -568,6 +583,32 @@ function BillingBreakdown(props: { log: UsageLog; other: LogOtherData }) {
     summaryRows.push({
       label: t('usageLogs.fields.segmentContextTokens'),
       value: formatExactTokens(other.context_tokens_for_tier || 0),
+    })
+  }
+
+  if (priceSnapshot?.service_tier) {
+    summaryRows.push({
+      label: t('usageLogs.fields.serviceTier'),
+      value: priceSnapshot.service_tier,
+    })
+  }
+  if (
+    priceSnapshot &&
+    (priceSnapshot.context_tokens != null ||
+      priceSnapshot.context_min_tokens != null ||
+      priceSnapshot.context_max_tokens != null)
+  ) {
+    summaryRows.push({
+      label: t('usageLogs.fields.matchedSegment'),
+      value: [
+        formatTokenRange(
+          priceSnapshot.context_min_tokens,
+          priceSnapshot.context_max_tokens ?? undefined
+        ),
+        formatExactTokens(priceSnapshot.context_tokens || 0),
+      ]
+        .filter(Boolean)
+        .join(' · '),
     })
   }
 
@@ -644,6 +685,12 @@ function BillingBreakdown(props: { log: UsageLog; other: LogOtherData }) {
         : t('usageLogs.fields.upstreamResponse'),
     })
   }
+  if (isVisible('billing_source') && priceSnapshot?.source) {
+    summaryRows.push({
+      label: t('usageLogs.fields.priceSource'),
+      value: priceSnapshot.source,
+    })
+  }
 
   summaryRows.push({
     label: t('usageLogs.fields.totalCost'),
@@ -668,6 +715,61 @@ function BillingBreakdown(props: { log: UsageLog; other: LogOtherData }) {
             {multiplierRows.map((row, idx) => (
               <DetailRow key={idx} label={row.label} value={row.value} mono />
             ))}
+          </div>
+        </div>
+      )}
+      {isVisible('price_table') && priceSnapshot?.components && (
+        <div className='border-border/70 mt-2 min-w-0 border-t pt-2'>
+          <div className='mb-1.5 flex flex-wrap items-center justify-between gap-2'>
+            <Label className='block text-xs font-semibold'>
+              {t('usageLogs.fields.priceSnapshot')}
+            </Label>
+            <span className='text-muted-foreground text-[11px]'>
+              {t('usageLogs.fields.snapshotNotRecalculated')}
+            </span>
+          </div>
+          <div className='overflow-x-auto rounded-md border'>
+            <table className='w-full min-w-[560px] text-left text-xs'>
+              <thead className='bg-muted/60 text-muted-foreground'>
+                <tr>
+                  <th className='px-2 py-1.5 font-medium'>
+                    {t('usageLogs.fields.billingItem')}
+                  </th>
+                  <th className='px-2 py-1.5 font-medium'>
+                    {t('keys.fields.quantity')}
+                  </th>
+                  <th className='px-2 py-1.5 font-medium'>
+                    {t('usageLogs.fields.unitPrice')}
+                  </th>
+                  <th className='px-2 py-1.5 font-medium'>
+                    {t('usageLogs.fields.ratios')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {priceSnapshot.components.map((component, idx) => (
+                  <tr key={idx} className='border-t'>
+                    <td className='px-2 py-1.5 font-medium'>
+                      {t(getSnapshotComponentLabelKey(component.component))}
+                    </td>
+                    <td className='px-2 py-1.5 font-mono'>
+                      {getSnapshotComponentQuantity(
+                        component.component,
+                        tokens
+                      )}
+                    </td>
+                    <td className='px-2 py-1.5 font-mono'>
+                      {[component.unit_price, component.currency]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </td>
+                    <td className='px-2 py-1.5 font-mono'>
+                      {component.group_multiplier ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -718,43 +820,130 @@ function BillingBreakdown(props: { log: UsageLog; other: LogOtherData }) {
   )
 }
 
+function shouldHideTieredCacheColumns(
+  log: UsageLog,
+  other: LogOtherData
+): boolean {
+  const billing = parseBillingDetails(log.billing_details)
+  if (billing.status === 'valid') {
+    return !hasOfficialCacheTokens(billing.tokens)
+  }
+  return !hasAnyCacheTokens(other)
+}
+
+function getSnapshotComponentQuantity(
+  component: string | undefined,
+  tokens: DisplayTokenValues
+): string {
+  const tokenMap: Record<string, number | null | undefined> = {
+    text_input: tokens.textInput,
+    image_input: tokens.imageInput,
+    audio_input: tokens.audioInput,
+    video_input: tokens.videoInput,
+    document_input: tokens.documentInput,
+    text_output: tokens.textOutput,
+    audio_output: tokens.audioOutput,
+    image_output: tokens.imageOutput,
+    reasoning_output: tokens.reasoningOutput,
+    accepted_prediction: tokens.acceptedPrediction,
+    rejected_prediction: tokens.rejectedPrediction,
+    read_cache: tokens.cacheRead,
+    write_cache: tokens.cacheWrite,
+    write_cache_5m: tokens.cacheWrite5m,
+    write_cache_1h: tokens.cacheWrite1h,
+  }
+  if (component == null) return '—'
+  if (component === 'request') return '1'
+  const quantity = tokenMap[component]
+  return quantity == null ? '—' : formatExactTokens(quantity)
+}
+
+function getSnapshotComponentLabelKey(component: string | undefined): string {
+  const labelMap: Record<string, string> = {
+    text_input: 'usageLogs.fields.textInput',
+    image_input: 'usageLogs.fields.imageInput',
+    audio_input: 'pricing.fields.audioInput',
+    video_input: 'usageLogs.fields.videoInput',
+    document_input: 'usageLogs.fields.documentInput',
+    text_output: 'usageLogs.fields.textOutput',
+    audio_output: 'pricing.fields.audioOutput',
+    image_output: 'usageLogs.fields.imageOutput',
+    reasoning_output: 'usageLogs.fields.reasoningOutput',
+    accepted_prediction: 'usageLogs.fields.acceptedPrediction',
+    rejected_prediction: 'usageLogs.fields.rejectedPrediction',
+    read_cache: 'systemSettings.fields.cacheRead',
+    write_cache: 'systemSettings.fields.cacheCreation',
+    write_cache_5m: 'usageLogs.fields.cacheCreation5m',
+    write_cache_1h: 'usageLogs.fields.cacheCreation1h',
+  }
+  return component && labelMap[component]
+    ? labelMap[component]
+    : 'usageLogs.fields.billingItem'
+}
+
 function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
   const { t } = useTranslation()
   const { log, other } = props
+  const billing = parseBillingDetails(log.billing_details)
+  if (billing.status === 'invalid') {
+    return (
+      <DetailSection
+        label={t('usageLogs.fields.tokenBreakdown')}
+        variant='danger'
+      >
+        <DetailRow
+          label={t('usageLogs.fields.billingDetails')}
+          value={t(billing.errorKey)}
+        />
+      </DetailSection>
+    )
+  }
+  const tokens = resolveDisplayTokens(log, billing, other)
 
   const promptTokens = log.prompt_tokens || 0
   const completionTokens = log.completion_tokens || 0
-  const cacheRead = other.cache_tokens || 0
-  const cacheWrite = other.cache_creation_tokens || 0
-  const cacheWrite5m = other.cache_creation_tokens_5m || 0
-  const cacheWrite1h = other.cache_creation_tokens_1h || 0
-  const ordinaryInput = getOrdinaryInputTokens(log, other)
-  const audioInput = getAudioInputTokens(other)
-  const audioOutput = other.audio_output || 0
-  const textOutput = other.text_output || 0
-  const imageOutput = other.image_output || 0
+  const cacheRead = tokens.cacheRead ?? 0
+  const cacheWrite = tokens.cacheWrite ?? 0
+  const cacheWrite5m = tokens.cacheWrite5m ?? 0
+  const cacheWrite1h = tokens.cacheWrite1h ?? 0
+  const cacheWriteUnallocated = tokens.cacheWriteUnallocated ?? 0
+  const ordinaryInput = tokens.input
+  const audioInput = tokens.audioInput
+  const audioOutput = tokens.audioOutput
+  const textOutput = tokens.textOutput
+  const imageOutput = tokens.imageOutput
   const hasTokens =
-    promptTokens > 0 ||
-    completionTokens > 0 ||
-    cacheRead > 0 ||
-    getCacheCreationTotal(other) > 0 ||
-    audioInput > 0 ||
-    audioOutput > 0 ||
-    imageOutput > 0
+    tokens.fromBillingDetails === false
+      ? promptTokens > 0 ||
+        completionTokens > 0 ||
+        cacheRead > 0 ||
+        cacheWrite > 0 ||
+        (audioInput ?? 0) > 0 ||
+        (audioOutput ?? 0) > 0 ||
+        (imageOutput ?? 0) > 0
+      : tokens.hasValues
 
   if (!hasTokens) return null
 
   const standardRows = [
     {
       label: t('usageLogs.fields.inputTokens'),
-      value: formatExactTokens(ordinaryInput),
+      value:
+        tokens.fromBillingDetails && ordinaryInput == null
+          ? '-'
+          : formatExactTokens(ordinaryInput ?? 0),
     },
     {
       label: t('usageLogs.fields.outputTokens'),
-      value: formatExactTokens(completionTokens),
+      value:
+        tokens.fromBillingDetails && textOutput == null
+          ? '-'
+          : formatExactTokens(
+              tokens.fromBillingDetails ? (textOutput ?? 0) : completionTokens
+            ),
     },
   ]
-  if (cacheRead > 0 || getCacheCreationTotal(other) > 0) {
+  if (cacheRead > 0 || cacheWrite > 0) {
     standardRows.push({
       label: t('usageLogs.fields.totalRequestInput'),
       value: formatExactTokens(promptTokens),
@@ -786,36 +975,82 @@ function TokenBreakdown(props: { log: UsageLog; other: LogOtherData }) {
       value: formatExactTokens(cacheWrite1h),
     })
   }
-
-  const multimodalRows: Array<{ label: string; value: string }> = []
-  if ((other.audio || other.ws) && other.text_input != null) {
-    multimodalRows.push({
-      label: t('usageLogs.fields.textInput'),
-      value: formatExactTokens(other.text_input),
+  if (cacheWriteUnallocated > 0) {
+    cacheRows.push({
+      label: t('usageLogs.fields.cacheCreationUnallocated'),
+      value: formatExactTokens(cacheWriteUnallocated),
     })
   }
-  if ((other.audio || other.ws) && textOutput > 0) {
+
+  const multimodalRows: Array<{ label: string; value: string }> = []
+  if ((tokens.textInput ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.textInput'),
+      value: formatExactTokens(tokens.textInput ?? 0),
+    })
+  }
+  if ((tokens.imageInput ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.imageInput'),
+      value: formatExactTokens(tokens.imageInput ?? 0),
+    })
+  }
+  if ((tokens.videoInput ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.videoInput'),
+      value: formatExactTokens(tokens.videoInput ?? 0),
+    })
+  }
+  if ((tokens.documentInput ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.documentInput'),
+      value: formatExactTokens(tokens.documentInput ?? 0),
+    })
+  }
+  if (
+    tokens.fromBillingDetails === false &&
+    textOutput != null &&
+    textOutput > 0
+  ) {
     multimodalRows.push({
       label: t('usageLogs.fields.textOutput'),
       value: formatExactTokens(textOutput),
     })
   }
-  if (audioInput > 0) {
+  if ((tokens.audioInput ?? 0) > 0) {
     multimodalRows.push({
       label: t('pricing.fields.audioInput'),
-      value: formatExactTokens(audioInput),
+      value: formatExactTokens(tokens.audioInput ?? 0),
     })
   }
-  if (audioOutput > 0) {
+  if ((tokens.audioOutput ?? 0) > 0) {
     multimodalRows.push({
       label: t('pricing.fields.audioOutput'),
-      value: formatExactTokens(audioOutput),
+      value: formatExactTokens(tokens.audioOutput ?? 0),
     })
   }
-  if (imageOutput > 0) {
+  if ((tokens.imageOutput ?? 0) > 0) {
     multimodalRows.push({
       label: t('usageLogs.fields.imageOutput'),
-      value: formatExactTokens(imageOutput),
+      value: formatExactTokens(tokens.imageOutput ?? 0),
+    })
+  }
+  if ((tokens.reasoningOutput ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.reasoningOutput'),
+      value: formatExactTokens(tokens.reasoningOutput ?? 0),
+    })
+  }
+  if ((tokens.acceptedPrediction ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.acceptedPrediction'),
+      value: formatExactTokens(tokens.acceptedPrediction ?? 0),
+    })
+  }
+  if ((tokens.rejectedPrediction ?? 0) > 0) {
+    multimodalRows.push({
+      label: t('usageLogs.fields.rejectedPrediction'),
+      value: formatExactTokens(tokens.rejectedPrediction ?? 0),
     })
   }
 
@@ -1129,9 +1364,7 @@ function DetailsDialogBody(props: {
               <span
                 className={cn(
                   'font-medium',
-                  timingTextColorClass(
-                    getTimeColor(props.log.use_time / 1000)
-                  )
+                  timingTextColorClass(getTimeColor(props.log.use_time / 1000))
                 )}
               >
                 {formatUseTime(props.log.use_time / 1000)}
@@ -1419,7 +1652,7 @@ function DetailsDialogBody(props: {
 
       {/* Billing breakdown (consume type) */}
       {isVisible('billing_details') && isConsume && other && !isViolation && (
-        <BillingBreakdown log={props.log} other={other} />
+        <BillingBreakdown log={props.log} other={other} isVisible={isVisible} />
       )}
 
       {/* Tiered pricing breakdown (when billing_mode is tiered_expr) */}
@@ -1428,7 +1661,7 @@ function DetailsDialogBody(props: {
           <DynamicPricingBreakdown
             billingExpr={decodeBillingExprB64(other.expr_b64)}
             matchedTierLabel={other.matched_tier}
-            hideCacheColumns={!hasAnyCacheTokens(other)}
+            hideCacheColumns={shouldHideTieredCacheColumns(props.log, other)}
           />
         </div>
       )}
