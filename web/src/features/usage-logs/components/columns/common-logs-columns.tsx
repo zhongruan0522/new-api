@@ -756,7 +756,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </TooltipProvider>
         )
       },
-      meta: { label: 'rankings.fields.tokens', mobileHidden: true },
+      meta: { label: t('rankings.fields.tokens'), mobileHidden: true },
     },
 
     {

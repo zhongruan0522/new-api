@@ -148,13 +148,18 @@ describe('parseBillingDetails', () => {
   })
 
   test('rejects negative or fractional token values', () => {
-    const parsed = parseBillingDetails(
-      '{"schema_version":1,"tokens":{"input":{"text_input":-1},"output":{},"cache":{}}}'
-    )
+    for (const textInput of [-1, 1.5]) {
+      const parsed = parseBillingDetails(
+        JSON.stringify({
+          schema_version: 1,
+          tokens: { input: { text_input: textInput }, output: {}, cache: {} },
+        })
+      )
 
-    assert.equal(parsed.status, 'invalid')
-    assert.ok(parsed.status === 'invalid')
-    assert.equal(parsed.code, 'invalid_fields')
+      assert.equal(parsed.status, 'invalid')
+      assert.ok(parsed.status === 'invalid')
+      assert.equal(parsed.code, 'invalid_fields')
+    }
   })
 
   test('rejects split cache without total or exceeding total', () => {
@@ -405,6 +410,42 @@ describe('price snapshot helpers', () => {
     assert.equal(
       getPriceSnapshotComponentLabelKey('custom_component'),
       'usageLogs.fields.billingItem'
+    )
+  })
+
+  test('map contract snapshot component aliases without recalculation', () => {
+    const billing = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":4,"write_cache":8,"write_cache_5m":5,"write_cache_1h":3}}}'
+    )
+    const tokens = resolveDisplayTokens(createLog(), billing, null)
+
+    assert.equal(
+      getPriceSnapshotComponentQuantity('input', tokens, String),
+      '12'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('output', tokens, String),
+      '7'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('cache_read', tokens, String),
+      '4'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('cache_write_5m', tokens, String),
+      '5'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('cache_write_1h', tokens, String),
+      '3'
+    )
+    assert.equal(
+      getPriceSnapshotComponentLabelKey('cache_read'),
+      'systemSettings.fields.cacheRead'
+    )
+    assert.equal(
+      getPriceSnapshotComponentLabelKey('cache_write_5m'),
+      'usageLogs.fields.cacheCreation5m'
     )
   })
 })

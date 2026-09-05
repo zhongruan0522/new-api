@@ -67,6 +67,7 @@
   "usageLogs.errors.billingDetails.unknown_version": "Billing details schema version is unsupported",
   "usageLogs.errors.billingDetails.invalid_fields": "Billing details contains invalid or unsupported fields",
   "usageLogs.errors.billingDetails.invalid_cache_splits": "Billing details cache tiers do not match the write cache total",
+  "usageLogs.fields.additionalFees": "Additional Fees",
   "usageLogs.fields.instance": "Instance",
   "usageLogs.fields.invitationCode": "Invitation Code",
   "usageLogs.fields.invitationQuota": "Invitation Quota",

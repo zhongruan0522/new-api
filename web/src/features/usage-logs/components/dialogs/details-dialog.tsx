@@ -157,6 +157,21 @@ function getEffectiveGroupRatio(other: LogOtherData): {
   labelKey: string
   value: number
 } | null {
+  const rawSnapshotMultiplier = other.billing_price_snapshot?.group_multiplier
+  const snapshotMultiplier =
+    typeof rawSnapshotMultiplier === 'string' &&
+    rawSnapshotMultiplier.trim() !== ''
+      ? Number(rawSnapshotMultiplier)
+      : Number.NaN
+  if (
+    other.billing_price_snapshot?.group_multiplier != null &&
+    Number.isFinite(snapshotMultiplier)
+  ) {
+    return {
+      labelKey: 'systemSettings.fields.groupMultiplier',
+      value: snapshotMultiplier,
+    }
+  }
   if (isValidRatio(other.user_group_ratio)) {
     return {
       labelKey: 'usageLogs.fields.userExclusiveRatio',
@@ -290,9 +305,11 @@ function pushMeteredBillingRow(args: {
 function buildBillingRows(
   other: LogOtherData,
   tokens: DisplayTokenValues,
-  t: (key: string) => string
+  t: (key: string) => string,
+  options: { includeTokenPricing?: boolean } = {}
 ): BillingRow[] {
   const rows: BillingRow[] = []
+  const { includeTokenPricing = true } = options
   const formatPrice = getPriceFormatter()
   const contextPrices = getContextPricingPrices(other)
   const modelRatio = contextPrices?.model_ratio ?? other.model_ratio
@@ -313,7 +330,7 @@ function buildBillingRows(
   }
   const ratioText = ratioParts.join(' * ')
 
-  if (isPerCallBilling(other.model_price)) {
+  if (includeTokenPricing && isPerCallBilling(other.model_price)) {
     const subtotalUSD = other.model_price! * groupRatio * dynamicRatio
     rows.push({
       labelKey: 'common.fields.modelPrice',
@@ -325,146 +342,150 @@ function buildBillingRows(
     return rows
   }
 
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'usageLogs.fields.inputTokens',
-    tokens: tokens.input ?? 0,
-    unitPriceUSD: baseInputUSD,
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'usageLogs.fields.outputTokens',
-    tokens: tokens.output ?? 0,
-    unitPriceUSD: baseInputUSD * (completionRatio ?? 0),
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'systemSettings.fields.cacheRead',
-    tokens: tokens.cacheRead ?? 0,
-    unitPriceUSD:
-      baseInputUSD * (contextPrices?.cache_ratio ?? other.cache_ratio ?? 0),
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
+  if (includeTokenPricing) {
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'usageLogs.fields.inputTokens',
+      tokens: tokens.input ?? 0,
+      unitPriceUSD: baseInputUSD,
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'usageLogs.fields.outputTokens',
+      tokens: tokens.output ?? 0,
+      unitPriceUSD: baseInputUSD * (completionRatio ?? 0),
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'systemSettings.fields.cacheRead',
+      tokens: tokens.cacheRead ?? 0,
+      unitPriceUSD:
+        baseInputUSD * (contextPrices?.cache_ratio ?? other.cache_ratio ?? 0),
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
 
-  const cacheWrite5m = tokens.cacheWrite5m ?? 0
-  const cacheWrite1h = tokens.cacheWrite1h ?? 0
-  const hasSplitCacheWrite = cacheWrite5m > 0 || cacheWrite1h > 0
-  const unallocatedCacheWrite = tokens.fromBillingDetails
-    ? (tokens.cacheWriteUnallocated ?? 0)
-    : 0
-  if (hasSplitCacheWrite) {
-    pushTokenBillingRow({
-      rows,
-      labelKey: 'usageLogs.fields.cacheCreation5m',
-      tokens: cacheWrite5m,
-      unitPriceUSD:
-        baseInputUSD *
-        (contextPrices?.cache_creation_ratio_5m ??
-          other.cache_creation_ratio_5m ??
-          other.cache_creation_ratio ??
-          0),
-      groupRatio,
-      dynamicRatio,
-      ratioText,
-      formatPrice,
-    })
-    pushTokenBillingRow({
-      rows,
-      labelKey: 'usageLogs.fields.cacheCreation1h',
-      tokens: cacheWrite1h,
-      unitPriceUSD:
-        baseInputUSD *
-        (contextPrices?.cache_creation_ratio_1h ??
-          other.cache_creation_ratio_1h ??
-          other.cache_creation_ratio ??
-          0),
-      groupRatio,
-      dynamicRatio,
-      ratioText,
-      formatPrice,
-    })
-  }
-  if (hasSplitCacheWrite && unallocatedCacheWrite > 0) {
-    pushTokenBillingRow({
-      rows,
-      labelKey: 'usageLogs.fields.cacheCreationUnallocated',
-      tokens: unallocatedCacheWrite,
-      unitPriceUSD:
-        baseInputUSD *
-        (contextPrices?.cache_creation_ratio ??
-          other.cache_creation_ratio ??
-          0),
-      groupRatio,
-      dynamicRatio,
-      ratioText,
-      formatPrice,
-    })
-  }
-  if (!hasSplitCacheWrite) {
-    pushTokenBillingRow({
-      rows,
-      labelKey: 'systemSettings.fields.cacheCreation',
-      tokens: tokens.cacheWrite ?? 0,
-      unitPriceUSD:
-        baseInputUSD *
-        (contextPrices?.cache_creation_ratio ??
-          other.cache_creation_ratio ??
-          0),
-      groupRatio,
-      dynamicRatio,
-      ratioText,
-      formatPrice,
-    })
-  }
+    const cacheWrite5m = tokens.cacheWrite5m ?? 0
+    const cacheWrite1h = tokens.cacheWrite1h ?? 0
+    const hasSplitCacheWrite = cacheWrite5m > 0 || cacheWrite1h > 0
+    const unallocatedCacheWrite = tokens.fromBillingDetails
+      ? (tokens.cacheWriteUnallocated ?? 0)
+      : 0
+    if (hasSplitCacheWrite) {
+      pushTokenBillingRow({
+        rows,
+        labelKey: 'usageLogs.fields.cacheCreation5m',
+        tokens: cacheWrite5m,
+        unitPriceUSD:
+          baseInputUSD *
+          (contextPrices?.cache_creation_ratio_5m ??
+            other.cache_creation_ratio_5m ??
+            other.cache_creation_ratio ??
+            0),
+        groupRatio,
+        dynamicRatio,
+        ratioText,
+        formatPrice,
+      })
+      pushTokenBillingRow({
+        rows,
+        labelKey: 'usageLogs.fields.cacheCreation1h',
+        tokens: cacheWrite1h,
+        unitPriceUSD:
+          baseInputUSD *
+          (contextPrices?.cache_creation_ratio_1h ??
+            other.cache_creation_ratio_1h ??
+            other.cache_creation_ratio ??
+            0),
+        groupRatio,
+        dynamicRatio,
+        ratioText,
+        formatPrice,
+      })
+    }
+    if (hasSplitCacheWrite && unallocatedCacheWrite > 0) {
+      pushTokenBillingRow({
+        rows,
+        labelKey: 'usageLogs.fields.cacheCreationUnallocated',
+        tokens: unallocatedCacheWrite,
+        unitPriceUSD:
+          baseInputUSD *
+          (contextPrices?.cache_creation_ratio ??
+            other.cache_creation_ratio ??
+            0),
+        groupRatio,
+        dynamicRatio,
+        ratioText,
+        formatPrice,
+      })
+    }
+    if (!hasSplitCacheWrite) {
+      pushTokenBillingRow({
+        rows,
+        labelKey: 'systemSettings.fields.cacheCreation',
+        tokens: tokens.cacheWrite ?? 0,
+        unitPriceUSD:
+          baseInputUSD *
+          (contextPrices?.cache_creation_ratio ??
+            other.cache_creation_ratio ??
+            0),
+        groupRatio,
+        dynamicRatio,
+        ratioText,
+        formatPrice,
+      })
+    }
 
-  const audioInputUnitPrice = other.audio_input_seperate_price
-    ? other.audio_input_price
-    : baseInputUSD * (contextPrices?.audio_ratio ?? other.audio_ratio ?? 0)
-  const audioOutputUnitPrice =
-    baseInputUSD *
-    (contextPrices?.audio_ratio ?? other.audio_ratio ?? 0) *
-    (contextPrices?.audio_completion_ratio ?? other.audio_completion_ratio ?? 0)
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'pricing.fields.audioInput',
-    tokens: tokens.audioInput ?? 0,
-    unitPriceUSD: audioInputUnitPrice,
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'pricing.fields.audioOutput',
-    tokens: tokens.audioOutput ?? 0,
-    unitPriceUSD: audioOutputUnitPrice,
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
-  pushTokenBillingRow({
-    rows,
-    labelKey: 'usageLogs.fields.imageOutput',
-    tokens: tokens.imageOutput ?? 0,
-    unitPriceUSD: baseInputUSD * (other.image_ratio ?? 0),
-    groupRatio,
-    dynamicRatio,
-    ratioText,
-    formatPrice,
-  })
+    const audioInputUnitPrice = other.audio_input_seperate_price
+      ? other.audio_input_price
+      : baseInputUSD * (contextPrices?.audio_ratio ?? other.audio_ratio ?? 0)
+    const audioOutputUnitPrice =
+      baseInputUSD *
+      (contextPrices?.audio_ratio ?? other.audio_ratio ?? 0) *
+      (contextPrices?.audio_completion_ratio ??
+        other.audio_completion_ratio ??
+        0)
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'pricing.fields.audioInput',
+      tokens: tokens.audioInput ?? 0,
+      unitPriceUSD: audioInputUnitPrice,
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'pricing.fields.audioOutput',
+      tokens: tokens.audioOutput ?? 0,
+      unitPriceUSD: audioOutputUnitPrice,
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+    pushTokenBillingRow({
+      rows,
+      labelKey: 'usageLogs.fields.imageOutput',
+      tokens: tokens.imageOutput ?? 0,
+      unitPriceUSD: baseInputUSD * (other.image_ratio ?? 0),
+      groupRatio,
+      dynamicRatio,
+      ratioText,
+      formatPrice,
+    })
+  }
   pushMeteredBillingRow({
     rows,
     labelKey: 'common.fields.webSearch',
@@ -531,10 +552,14 @@ function BillingBreakdown(props: {
     )
   }
   const tokens = resolveDisplayTokens(log, billing, other)
-  const billingRows = buildBillingRows(other, tokens, t)
+  const priceSnapshot = other.billing_price_snapshot
+  const hasPriceSnapshotComponents =
+    (priceSnapshot?.components?.length ?? 0) > 0
+  const billingRows = buildBillingRows(other, tokens, t, {
+    includeTokenPricing: !hasPriceSnapshotComponents,
+  })
   const summaryRows: Array<{ label: string; value: string }> = []
   const multiplierRows: Array<{ label: string; value: string }> = []
-  const priceSnapshot = other.billing_price_snapshot
   const contextPrices = getContextPricingPrices(other)
   const modelRatio = contextPrices?.model_ratio ?? other.model_ratio
   const completionRatio =
@@ -573,7 +598,13 @@ function BillingBreakdown(props: {
     })
   }
 
-  if (isContextPricing) {
+  const hasSnapshotContext =
+    priceSnapshot != null &&
+    (priceSnapshot.context_tokens != null ||
+      priceSnapshot.context_min_tokens != null ||
+      priceSnapshot.context_max_tokens != null)
+
+  if (!hasSnapshotContext && isContextPricing) {
     summaryRows.push({
       label: t('usageLogs.fields.matchedSegment'),
       value: [
@@ -595,12 +626,7 @@ function BillingBreakdown(props: {
       value: priceSnapshot.service_tier,
     })
   }
-  if (
-    priceSnapshot &&
-    (priceSnapshot.context_tokens != null ||
-      priceSnapshot.context_min_tokens != null ||
-      priceSnapshot.context_max_tokens != null)
-  ) {
+  if (hasSnapshotContext) {
     summaryRows.push({
       label: t('usageLogs.fields.matchedSegment'),
       value: [
@@ -615,13 +641,21 @@ function BillingBreakdown(props: {
     })
   }
 
-  if (modelRatio != null && Number.isFinite(modelRatio)) {
+  if (
+    !hasPriceSnapshotComponents &&
+    modelRatio != null &&
+    Number.isFinite(modelRatio)
+  ) {
     multiplierRows.push({
       label: t('usageLogs.fields.modelRatio'),
       value: `${compactRatio(modelRatio)}x`,
     })
   }
-  if (completionRatio != null && Number.isFinite(completionRatio)) {
+  if (
+    !hasPriceSnapshotComponents &&
+    completionRatio != null &&
+    Number.isFinite(completionRatio)
+  ) {
     multiplierRows.push({
       label: t('usageLogs.fields.completionRatio'),
       value: `${compactRatio(completionRatio)}x`,
@@ -671,12 +705,14 @@ function BillingBreakdown(props: {
     ],
   ] as const
 
-  for (const [labelKey, value] of ratioEntries) {
-    if (value != null && Number.isFinite(value)) {
-      multiplierRows.push({
-        label: t(labelKey),
-        value: `${compactRatio(value)}x`,
-      })
+  if (!hasPriceSnapshotComponents) {
+    for (const [labelKey, value] of ratioEntries) {
+      if (value != null && Number.isFinite(value)) {
+        multiplierRows.push({
+          label: t(labelKey),
+          value: `${compactRatio(value)}x`,
+        })
+      }
     }
   }
 
@@ -782,7 +818,11 @@ function BillingBreakdown(props: {
       {isVisible('price_table') && billingRows.length > 0 && (
         <div className='border-border/70 mt-2 min-w-0 border-t pt-2'>
           <Label className='mb-1.5 block text-xs font-semibold'>
-            {t('usageLogs.fields.currentPriceTable')}
+            {t(
+              hasPriceSnapshotComponents
+                ? 'usageLogs.fields.additionalFees'
+                : 'usageLogs.fields.currentPriceTable'
+            )}
           </Label>
           <div className='overflow-x-auto rounded-md border'>
             <table className='w-full min-w-[680px] text-left text-xs'>
@@ -1032,7 +1072,9 @@ function DetailsDialogBody(props: {
     !isViolation &&
     other?.billing_mode === 'tiered_expr' &&
     !!other?.expr_b64
-  const hasAudioTokens = other?.ws || other?.audio
+  const billingDetails = parseBillingDetails(props.log.billing_details)
+  const hasAudioTokens =
+    billingDetails.status === 'legacy' && !!(other?.ws || other?.audio)
   const showTiming = isTimingLogType(props.log.type)
   const showClientHeaders = isClientHeadersLogType(props.log.type)
   const showAdminIp =

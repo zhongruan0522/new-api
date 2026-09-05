@@ -67,6 +67,7 @@
   "usageLogs.errors.billingDetails.unknown_version": "计费明细 schema 版本不支持",
   "usageLogs.errors.billingDetails.invalid_fields": "计费明细包含非法或不支持的字段",
   "usageLogs.errors.billingDetails.invalid_cache_splits": "计费明细缓存分档与写入总量不一致",
+  "usageLogs.fields.additionalFees": "附加费用",
   "usageLogs.fields.instance": "实例",
   "usageLogs.fields.invitationCode": "邀请码",
   "usageLogs.fields.invitationQuota": "邀请额度",

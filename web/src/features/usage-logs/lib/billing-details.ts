@@ -576,6 +576,13 @@ export function getPriceSnapshotComponentQuantity(
   formatTokens: (value: number) => string
 ): string {
   const tokenMap: Record<string, number | null | undefined> = {
+    // Price-table snapshot component names (contract schema).
+    input: tokens.input,
+    output: tokens.output,
+    cache_read: tokens.cacheRead,
+    cache_write_5m: tokens.cacheWrite5m,
+    cache_write_1h: tokens.cacheWrite1h,
+    // billing_details field names (schema v1).
     text_input: tokens.textInput,
     image_input: tokens.imageInput,
     audio_input: tokens.audioInput,
@@ -602,6 +609,11 @@ export function getPriceSnapshotComponentLabelKey(
   component: string | undefined
 ): string {
   const labelMap: Record<string, string> = {
+    input: 'usageLogs.fields.inputTokens',
+    output: 'usageLogs.fields.outputTokens',
+    cache_read: 'systemSettings.fields.cacheRead',
+    cache_write_5m: 'usageLogs.fields.cacheCreation5m',
+    cache_write_1h: 'usageLogs.fields.cacheCreation1h',
     text_input: 'usageLogs.fields.textInput',
     image_input: 'usageLogs.fields.imageInput',
     audio_input: 'pricing.fields.audioInput',

@@ -92,8 +92,12 @@
 - **Card 禁用**：表格、筛选区、分页区均不得包成独立圆角卡片；统计信息走
   `afterTable` slot 或 `SectionPageLayout.Actions`。
 - **批量操作**：`enableRowSelection` + `bulkActions` slot。
+- **使用日志 Token/计费明细**：`usage-logs` 与 key query 的表格、tooltip、详情
+  必须通过
+  [billing-details.ts](src/features/usage-logs/lib/billing-details.ts) 的集中
+  解析与展示投影读取 `billing_details`；不得在组件内另写 JSON 解释逻辑或
+  重算价格快照。
 
 纯表单/配置页（如系统设置定价、公开定价目录页）不适用本规范。完整规范、Props
 列表、标准模板和检查清单见
 [docs/开发规范/list-page-table-spec.md](../docs/开发规范/list-page-table-spec.md)。
-
