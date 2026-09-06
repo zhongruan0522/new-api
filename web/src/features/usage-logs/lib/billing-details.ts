@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { z } from 'zod'
 import type { UsageLog } from '../data/schema'
-import type { LogOtherData } from '../types'
+import type { BillingPriceComponentSnapshotData, LogOtherData } from '../types'
 
 export const BILLING_TOKEN_FIELDS = [
   'text_input',
@@ -641,4 +641,15 @@ export function getPriceSnapshotComponentLabelKey(
   return component && labelMap[component]
     ? labelMap[component]
     : 'usageLogs.fields.billingItem'
+}
+
+export function formatPriceSnapshotUnitPrice(
+  component: BillingPriceComponentSnapshotData | undefined
+): string | null {
+  const unitPrice = component?.unit_price?.trim()
+  if (!unitPrice) return null
+
+  const unitSuffix = component?.unit === 'per_request' ? '' : '/M'
+  const currency = component?.currency?.trim()
+  return [`${unitPrice}${unitSuffix}`, currency].filter(Boolean).join(' ')
 }

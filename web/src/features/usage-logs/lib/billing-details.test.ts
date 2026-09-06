@@ -25,6 +25,7 @@ import {
   buildTokenTooltipRows,
   getPriceSnapshotComponentLabelKey,
   getPriceSnapshotComponentQuantity,
+  formatPriceSnapshotUnitPrice,
   parseBillingDetails,
   resolveDisplayTokens,
 } from './billing-details'
@@ -467,5 +468,25 @@ describe('price snapshot helpers', () => {
       getPriceSnapshotComponentQuantity('output', tokens, String, -1),
       '—'
     )
+  })
+
+  test('display snapshot unit prices without currency conversion', () => {
+    assert.equal(
+      formatPriceSnapshotUnitPrice({
+        unit_price: ' 4.2500 ',
+        unit: 'per_1m_tokens',
+        currency: 'EUR',
+      }),
+      '4.2500/M EUR'
+    )
+    assert.equal(
+      formatPriceSnapshotUnitPrice({
+        unit_price: '1.50',
+        unit: 'per_request',
+        currency: 'JPY',
+      }),
+      '1.50 JPY'
+    )
+    assert.equal(formatPriceSnapshotUnitPrice({ unit_price: ' ' }), null)
   })
 })

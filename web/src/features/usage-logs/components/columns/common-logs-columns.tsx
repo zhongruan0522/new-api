@@ -44,6 +44,7 @@ import {
   buildTokenTooltipRows,
   parseBillingDetails,
   resolveDisplayTokens,
+  formatPriceSnapshotUnitPrice,
 } from '../../lib/billing-details'
 import {
   formatModelName,
@@ -148,12 +149,7 @@ function buildDetailSegments(
   const snapshotComponents = priceSnapshot?.components ?? []
   if (snapshotComponents.length > 0) {
     const snapshotPrices = snapshotComponents
-      .map((component) => {
-        const unitPrice = Number(component.unit_price)
-        if (!Number.isFinite(unitPrice)) return null
-        const unitSuffix = component.unit === 'per_request' ? '' : '/M'
-        return `${formatBillingCurrencyFromUSD(unitPrice, priceOpts)}${unitSuffix}`
-      })
+      .map(formatPriceSnapshotUnitPrice)
       .filter(Boolean) as string[]
     if (snapshotPrices.length > 0) {
       segments.push({

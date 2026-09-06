@@ -40,6 +40,7 @@ export {
   getPriceSnapshotComponentQuantity,
   parseBillingDetails,
   resolveDisplayTokens,
+  formatPriceSnapshotUnitPrice,
 } from './billing-details'
 
 // Filter utilities
