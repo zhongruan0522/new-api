@@ -164,8 +164,24 @@ func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 	if log.Other == "" {
 		return
 	}
-	otherMap, err := common.StrToMap(log.Other)
-	if err != nil || otherMap == nil {
+
+	// FormatUserLogs already decoded Other while removing store-level admin-only
+	// fields on user/token paths. Reuse that projection; admin paths and legacy
+	// callers still decode once here.
+	var otherMap map[string]interface{}
+	parsed := log.OtherProjectionParsed
+	if parsed {
+		otherMap = log.OtherProjection
+		log.OtherProjection = nil
+		log.OtherProjectionParsed = false
+	} else {
+		var err error
+		otherMap, err = common.StrToMap(log.Other)
+		if err != nil {
+			return
+		}
+	}
+	if otherMap == nil {
 		return
 	}
 

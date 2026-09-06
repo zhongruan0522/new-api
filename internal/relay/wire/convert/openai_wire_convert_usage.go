@@ -18,17 +18,19 @@ func ApplyResponsesUsageToChatUsage(dst *shared.Usage, usage *shared.Usage) {
 
 	if usage.InputTokensDetails != nil {
 		dst.PromptTokensDetails = *usage.InputTokensDetails
-	} else if usage.PromptTokensDetails != (shared.InputTokenDetails{}) {
+	} else if hasInputTokenDetailValues(usage.PromptTokensDetails) ||
+		usage.PromptTokensDetails.CachedTokensPresent {
 		dst.PromptTokensDetails = usage.PromptTokensDetails
 	}
-	if dst.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens > 0 {
+	if !dst.PromptTokensDetails.CachedTokensPresent &&
+		dst.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens > 0 {
 		dst.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
 	}
 	dst.PromptCacheHitTokens = firstNonZero(usage.PromptCacheHitTokens, dst.PromptTokensDetails.CachedTokens)
 
 	if usage.OutputTokensDetails != nil {
 		dst.CompletionTokenDetails = *usage.OutputTokensDetails
-	} else if usage.CompletionTokenDetails != (shared.OutputTokenDetails{}) {
+	} else if hasOutputTokenDetailValues(usage.CompletionTokenDetails) {
 		dst.CompletionTokenDetails = usage.CompletionTokenDetails
 	}
 }
@@ -46,15 +48,16 @@ func MapChatUsageToResponsesUsage(u shared.Usage) *shared.Usage {
 	}
 
 	inputDetails := u.PromptTokensDetails
-	if inputDetails == (shared.InputTokenDetails{}) && u.InputTokensDetails != nil {
+	if !hasInputTokenDetailValues(inputDetails) && u.InputTokensDetails != nil {
 		inputDetails = *u.InputTokensDetails
 	}
-	if inputDetails.CachedTokens == 0 && u.PromptCacheHitTokens > 0 {
+	if !inputDetails.CachedTokensPresent &&
+		inputDetails.CachedTokens == 0 && u.PromptCacheHitTokens > 0 {
 		inputDetails.CachedTokens = u.PromptCacheHitTokens
 	}
 
 	outputDetails := u.CompletionTokenDetails
-	if outputDetails == (shared.OutputTokenDetails{}) && u.OutputTokensDetails != nil {
+	if !hasOutputTokenDetailValues(outputDetails) && u.OutputTokensDetails != nil {
 		outputDetails = *u.OutputTokensDetails
 	}
 
@@ -83,4 +86,20 @@ func firstNonZero(values ...int) int {
 		}
 	}
 	return 0
+}
+
+func hasInputTokenDetailValues(details shared.InputTokenDetails) bool {
+	return details.CachedTokens != 0 ||
+		details.CachedCreationTokens != 0 ||
+		details.TextTokens != 0 ||
+		details.AudioTokens != 0 ||
+		details.ImageTokens != 0
+}
+
+func hasOutputTokenDetailValues(details shared.OutputTokenDetails) bool {
+	return details.TextTokens != 0 ||
+		details.AudioTokens != 0 ||
+		details.ReasoningTokens != 0 ||
+		details.AcceptedPredictionTokens != 0 ||
+		details.RejectedPredictionTokens != 0
 }

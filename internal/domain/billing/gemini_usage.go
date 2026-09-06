@@ -75,7 +75,7 @@ func GeminiUsageMetadataToOpenAIUsage(metadata shared.GeminiUsageMetadata) share
 // OpenAIUsageToGeminiUsage rewrites OpenAI-compatible usage into Gemini's usage schema.
 func OpenAIUsageToGeminiUsage(usage shared.Usage) shared.GeminiUsageMetadata {
 	promptDetails := usage.PromptTokensDetails
-	if usage.InputTokensDetails != nil && promptDetails == (shared.InputTokenDetails{}) {
+	if usage.InputTokensDetails != nil && !hasInputTokenDetailValues(promptDetails) {
 		promptDetails = *usage.InputTokensDetails
 	}
 
@@ -109,6 +109,14 @@ func OpenAIUsageToGeminiUsage(usage shared.Usage) shared.GeminiUsageMetadata {
 
 	metadata.CandidatesTokensDetails = buildGeminiCandidateTokenDetails(usage.CompletionTokenDetails)
 	return metadata
+}
+
+func hasInputTokenDetailValues(details shared.InputTokenDetails) bool {
+	return details.CachedTokens != 0 ||
+		details.CachedCreationTokens != 0 ||
+		details.TextTokens != 0 ||
+		details.AudioTokens != 0 ||
+		details.ImageTokens != 0
 }
 
 func buildGeminiPromptTokenDetails(details shared.InputTokenDetails) []shared.GeminiPromptTokensDetails {

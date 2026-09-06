@@ -465,7 +465,7 @@ describe('price snapshot helpers', () => {
       '9'
     )
     assert.equal(
-      getPriceSnapshotComponentQuantity('output', tokens, String, -1),
+      getPriceSnapshotComponentQuantity('reasoning_output', tokens, String, -1),
       '—'
     )
   })
@@ -488,5 +488,17 @@ describe('price snapshot helpers', () => {
       '1.50 JPY'
     )
     assert.equal(formatPriceSnapshotUnitPrice({ unit_price: ' ' }), null)
+    assert.equal(
+      formatPriceSnapshotUnitPrice({ unit_price: '4.25', currency: 'USD' }),
+      '4.25 USD'
+    )
+    assert.equal(
+      formatPriceSnapshotUnitPrice({
+        unit_price: '4.25',
+        unit: 'unsupported',
+        currency: 'USD',
+      }),
+      '4.25 USD'
+    )
   })
 })

@@ -603,6 +603,16 @@ export function getPriceSnapshotComponentQuantity(
   if (component == null) return '—'
   if (component === 'request') return '1'
   if (
+    savedQuantity !== undefined &&
+    !(
+      typeof savedQuantity === 'number' &&
+      Number.isSafeInteger(savedQuantity) &&
+      savedQuantity >= 0
+    )
+  ) {
+    return '—'
+  }
+  if (
     typeof savedQuantity === 'number' &&
     Number.isSafeInteger(savedQuantity) &&
     savedQuantity >= 0
@@ -649,7 +659,13 @@ export function formatPriceSnapshotUnitPrice(
   const unitPrice = component?.unit_price?.trim()
   if (!unitPrice) return null
 
-  const unitSuffix = component?.unit === 'per_request' ? '' : '/M'
+  // Unknown/missing units must not be silently reinterpreted as per-million.
+  const unitSuffix =
+    component?.unit === 'per_request'
+      ? ''
+      : component?.unit === 'per_1m_tokens'
+        ? '/M'
+        : ''
   const currency = component?.currency?.trim()
   return [`${unitPrice}${unitSuffix}`, currency].filter(Boolean).join(' ')
 }

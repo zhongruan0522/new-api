@@ -562,25 +562,121 @@ func ClaudeErrorStatusCode(errorType string) int {
 }
 
 type ClaudeUsage struct {
-	InputTokens              int                       `json:"input_tokens"`
-	CacheCreationInputTokens int                       `json:"cache_creation_input_tokens"`
-	CacheReadInputTokens     int                       `json:"cache_read_input_tokens"`
-	OutputTokens             int                       `json:"output_tokens"`
-	OutputTokensDetails      *ClaudeOutputTokenDetails `json:"output_tokens_details,omitempty"`
-	CacheCreation            *ClaudeCacheCreationUsage `json:"cache_creation,omitempty"`
+	InputTokens                     int                       `json:"input_tokens"`
+	InputTokensPresent              bool                      `json:"-"`
+	CacheCreationInputTokens        int                       `json:"cache_creation_input_tokens"`
+	CacheCreationInputTokensPresent bool                      `json:"-"`
+	CacheReadInputTokens            int                       `json:"cache_read_input_tokens"`
+	CacheReadInputTokensPresent     bool                      `json:"-"`
+	OutputTokens                    int                       `json:"output_tokens"`
+	OutputTokensPresent             bool                      `json:"-"`
+	OutputTokensDetails             *ClaudeOutputTokenDetails `json:"output_tokens_details,omitempty"`
+	CacheCreation                   *ClaudeCacheCreationUsage `json:"cache_creation,omitempty"`
 	// claude cache 1h
 	ClaudeCacheCreation5mTokens int                  `json:"claude_cache_creation_5_m_tokens"`
 	ClaudeCacheCreation1hTokens int                  `json:"claude_cache_creation_1_h_tokens"`
 	ServerToolUse               *ClaudeServerToolUse `json:"server_tool_use,omitempty"`
 }
 
+func (u *ClaudeUsage) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*u = ClaudeUsage{}
+		return nil
+	}
+	type claudeUsageAlias ClaudeUsage
+	var alias claudeUsageAlias
+	if err := jsonx.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*u = ClaudeUsage(alias)
+	var presence struct {
+		InputTokens        *int `json:"input_tokens"`
+		CacheCreationInput *int `json:"cache_creation_input_tokens"`
+		CacheReadInput     *int `json:"cache_read_input_tokens"`
+		OutputTokens       *int `json:"output_tokens"`
+	}
+	if err := jsonx.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	u.InputTokensPresent = presence.InputTokens != nil
+	u.CacheCreationInputTokensPresent = presence.CacheCreationInput != nil
+	u.CacheReadInputTokensPresent = presence.CacheReadInput != nil
+	u.OutputTokensPresent = presence.OutputTokens != nil
+	return nil
+}
+
+// HasCacheCreationPresence reports whether any official cache-write field was
+// present. Absent optional split fields must remain distinct from explicit 0.
+func (u *ClaudeUsage) HasCacheCreationPresence() bool {
+	if u == nil {
+		return false
+	}
+	return u.CacheCreationInputTokensPresent ||
+		u.CacheCreation.HasAnyTokenPresence()
+}
+
 type ClaudeOutputTokenDetails struct {
-	ThinkingTokens int `json:"thinking_tokens,omitempty"`
+	ThinkingTokens        int  `json:"thinking_tokens,omitempty"`
+	ThinkingTokensPresent bool `json:"-"`
 }
 
 type ClaudeCacheCreationUsage struct {
 	Ephemeral5mInputTokens int `json:"ephemeral_5m_input_tokens,omitempty"`
 	Ephemeral1hInputTokens int `json:"ephemeral_1h_input_tokens,omitempty"`
+
+	Ephemeral5mInputTokensPresent bool `json:"-"`
+	Ephemeral1hInputTokensPresent bool `json:"-"`
+}
+
+func (d *ClaudeOutputTokenDetails) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*d = ClaudeOutputTokenDetails{}
+		return nil
+	}
+	type outputDetailsAlias ClaudeOutputTokenDetails
+	var alias outputDetailsAlias
+	if err := jsonx.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*d = ClaudeOutputTokenDetails(alias)
+	var presence struct {
+		ThinkingTokens *int `json:"thinking_tokens"`
+	}
+	if err := jsonx.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	d.ThinkingTokensPresent = presence.ThinkingTokens != nil
+	return nil
+}
+
+func (u *ClaudeCacheCreationUsage) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*u = ClaudeCacheCreationUsage{}
+		return nil
+	}
+	type cacheCreationAlias ClaudeCacheCreationUsage
+	var alias cacheCreationAlias
+	if err := jsonx.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*u = ClaudeCacheCreationUsage(alias)
+	var presence struct {
+		Ephemeral5m *int `json:"ephemeral_5m_input_tokens"`
+		Ephemeral1h *int `json:"ephemeral_1h_input_tokens"`
+	}
+	if err := jsonx.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	u.Ephemeral5mInputTokensPresent = presence.Ephemeral5m != nil
+	u.Ephemeral1hInputTokensPresent = presence.Ephemeral1h != nil
+	return nil
+}
+
+func (u *ClaudeCacheCreationUsage) HasAnyTokenPresence() bool {
+	if u == nil {
+		return false
+	}
+	return u.Ephemeral5mInputTokensPresent || u.Ephemeral1hInputTokensPresent
 }
 
 func (u *ClaudeUsage) GetCacheCreation5mTokens() int {
@@ -629,19 +725,26 @@ func ClaudeUsageToOpenAIUsage(claudeUsage *ClaudeUsage) *Usage {
 		InputTokens:          promptTokens,
 		OutputTokens:         completionTokens,
 		PromptTokensDetails: InputTokenDetails{
-			CachedTokens:         claudeUsage.CacheReadInputTokens,
-			CachedCreationTokens: cacheCreationTokens,
+			CachedTokens:                claudeUsage.CacheReadInputTokens,
+			CachedTokensPresent:         claudeUsage.CacheReadInputTokensPresent,
+			CachedCreationTokens:        cacheCreationTokens,
+			CachedCreationTokensPresent: claudeUsage.HasCacheCreationPresence(),
 		},
 		CompletionTokenDetails: OutputTokenDetails{
-			ReasoningTokens: claudeUsage.OutputTokensDetails.GetThinkingTokens(),
+			ReasoningTokens:        claudeUsage.OutputTokensDetails.GetThinkingTokens(),
+			ReasoningTokensPresent: claudeUsage.OutputTokensDetails.IsThinkingTokensPresent(),
 		},
-		ClaudeCacheCreation5mTokens: claudeUsage.GetCacheCreation5mTokens(),
-		ClaudeCacheCreation1hTokens: claudeUsage.GetCacheCreation1hTokens(),
+		ClaudeCacheCreation5mPresent: claudeUsage.CacheCreation.IsEphemeral5mPresent(),
+		ClaudeCacheCreation1hPresent: claudeUsage.CacheCreation.IsEphemeral1hPresent(),
+		ClaudeCacheCreation5mTokens:  claudeUsage.GetCacheCreation5mTokens(),
+		ClaudeCacheCreation1hTokens:  claudeUsage.GetCacheCreation1hTokens(),
 	}
 
 	usage.InputTokensDetails = &InputTokenDetails{
-		CachedTokens:         claudeUsage.CacheReadInputTokens,
-		CachedCreationTokens: cacheCreationTokens,
+		CachedTokens:                claudeUsage.CacheReadInputTokens,
+		CachedTokensPresent:         claudeUsage.CacheReadInputTokensPresent,
+		CachedCreationTokens:        cacheCreationTokens,
+		CachedCreationTokensPresent: claudeUsage.HasCacheCreationPresence(),
 	}
 
 	return usage
@@ -652,6 +755,27 @@ func (d *ClaudeOutputTokenDetails) GetThinkingTokens() int {
 		return 0
 	}
 	return d.ThinkingTokens
+}
+
+func (d *ClaudeOutputTokenDetails) IsThinkingTokensPresent() bool {
+	if d == nil {
+		return false
+	}
+	return d.ThinkingTokensPresent
+}
+
+func (u *ClaudeCacheCreationUsage) IsEphemeral5mPresent() bool {
+	if u == nil {
+		return false
+	}
+	return u.Ephemeral5mInputTokensPresent
+}
+
+func (u *ClaudeCacheCreationUsage) IsEphemeral1hPresent() bool {
+	if u == nil {
+		return false
+	}
+	return u.Ephemeral1hInputTokensPresent
 }
 
 // OpenAIUsageToClaudeUsage converts OpenAI-style total prompt usage back into Claude's split usage fields.

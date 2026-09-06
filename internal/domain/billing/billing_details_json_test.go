@@ -1,6 +1,8 @@
 package billing
 
 import (
+	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,6 +70,16 @@ func TestParseBillingDetailsJSONExplicitErrors(t *testing.T) {
 		{"unknown output field", `{"schema_version":1,"tokens":{"input":{},"output":{"prediction":5},"cache":{}}}`},
 		{"negative token", `{"schema_version":1,"tokens":{"input":{"text_input":-1},"output":{},"cache":{}}}`},
 		{"tiers exceed write total", `{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{"write_cache":10,"write_cache_5m":8,"write_cache_1h":8}}}`},
+		{
+			name: "tier sum overflows",
+			raw: fmt.Sprintf(
+				`{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{"write_cache":%d,"write_cache_5m":%d,"write_cache_1h":%d}}}`,
+				math.MaxInt, math.MaxInt, math.MaxInt,
+			),
+		},
+		{"negative schema version", `{"schema_version":-1,"tokens":{"input":{},"output":{},"cache":{}}}`},
+		{"schema version is fractional", `{"schema_version":1.0,"tokens":{"input":{},"output":{},"cache":{}}}`},
+		{"schema version is null", `{"schema_version":null,"tokens":{"input":{},"output":{},"cache":{}}}`},
 		{"fractional token", `{"schema_version":1,"tokens":{"input":{"text_input":1.5},"output":{},"cache":{}}}`},
 		{"tokens not object", `{"schema_version":1,"tokens":[]}`},
 		{"missing tokens", `{"schema_version":1}`},

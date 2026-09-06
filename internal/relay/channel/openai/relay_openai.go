@@ -381,14 +381,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*shared
 				if realtimeEvent.Type == shared.RealtimeEventTypeResponseDone {
 					realtimeUsage := realtimeEvent.Response.Usage
 					if realtimeUsage != nil {
-						usage.TotalTokens += realtimeUsage.TotalTokens
-						usage.InputTokens += realtimeUsage.InputTokens
-						usage.OutputTokens += realtimeUsage.OutputTokens
-						usage.InputTokenDetails.AudioTokens += realtimeUsage.InputTokenDetails.AudioTokens
-						usage.InputTokenDetails.CachedTokens += realtimeUsage.InputTokenDetails.CachedTokens
-						usage.InputTokenDetails.TextTokens += realtimeUsage.InputTokenDetails.TextTokens
-						usage.OutputTokenDetails.AudioTokens += realtimeUsage.OutputTokenDetails.AudioTokens
-						usage.OutputTokenDetails.TextTokens += realtimeUsage.OutputTokenDetails.TextTokens
+						accumulateRealtimeUsage(usage, realtimeUsage)
 						err := preConsumeUsage(c, info, usage, sumUsage)
 						if err != nil {
 							errChan <- fmt.Errorf("error consume usage: %v", err)
@@ -484,17 +477,34 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *share
 		return fmt.Errorf("invalid usage pointer")
 	}
 
-	totalUsage.TotalTokens += usage.TotalTokens
-	totalUsage.InputTokens += usage.InputTokens
-	totalUsage.OutputTokens += usage.OutputTokens
-	totalUsage.InputTokenDetails.CachedTokens += usage.InputTokenDetails.CachedTokens
-	totalUsage.InputTokenDetails.TextTokens += usage.InputTokenDetails.TextTokens
-	totalUsage.InputTokenDetails.AudioTokens += usage.InputTokenDetails.AudioTokens
-	totalUsage.OutputTokenDetails.TextTokens += usage.OutputTokenDetails.TextTokens
-	totalUsage.OutputTokenDetails.AudioTokens += usage.OutputTokenDetails.AudioTokens
+	accumulateRealtimeUsage(totalUsage, usage)
 	// clear usage
 	err := billing.PreWssConsumeQuota(ctx, info, usage)
 	return err
+}
+
+func accumulateRealtimeUsage(dst *shared.RealtimeUsage, src *shared.RealtimeUsage) {
+	dst.TotalTokens += src.TotalTokens
+	dst.InputTokens += src.InputTokens
+	dst.OutputTokens += src.OutputTokens
+	dst.InputTokenDetails.CachedTokens += src.InputTokenDetails.CachedTokens
+	dst.InputTokenDetails.CachedTokensPresent =
+		dst.InputTokenDetails.CachedTokensPresent || src.InputTokenDetails.CachedTokensPresent
+	dst.InputTokenDetails.TextTokens += src.InputTokenDetails.TextTokens
+	dst.InputTokenDetails.TextTokensPresent =
+		dst.InputTokenDetails.TextTokensPresent || src.InputTokenDetails.TextTokensPresent
+	dst.InputTokenDetails.AudioTokens += src.InputTokenDetails.AudioTokens
+	dst.InputTokenDetails.AudioTokensPresent =
+		dst.InputTokenDetails.AudioTokensPresent || src.InputTokenDetails.AudioTokensPresent
+	dst.OutputTokenDetails.TextTokens += src.OutputTokenDetails.TextTokens
+	dst.OutputTokenDetails.TextTokensPresent =
+		dst.OutputTokenDetails.TextTokensPresent || src.OutputTokenDetails.TextTokensPresent
+	dst.OutputTokenDetails.AudioTokens += src.OutputTokenDetails.AudioTokens
+	dst.OutputTokenDetails.AudioTokensPresent =
+		dst.OutputTokenDetails.AudioTokensPresent || src.OutputTokenDetails.AudioTokensPresent
+	dst.OutputTokenDetails.ReasoningTokens += src.OutputTokenDetails.ReasoningTokens
+	dst.OutputTokenDetails.ReasoningTokensPresent =
+		dst.OutputTokenDetails.ReasoningTokensPresent || src.OutputTokenDetails.ReasoningTokensPresent
 }
 
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*shared.Usage, *shared.NookMuxError) {
@@ -559,12 +569,13 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *shared.Usage, 
 
 	switch info.ChannelType {
 	case channelconstant.ChannelTypeDeepSeek:
-		if usage.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens != 0 {
+		if !usage.PromptTokensDetails.CachedTokensPresent &&
+			usage.PromptTokensDetails.CachedTokens == 0 && usage.PromptCacheHitTokens != 0 {
 			usage.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
 		}
 	case channelconstant.ChannelTypeZhipu_v4:
 		// 智普的cached_tokens在标准位置: usage.prompt_tokens_details.cached_tokens
-		if usage.PromptTokensDetails.CachedTokens == 0 {
+		if !usage.PromptTokensDetails.CachedTokensPresent && usage.PromptTokensDetails.CachedTokens == 0 {
 			if usage.InputTokensDetails != nil && usage.InputTokensDetails.CachedTokens > 0 {
 				usage.PromptTokensDetails.CachedTokens = usage.InputTokensDetails.CachedTokens
 			} else if cachedTokens, ok := extractCachedTokensFromBody(responseBody); ok {
@@ -575,7 +586,7 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *shared.Usage, 
 		}
 	case channelconstant.ChannelTypeMoonshot:
 		// Moonshot的cached_tokens在非标准位置: choices[].usage.cached_tokens
-		if usage.PromptTokensDetails.CachedTokens == 0 {
+		if !usage.PromptTokensDetails.CachedTokensPresent && usage.PromptTokensDetails.CachedTokens == 0 {
 			if usage.InputTokensDetails != nil && usage.InputTokensDetails.CachedTokens > 0 {
 				usage.PromptTokensDetails.CachedTokens = usage.InputTokensDetails.CachedTokens
 			} else if cachedTokens, ok := extractMoonshotCachedTokensFromBody(responseBody); ok {
@@ -587,7 +598,7 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *shared.Usage, 
 			}
 		}
 	case channelconstant.ChannelTypeOpenAI:
-		if usage.PromptTokensDetails.CachedTokens == 0 {
+		if !usage.PromptTokensDetails.CachedTokensPresent && usage.PromptTokensDetails.CachedTokens == 0 {
 			if cachedTokens, ok := extractLlamaCachedTokensFromBody(responseBody); ok {
 				usage.PromptTokensDetails.CachedTokens = cachedTokens
 			}

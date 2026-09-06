@@ -764,20 +764,34 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 	}
 	if claudeUsage.OutputTokensDetails != nil {
 		current.CompletionTokenDetails.ReasoningTokens = claudeUsage.OutputTokensDetails.ThinkingTokens
+		current.CompletionTokenDetails.ReasoningTokensPresent =
+			current.CompletionTokenDetails.ReasoningTokensPresent || claudeUsage.OutputTokensDetails.ThinkingTokensPresent
 		if current.OutputTokensDetails == nil {
 			current.OutputTokensDetails = &shared.OutputTokenDetails{}
 		}
 		current.OutputTokensDetails.ReasoningTokens = claudeUsage.OutputTokensDetails.ThinkingTokens
+		current.OutputTokensDetails.ReasoningTokensPresent =
+			current.OutputTokensDetails.ReasoningTokensPresent || claudeUsage.OutputTokensDetails.ThinkingTokensPresent
 	}
 
 	cacheReadTokens := current.PromptTokensDetails.CachedTokens
+	cacheReadPresent := current.PromptTokensDetails.CachedTokensPresent
 	if claudeUsage.CacheReadInputTokens != 0 {
 		cacheReadTokens = claudeUsage.CacheReadInputTokens
 	}
+	if claudeUsage.CacheReadInputTokensPresent {
+		cacheReadTokens = claudeUsage.CacheReadInputTokens
+		cacheReadPresent = true
+	}
 
 	cacheCreationTokens := current.PromptTokensDetails.CachedCreationTokens
+	cacheCreationPresent := current.PromptTokensDetails.CachedCreationTokensPresent
 	if incomingCacheCreation := claudeUsage.GetCacheCreationTotalTokens(); incomingCacheCreation != 0 {
 		cacheCreationTokens = incomingCacheCreation
+	}
+	if claudeUsage.HasCacheCreationPresence() {
+		cacheCreationTokens = claudeUsage.GetCacheCreationTotalTokens()
+		cacheCreationPresent = true
 	}
 
 	cacheCreation5m := current.ClaudeCacheCreation5mTokens
@@ -798,12 +812,16 @@ func mergeClaudeUsageIntoOpenAIUsage(current *shared.Usage, claudeUsage *shared.
 	current.InputTokens = current.PromptTokens
 	current.PromptCacheHitTokens = cacheReadTokens
 	current.PromptTokensDetails.CachedTokens = cacheReadTokens
+	current.PromptTokensDetails.CachedTokensPresent = cacheReadPresent
 	current.PromptTokensDetails.CachedCreationTokens = cacheCreationTokens
+	current.PromptTokensDetails.CachedCreationTokensPresent = cacheCreationPresent
 	if current.InputTokensDetails == nil {
 		current.InputTokensDetails = &shared.InputTokenDetails{}
 	}
 	current.InputTokensDetails.CachedTokens = cacheReadTokens
+	current.InputTokensDetails.CachedTokensPresent = cacheReadPresent
 	current.InputTokensDetails.CachedCreationTokens = cacheCreationTokens
+	current.InputTokensDetails.CachedCreationTokensPresent = cacheCreationPresent
 	current.ClaudeCacheCreation5mTokens = cacheCreation5m
 	current.ClaudeCacheCreation1hTokens = cacheCreation1h
 

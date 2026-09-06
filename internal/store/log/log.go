@@ -53,6 +53,12 @@ type Log struct {
 	// NULL，不以 "{}"、"null" 或空串占位。
 	BillingDetails *string `json:"billing_details,omitempty" gorm:"column:billing_details;type:text"`
 	ModelIcon      string  `json:"model_icon,omitempty" gorm:"-"`
+
+	// OtherProjection 是 FormatUserLogs 清理 admin-only 字段后留下的临时投影，
+	// 供 HTTP 边界继续做角色裁剪时复用，避免同一页日志重复解析 Other JSON。
+	// 它不是持久化字段，也不会进入 API wire。
+	OtherProjection       map[string]interface{} `json:"-" gorm:"-"`
+	OtherProjectionParsed bool                   `json:"-" gorm:"-"`
 }
 
 // don't use iota, avoid change log type value
@@ -69,8 +75,9 @@ const (
 func FormatUserLogs(logs []*Log, startIdx int) {
 	for i := range logs {
 		logs[i].ChannelName = ""
-		var otherMap map[string]interface{}
-		otherMap, _ = common.StrToMap(logs[i].Other)
+		otherMap, _ := common.StrToMap(logs[i].Other)
+		logs[i].OtherProjection = otherMap
+		logs[i].OtherProjectionParsed = true
 		if otherMap != nil {
 			// Remove admin-only debug fields.
 			delete(otherMap, "admin_info")

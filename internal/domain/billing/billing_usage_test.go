@@ -8,6 +8,8 @@ import (
 	relayconstant "github.com/NookMux/NookMux/internal/relay/constant"
 
 	"github.com/NookMux/NookMux/internal/domain/shared"
+
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 // buildUsageForTest 组装 shared.Usage，避免各用例重复整段字面量。
@@ -229,7 +231,7 @@ func TestBuildBillingUsageFourSourcesSameSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("serialize gemini: %v", err)
 	}
-	wantGemini := `{"schema_version":1,"tokens":{"input":{"text_input":160,"image_input":15,"audio_input":25},"output":{"text_output":60,"audio_output":30,"reasoning_output":10},"cache":{"read_cache":30}}}`
+	wantGemini := `{"schema_version":1,"tokens":{"input":{"text_input":130,"image_input":15,"audio_input":25},"output":{"text_output":60,"audio_output":30,"reasoning_output":10},"cache":{"read_cache":30}}}`
 	if geminiJSON != wantGemini {
 		t.Fatalf("gemini JSON = %s, want %s", geminiJSON, wantGemini)
 	}
@@ -384,6 +386,91 @@ func TestBuildBillingUsageRealtime(t *testing.T) {
 	}
 }
 
+func TestBuildBillingUsageRealtimeKeepsExplicitZeroCache(t *testing.T) {
+	usage := &shared.RealtimeUsage{
+		InputTokens:  10,
+		OutputTokens: 5,
+		InputTokenDetails: shared.InputTokenDetails{
+			CachedTokens:        0,
+			CachedTokensPresent: true,
+		},
+	}
+	bu, _, err := BuildRealtimeBillingUsage(relayconstant.UsageSourceOpenAIResponses, usage)
+	if err != nil {
+		t.Fatalf("BuildRealtimeBillingUsage() error = %v", err)
+	}
+	if !bu.CacheReadPresent {
+		t.Fatalf("CacheReadPresent = false, want explicit upstream zero retained")
+	}
+	json, err := SerializeBillingUsage(bu)
+	if err != nil {
+		t.Fatalf("serialize: %v", err)
+	}
+	want := `{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{"read_cache":0}}}`
+	if json != want {
+		t.Fatalf("JSON = %s, want %s", json, want)
+	}
+}
+
+func TestClaudeParsedExplicitZerosSurviveNormalization(t *testing.T) {
+	raw := []byte(`{
+		"input_tokens": 0,
+		"cache_creation_input_tokens": 0,
+		"cache_read_input_tokens": 0,
+		"output_tokens": 0,
+		"output_tokens_details": {"thinking_tokens": 0},
+		"cache_creation": {
+			"ephemeral_5m_input_tokens": 0,
+			"ephemeral_1h_input_tokens": 0
+		}
+	}`)
+	var claudeUsage shared.ClaudeUsage
+	if err := jsonx.Unmarshal(raw, &claudeUsage); err != nil {
+		t.Fatalf("unmarshal Claude usage: %v", err)
+	}
+	usage := shared.ClaudeUsageToOpenAIUsage(&claudeUsage)
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceClaude, usage, nil)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage: %v", err)
+	}
+	got, err := SerializeBillingUsage(bu)
+	if err != nil {
+		t.Fatalf("serialize: %v", err)
+	}
+	want := `{"schema_version":1,"tokens":{"input":{},"output":{"reasoning_output":0},"cache":{"read_cache":0,"write_cache":0,"write_cache_5m":0,"write_cache_1h":0}}}`
+	if got != want {
+		t.Fatalf("JSON = %s, want %s", got, want)
+	}
+}
+
+func TestGeminiParsedExplicitZeroCacheSurvivesNormalization(t *testing.T) {
+	raw := []byte(`{
+		"promptTokenCount": 10,
+		"candidatesTokenCount": 5,
+		"cachedContentTokenCount": 0,
+		"promptTokensDetails": [{"modality": "TEXT", "tokenCount": 10}]
+	}`)
+	var metadata shared.GeminiUsageMetadata
+	if err := jsonx.Unmarshal(raw, &metadata); err != nil {
+		t.Fatalf("unmarshal Gemini metadata: %v", err)
+	}
+	if !metadata.CachedContentTokenCountPresent {
+		t.Fatalf("explicit cachedContentTokenCount=0 lost during parsing")
+	}
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceGemini, nil, &metadata)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage: %v", err)
+	}
+	got, err := SerializeBillingUsage(bu)
+	if err != nil {
+		t.Fatalf("serialize: %v", err)
+	}
+	want := `{"schema_version":1,"tokens":{"input":{"text_input":10},"output":{},"cache":{"read_cache":0}}}`
+	if got != want {
+		t.Fatalf("JSON = %s, want %s", got, want)
+	}
+}
+
 // TestBuildBillingUsageExplicitFailures 验证负数、分档大于总量、未知来源
 // 显式失败。
 func TestBuildBillingUsageExplicitFailures(t *testing.T) {
@@ -485,5 +572,42 @@ func TestBuildBillingUsageAcceptedRejectedPrediction(t *testing.T) {
 	want := `{"schema_version":1,"tokens":{"input":{},"output":{"accepted_prediction":12,"rejected_prediction":3},"cache":{}}}`
 	if json != want {
 		t.Fatalf("JSON = %s, want %s", json, want)
+	}
+}
+
+func TestBuildBillingUsageKeepsParsedExplicitZeros(t *testing.T) {
+	raw := []byte(`{
+		"prompt_tokens": 0,
+		"completion_tokens": 0,
+		"prompt_tokens_details": {
+			"cached_tokens": 0,
+			"cache_write_tokens": 0,
+			"text_tokens": 0,
+			"audio_tokens": 0,
+			"image_tokens": 0
+		},
+		"completion_tokens_details": {
+			"text_tokens": 0,
+			"audio_tokens": 0,
+			"reasoning_tokens": 0,
+			"accepted_prediction_tokens": 0,
+			"rejected_prediction_tokens": 0
+		}
+	}`)
+	var usage shared.Usage
+	if err := jsonx.Unmarshal(raw, &usage); err != nil {
+		t.Fatalf("unmarshal usage: %v", err)
+	}
+	bu, _, err := BuildBillingUsage(relayconstant.UsageSourceOpenAIChat, &usage, nil)
+	if err != nil {
+		t.Fatalf("BuildBillingUsage: %v", err)
+	}
+	got, err := SerializeBillingUsage(bu)
+	if err != nil {
+		t.Fatalf("serialize: %v", err)
+	}
+	want := `{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":0,"audio_input":0},"output":{"text_output":0,"audio_output":0,"reasoning_output":0,"accepted_prediction":0,"rejected_prediction":0},"cache":{"read_cache":0,"write_cache":0}}}`
+	if got != want {
+		t.Fatalf("JSON = %s, want %s", got, want)
 	}
 }

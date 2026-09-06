@@ -60,3 +60,26 @@ func TestMapChatUsageToResponsesUsage_ExcludesBillingOnlyAuditFields(t *testing.
 		}
 	}
 }
+
+func TestApplyResponsesUsageToChatUsageHonorsExplicitZeroOverFallback(t *testing.T) {
+	dst := &shared.Usage{}
+	usage := &shared.Usage{
+		InputTokens:          10,
+		OutputTokens:         5,
+		PromptCacheHitTokens: 40,
+	}
+	usage.PromptTokensDetails.CachedTokens = 0
+	usage.PromptTokensDetails.CachedTokensPresent = true
+
+	ApplyResponsesUsageToChatUsage(dst, usage)
+	if dst.PromptTokensDetails.CachedTokens != 0 || !dst.PromptTokensDetails.CachedTokensPresent {
+		t.Fatalf("prompt details = %+v, want explicit zero preserved", dst.PromptTokensDetails)
+	}
+
+	dst = &shared.Usage{}
+	usage.InputTokensDetails = &shared.InputTokenDetails{CachedTokens: 12}
+	ApplyResponsesUsageToChatUsage(dst, usage)
+	if dst.PromptTokensDetails.CachedTokens != 12 {
+		t.Fatalf("prompt details = %+v, want Responses input detail fallback", dst.PromptTokensDetails)
+	}
+}

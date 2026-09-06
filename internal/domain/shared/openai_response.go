@@ -264,8 +264,10 @@ type Usage struct {
 	OutputTokensDetails    *OutputTokenDetails `json:"output_tokens_details,omitempty"`
 
 	// claude cache 1h
-	ClaudeCacheCreation5mTokens int `json:"claude_cache_creation_5_m_tokens"`
-	ClaudeCacheCreation1hTokens int `json:"claude_cache_creation_1_h_tokens"`
+	ClaudeCacheCreation5mTokens  int  `json:"claude_cache_creation_5_m_tokens"`
+	ClaudeCacheCreation1hTokens  int  `json:"claude_cache_creation_1_h_tokens"`
+	ClaudeCacheCreation5mPresent bool `json:"-"`
+	ClaudeCacheCreation1hPresent bool `json:"-"`
 
 	// OpenRouter Params
 	Cost any `json:"cost,omitempty"`
@@ -287,6 +289,14 @@ type InputTokenDetails struct {
 	TextTokens           int `json:"text_tokens"`
 	AudioTokens          int `json:"audio_tokens"`
 	ImageTokens          int `json:"image_tokens"`
+
+	// presence markers preserve an upstream explicit 0 for billing while the
+	// numeric wire representation stays unchanged. They are not client fields.
+	CachedTokensPresent         bool `json:"-"`
+	CachedCreationTokensPresent bool `json:"-"`
+	TextTokensPresent           bool `json:"-"`
+	AudioTokensPresent          bool `json:"-"`
+	ImageTokensPresent          bool `json:"-"`
 }
 
 // UnmarshalJSON 补充读取 OpenAI Chat/Responses 官方的
@@ -304,6 +314,21 @@ func (d *InputTokenDetails) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*d = InputTokenDetails(alias)
+	var presence struct {
+		CachedTokens   *int `json:"cached_tokens"`
+		CachedCreation *int `json:"cache_write_tokens"`
+		TextTokens     *int `json:"text_tokens"`
+		AudioTokens    *int `json:"audio_tokens"`
+		ImageTokens    *int `json:"image_tokens"`
+	}
+	if err := jsonx.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	d.TextTokensPresent = presence.TextTokens != nil
+	d.AudioTokensPresent = presence.AudioTokens != nil
+	d.ImageTokensPresent = presence.ImageTokens != nil
+	d.CachedTokensPresent = presence.CachedTokens != nil
+	d.CachedCreationTokensPresent = presence.CachedCreation != nil
 	var cacheWrite struct {
 		CacheWriteTokens *int `json:"cache_write_tokens"`
 	}
@@ -326,6 +351,44 @@ type OutputTokenDetails struct {
 	// 审计维度；omitempty 保证旧响应序列化不受影响。
 	AcceptedPredictionTokens int `json:"accepted_prediction_tokens,omitempty"`
 	RejectedPredictionTokens int `json:"rejected_prediction_tokens,omitempty"`
+
+	// Presence markers mirror InputTokenDetails and preserve explicit zeros.
+	TextTokensPresent         bool `json:"-"`
+	AudioTokensPresent        bool `json:"-"`
+	ReasoningTokensPresent    bool `json:"-"`
+	AcceptedPredictionPresent bool `json:"-"`
+	RejectedPredictionPresent bool `json:"-"`
+}
+
+// UnmarshalJSON records whether optional output-split fields were explicitly
+// present. Zero is a real official value and must survive billing normalization.
+func (d *OutputTokenDetails) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*d = OutputTokenDetails{}
+		return nil
+	}
+	type outputTokenDetailsAlias OutputTokenDetails
+	var alias outputTokenDetailsAlias
+	if err := jsonx.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*d = OutputTokenDetails(alias)
+	var presence struct {
+		TextTokens         *int `json:"text_tokens"`
+		AudioTokens        *int `json:"audio_tokens"`
+		ReasoningTokens    *int `json:"reasoning_tokens"`
+		AcceptedPrediction *int `json:"accepted_prediction_tokens"`
+		RejectedPrediction *int `json:"rejected_prediction_tokens"`
+	}
+	if err := jsonx.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	d.TextTokensPresent = presence.TextTokens != nil
+	d.AudioTokensPresent = presence.AudioTokens != nil
+	d.ReasoningTokensPresent = presence.ReasoningTokens != nil
+	d.AcceptedPredictionPresent = presence.AcceptedPrediction != nil
+	d.RejectedPredictionPresent = presence.RejectedPrediction != nil
+	return nil
 }
 
 type OpenAIResponsesResponse struct {

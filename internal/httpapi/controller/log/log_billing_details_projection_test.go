@@ -76,6 +76,38 @@ func TestFilterHiddenUsageLogFieldsAppliesPriceSnapshotVisibility(t *testing.T) 
 	}
 }
 
+func TestFilterHiddenUsageLogFieldsReusesStoreOtherProjection(t *testing.T) {
+	other := `{"billing_price_snapshot":{"source":"legacy"},"admin_info":{"secret":"value"},"keep":"visible"}`
+	oldFields := console.GetConsoleSetting().UsageLogFields
+	oldUserDetailsEnabled := console.GetConsoleSetting().UsageLogFieldsUserEnabled
+	t.Cleanup(func() {
+		console.GetConsoleSetting().UsageLogFields = oldFields
+		console.GetConsoleSetting().UsageLogFieldsUserEnabled = oldUserDetailsEnabled
+	})
+
+	console.GetConsoleSetting().UsageLogFields = `{"price_table":{"admin":true,"user":false}}`
+	logs := []*logstore.Log{{Other: other}}
+	logs[0].OtherProjection = map[string]interface{}{
+		"billing_price_snapshot": map[string]interface{}{"source": "legacy"},
+		"keep":                   "visible",
+	}
+	logs[0].OtherProjectionParsed = true
+
+	filterHiddenUsageLogFields(logs)
+	if strings.Contains(logs[0].Other, "billing_price_snapshot") {
+		t.Fatalf("projected Other = %s, want hidden snapshot removed without reparsing raw Other", logs[0].Other)
+	}
+	if strings.Contains(logs[0].Other, "admin_info") || strings.Contains(logs[0].Other, "secret") {
+		t.Fatalf("projected Other = %s, want store-level admin field to stay removed", logs[0].Other)
+	}
+	if !strings.Contains(logs[0].Other, `"keep":"visible"`) {
+		t.Fatalf("projected Other = %s, want unrelated field retained", logs[0].Other)
+	}
+	if logs[0].OtherProjection != nil || logs[0].OtherProjectionParsed {
+		t.Fatalf("projection cache = %v/%v, want consumed after HTTP-boundary filtering", logs[0].OtherProjection, logs[0].OtherProjectionParsed)
+	}
+}
+
 func TestFilterUsageLogFieldsForRoleAppliesAdminVisibility(t *testing.T) {
 	billingDetails := `{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{},"cache":{}}}`
 	other := `{"billing_price_snapshot":{"source":"legacy"}}`

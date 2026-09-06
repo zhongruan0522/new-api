@@ -589,16 +589,17 @@ func (r *GeminiChatResponse) UnmarshalJSON(data []byte) error {
 }
 
 type GeminiUsageMetadata struct {
-	PromptTokenCount           int                         `json:"promptTokenCount"`
-	ToolUsePromptTokenCount    int                         `json:"toolUsePromptTokenCount"`
-	CandidatesTokenCount       int                         `json:"candidatesTokenCount"`
-	TotalTokenCount            int                         `json:"totalTokenCount"`
-	ThoughtsTokenCount         int                         `json:"thoughtsTokenCount"`
-	CachedContentTokenCount    int                         `json:"cachedContentTokenCount"`
-	ServiceTier                string                      `json:"serviceTier"`
-	PromptTokensDetails        []GeminiPromptTokensDetails `json:"promptTokensDetails"`
-	ToolUsePromptTokensDetails []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
-	CandidatesTokensDetails    []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
+	PromptTokenCount               int                         `json:"promptTokenCount"`
+	ToolUsePromptTokenCount        int                         `json:"toolUsePromptTokenCount"`
+	CandidatesTokenCount           int                         `json:"candidatesTokenCount"`
+	TotalTokenCount                int                         `json:"totalTokenCount"`
+	ThoughtsTokenCount             int                         `json:"thoughtsTokenCount"`
+	CachedContentTokenCount        int                         `json:"cachedContentTokenCount"`
+	CachedContentTokenCountPresent bool                        `json:"-"`
+	ServiceTier                    string                      `json:"serviceTier"`
+	PromptTokensDetails            []GeminiPromptTokensDetails `json:"promptTokensDetails"`
+	ToolUsePromptTokensDetails     []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
+	CandidatesTokensDetails        []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
 }
 
 // UnmarshalJSON allows GeminiUsageMetadata to accept both snake_case and camelCase fields.
@@ -644,6 +645,14 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 	if aux.ServiceTierSnake != "" {
 		m.ServiceTier = aux.ServiceTierSnake
 	}
+	var cachedPresence struct {
+		Camel *int `json:"cachedContentTokenCount"`
+		Snake *int `json:"cached_content_token_count"`
+	}
+	if err := jsonx.Unmarshal(data, &cachedPresence); err != nil {
+		return err
+	}
+	m.CachedContentTokenCountPresent = cachedPresence.Camel != nil || cachedPresence.Snake != nil
 	if len(aux.PromptTokensDetailsSnake) > 0 {
 		m.PromptTokensDetails = aux.PromptTokensDetailsSnake
 	}

@@ -158,15 +158,16 @@ function getEffectiveGroupRatio(other: LogOtherData): {
   value: number
 } | null {
   const rawSnapshotMultiplier = other.billing_price_snapshot?.group_multiplier
-  const snapshotMultiplier =
-    typeof rawSnapshotMultiplier === 'string' &&
-    rawSnapshotMultiplier.trim() !== ''
-      ? Number(rawSnapshotMultiplier)
-      : Number.NaN
-  if (
-    other.billing_price_snapshot?.group_multiplier != null &&
-    Number.isFinite(snapshotMultiplier)
-  ) {
+  if (rawSnapshotMultiplier != null && rawSnapshotMultiplier !== '') {
+    const snapshotMultiplier = Number(rawSnapshotMultiplier)
+    // Keep the snapshot label visible, but make arithmetic degrade explicitly
+    // instead of falling back to 1x.
+    if (!Number.isFinite(snapshotMultiplier)) {
+      return {
+        labelKey: 'systemSettings.fields.groupMultiplier',
+        value: Number.NaN,
+      }
+    }
     return {
       labelKey: 'systemSettings.fields.groupMultiplier',
       value: snapshotMultiplier,
@@ -288,17 +289,19 @@ function pushMeteredBillingRow(args: {
   if (args.quantity <= 0) return
   if (args.unitPriceUSD == null || !Number.isFinite(args.unitPriceUSD)) return
 
-  const subtotalUSD =
-    (args.quantity / args.divisor) *
-    args.unitPriceUSD *
-    args.groupRatio *
-    args.dynamicRatio
+  const hasValidGroupRatio = Number.isFinite(args.groupRatio)
+  const subtotalUSD = hasValidGroupRatio
+    ? (args.quantity / args.divisor) *
+      args.unitPriceUSD *
+      args.groupRatio *
+      args.dynamicRatio
+    : null
   args.rows.push({
     labelKey: args.labelKey,
     quantity: args.quantity.toLocaleString(),
     unitPrice: `${args.formatPrice(args.unitPriceUSD)}/${args.unitLabel}`,
     ratios: args.ratioText,
-    subtotal: args.formatPrice(subtotalUSD),
+    subtotal: subtotalUSD == null ? '—' : args.formatPrice(subtotalUSD),
   })
 }
 
@@ -744,65 +747,67 @@ function BillingBreakdown(props: {
           </div>
         </div>
       )}
-      {isVisible('price_table') && priceSnapshot?.components && (
-        <div className='border-border/70 mt-2 min-w-0 border-t pt-2'>
-          <div className='mb-1.5 flex flex-wrap items-center justify-between gap-2'>
-            <Label className='block text-xs font-semibold'>
-              {t('usageLogs.fields.priceSnapshot')}
-            </Label>
-            <span className='text-muted-foreground text-[11px]'>
-              {t('usageLogs.fields.snapshotNotRecalculated')}
-            </span>
-          </div>
-          <div className='overflow-x-auto rounded-md border'>
-            <table className='w-full min-w-[560px] text-left text-xs'>
-              <thead className='bg-muted/60 text-muted-foreground'>
-                <tr>
-                  <th className='px-2 py-1.5 font-medium'>
-                    {t('usageLogs.fields.billingItem')}
-                  </th>
-                  <th className='px-2 py-1.5 font-medium'>
-                    {t('keys.fields.quantity')}
-                  </th>
-                  <th className='px-2 py-1.5 font-medium'>
-                    {t('usageLogs.fields.unitPrice')}
-                  </th>
-                  <th className='px-2 py-1.5 font-medium'>
-                    {t('usageLogs.fields.ratios')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {priceSnapshot.components.map((component, idx) => (
-                  <tr key={idx} className='border-t'>
-                    <td className='px-2 py-1.5 font-medium'>
-                      {t(
-                        getPriceSnapshotComponentLabelKey(component.component)
-                      )}
-                    </td>
-                    <td className='px-2 py-1.5 font-mono'>
-                      {getPriceSnapshotComponentQuantity(
-                        component.component,
-                        tokens,
-                        formatExactTokens,
-                        component.quantity
-                      )}
-                    </td>
-                    <td className='px-2 py-1.5 font-mono'>
-                      {[component.unit_price, component.currency]
-                        .filter(Boolean)
-                        .join(' ')}
-                    </td>
-                    <td className='px-2 py-1.5 font-mono'>
-                      {component.group_multiplier ?? '—'}
-                    </td>
+      {isVisible('price_table') &&
+        priceSnapshot?.components &&
+        priceSnapshot.components.length > 0 && (
+          <div className='border-border/70 mt-2 min-w-0 border-t pt-2'>
+            <div className='mb-1.5 flex flex-wrap items-center justify-between gap-2'>
+              <Label className='block text-xs font-semibold'>
+                {t('usageLogs.fields.priceSnapshot')}
+              </Label>
+              <span className='text-muted-foreground text-[11px]'>
+                {t('usageLogs.fields.snapshotNotRecalculated')}
+              </span>
+            </div>
+            <div className='overflow-x-auto rounded-md border'>
+              <table className='w-full min-w-[560px] text-left text-xs'>
+                <thead className='bg-muted/60 text-muted-foreground'>
+                  <tr>
+                    <th className='px-2 py-1.5 font-medium'>
+                      {t('usageLogs.fields.billingItem')}
+                    </th>
+                    <th className='px-2 py-1.5 font-medium'>
+                      {t('keys.fields.quantity')}
+                    </th>
+                    <th className='px-2 py-1.5 font-medium'>
+                      {t('usageLogs.fields.unitPrice')}
+                    </th>
+                    <th className='px-2 py-1.5 font-medium'>
+                      {t('usageLogs.fields.ratios')}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {priceSnapshot.components.map((component, idx) => (
+                    <tr key={idx} className='border-t'>
+                      <td className='px-2 py-1.5 font-medium'>
+                        {t(
+                          getPriceSnapshotComponentLabelKey(component.component)
+                        )}
+                      </td>
+                      <td className='px-2 py-1.5 font-mono'>
+                        {getPriceSnapshotComponentQuantity(
+                          component.component,
+                          tokens,
+                          formatExactTokens,
+                          component.quantity
+                        )}
+                      </td>
+                      <td className='px-2 py-1.5 font-mono'>
+                        {[component.unit_price, component.currency]
+                          .filter(Boolean)
+                          .join(' ')}
+                      </td>
+                      <td className='px-2 py-1.5 font-mono'>
+                        {component.group_multiplier ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       {isVisible('price_table') && billingRows.length > 0 && (
         <div className='border-border/70 mt-2 min-w-0 border-t pt-2'>
           <Label className='mb-1.5 block text-xs font-semibold'>

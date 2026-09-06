@@ -14,6 +14,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/NookMux/NookMux/pkg/jsonx"
 )
 
 func setupLogAdminInfoTestDB(t *testing.T) {
@@ -80,8 +82,19 @@ func TestRecordLogWithAdminInfoIsStrippedFromUserLogs(t *testing.T) {
 	if strings.Contains(logs[0].Other, "admin_info") || strings.Contains(logs[0].Other, "root-admin") {
 		t.Fatalf("formatted user log leaked admin info: %s", logs[0].Other)
 	}
+	if logs[0].OtherProjection == nil || !logs[0].OtherProjectionParsed {
+		t.Fatalf("other projection = %#v/%v, want parsed reusable map and marker", logs[0].OtherProjection, logs[0].OtherProjectionParsed)
+	}
 	if strings.Contains(logs[0].Content, "99") || strings.Contains(logs[0].Content, "root-admin") {
 		t.Fatalf("log content leaked admin identity: %s", logs[0].Content)
+	}
+
+	encoded, err := jsonx.Marshal(logs[0])
+	if err != nil {
+		t.Fatalf("marshal user log: %v", err)
+	}
+	if strings.Contains(string(encoded), "OtherProjection") {
+		t.Fatalf("wire log leaked projection cache: %s", encoded)
 	}
 }
 

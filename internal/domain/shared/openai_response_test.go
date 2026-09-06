@@ -75,6 +75,51 @@ func TestUsageDetailsRejectsMalformedCacheWriteTokens(t *testing.T) {
 	}
 }
 
+func TestUsageDetailsDistinguishExplicitZeroFromMissing(t *testing.T) {
+	raw := []byte(`{
+		"prompt_tokens_details": {
+			"cached_tokens": 0,
+			"cache_write_tokens": 0,
+			"text_tokens": 0,
+			"audio_tokens": 0,
+			"image_tokens": 0
+		},
+		"completion_tokens_details": {
+			"text_tokens": 0,
+			"audio_tokens": 0,
+			"reasoning_tokens": 0,
+			"accepted_prediction_tokens": 0,
+			"rejected_prediction_tokens": 0
+		}
+	}`)
+	var usage Usage
+	if err := jsonx.Unmarshal(raw, &usage); err != nil {
+		t.Fatalf("unmarshal explicit-zero usage: %v", err)
+	}
+	if !usage.PromptTokensDetails.CachedTokensPresent ||
+		!usage.PromptTokensDetails.CachedCreationTokensPresent ||
+		!usage.PromptTokensDetails.TextTokensPresent ||
+		!usage.PromptTokensDetails.AudioTokensPresent ||
+		!usage.PromptTokensDetails.ImageTokensPresent {
+		t.Fatalf("prompt presence markers lost: %+v", usage.PromptTokensDetails)
+	}
+	if !usage.CompletionTokenDetails.TextTokensPresent ||
+		!usage.CompletionTokenDetails.AudioTokensPresent ||
+		!usage.CompletionTokenDetails.ReasoningTokensPresent ||
+		!usage.CompletionTokenDetails.AcceptedPredictionPresent ||
+		!usage.CompletionTokenDetails.RejectedPredictionPresent {
+		t.Fatalf("completion presence markers lost: %+v", usage.CompletionTokenDetails)
+	}
+
+	var missing Usage
+	if err := jsonx.Unmarshal([]byte(`{"prompt_tokens_details":{},"completion_tokens_details":{}}`), &missing); err != nil {
+		t.Fatalf("unmarshal missing details: %v", err)
+	}
+	if missing.PromptTokensDetails.CachedTokensPresent || missing.CompletionTokenDetails.TextTokensPresent {
+		t.Fatalf("missing fields must not be marked present: %+v / %+v", missing.PromptTokensDetails, missing.CompletionTokenDetails)
+	}
+}
+
 // TestUsageDetailsParseCacheWriteAndPredictionTokens 验证计费 PRD 3.1 的
 // 官方来源解析：prompt_tokens_details.cache_write_tokens、
 // input_tokens_details.cache_write_tokens 与 completion_tokens_details 的

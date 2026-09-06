@@ -33,8 +33,8 @@ const BillingDetailsSchemaVersion = 1
 //     Claude 按 input+cache_read+cache_creation 三项相加）。
 //   - InputTokens() 是扣除缓存后的普通输入，模态明细不默认从中二次扣除。
 //   - 输出模态与 reasoning/accepted/rejected 是输出总量子集，不得加回。
-//   - 指针字段为 nil 表示上游未返回该拆分；只有官方明确返回才写入，
-//     不能用 0 伪装成"官方返回了零"。
+//   - 指针字段为 nil 表示上游未返回该拆分；官方明确返回 0 时保存 0，
+//     缺失与官方零必须可区分，不能用缺失伪装成 0，也不能丢弃官方 0。
 type BillingUsage struct {
 	Source relayconstant.UsageSource
 
@@ -44,6 +44,10 @@ type BillingUsage struct {
 
 	CacheReadTokens  int
 	CacheWriteTokens int
+	// presence 标记只服务内部序列化：历史/程序化调用允许只填非零数值，
+	// 新解析路径则用它保留官方显式 0。
+	CacheReadPresent  bool
+	CacheWritePresent bool
 	// CacheWrite5mTokens / CacheWrite1hTokens 仅在官方明确返回分档时非 nil；
 	// 无分档总量按 PRD 转换规则令 5m 分档等于总量（见 finalizeBillingUsage）。
 	CacheWrite5mTokens *int
@@ -133,23 +137,25 @@ func BuildRealtimeBillingUsage(source relayconstant.UsageSource, usage *shared.R
 		PromptAggregateTokens: usage.InputTokens,
 		OutputTokens:          usage.OutputTokens,
 		CacheReadTokens:       usage.InputTokenDetails.CachedTokens,
+		CacheReadPresent:      usage.InputTokenDetails.CachedTokensPresent,
 	}
-	// 明细非零即透传（含负数），负数由 finalizeBillingUsage 显式拒绝，
+	// 明细非零即透传；解析路径的显式 0 通过 presence 保留，负数由
+	// finalizeBillingUsage 显式拒绝，
 	// 避免静默裁剪上游矛盾数据。
-	if usage.InputTokenDetails.TextTokens != 0 {
-		bu.TextInputTokens = &usage.InputTokenDetails.TextTokens
+	if value := usage.InputTokenDetails.TextTokens; value != 0 || usage.InputTokenDetails.TextTokensPresent {
+		bu.TextInputTokens = &value
 	}
-	if usage.InputTokenDetails.AudioTokens != 0 {
-		bu.AudioInputTokens = &usage.InputTokenDetails.AudioTokens
+	if value := usage.InputTokenDetails.AudioTokens; value != 0 || usage.InputTokenDetails.AudioTokensPresent {
+		bu.AudioInputTokens = &value
 	}
-	if usage.OutputTokenDetails.TextTokens != 0 {
-		bu.TextOutputTokens = &usage.OutputTokenDetails.TextTokens
+	if value := usage.OutputTokenDetails.TextTokens; value != 0 || usage.OutputTokenDetails.TextTokensPresent {
+		bu.TextOutputTokens = &value
 	}
-	if usage.OutputTokenDetails.AudioTokens != 0 {
-		bu.AudioOutputTokens = &usage.OutputTokenDetails.AudioTokens
+	if value := usage.OutputTokenDetails.AudioTokens; value != 0 || usage.OutputTokenDetails.AudioTokensPresent {
+		bu.AudioOutputTokens = &value
 	}
-	if usage.OutputTokenDetails.ReasoningTokens != 0 {
-		bu.ReasoningTokens = &usage.OutputTokenDetails.ReasoningTokens
+	if value := usage.OutputTokenDetails.ReasoningTokens; value != 0 || usage.OutputTokenDetails.ReasoningTokensPresent {
+		bu.ReasoningTokens = &value
 	}
 	return finalizeBillingUsage(bu)
 }
@@ -167,22 +173,38 @@ func buildClaudeBillingUsage(usage *shared.Usage) (*BillingUsage, []string, erro
 		Source:                relayconstant.UsageSourceClaude,
 		PromptAggregateTokens: usage.PromptTokens,
 		OutputTokens:          usage.CompletionTokens,
-		CacheReadTokens: firstNonZero(usage.PromptTokensDetails.CachedTokens,
-			inputDetailsCachedTokens(usage.InputTokensDetails), usage.PromptCacheHitTokens),
-		CacheWriteTokens: firstNonZero(usage.PromptTokensDetails.CachedCreationTokens,
-			inputDetailsCachedCreationTokens(usage.InputTokensDetails)),
+		CacheReadTokens: resolveCacheReadTokens(
+			false,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+			usage.PromptCacheHitTokens,
+		),
+		CacheReadPresent: usage.PromptTokensDetails.CachedTokensPresent ||
+			inputDetailsCachedTokensPresent(usage.InputTokensDetails),
+		CacheWriteTokens: resolveCacheWriteTokens(
+			false,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+		),
+		CacheWritePresent: usage.PromptTokensDetails.CachedCreationTokensPresent ||
+			inputDetailsCachedCreationPresent(usage.InputTokensDetails),
 	}
 	// ClaudeCacheCreation5m/1hTokens 是 ClaudeUsageToOpenAIUsage 从官方
 	// cache_creation 分档程序化填入的；0 视为官方未返回。
-	// 分档/推理明细非零即透传（含负数），负数由 finalizeBillingUsage 显式拒绝。
-	if usage.ClaudeCacheCreation5mTokens != 0 {
+	// 分档/推理明细非零即透传；解析路径的显式 0 通过 presence 保留，
+	// 负数由 finalizeBillingUsage 显式拒绝。
+	if usage.ClaudeCacheCreation5mTokens != 0 || usage.ClaudeCacheCreation5mPresent {
 		bu.CacheWrite5mTokens = &usage.ClaudeCacheCreation5mTokens
 	}
-	if usage.ClaudeCacheCreation1hTokens != 0 {
+	if usage.ClaudeCacheCreation1hTokens != 0 || usage.ClaudeCacheCreation1hPresent {
 		bu.CacheWrite1hTokens = &usage.ClaudeCacheCreation1hTokens
 	}
-	if tokens := firstNonZero(usage.CompletionTokenDetails.ReasoningTokens, outputDetailsReasoningTokens(usage.OutputTokensDetails)); tokens != 0 {
-		bu.ReasoningTokens = &tokens
+	reasoningTokens := choosePresentInt(
+		usage.CompletionTokenDetails.ReasoningTokens, usage.CompletionTokenDetails.ReasoningTokensPresent,
+		outputDetailsReasoningTokens(usage.OutputTokensDetails), outputDetailsReasoningPresent(usage.OutputTokensDetails),
+	)
+	if reasoningTokens != 0 || usage.CompletionTokenDetails.ReasoningTokensPresent || outputDetailsReasoningPresent(usage.OutputTokensDetails) {
+		bu.ReasoningTokens = &reasoningTokens
 	}
 	return finalizeBillingUsage(bu)
 }
@@ -198,10 +220,21 @@ func buildOpenAIChatBillingUsage(usage *shared.Usage) (*BillingUsage, []string, 
 		Source:                relayconstant.UsageSourceOpenAIChat,
 		PromptAggregateTokens: usage.PromptTokens,
 		OutputTokens:          usage.CompletionTokens,
-		CacheReadTokens: firstNonZero(usage.PromptTokensDetails.CachedTokens,
-			inputDetailsCachedTokens(usage.InputTokensDetails), usage.PromptCacheHitTokens),
-		CacheWriteTokens: firstNonZero(usage.PromptTokensDetails.CachedCreationTokens,
-			inputDetailsCachedCreationTokens(usage.InputTokensDetails)),
+		CacheReadTokens: resolveCacheReadTokens(
+			false,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+			usage.PromptCacheHitTokens,
+		),
+		CacheReadPresent: usage.PromptTokensDetails.CachedTokensPresent ||
+			inputDetailsCachedTokensPresent(usage.InputTokensDetails),
+		CacheWriteTokens: resolveCacheWriteTokens(
+			false,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+		),
+		CacheWritePresent: usage.PromptTokensDetails.CachedCreationTokensPresent ||
+			inputDetailsCachedCreationPresent(usage.InputTokensDetails),
 	}
 	fillInputModalities(bu, usage.PromptTokensDetails, usage.InputTokensDetails)
 	fillOutputSplits(bu, usage.CompletionTokenDetails, usage.OutputTokensDetails)
@@ -219,16 +252,31 @@ func buildOpenAIResponsesBillingUsage(usage *shared.Usage) (*BillingUsage, []str
 		Source:                relayconstant.UsageSourceOpenAIResponses,
 		PromptAggregateTokens: firstNonZero(usage.InputTokens, usage.PromptTokens),
 		OutputTokens:          firstNonZero(usage.OutputTokens, usage.CompletionTokens),
-		CacheReadTokens: firstNonZero(inputDetailsCachedTokens(usage.InputTokensDetails),
-			usage.PromptTokensDetails.CachedTokens, usage.PromptCacheHitTokens),
-		CacheWriteTokens: firstNonZero(inputDetailsCachedCreationTokens(usage.InputTokensDetails),
-			usage.PromptTokensDetails.CachedCreationTokens),
+		CacheReadTokens: resolveCacheReadTokens(
+			true,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+			usage.PromptCacheHitTokens,
+		),
+		CacheReadPresent: inputDetailsCachedTokensPresent(usage.InputTokensDetails) ||
+			usage.PromptTokensDetails.CachedTokensPresent,
+		CacheWriteTokens: resolveCacheWriteTokens(
+			true,
+			usage.PromptTokensDetails,
+			usage.InputTokensDetails,
+		),
+		CacheWritePresent: inputDetailsCachedCreationPresent(usage.InputTokensDetails) ||
+			usage.PromptTokensDetails.CachedCreationTokensPresent,
 	}
 	// Responses v1 有标准 cache 读写与 reasoning，但没有标准 text/image/audio
 	// 模态或 prediction 明细；不能从 Chat 同名字段“顺手”补造 Responses 明细。
-	if tokens := firstNonZero(usage.CompletionTokenDetails.ReasoningTokens,
-		outputDetailsReasoningTokens(usage.OutputTokensDetails)); tokens != 0 {
-		bu.ReasoningTokens = &tokens
+	reasoningTokens := choosePresentInt(
+		usage.CompletionTokenDetails.ReasoningTokens, usage.CompletionTokenDetails.ReasoningTokensPresent,
+		outputDetailsReasoningTokens(usage.OutputTokensDetails), outputDetailsReasoningPresent(usage.OutputTokensDetails),
+	)
+	if reasoningTokens != 0 || usage.CompletionTokenDetails.ReasoningTokensPresent ||
+		outputDetailsReasoningPresent(usage.OutputTokensDetails) {
+		bu.ReasoningTokens = &reasoningTokens
 	}
 	return finalizeBillingUsage(bu)
 }
@@ -252,18 +300,26 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 		PromptAggregateTokens: metadata.PromptTokenCount,
 		OutputTokens:          geminiOutputTokens,
 		CacheReadTokens:       metadata.CachedContentTokenCount,
+		CacheReadPresent:      metadata.CachedContentTokenCountPresent,
 	}
 	for _, detail := range metadata.PromptTokensDetails {
 		count := detail.TokenCount
-		if count == 0 {
-			continue
-		}
 		if count < 0 {
 			return nil, nil, fmt.Errorf("negative gemini input modality %s token count=%d", detail.Modality, count)
 		}
 		switch strings.ToUpper(strings.TrimSpace(detail.Modality)) {
 		case "TEXT":
-			if err := addModality(&bu.TextInputTokens, count); err != nil {
+			// TEXT 官方明细是 raw prompt 的模态拆分，可能包含已单独放入
+			// read_cache 的 token。schema v1 的 input 明细不包含缓存，因此
+			// 归一化时移除缓存部分；矛盾数据显式失败，不做启发式猜测。
+			textCount := count - metadata.CachedContentTokenCount
+			if textCount < 0 {
+				return nil, nil, fmt.Errorf(
+					"gemini text_input (%d) is less than cached_content (%d)",
+					count, metadata.CachedContentTokenCount,
+				)
+			}
+			if err := addModality(&bu.TextInputTokens, textCount); err != nil {
 				return nil, nil, err
 			}
 		case "AUDIO":
@@ -290,17 +346,11 @@ func buildGeminiBillingUsage(metadata *shared.GeminiUsageMetadata) (*BillingUsag
 		}
 	}
 	// 官方口径注意：Gemini 的 promptTokensDetails 是 promptTokenCount（含缓存
-	// 部分）的按模态拆分，TEXT 明细可能包含 cachedContentTokenCount 对应的
-	// token，即 JSON 中 text_input 与 read_cache 存在官方层面的重叠（PRD 3.1
-	// 也注明模态明细"不默认与 cache 互斥"）。这里如实透传官方值，不做减法
-	// 伪造拆分；3.4 计费公式的普通输入文本从 InputTokens（已扣除缓存读取）
-	// 中移除非文本模态，不直接按 text_input 计价，因此不会重复计费。阶段 2
-	// 切换计费与前端展示时需继续遵守该口径。
+	// 部分）的按模态拆分，TEXT 明细可能包含 cachedContentTokenCount。schema
+	// v1 要求 input 明细不含缓存，因此上方已经移除 read_cache；这里不能再次
+	// 用缓存部分伪造 TEXT 拆分。
 	for _, detail := range metadata.CandidatesTokensDetails {
 		count := detail.TokenCount
-		if count == 0 {
-			continue
-		}
 		if count < 0 {
 			return nil, nil, fmt.Errorf("negative gemini output modality %s token count=%d", detail.Modality, count)
 		}
@@ -469,33 +519,66 @@ func checkedAdd(left, right int, name string) (int, error) {
 }
 
 func fillInputModalities(bu *BillingUsage, promptDetails shared.InputTokenDetails, inputDetails *shared.InputTokenDetails) {
-	// 明细非零即透传（含负数），负数由 finalizeBillingUsage 显式拒绝。
-	if tokens := firstNonZero(promptDetails.TextTokens, inputDetailsTextTokens(inputDetails)); tokens != 0 {
-		bu.TextInputTokens = &tokens
+	// 明细非零即透传；解析路径的显式 0 通过 presence 保留，负数由
+	// finalizeBillingUsage 显式拒绝。
+	textTokens := choosePresentInt(
+		promptDetails.TextTokens, promptDetails.TextTokensPresent,
+		inputDetailsTextTokens(inputDetails), inputDetailsTextPresent(inputDetails),
+	)
+	if textTokens != 0 || promptDetails.TextTokensPresent || inputDetailsTextPresent(inputDetails) {
+		bu.TextInputTokens = &textTokens
 	}
-	if tokens := firstNonZero(promptDetails.ImageTokens, inputDetailsImageTokens(inputDetails)); tokens != 0 {
-		bu.ImageInputTokens = &tokens
+	imageTokens := choosePresentInt(
+		promptDetails.ImageTokens, promptDetails.ImageTokensPresent,
+		inputDetailsImageTokens(inputDetails), inputDetailsImagePresent(inputDetails),
+	)
+	if imageTokens != 0 || promptDetails.ImageTokensPresent || inputDetailsImagePresent(inputDetails) {
+		bu.ImageInputTokens = &imageTokens
 	}
-	if tokens := firstNonZero(promptDetails.AudioTokens, inputDetailsAudioTokens(inputDetails)); tokens != 0 {
-		bu.AudioInputTokens = &tokens
+	audioTokens := choosePresentInt(
+		promptDetails.AudioTokens, promptDetails.AudioTokensPresent,
+		inputDetailsAudioTokens(inputDetails), inputDetailsAudioPresent(inputDetails),
+	)
+	if audioTokens != 0 || promptDetails.AudioTokensPresent || inputDetailsAudioPresent(inputDetails) {
+		bu.AudioInputTokens = &audioTokens
 	}
 }
 
 func fillOutputSplits(bu *BillingUsage, completionDetails shared.OutputTokenDetails, outputDetails *shared.OutputTokenDetails) {
-	if tokens := firstNonZero(completionDetails.TextTokens, outputDetailsTextTokens(outputDetails)); tokens != 0 {
-		bu.TextOutputTokens = &tokens
+	textTokens := choosePresentInt(
+		completionDetails.TextTokens, completionDetails.TextTokensPresent,
+		outputDetailsTextTokens(outputDetails), outputDetailsTextPresent(outputDetails),
+	)
+	if textTokens != 0 || completionDetails.TextTokensPresent || outputDetailsTextPresent(outputDetails) {
+		bu.TextOutputTokens = &textTokens
 	}
-	if tokens := firstNonZero(completionDetails.AudioTokens, outputDetailsAudioTokens(outputDetails)); tokens != 0 {
-		bu.AudioOutputTokens = &tokens
+	audioTokens := choosePresentInt(
+		completionDetails.AudioTokens, completionDetails.AudioTokensPresent,
+		outputDetailsAudioTokens(outputDetails), outputDetailsAudioPresent(outputDetails),
+	)
+	if audioTokens != 0 || completionDetails.AudioTokensPresent || outputDetailsAudioPresent(outputDetails) {
+		bu.AudioOutputTokens = &audioTokens
 	}
-	if tokens := firstNonZero(completionDetails.ReasoningTokens, outputDetailsReasoningTokens(outputDetails)); tokens != 0 {
-		bu.ReasoningTokens = &tokens
+	reasoningTokens := choosePresentInt(
+		completionDetails.ReasoningTokens, completionDetails.ReasoningTokensPresent,
+		outputDetailsReasoningTokens(outputDetails), outputDetailsReasoningPresent(outputDetails),
+	)
+	if reasoningTokens != 0 || completionDetails.ReasoningTokensPresent || outputDetailsReasoningPresent(outputDetails) {
+		bu.ReasoningTokens = &reasoningTokens
 	}
-	if tokens := firstNonZero(completionDetails.AcceptedPredictionTokens, outputDetailsAcceptedPredictionTokens(outputDetails)); tokens != 0 {
-		bu.AcceptedPredictionTokens = &tokens
+	acceptedTokens := choosePresentInt(
+		completionDetails.AcceptedPredictionTokens, completionDetails.AcceptedPredictionPresent,
+		outputDetailsAcceptedPredictionTokens(outputDetails), outputDetailsAcceptedPredictionPresent(outputDetails),
+	)
+	if acceptedTokens != 0 || completionDetails.AcceptedPredictionPresent || outputDetailsAcceptedPredictionPresent(outputDetails) {
+		bu.AcceptedPredictionTokens = &acceptedTokens
 	}
-	if tokens := firstNonZero(completionDetails.RejectedPredictionTokens, outputDetailsRejectedPredictionTokens(outputDetails)); tokens != 0 {
-		bu.RejectedPredictionTokens = &tokens
+	rejectedTokens := choosePresentInt(
+		completionDetails.RejectedPredictionTokens, completionDetails.RejectedPredictionPresent,
+		outputDetailsRejectedPredictionTokens(outputDetails), outputDetailsRejectedPredictionPresent(outputDetails),
+	)
+	if rejectedTokens != 0 || completionDetails.RejectedPredictionPresent || outputDetailsRejectedPredictionPresent(outputDetails) {
+		bu.RejectedPredictionTokens = &rejectedTokens
 	}
 }
 
@@ -528,6 +611,68 @@ func firstNonZero(values ...int) int {
 	return 0
 }
 
+func choosePresentInt(primary int, primaryPresent bool, fallback int, fallbackPresent bool) int {
+	if primaryPresent {
+		return primary
+	}
+	if fallbackPresent {
+		return fallback
+	}
+	return firstNonZero(primary, fallback)
+}
+
+func resolveCacheReadTokens(responsesPreference bool, promptDetails shared.InputTokenDetails, inputDetails *shared.InputTokenDetails, promptCacheHitTokens int) int {
+	if responsesPreference {
+		if inputDetails != nil && inputDetails.CachedTokensPresent {
+			return inputDetails.CachedTokens
+		}
+	if promptDetails.CachedTokensPresent {
+		return promptDetails.CachedTokens
+	}
+	return firstNonZero(
+		inputDetailsCachedTokens(inputDetails),
+		promptDetails.CachedTokens,
+		promptCacheHitTokens,
+	)
+}
+	if promptDetails.CachedTokensPresent {
+		return promptDetails.CachedTokens
+	}
+	if inputDetails != nil && inputDetails.CachedTokensPresent {
+		return inputDetails.CachedTokens
+	}
+	return firstNonZero(
+		promptDetails.CachedTokens,
+		inputDetailsCachedTokens(inputDetails),
+		promptCacheHitTokens,
+	)
+}
+
+func resolveCacheWriteTokens(responsesPreference bool, promptDetails shared.InputTokenDetails, inputDetails *shared.InputTokenDetails) int {
+	if responsesPreference {
+		if inputDetails != nil && inputDetails.CachedCreationTokensPresent {
+			return inputDetails.CachedCreationTokens
+		}
+		if promptDetails.CachedCreationTokensPresent {
+			return promptDetails.CachedCreationTokens
+		}
+		return firstNonZero(
+			inputDetailsCachedCreationTokens(inputDetails),
+			promptDetails.CachedCreationTokens,
+		)
+	}
+	if promptDetails.CachedCreationTokensPresent {
+		return promptDetails.CachedCreationTokens
+	}
+	if inputDetails != nil && inputDetails.CachedCreationTokensPresent {
+		return inputDetails.CachedCreationTokens
+	}
+	return firstNonZero(
+		promptDetails.CachedCreationTokens,
+		inputDetailsCachedCreationTokens(inputDetails),
+	)
+}
+
 func intValue(value *int) int {
 	if value == nil {
 		return 0
@@ -542,11 +687,25 @@ func inputDetailsCachedTokens(details *shared.InputTokenDetails) int {
 	return details.CachedTokens
 }
 
+func inputDetailsCachedTokensPresent(details *shared.InputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.CachedTokensPresent
+}
+
 func inputDetailsCachedCreationTokens(details *shared.InputTokenDetails) int {
 	if details == nil {
 		return 0
 	}
 	return details.CachedCreationTokens
+}
+
+func inputDetailsCachedCreationPresent(details *shared.InputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.CachedCreationTokensPresent
 }
 
 func inputDetailsTextTokens(details *shared.InputTokenDetails) int {
@@ -556,11 +715,25 @@ func inputDetailsTextTokens(details *shared.InputTokenDetails) int {
 	return details.TextTokens
 }
 
+func inputDetailsTextPresent(details *shared.InputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.TextTokensPresent
+}
+
 func inputDetailsImageTokens(details *shared.InputTokenDetails) int {
 	if details == nil {
 		return 0
 	}
 	return details.ImageTokens
+}
+
+func inputDetailsImagePresent(details *shared.InputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.ImageTokensPresent
 }
 
 func inputDetailsAudioTokens(details *shared.InputTokenDetails) int {
@@ -570,11 +743,25 @@ func inputDetailsAudioTokens(details *shared.InputTokenDetails) int {
 	return details.AudioTokens
 }
 
+func inputDetailsAudioPresent(details *shared.InputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.AudioTokensPresent
+}
+
 func outputDetailsTextTokens(details *shared.OutputTokenDetails) int {
 	if details == nil {
 		return 0
 	}
 	return details.TextTokens
+}
+
+func outputDetailsTextPresent(details *shared.OutputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.TextTokensPresent
 }
 
 func outputDetailsAudioTokens(details *shared.OutputTokenDetails) int {
@@ -584,11 +771,25 @@ func outputDetailsAudioTokens(details *shared.OutputTokenDetails) int {
 	return details.AudioTokens
 }
 
+func outputDetailsAudioPresent(details *shared.OutputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.AudioTokensPresent
+}
+
 func outputDetailsReasoningTokens(details *shared.OutputTokenDetails) int {
 	if details == nil {
 		return 0
 	}
 	return details.ReasoningTokens
+}
+
+func outputDetailsReasoningPresent(details *shared.OutputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.ReasoningTokensPresent
 }
 
 func outputDetailsAcceptedPredictionTokens(details *shared.OutputTokenDetails) int {
@@ -598,11 +799,25 @@ func outputDetailsAcceptedPredictionTokens(details *shared.OutputTokenDetails) i
 	return details.AcceptedPredictionTokens
 }
 
+func outputDetailsAcceptedPredictionPresent(details *shared.OutputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.AcceptedPredictionPresent
+}
+
 func outputDetailsRejectedPredictionTokens(details *shared.OutputTokenDetails) int {
 	if details == nil {
 		return 0
 	}
 	return details.RejectedPredictionTokens
+}
+
+func outputDetailsRejectedPredictionPresent(details *shared.OutputTokenDetails) bool {
+	if details == nil {
+		return false
+	}
+	return details.RejectedPredictionPresent
 }
 
 // BuildBillingDetailsForLog 把有 Token 用量的消费入口归一化并序列化为

@@ -103,6 +103,7 @@
 - 查询：`console.IsUsageLogFieldVisible(field, isAdmin)` 和 `console.IsUsageLogDetailsEnabled(isAdmin)`。
 - 公开接口：`GET /api/user/self/usage_log_fields`（UserAuth），返回当前角色可见的字段列表。
 - 后端裁剪：日志列表 API 必须按当前受众裁剪详情独有字段；管理员接口与普通用户/token 接口分别使用 admin/user 可见性，不能只依赖前端隐藏。
+- `FormatUserLogs` 会在 store 层删除 `admin_info`/`reject_reason`，并留下 `Log.OtherProjection` 临时投影；HTTP 边界复用它完成同页角色裁剪后必须消费/清空投影。投影字段必须保持 JSON/GORM 不可见，禁止跨请求持有。
 - 审计：通过 `UpdateOption` 的通用 `RecordAudit` 自动覆盖，复用 `AuditModuleOption`。
 
 **新增或删除字段时需同步：**

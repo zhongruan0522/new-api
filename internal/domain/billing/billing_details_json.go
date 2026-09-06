@@ -56,8 +56,8 @@ type BillingCacheTokens struct {
 
 // SerializeBillingUsage 把 BillingUsage 序列化为 schema v1 canonical JSON。
 // 入参必须先经 finalizeBillingUsage 校验（负数已在构建期显式失败）；
-// 只有官方明确返回（含 PRD 缓存写入转换规则产出的 5m 分档）且大于 0 的
-// 拆分才写入；三个分组对象始终存在。
+// 只有官方明确返回（含 PRD 缓存写入转换规则产出的 5m 分档）的拆分才写入，
+// 官方显式 0 会被保留；三个分组对象始终存在。
 func SerializeBillingUsage(bu *BillingUsage) (string, error) {
 	if bu == nil {
 		return "", fmt.Errorf("billing usage is nil")
@@ -81,8 +81,8 @@ func SerializeBillingUsage(bu *BillingUsage) (string, error) {
 				RejectedPrediction: positiveInt(bu.RejectedPredictionTokens),
 			},
 			Cache: BillingCacheTokens{
-				ReadCache:    positiveIntFromValue(bu.CacheReadTokens),
-				WriteCache:   positiveIntFromValue(bu.CacheWriteTokens),
+				ReadCache:    optionalCacheInt(bu.CacheReadTokens, bu.CacheReadPresent),
+				WriteCache:   optionalCacheInt(bu.CacheWriteTokens, bu.CacheWritePresent),
 				WriteCache5m: positiveInt(bu.CacheWrite5mTokens),
 				WriteCache1h: positiveInt(bu.CacheWrite1hTokens),
 			},
@@ -96,14 +96,14 @@ func SerializeBillingUsage(bu *BillingUsage) (string, error) {
 }
 
 func positiveInt(value *int) *int {
-	if value == nil || *value <= 0 {
+	if value == nil {
 		return nil
 	}
 	return value
 }
 
-func positiveIntFromValue(value int) *int {
-	if value <= 0 {
+func optionalCacheInt(value int, present bool) *int {
+	if !present && value <= 0 {
 		return nil
 	}
 	return &value

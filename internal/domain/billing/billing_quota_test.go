@@ -257,9 +257,9 @@ func TestCalculateNormalizedQuotaGeminiPlainTextParity(t *testing.T) {
 	assertQuotaTotal(t, result, 4400)
 }
 
-// Gemini 官方口径重叠：promptTokensDetails 的 TEXT 明细包含缓存读取部分
-// （text_input 与 read_cache 官方层面重叠）。计费公式不经 text_input 计价，
-// 普通输入 = PromptAggregate - read，重叠不产生重复计费。
+// Gemini 官方口径重叠：promptTokensDetails 的 TEXT 明细包含缓存读取部分。
+// schema v1 的 text_input 必须去除缓存，避免同一 token 同时进入输入模态和
+// read_cache；计费公式继续使用 PromptAggregate - read 作为普通输入。
 func TestCalculateNormalizedQuotaGeminiTextCacheOverlapNoDoubleBilling(t *testing.T) {
 	metadata := &shared.GeminiUsageMetadata{
 		PromptTokenCount:        1000, // 含 200 缓存读取
@@ -273,11 +273,11 @@ func TestCalculateNormalizedQuotaGeminiTextCacheOverlapNoDoubleBilling(t *testin
 	if err != nil {
 		t.Fatalf("BuildBillingUsage returned error: %v", err)
 	}
-	if bu.TextInputTokens == nil || *bu.TextInputTokens != 1000 {
-		t.Fatalf("text_input = %v, want 1000（如实透传官方值）", bu.TextInputTokens)
+	if bu.TextInputTokens == nil || *bu.TextInputTokens != 800 {
+		t.Fatalf("text_input = %v, want 800 (cache removed)", bu.TextInputTokens)
 	}
 	// quota = (1000-200)×1 + 200×0.5 + 500×3 = 800+100+1500 = 2400 → ×2 = 4800
-	// TEXT 明细（1000）不进入费用公式，与 read_cache（200）的重叠不重复计费
+	// TEXT 明细（800）不含缓存，与 read_cache（200）不重叠也不重复计费
 	result := mustQuota(t, bu, normalizedQuotaTestPriceData(), AudioPricingAbsolute, "gemini-1.5-flash")
 	assertQuotaTotal(t, result, 4800)
 }
