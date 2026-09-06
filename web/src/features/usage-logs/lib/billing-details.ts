@@ -573,7 +573,8 @@ export function buildTokenBreakdownGroups(
 export function getPriceSnapshotComponentQuantity(
   component: string | undefined,
   tokens: DisplayTokenValues,
-  formatTokens: (value: number) => string
+  formatTokens: (value: number) => string,
+  savedQuantity?: number
 ): string {
   const tokenMap: Record<string, number | null | undefined> = {
     // Price-table snapshot component names (contract schema).
@@ -601,6 +602,13 @@ export function getPriceSnapshotComponentQuantity(
   }
   if (component == null) return '—'
   if (component === 'request') return '1'
+  if (
+    typeof savedQuantity === 'number' &&
+    Number.isSafeInteger(savedQuantity) &&
+    savedQuantity >= 0
+  ) {
+    return formatTokens(savedQuantity)
+  }
   const quantity = tokenMap[component]
   return quantity == null ? '—' : formatTokens(quantity)
 }

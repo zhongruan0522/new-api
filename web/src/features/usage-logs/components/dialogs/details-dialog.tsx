@@ -538,19 +538,6 @@ function BillingBreakdown(props: {
   const tieredSummary = getTieredBillingSummary(other)
   const isContextPricing = other.context_pricing_enabled === true
   const billing = parseBillingDetails(log.billing_details)
-  if (billing.status === 'invalid') {
-    return (
-      <DetailSection
-        label={t('usageLogs.titles.billingDetails')}
-        variant='danger'
-      >
-        <DetailRow
-          label={t('usageLogs.fields.billingDetails')}
-          value={t(billing.errorKey)}
-        />
-      </DetailSection>
-    )
-  }
   const tokens = resolveDisplayTokens(log, billing, other)
   const priceSnapshot = other.billing_price_snapshot
   const hasPriceSnapshotComponents =
@@ -797,7 +784,8 @@ function BillingBreakdown(props: {
                       {getPriceSnapshotComponentQuantity(
                         component.component,
                         tokens,
-                        formatExactTokens
+                        formatExactTokens,
+                        component.quantity
                       )}
                     </td>
                     <td className='px-2 py-1.5 font-mono'>
@@ -877,25 +865,15 @@ function shouldHideTieredCacheColumns(
   return !hasAnyCacheTokens(other)
 }
 
-function TokenBreakdown(props: {
-  log: UsageLog
-  other: LogOtherData | null
-}) {
+function TokenBreakdown(props: { log: UsageLog; other: LogOtherData | null }) {
   const { t } = useTranslation()
   const { log, other } = props
   const billing = parseBillingDetails(log.billing_details)
   if (billing.status === 'invalid') {
-    return (
-      <DetailSection
-        label={t('usageLogs.fields.tokenBreakdown')}
-        variant='danger'
-      >
-        <DetailRow
-          label={t('usageLogs.fields.billingDetails')}
-          value={t(billing.errorKey)}
-        />
-      </DetailSection>
-    )
+    // The centralized parse error is rendered once by DetailsDialogBody so it
+    // cannot mask valid settlement data and cannot disappear behind a hidden
+    // token-breakdown field.
+    return null
   }
   const tokens = resolveDisplayTokens(log, billing, other)
 
@@ -1512,6 +1490,19 @@ function DetailsDialogBody(props: {
         )}
 
       {/* Token breakdown reads billing_details first; Other is only a legacy fallback. */}
+      {billingDetails.status === 'invalid' &&
+        isDisplayableType(props.log.type) && (
+          <DetailSection
+            label={t('usageLogs.fields.billingDetails')}
+            variant='danger'
+          >
+            <DetailRow
+              label={t('usageLogs.fields.billingDetails')}
+              value={t(billingDetails.errorKey)}
+            />
+          </DetailSection>
+        )}
+
       {isVisible('token_breakdown') &&
         isDisplayableType(props.log.type) &&
         (other || billingDetails.status !== 'legacy') && (

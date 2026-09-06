@@ -58,6 +58,7 @@ type BillingQuotaLine struct {
 type BillingPriceComponentSnapshot struct {
 	Component       contract.PriceComponent  `json:"component"`
 	Unit            contract.PriceUnit       `json:"unit"`
+	Quantity        int                      `json:"quantity"`
 	UnitPrice       string                   `json:"unit_price"`
 	Currency        string                   `json:"currency"`
 	ExchangeRate    string                   `json:"exchange_rate"`
@@ -247,6 +248,7 @@ func legacyQuotaWithSnapshot(
 		result.PriceSnapshot.Components = append(result.PriceSnapshot.Components, BillingPriceComponentSnapshot{
 			Component:       contract.PriceComponentAudioInput,
 			Unit:            contract.PriceUnitPerMillionTokens,
+			Quantity:        intValue(bu.AudioInputTokens),
 			UnitPrice:       perMillionPrice.String(),
 			Currency:        plan.Currency,
 			ExchangeRate:    plan.ExchangeRate,
@@ -318,6 +320,7 @@ func appendLegacyComponentSnapshots(
 		snapshot.Components = append(snapshot.Components, BillingPriceComponentSnapshot{
 			Component:       component.Component,
 			Unit:            component.Unit,
+			Quantity:        tokens,
 			UnitPrice:       component.UnitPrice,
 			Currency:        plan.Currency,
 			ExchangeRate:    plan.ExchangeRate,
@@ -360,7 +363,7 @@ func perRequestQuotaWithSnapshot(
 		RoundingMode: plan.RoundingMode,
 	}
 	result.PriceSnapshot = newBillingPriceSnapshot(plan, query, plan.GroupMultiplierSource, groupMultiplier, result.RoundingMode, plan.PricePrecision)
-	result.PriceSnapshot.Components = append(result.PriceSnapshot.Components, newPriceComponentSnapshot(resolved, groupMultiplier))
+	result.PriceSnapshot.Components = append(result.PriceSnapshot.Components, newPriceComponentSnapshot(resolved, groupMultiplier, 1))
 	return result, nil
 }
 
@@ -407,7 +410,7 @@ func explicitTokenQuotaWithSnapshot(
 		}
 		result.Lines = append(result.Lines, BillingQuotaLine{Label: label, Tokens: tokens, Quota: quota})
 		result.TokenTotal = result.TokenTotal.Add(quota)
-		snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, componentMultiplier))
+		snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, componentMultiplier, tokens))
 		return nil
 	}
 
@@ -446,7 +449,7 @@ func explicitTokenQuotaWithSnapshot(
 				result.AudioInputQuota = quota
 				result.AudioInputPrice = unitPriceFloat(resolved.Component.UnitPrice)
 			}
-			snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, audioMultiplier))
+			snapshot.Components = append(snapshot.Components, newPriceComponentSnapshot(resolved, audioMultiplier, audioInputTokens))
 			inputTokens -= audioInputTokens
 		}
 	}
@@ -682,10 +685,15 @@ func IsLegacyPriceSettlement(result BillingQuotaResult) bool {
 		normalizedPricePlanSource(result.PriceSnapshot.Source) == contract.PricePlanSourceLegacy
 }
 
-func newPriceComponentSnapshot(resolved *contract.ResolvedModelPriceComponent, groupMultiplier decimal.Decimal) BillingPriceComponentSnapshot {
+func newPriceComponentSnapshot(
+	resolved *contract.ResolvedModelPriceComponent,
+	groupMultiplier decimal.Decimal,
+	quantity int,
+) BillingPriceComponentSnapshot {
 	return BillingPriceComponentSnapshot{
 		Component:       resolved.Component.Component,
 		Unit:            resolved.Component.Unit,
+		Quantity:        quantity,
 		UnitPrice:       resolved.Component.UnitPrice,
 		Currency:        resolved.Plan.Currency,
 		ExchangeRate:    resolved.Plan.ExchangeRate,

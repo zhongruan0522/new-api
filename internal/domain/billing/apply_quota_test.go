@@ -217,6 +217,9 @@ func TestApplyQuotaUpdatesCountersAndWritesConsumeLog(t *testing.T) {
 		assert.Equal(t, price, component["unit_price"])
 		assert.Equal(t, "1", component["group_multiplier"])
 	}
+	assert.Equal(t, float64(60), componentByComponent["text_input"]["quantity"])
+	assert.Equal(t, float64(50), componentByComponent["text_output"]["quantity"])
+	assert.Equal(t, float64(40), componentByComponent["cache_read"]["quantity"])
 	adminInfo, ok := other["admin_info"].(map[string]interface{})
 	require.True(t, ok, "admin_info should be assembled into Other")
 	assert.Equal(t, []interface{}{"7"}, adminInfo["use_channel"])

@@ -144,7 +144,32 @@ function buildDetailSegments(
   }
   const isTieredExpr = other.billing_mode === 'tiered_expr'
   const tieredSummary = getTieredBillingSummary(other)
-  if (isTieredExpr) {
+  const priceSnapshot = other.billing_price_snapshot
+  const snapshotComponents = priceSnapshot?.components ?? []
+  if (snapshotComponents.length > 0) {
+    const snapshotPrices = snapshotComponents
+      .map((component) => {
+        const unitPrice = Number(component.unit_price)
+        if (!Number.isFinite(unitPrice)) return null
+        const unitSuffix = component.unit === 'per_request' ? '' : '/M'
+        return `${formatBillingCurrencyFromUSD(unitPrice, priceOpts)}${unitSuffix}`
+      })
+      .filter(Boolean) as string[]
+    if (snapshotPrices.length > 0) {
+      segments.push({
+        text: `${t('usageLogs.fields.priceSnapshot')} · ${formatPriceList(
+          snapshotPrices,
+          false
+        )}`,
+      })
+    }
+    if (priceSnapshot?.service_tier) {
+      segments.push({
+        text: `${t('usageLogs.fields.serviceTier')} ${priceSnapshot.service_tier}`,
+        muted: true,
+      })
+    }
+  } else if (isTieredExpr) {
     if (tieredSummary) {
       const baseEntries = tieredSummary.priceEntries
         .filter((entry) => ['inputPrice', 'outputPrice'].includes(entry.field))

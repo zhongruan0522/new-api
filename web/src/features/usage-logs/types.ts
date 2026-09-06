@@ -120,6 +120,7 @@ export interface ContextPricingResult {
 export interface BillingPriceComponentSnapshotData {
   component?: string
   unit?: string
+  quantity?: number
   unit_price?: string
   currency?: string
   exchange_rate?: string

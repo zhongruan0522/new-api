@@ -448,4 +448,24 @@ describe('price snapshot helpers', () => {
       'usageLogs.fields.cacheCreation5m'
     )
   })
+
+  test('prefer saved settlement quantities over display token projection', () => {
+    const billing = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"reasoning_output":3},"cache":{"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
+    )
+    const tokens = resolveDisplayTokens(createLog(), billing, null)
+
+    assert.equal(
+      getPriceSnapshotComponentQuantity('input', tokens, String, 988),
+      '988'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('cache_write_5m', tokens, String, 9),
+      '9'
+    )
+    assert.equal(
+      getPriceSnapshotComponentQuantity('output', tokens, String, -1),
+      '—'
+    )
+  })
 })
