@@ -149,6 +149,19 @@ describe('parseBillingDetails', () => {
 })
 
 describe('resolveDisplayTokens', () => {
+  test('empty valid payload has no values while explicit zero remains meaningful', () => {
+    const empty = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{}}}'
+    )
+    assert.equal(empty.status, 'valid')
+    assert.equal(resolveDisplayTokens(empty).hasValues, false)
+    const zero = parseBillingDetails(
+      '{"schema_version":1,"tokens":{"input":{"text_input":0},"output":{},"cache":{}}}'
+    )
+    assert.equal(resolveDisplayTokens(zero).hasValues, true)
+    assert.equal(resolveDisplayTokens(zero).input, 0)
+  })
+
   test('missing details never derive tokens from aggregate columns', () => {
     const tokens = resolveDisplayTokens(parseBillingDetails(null))
 
@@ -156,7 +169,6 @@ describe('resolveDisplayTokens', () => {
     assert.equal(tokens.output, null)
     assert.equal(tokens.cacheRead, null)
     assert.equal(tokens.cacheWrite, null)
-    assert.equal(tokens.fromBillingDetails, true)
     assert.equal(tokens.hasValues, false)
   })
 
@@ -170,7 +182,6 @@ describe('resolveDisplayTokens', () => {
     assert.equal(tokens.output, 7)
     assert.equal(tokens.reasoningOutput, 3)
     assert.equal(tokens.cacheRead, 4)
-    assert.equal(tokens.fromBillingDetails, true)
   })
 
   test('valid cache splits expose their unallocated remainder', () => {
@@ -192,7 +203,6 @@ describe('resolveDisplayTokens', () => {
     assert.equal(tokens.output, null)
     assert.equal(tokens.cacheRead, null)
     assert.equal(tokens.cacheWrite, null)
-    assert.equal(tokens.fromBillingDetails, true)
     assert.equal(tokens.hasValues, false)
     assert.deepEqual(buildTokenTooltipRows(tokens), [])
   })
@@ -244,10 +254,10 @@ describe('buildTokenBreakdownGroups', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":2},"output":{"text_output":7,"reasoning_output":3,"rejected_prediction":1},"cache":{"read_cache":11,"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
     )
-    const groups = buildTokenBreakdownGroups(
-      resolveDisplayTokens(billing),
-      { aggregatePromptTokens: 999, formatTokens: String }
-    )
+    const groups = buildTokenBreakdownGroups(resolveDisplayTokens(billing), {
+      aggregatePromptTokens: 999,
+      formatTokens: String,
+    })
 
     const modality = groups.find(
       (group) => group.titleKey === 'usageLogs.fields.multimodalTokens'

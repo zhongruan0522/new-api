@@ -55,8 +55,10 @@ func InitDB() (err error) {
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
 		if !common.IsMasterNode {
-			if err := ensureLogBillingDetailsColumn(dbstore.DB, "main"); err != nil {
-				return err
+			if os.Getenv("LOG_SQL_DSN") == "" {
+				if err := ensureLogBillingDetailsColumn(dbstore.DB, "main"); err != nil {
+					return err
+				}
 			}
 			if err := ensureModelPriceTableTables(dbstore.DB, "main"); err != nil {
 				return err

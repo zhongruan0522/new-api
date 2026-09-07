@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/NookMux/NookMux/internal/store/db"
 	"github.com/NookMux/NookMux/internal/store/log"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -21,8 +22,17 @@ func TestEnsureLogBillingDetailsColumnBlocksUnmigratedSlaveSchema(t *testing.T) 
 	if err := dbHandle.AutoMigrate(&logstore.Log{}); err != nil {
 		t.Fatalf("migrate current schema: %v", err)
 	}
+	if err := ensureLogBillingDetailsColumn(dbHandle, "test"); err == nil {
+		t.Fatal("columns alone must not permit slave startup")
+	}
+	oldLogDB := dbstore.LOG_DB
+	dbstore.LOG_DB = dbHandle
+	t.Cleanup(func() { dbstore.LOG_DB = oldLogDB })
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatal(err)
+	}
 	if err := ensureLogBillingDetailsColumn(dbHandle, "test"); err != nil {
-		t.Fatalf("current schema should be accepted: %v", err)
+		t.Fatal(err)
 	}
 
 	if err := dbHandle.Migrator().DropColumn(&logstore.Log{}, "billing_details_version"); err != nil {

@@ -287,7 +287,9 @@ type RecordConsumeLogParams struct {
 	Other            map[string]interface{} `json:"other"`
 	// BillingDetails 是归一化 Token 用量的 canonical JSON 字符串（schema 见
 	// docs/PRD/计费.md 第 4 章），由调用方在归一化成功后传入；上游序列化失败
-	// 时调用方必须显式报错，不得传占位值。空串表示该入口没有 Token 用量，
+	// 时调用方必须显式报错，不得传占位值。空串表示没有可用的归一化明细，
+	// 包括无 Token 口径、上游无 usage 或归一化失败；失败原因由调用方记录。
+	// 聚合列非零但明细为空会触发边界告警，仍保留账务日志用于对账。
 	// 落库时 billing_details 列保持 NULL。
 	BillingDetails string `json:"billing_details,omitempty"`
 	LogType        int    `json:"log_type"` // 日志类型，0 表示使用默认的 LogTypeConsume
@@ -310,6 +312,8 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	var billingDetails *string
 	if params.BillingDetails != "" {
 		billingDetails = &params.BillingDetails
+	} else if params.PromptTokens != 0 || params.CompletionTokens != 0 {
+		logger.LogWarn(c, fmt.Sprintf("billing_details missing for nonzero aggregate usage: channel_id=%d log_type=%d prompt_tokens=%d completion_tokens=%d; inspect caller usage/normalization diagnostics", params.ChannelId, params.LogType, params.PromptTokens, params.CompletionTokens))
 	}
 	logType := params.LogType
 	if logType == 0 {

@@ -381,9 +381,7 @@ function buildBillingRows(
     const cacheWrite5m = tokens.cacheWrite5m ?? 0
     const cacheWrite1h = tokens.cacheWrite1h ?? 0
     const hasSplitCacheWrite = cacheWrite5m > 0 || cacheWrite1h > 0
-    const unallocatedCacheWrite = tokens.fromBillingDetails
-      ? (tokens.cacheWriteUnallocated ?? 0)
-      : 0
+    const unallocatedCacheWrite = tokens.cacheWriteUnallocated ?? 0
     if (hasSplitCacheWrite) {
       pushTokenBillingRow({
         rows,
@@ -860,9 +858,7 @@ function BillingBreakdown(props: {
   )
 }
 
-function shouldHideTieredCacheColumns(
-  log: UsageLog
-): boolean {
+function shouldHideTieredCacheColumns(log: UsageLog): boolean {
   const billing = parseBillingDetails(log.billing_details)
   if (billing.status !== 'valid') return true
   return !hasOfficialCacheTokens(billing.tokens)
@@ -1502,7 +1498,9 @@ function DetailsDialogBody(props: {
       {isVisible('token_breakdown') &&
         isConsume &&
         !isViolation &&
-        billingDetails.status === 'missing' && (
+        (billingDetails.status === 'missing' ||
+          (billingDetails.status === 'valid' &&
+            !resolveDisplayTokens(billingDetails).hasValues)) && (
           <DetailSection label={t('usageLogs.fields.tokenBreakdown')}>
             <DetailRow
               label={t('usageLogs.fields.billingDetails')}

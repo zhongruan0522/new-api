@@ -76,3 +76,5 @@
 - 改模型、迁移或缓存后执行相关 store 测试。
 - 涉及 SQL 或迁移时至少做 SQLite 路径验证；能配置 MySQL/PostgreSQL 时补充对应验证。
 - 跨层影响执行 `go test ./internal/store/... ./internal/domain/... ./internal/httpapi/controller/...`。
+
+- Token 明细迁移完成标记位于实际日志库的 `log_billing_migration_states`，不是主库 options；slave 须检查完成标记。升级须停止并排空旧版本写入，具体顺序及重试边界见 [计费 PRD](../../docs/PRD/计费.md#43-迁移与兼容)。

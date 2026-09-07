@@ -220,7 +220,6 @@ export interface DisplayTokenValues {
   reasoningOutput: number | null
   acceptedPrediction: number | null
   rejectedPrediction: number | null
-  fromBillingDetails: boolean
   hasValues: boolean
 }
 
@@ -247,7 +246,6 @@ export function resolveDisplayTokens(
       reasoningOutput: null,
       acceptedPrediction: null,
       rejectedPrediction: null,
-      fromBillingDetails: true,
       hasValues: false,
     }
   }
@@ -271,7 +269,6 @@ export function resolveDisplayTokens(
     reasoningOutput: getBillingToken(billing.tokens, 'reasoning_output'),
     acceptedPrediction: getBillingToken(billing.tokens, 'accepted_prediction'),
     rejectedPrediction: getBillingToken(billing.tokens, 'rejected_prediction'),
-    fromBillingDetails: true,
     hasValues: hasOfficialBillingTokens(billing.tokens),
   }
 }
@@ -296,10 +293,9 @@ export function buildTokenTooltipRows(
   tokens: DisplayTokenValues
 ): TokenTooltipRow[] {
   const rows: TokenTooltipRow[] = []
-  const officialZeroIsMeaningful = tokens.fromBillingDetails
 
   function add(labelKey: string, value: number | null) {
-    if (value != null && (officialZeroIsMeaningful || value > 0)) {
+    if (value != null) {
       rows.push({ labelKey, value })
     }
   }
@@ -361,21 +357,11 @@ export function buildTokenBreakdownGroups(
   const standardRows: TokenBreakdownRow[] = [
     {
       labelKey: 'usageLogs.fields.inputTokens',
-      value:
-        tokens.fromBillingDetails && tokens.input == null
-          ? '-'
-          : formatTokens(tokens.input ?? 0),
+      value: tokens.input == null ? '-' : formatTokens(tokens.input ?? 0),
     },
     {
       labelKey: 'usageLogs.fields.outputTokens',
-      value:
-        tokens.fromBillingDetails && tokens.textOutput == null
-          ? '-'
-          : formatTokens(
-              tokens.fromBillingDetails
-                ? (tokens.textOutput ?? 0)
-                : (tokens.output ?? 0)
-            ),
+      value: tokens.textOutput == null ? '-' : formatTokens(tokens.textOutput),
     },
   ]
   if (cacheRead > 0 || cacheWrite > 0) {
@@ -440,16 +426,6 @@ export function buildTokenBreakdownGroups(
     modalityRows.push({
       labelKey: 'usageLogs.fields.documentInput',
       value: formatTokens(tokens.documentInput ?? 0),
-    })
-  }
-  if (
-    tokens.fromBillingDetails === false &&
-    tokens.textOutput != null &&
-    tokens.textOutput > 0
-  ) {
-    modalityRows.push({
-      labelKey: 'usageLogs.fields.textOutput',
-      value: formatTokens(tokens.textOutput),
     })
   }
   if ((tokens.audioInput ?? 0) > 0) {

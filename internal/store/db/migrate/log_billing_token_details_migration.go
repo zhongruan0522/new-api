@@ -1,9 +1,11 @@
 package dbmigrate
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/NookMux/NookMux/internal/common"
 	"github.com/NookMux/NookMux/internal/domain/billing"
@@ -64,57 +66,104 @@ func backfillLogBillingTokenDetails() error {
 		return fmt.Errorf("log database is not initialized")
 	}
 
+	// Keep the marker in the log database: the main DB may serve a different
+	// log database. Existing optionstore markers are best-effort and main-DB-only.
+	completed := false
+	if err := retryLogBillingMigration(dbstore.LOG_DB, func(db *gorm.DB) error {
+		if err := db.AutoMigrate(&logBillingMigrationState{}); err != nil {
+			return err
+		}
+		var count int64
+		if err := db.Model(&logBillingMigrationState{}).Where("version = ?", logstore.LogBillingDetailsVersion).Count(&count).Error; err != nil {
+			return err
+		}
+		completed = count == 1
+		return nil
+	}); err != nil {
+		return fmt.Errorf("initialize billing migration marker: %w", err)
+	}
+	if completed {
+		common.SysLog("backfillLogBillingTokenDetails: already completed")
+		return nil
+	}
 	migrated := int64(0)
+	lastID := 0
+	started := time.Now()
 	for {
 		var rows []legacyBillingDetailsRow
-		err := dbstore.LOG_DB.Model(&logstore.Log{}).
-			Select("id, type, prompt_tokens, completion_tokens, other, billing_details").
-			Where("billing_details_version < ?", logstore.LogBillingDetailsVersion).
-			Order("id ASC").
-			Limit(logBillingTokenDetailsBatchSize).
-			Find(&rows).Error
+		err := retryLogBillingMigration(dbstore.LOG_DB, func(db *gorm.DB) error {
+			rows = nil
+			return db.Model(&logstore.Log{}).
+				Select("id, type, prompt_tokens, completion_tokens, other, billing_details").
+				Where("id > ? AND billing_details_version < ?", lastID, logstore.LogBillingDetailsVersion).
+				Order("id ASC").Limit(logBillingTokenDetailsBatchSize).Find(&rows).Error
+		})
 		if err != nil {
 			return fmt.Errorf("query logs for billing details migration: %w", err)
 		}
 		if len(rows) == 0 {
-			common.SysLog(fmt.Sprintf("backfillLogBillingTokenDetails: completed, %d rows migrated", migrated))
+			if err := retryLogBillingMigration(dbstore.LOG_DB, func(db *gorm.DB) error {
+				return db.Save(&logBillingMigrationState{Version: logstore.LogBillingDetailsVersion}).Error
+			}); err != nil {
+				return fmt.Errorf("complete billing migration marker: %w", err)
+			}
+			common.SysLog(fmt.Sprintf("backfillLogBillingTokenDetails: completed, %d rows migrated, last_id=%d elapsed=%s", migrated, lastID, time.Since(started)))
 			return nil
 		}
-
-		err = dbstore.LOG_DB.Transaction(func(tx *gorm.DB) error {
-			for _, row := range rows {
-				details, cleanedOther, changed, processErr := migrateLegacyBillingDetails(row)
-				if processErr != nil {
-					return fmt.Errorf("log id=%d: %w", row.Id, processErr)
-				}
-
-				updates := map[string]interface{}{
-					"billing_details_version": logstore.LogBillingDetailsVersion,
-				}
-				if details == nil {
-					updates["billing_details"] = nil
-				} else {
-					updates["billing_details"] = *details
-				}
-				if changed {
-					updates["other"] = cleanedOther
-				}
-				result := tx.Model(&logstore.Log{}).Where("id = ?", row.Id).Updates(updates)
-				if result.Error != nil {
-					return fmt.Errorf("log id=%d: update migrated billing details: %w", row.Id, result.Error)
-				}
-				if result.RowsAffected != 1 {
-					return fmt.Errorf("log id=%d: update affected %d rows, want 1", row.Id, result.RowsAffected)
-				}
-				migrated++
+		// Validate once before opening a transaction. Bad historical data is not a
+		// transient database error and must fail immediately without retries.
+		updates := make([]map[string]interface{}, len(rows))
+		for i, row := range rows {
+			details, cleanedOther, changed, err := migrateLegacyBillingDetails(row)
+			if err != nil {
+				return fmt.Errorf("log id=%d: %w", row.Id, err)
 			}
-			return nil
+			updates[i] = map[string]interface{}{"billing_details_version": logstore.LogBillingDetailsVersion, "billing_details": details}
+			if changed {
+				updates[i]["other"] = cleanedOther
+			}
+		}
+		err = retryLogBillingMigration(dbstore.LOG_DB, func(db *gorm.DB) error {
+			return db.Transaction(func(tx *gorm.DB) error {
+				for i, row := range rows {
+					// Version guard also makes retry safe if the commit result was lost.
+					if err := tx.Model(&logstore.Log{}).Where("id = ? AND billing_details_version < ?", row.Id, logstore.LogBillingDetailsVersion).Updates(updates[i]).Error; err != nil {
+						return fmt.Errorf("log id=%d: update migrated billing details: %w", row.Id, err)
+					}
+				}
+				return nil
+			})
 		})
 		if err != nil {
-			common.SysError(fmt.Sprintf("backfillLogBillingTokenDetails: %v", err))
 			return err
 		}
+		migrated += int64(len(rows))
+		lastID = rows[len(rows)-1].Id
+		common.SysLog(fmt.Sprintf("backfillLogBillingTokenDetails: rows=%d last_id=%d elapsed=%s", migrated, lastID, time.Since(started)))
 	}
+}
+
+// Presence means all batches committed. Old writers MUST be drained before
+// this release starts; a marker cannot fence an already-running old binary.
+type logBillingMigrationState struct {
+	Version int `gorm:"primaryKey;autoIncrement:false"`
+}
+
+func retryLogBillingMigration(db *gorm.DB, operation func(*gorm.DB) error) error {
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		err = operation(db.WithContext(ctx))
+		cancel()
+		if err == nil {
+			return nil
+		}
+		common.SysError(fmt.Sprintf("billing details migration database attempt %d/3 failed: %v", attempt+1, err))
+		if attempt < 2 {
+			time.Sleep(time.Duration(1<<attempt) * 250 * time.Millisecond)
+		}
+	}
+	return err
 }
 
 // migrateLegacyBillingDetails converts one historical row. A valid existing
@@ -145,7 +194,7 @@ func migrateLegacyBillingDetails(row legacyBillingDetailsRow) (*string, string, 
 		if err := mergeLegacyTokenValues(payload, values); err != nil {
 			return nil, "", false, err
 		}
-	} else if row.Type == logstore.LogTypeConsume || values.HasExplicitTokenValue {
+	} else if (row.Type == logstore.LogTypeConsume && (row.PromptTokens != 0 || row.CompletionTokens != 0)) || values.HasExplicitTokenValue {
 		payload = &billing.BillingDetailsPayload{
 			SchemaVersion: billing.BillingDetailsSchemaVersion,
 		}
