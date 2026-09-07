@@ -1,0 +1,280 @@
+package dbmigrate
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/NookMux/NookMux/internal/domain/billing"
+	"github.com/NookMux/NookMux/internal/store/db"
+	"github.com/NookMux/NookMux/internal/store/log"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+)
+
+func setupTokenDetailsMigrationDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	dbHandle, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := dbHandle.AutoMigrate(&logstore.Log{}); err != nil {
+		t.Fatalf("migrate sqlite: %v", err)
+	}
+	return dbHandle
+}
+
+func seedTokenMigrationLog(t *testing.T, dbHandle *gorm.DB, row logstore.Log) logstore.Log {
+	t.Helper()
+	if err := dbHandle.Create(&row).Error; err != nil {
+		t.Fatalf("seed log: %v", err)
+	}
+	return row
+}
+
+func tokenMigrationStoredRow(t *testing.T, dbHandle *gorm.DB, id int) logstore.Log {
+	t.Helper()
+	var stored logstore.Log
+	if err := dbHandle.First(&stored, id).Error; err != nil {
+		t.Fatalf("reload log id=%d: %v", id, err)
+	}
+	return stored
+}
+
+func requireTokenDetails(t *testing.T, raw *string) *billing.BillingDetailsPayload {
+	t.Helper()
+	if raw == nil {
+		t.Fatal("billing_details is nil")
+	}
+	payload, err := billing.ParseBillingDetailsJSON(*raw)
+	if err != nil {
+		t.Fatalf("parse billing_details %q: %v", *raw, err)
+	}
+	return payload
+}
+
+func requireTokenValue(t *testing.T, value *int, want int) {
+	t.Helper()
+	if value == nil {
+		t.Fatalf("token value is nil, want %d", want)
+	}
+	if *value != want {
+		t.Fatalf("token value = %d, want %d", *value, want)
+	}
+}
+
+func TestBackfillLogBillingTokenDetailsHistoricalRows(t *testing.T) {
+	dbHandle := setupTokenDetailsMigrationDB(t)
+	oldLogDB := dbstore.LOG_DB
+	oldMainDB := dbstore.DB
+	dbstore.LOG_DB = dbHandle
+	dbstore.DB = dbHandle
+	t.Cleanup(func() {
+		dbstore.LOG_DB = oldLogDB
+		dbstore.DB = oldMainDB
+	})
+
+	generic := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     100,
+		CompletionTokens: 50,
+		Other:            `{"cache_tokens":20,"cache_ratio":0.5,"request_path":"/v1/chat"}`,
+	})
+	claude := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     150,
+		CompletionTokens: 50,
+		Other:            `{"cache_tokens":30,"cache_creation_tokens":40,"cache_creation_tokens_5m":30,"cache_creation_tokens_1h":10,"cache_creation_ratio":2,"claude":true}`,
+	})
+	audio := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     120,
+		CompletionTokens: 50,
+		Other:            `{"audio_input":20,"audio_output":10,"text_input":100,"text_output":40,"audio":true}`,
+	})
+	image := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     10,
+		CompletionTokens: 30,
+		Other:            `{"image_output":5}`,
+	})
+	explicitZero := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:  logstore.LogTypeConsume,
+		Other: `{"cache_tokens":0,"audio_input_token_count":0,"model_ratio":1}`,
+	})
+
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("backfill: %v", err)
+	}
+
+	genericRow := tokenMigrationStoredRow(t, dbHandle, generic.Id)
+	if genericRow.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("generic version = %d", genericRow.BillingDetailsVersion)
+	}
+	genericPayload := requireTokenDetails(t, genericRow.BillingDetails)
+	requireTokenValue(t, genericPayload.Tokens.Input.TextInput, 80)
+	requireTokenValue(t, genericPayload.Tokens.Output.TextOutput, 50)
+	requireTokenValue(t, genericPayload.Tokens.Cache.ReadCache, 20)
+	if genericRow.Other != `{"cache_ratio":0.5,"request_path":"/v1/chat"}` {
+		t.Fatalf("generic other = %q", genericRow.Other)
+	}
+
+	claudeRow := tokenMigrationStoredRow(t, dbHandle, claude.Id)
+	claudePayload := requireTokenDetails(t, claudeRow.BillingDetails)
+	requireTokenValue(t, claudePayload.Tokens.Input.TextInput, 80)
+	requireTokenValue(t, claudePayload.Tokens.Output.TextOutput, 50)
+	requireTokenValue(t, claudePayload.Tokens.Cache.ReadCache, 30)
+	requireTokenValue(t, claudePayload.Tokens.Cache.WriteCache, 40)
+	requireTokenValue(t, claudePayload.Tokens.Cache.WriteCache5m, 30)
+	requireTokenValue(t, claudePayload.Tokens.Cache.WriteCache1h, 10)
+	if claudeRow.Other != `{"cache_creation_ratio":2,"claude":true}` {
+		t.Fatalf("claude other = %q", claudeRow.Other)
+	}
+
+	audioRow := tokenMigrationStoredRow(t, dbHandle, audio.Id)
+	audioPayload := requireTokenDetails(t, audioRow.BillingDetails)
+	requireTokenValue(t, audioPayload.Tokens.Input.TextInput, 100)
+	requireTokenValue(t, audioPayload.Tokens.Input.AudioInput, 20)
+	requireTokenValue(t, audioPayload.Tokens.Output.TextOutput, 40)
+	requireTokenValue(t, audioPayload.Tokens.Output.AudioOutput, 10)
+	if audioRow.Other != `{"audio":true}` {
+		t.Fatalf("audio other = %q", audioRow.Other)
+	}
+
+	imageRow := tokenMigrationStoredRow(t, dbHandle, image.Id)
+	imagePayload := requireTokenDetails(t, imageRow.BillingDetails)
+	requireTokenValue(t, imagePayload.Tokens.Output.TextOutput, 25)
+	requireTokenValue(t, imagePayload.Tokens.Output.ImageOutput, 5)
+	if imageRow.Other != `{}` {
+		t.Fatalf("image other = %q", imageRow.Other)
+	}
+
+	zeroRow := tokenMigrationStoredRow(t, dbHandle, explicitZero.Id)
+	zeroPayload := requireTokenDetails(t, zeroRow.BillingDetails)
+	requireTokenValue(t, zeroPayload.Tokens.Input.TextInput, 0)
+	requireTokenValue(t, zeroPayload.Tokens.Input.AudioInput, 0)
+	requireTokenValue(t, zeroPayload.Tokens.Cache.ReadCache, 0)
+	if zeroRow.Other != `{"model_ratio":1}` {
+		t.Fatalf("zero other = %q", zeroRow.Other)
+	}
+
+	before := make(map[int]string, 4)
+	for _, row := range []logstore.Log{genericRow, claudeRow, audioRow, imageRow, zeroRow} {
+		before[row.Id] = *row.BillingDetails
+	}
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("repeat backfill: %v", err)
+	}
+	for id, details := range before {
+		stored := tokenMigrationStoredRow(t, dbHandle, id)
+		if stored.BillingDetails == nil || *stored.BillingDetails != details {
+			t.Fatalf("id=%d billing_details changed on second run: %v, want %q", id, stored.BillingDetails, details)
+		}
+	}
+}
+
+func TestBackfillLogBillingTokenDetailsPreservesValidDetails(t *testing.T) {
+	dbHandle := setupTokenDetailsMigrationDB(t)
+	oldLogDB := dbstore.LOG_DB
+	dbstore.LOG_DB = dbHandle
+	t.Cleanup(func() { dbstore.LOG_DB = oldLogDB })
+
+	existing := `{"schema_version":1,"tokens":{"input":{"text_input":10},"output":{},"cache":{"read_cache":4}}}`
+	row := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     100,
+		CompletionTokens: 20,
+		Other:            `{"cache_tokens":4,"cache_ratio":1}`,
+		BillingDetails:   &existing,
+	})
+
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("backfill: %v", err)
+	}
+	stored := tokenMigrationStoredRow(t, dbHandle, row.Id)
+	if stored.BillingDetails == nil || *stored.BillingDetails != existing {
+		t.Fatalf("billing_details = %v, want unchanged %q", stored.BillingDetails, existing)
+	}
+	if stored.Other != `{"cache_ratio":1}` {
+		t.Fatalf("other = %q", stored.Other)
+	}
+}
+
+func TestBackfillLogBillingTokenDetailsFailureBlocks(t *testing.T) {
+	tests := []struct {
+		name  string
+		other string
+	}{
+		{name: "malformed other", other: `{`},
+		{name: "negative detail", other: `{"cache_tokens":-1}`},
+		{name: "fractional detail", other: `{"cache_tokens":1.5}`},
+		{name: "details exceed aggregate", other: `{"cache_tokens":101}`},
+		{name: "conflicting existing details", other: `{"cache_tokens":5}`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dbHandle := setupTokenDetailsMigrationDB(t)
+			oldLogDB := dbstore.LOG_DB
+			dbstore.LOG_DB = dbHandle
+			t.Cleanup(func() { dbstore.LOG_DB = oldLogDB })
+
+			row := logstore.Log{
+				Type:             logstore.LogTypeConsume,
+				PromptTokens:     100,
+				CompletionTokens: 50,
+				Other:            test.other,
+			}
+			if test.name == "conflicting existing details" {
+				details := `{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{"read_cache":4}}}`
+				row.BillingDetails = &details
+			}
+			row = seedTokenMigrationLog(t, dbHandle, row)
+
+			err := backfillLogBillingTokenDetails()
+			if err == nil {
+				t.Fatalf("%s: backfill succeeded, want explicit failure", test.name)
+			}
+			var version int
+			if err := dbHandle.Raw("SELECT billing_details_version FROM logs WHERE id = ?", row.Id).Row().Scan(&version); err != nil {
+				t.Fatalf("read version: %v", err)
+			}
+			if version != 0 {
+				t.Fatalf("failed row was marked version %d", version)
+			}
+		})
+	}
+}
+
+func TestBackfillLogBillingTokenDetailsBatchFailureRollsBack(t *testing.T) {
+	dbHandle := setupTokenDetailsMigrationDB(t)
+	oldLogDB := dbstore.LOG_DB
+	dbstore.LOG_DB = dbHandle
+	t.Cleanup(func() { dbstore.LOG_DB = oldLogDB })
+
+	valid := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     100,
+		CompletionTokens: 50,
+		Other:            `{"cache_tokens":20,"model_ratio":1}`,
+	})
+	invalid := seedTokenMigrationLog(t, dbHandle, logstore.Log{
+		Type:             logstore.LogTypeConsume,
+		PromptTokens:     100,
+		CompletionTokens: 50,
+		Other:            `{"cache_tokens":101}`,
+	})
+
+	err := backfillLogBillingTokenDetails()
+	if err == nil {
+		t.Fatal("backfill succeeded, want batch failure")
+	}
+	for _, row := range []logstore.Log{valid, invalid} {
+		var version int
+		var other string
+		if err := dbHandle.Raw("SELECT billing_details_version, other FROM logs WHERE id = ?", row.Id).Row().Scan(&version, &other); err != nil {
+			t.Fatalf("read row id=%d: %v", row.Id, err)
+		}
+		if version != 0 {
+			t.Fatalf("row id=%d version=%d, want 0 after batch rollback", row.Id, version)
+		}
+	}
+}

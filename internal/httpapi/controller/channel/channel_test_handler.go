@@ -530,7 +530,7 @@ func testChannel(channel *channelstore.Channel, testUserID int, testModel string
 		originalGroupRatio = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
 	}
 	other := billing.GenerateTextOtherInfo(c, info, priceData.ModelRatio, originalGroupRatio, priceData.CompletionRatio,
-		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio, priceData.GroupRatioInfo.DynamicRatio)
+		priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio, priceData.GroupRatioInfo.DynamicRatio)
 	// 复用正式消费日志的流式指标，保证模型测试日志与线上展示一致。
 	billing.AppendStreamMetrics(other, info, milliseconds, usage.CompletionTokens)
 	logstore.RecordConsumeLog(c, testUserID, logstore.RecordConsumeLogParams{

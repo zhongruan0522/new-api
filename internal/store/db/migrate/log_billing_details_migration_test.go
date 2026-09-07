@@ -63,8 +63,8 @@ func assertBillingDetailsNull(t *testing.T, dbHandle *gorm.DB, id int) {
 }
 
 // TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB 验证独立日志库路径
-// （LOG_SQL_DSN）：历史库启动时 migrateLOGDB 补列、重复启动幂等、历史行保持
-// NULL 且旧字段不变，迁移后可写入新列。
+// （LOG_SQL_DSN）：历史库启动时 migrateLOGDB 补列、启动数据迁移补齐
+// billing_details、重复执行幂等，迁移后可写入新列。
 func TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB(t *testing.T) {
 	_, logDB := setupBillingDetailsMigrateTestDB(t)
 
@@ -92,12 +92,13 @@ func TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB(t *testing.T) {
 		if err := migrateLOGDB(); err != nil {
 			t.Fatalf("migrateLOGDB run %d: %v", run, err)
 		}
+		if err := backfillLogBillingTokenDetails(); err != nil {
+			t.Fatalf("backfill run %d: %v", run, err)
+		}
 	}
 	if !logDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
 		t.Fatal("billing_details column missing after migrateLOGDB")
 	}
-	assertBillingDetailsNull(t, logDB, historical.Id)
-
 	var stored logstore.Log
 	if err := logDB.First(&stored, historical.Id).Error; err != nil {
 		t.Fatalf("reload historical log: %v", err)
@@ -105,15 +106,22 @@ func TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB(t *testing.T) {
 	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_read":100}` {
 		t.Fatalf("historical row mutated by migration: %+v", stored)
 	}
+	if stored.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("billing_details_version = %d, want %d", stored.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
+	}
+	payload := requireTokenDetails(t, stored.BillingDetails)
+	requireTokenValue(t, payload.Tokens.Input.TextInput, 100)
+	requireTokenValue(t, payload.Tokens.Output.TextOutput, 50)
 
 	details := billingDetailsFixture
 	if err := logDB.Create(&logstore.Log{
-		UserId:         2,
-		CreatedAt:      1700000001,
-		Type:           logstore.LogTypeConsume,
-		ModelName:      "gpt-test",
-		Group:          "default",
-		BillingDetails: &details,
+		UserId:                2,
+		CreatedAt:             1700000001,
+		Type:                  logstore.LogTypeConsume,
+		ModelName:             "gpt-test",
+		Group:                 "default",
+		BillingDetails:        &details,
+		BillingDetailsVersion: logstore.LogBillingDetailsVersion,
 	}).Error; err != nil {
 		t.Fatalf("insert log with billing_details: %v", err)
 	}
@@ -127,10 +135,11 @@ func TestMigrateLOGDBAddsBillingDetailsOnHistoricalLogDB(t *testing.T) {
 }
 
 // TestMigrateDBAddsBillingDetailsOnHistoricalMainDB 验证主库路径（同库日志）的
-// 历史库启动：logs 表已存在且无新列时，完整执行 migrateDB 补列、重复启动
-// 幂等，历史行保持 NULL 且旧字段不被改写。
+// 历史库启动：logs 表已存在且无新列时，完整执行 migrateDB 补列、启动数据迁移
+// 补齐 billing_details，重复执行幂等。
 func TestMigrateDBAddsBillingDetailsOnHistoricalMainDB(t *testing.T) {
 	mainDB, _ := setupBillingDetailsMigrateTestDB(t)
+	dbstore.LOG_DB = mainDB
 
 	if err := mainDB.AutoMigrate(&logstore.Log{}); err != nil {
 		t.Fatalf("migrate sqlite main db: %v", err)
@@ -156,12 +165,13 @@ func TestMigrateDBAddsBillingDetailsOnHistoricalMainDB(t *testing.T) {
 		if err := migrateDB(); err != nil {
 			t.Fatalf("migrateDB run %d on historical main db: %v", run, err)
 		}
+		if err := backfillLogBillingTokenDetails(); err != nil {
+			t.Fatalf("backfill run %d on historical main db: %v", run, err)
+		}
 	}
 	if !mainDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
 		t.Fatal("billing_details column missing after migrateDB on historical main db")
 	}
-	assertBillingDetailsNull(t, mainDB, historical.Id)
-
 	var stored logstore.Log
 	if err := mainDB.First(&stored, historical.Id).Error; err != nil {
 		t.Fatalf("reload historical log: %v", err)
@@ -169,6 +179,12 @@ func TestMigrateDBAddsBillingDetailsOnHistoricalMainDB(t *testing.T) {
 	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_read":100}` {
 		t.Fatalf("historical row mutated by migration: %+v", stored)
 	}
+	if stored.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("billing_details_version = %d, want %d", stored.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
+	}
+	payload := requireTokenDetails(t, stored.BillingDetails)
+	requireTokenValue(t, payload.Tokens.Input.TextInput, 100)
+	requireTokenValue(t, payload.Tokens.Output.TextOutput, 50)
 }
 
 // TestMigrateDBMigratesLogModelOnFreshDB 验证主库迁移列表不遗漏 Log 模型：
@@ -176,10 +192,14 @@ func TestMigrateDBAddsBillingDetailsOnHistoricalMainDB(t *testing.T) {
 // 且迁移后的库可创建并读回该列（同库日志路径）。
 func TestMigrateDBBillingDetailsOnFreshDB(t *testing.T) {
 	mainDB, _ := setupBillingDetailsMigrateTestDB(t)
+	dbstore.LOG_DB = mainDB
 
 	for run := 1; run <= 2; run++ {
 		if err := migrateDB(); err != nil {
 			t.Fatalf("migrateDB run %d on fresh sqlite: %v", run, err)
+		}
+		if err := backfillLogBillingTokenDetails(); err != nil {
+			t.Fatalf("backfill run %d on fresh sqlite: %v", run, err)
 		}
 	}
 	if !mainDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
@@ -188,12 +208,13 @@ func TestMigrateDBBillingDetailsOnFreshDB(t *testing.T) {
 
 	details := billingDetailsFixture
 	if err := mainDB.Create(&logstore.Log{
-		UserId:         1,
-		CreatedAt:      1700000000,
-		Type:           logstore.LogTypeConsume,
-		ModelName:      "gpt-test",
-		Group:          "default",
-		BillingDetails: &details,
+		UserId:                1,
+		CreatedAt:             1700000000,
+		Type:                  logstore.LogTypeConsume,
+		ModelName:             "gpt-test",
+		Group:                 "default",
+		BillingDetails:        &details,
+		BillingDetailsVersion: logstore.LogBillingDetailsVersion,
 	}).Error; err != nil {
 		t.Fatalf("insert log with billing_details: %v", err)
 	}

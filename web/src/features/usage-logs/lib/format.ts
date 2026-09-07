@@ -24,6 +24,7 @@ import {
   type ParsedTier,
 } from '@/features/pricing/lib/billing-expr'
 import type { UsageLog } from '../data/schema'
+import type { BillingTokenValues } from './billing-details'
 import type { LogOtherData } from '../types'
 
 export { normalizeTierLabel }
@@ -254,19 +255,19 @@ export interface TieredBillingSummary {
  * not exercise the cache path (mirrors the classic frontend behaviour).
  */
 export function hasAnyCacheTokens(
-  other: LogOtherData | null | undefined
+  tokens: BillingTokenValues | null | undefined
 ): boolean {
-  if (!other) return false
   return (
-    (other.cache_tokens || 0) > 0 ||
-    (other.cache_creation_tokens || 0) > 0 ||
-    (other.cache_creation_tokens_5m || 0) > 0 ||
-    (other.cache_creation_tokens_1h || 0) > 0
+    (tokens?.read_cache ?? 0) > 0 ||
+    (tokens?.write_cache ?? 0) > 0 ||
+    (tokens?.write_cache_5m ?? 0) > 0 ||
+    (tokens?.write_cache_1h ?? 0) > 0
   )
 }
 
 export function getTieredBillingSummary(
-  other: LogOtherData | null
+  other: LogOtherData | null,
+  tokens: BillingTokenValues | null | undefined
 ): TieredBillingSummary | null {
   if (!other || other.billing_mode !== 'tiered_expr') return null
   const exprStr = decodeBillingExprB64(other.expr_b64)
@@ -275,7 +276,7 @@ export function getTieredBillingSummary(
   const tier = resolveMatchedTier(tiers, other.matched_tier)
   if (!tier) return null
 
-  const cacheTokensPresent = hasAnyCacheTokens(other)
+  const cacheTokensPresent = hasAnyCacheTokens(tokens)
 
   const priceEntries: TieredBillingSummary['priceEntries'] = []
   for (const v of BILLING_PRICING_VARS) {

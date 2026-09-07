@@ -228,7 +228,7 @@ func TestGenerateTextOtherInfoIncludesContextPricingAuditFields(t *testing.T) {
 		},
 	}
 
-	other := GenerateTextOtherInfo(ctx, relayInfo, 10, 1.5, 20, 0, 0.5, -1, -1, 1.2)
+	other := GenerateTextOtherInfo(ctx, relayInfo, 10, 1.5, 20, 0.5, -1, -1, 1.2)
 	if enabled, ok := other["context_pricing_enabled"].(bool); !ok || !enabled {
 		t.Fatalf("context_pricing_enabled = %#v, want true", other["context_pricing_enabled"])
 	}

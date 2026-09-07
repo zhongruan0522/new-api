@@ -190,7 +190,7 @@ func TestApplyQuotaUpdatesCountersAndWritesConsumeLog(t *testing.T) {
 	assert.Equal(t, float64(2), other["model_ratio"])
 	assert.Equal(t, float64(1), other["group_ratio"])
 	assert.Equal(t, float64(3), other["completion_ratio"])
-	assert.Equal(t, float64(40), other["cache_tokens"])
+	assert.NotContains(t, other, "cache_tokens")
 	assert.Equal(t, "/v1/chat/completions", other["request_path"])
 	snapshot, ok := other["billing_price_snapshot"].(map[string]interface{})
 	require.True(t, ok, "stage 4 price snapshot should be written to Other")
@@ -285,7 +285,8 @@ func TestApplyQuotaTotalTokensZeroWithToolFeesStillUpdatesCounters(t *testing.T)
 }
 
 // OtherInfo 组装：动态倍率下原始分组倍率 = 当前倍率 / 动态倍率；
-// 缓存创建 tokens、拒付原因、gizmo 模型名改写都要进入日志。
+	// 缓存创建倍率、拒付原因、gizmo 模型名改写都要进入日志；Token 明细只能
+	// 来自调用方生成的 billing_details，不能从 settlement 隐式反推。
 // （阶段 2 删除了请求侧语义打标 other["claude"]/other["usage_semantic"]，
 // usage 语义由 UsageSource 与 billing_details 承载。）
 func TestApplyQuotaOtherInfoAssembly(t *testing.T) {
@@ -318,8 +319,9 @@ func TestApplyQuotaOtherInfoAssembly(t *testing.T) {
 	assert.Equal(t, float64(4), other["group_ratio"], "group_ratio must be the pre-dynamic original ratio")
 	assert.Equal(t, float64(0.5), other["dynamic_ratio"])
 	assert.NotContains(t, other, "usage_semantic", "usage semantic param removed in stage 2")
-	assert.Equal(t, float64(12), other["cache_creation_tokens"])
+	assert.NotContains(t, other, "cache_creation_tokens")
 	assert.Equal(t, float64(0), other["cache_creation_ratio"], "ratio 为 0 时键也必须写入（守卫看 tokens 而非 ratio）")
+	assert.Nil(t, stored.BillingDetails, "synthetic settlement without normalized usage must not create token details")
 	assert.Equal(t, "risk_control", other["reject_reason"])
 	assert.Equal(t, float64(2), other["model_ratio"])
 	assert.Equal(t, float64(3), other["completion_ratio"])

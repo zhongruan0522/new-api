@@ -10,7 +10,7 @@ import (
 )
 
 // TestEnsureLogBillingDetailsColumnBlocksUnmigratedSlaveSchema verifies the
-// rolling-upgrade guard added for the billing_details column: an old logs table
+// rolling-upgrade guard added for billing_details columns: an old logs table
 // must prevent a slave node from starting instead of causing asynchronous log
 // INSERTs to fail after quota has already been settled.
 func TestEnsureLogBillingDetailsColumnBlocksUnmigratedSlaveSchema(t *testing.T) {
@@ -25,14 +25,14 @@ func TestEnsureLogBillingDetailsColumnBlocksUnmigratedSlaveSchema(t *testing.T) 
 		t.Fatalf("current schema should be accepted: %v", err)
 	}
 
-	if err := dbHandle.Migrator().DropColumn(&logstore.Log{}, "billing_details"); err != nil {
+	if err := dbHandle.Migrator().DropColumn(&logstore.Log{}, "billing_details_version"); err != nil {
 		t.Fatalf("simulate historical schema: %v", err)
 	}
 	err = ensureLogBillingDetailsColumn(dbHandle, "test")
 	if err == nil {
 		t.Fatal("historical schema must block slave startup")
 	}
-	want := "test database is missing logs.billing_details"
+	want := "test database is missing logs.billing_details_version"
 	if len(err.Error()) < len(want) || err.Error()[:len(want)] != want {
 		t.Fatalf("error = %q, want prefix %q", err.Error(), want)
 	}

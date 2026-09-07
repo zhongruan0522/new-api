@@ -17,11 +17,12 @@ func RecordLog(userId int, logType int, content string) {
 	}
 	username, _ := GetUsernameById(userId, false)
 	logEntry := &logstore.Log{
-		UserId:    userId,
-		Username:  username,
-		CreatedAt: common.GetTimestamp(),
-		Type:      logType,
-		Content:   content,
+		UserId:                userId,
+		Username:              username,
+		CreatedAt:             common.GetTimestamp(),
+		Type:                  logType,
+		Content:               content,
+		BillingDetailsVersion: logstore.LogBillingDetailsVersion,
 	}
 	err := dbstore.LOG_DB.Create(logEntry).Error
 	if err != nil {
@@ -35,11 +36,12 @@ func RecordLogWithAdminInfo(userId int, logType int, content string, adminInfo m
 	}
 	username, _ := GetUsernameById(userId, false)
 	logEntry := &logstore.Log{
-		UserId:    userId,
-		Username:  username,
-		CreatedAt: common.GetTimestamp(),
-		Type:      logType,
-		Content:   content,
+		UserId:                userId,
+		Username:              username,
+		CreatedAt:             common.GetTimestamp(),
+		Type:                  logType,
+		Content:               content,
+		BillingDetailsVersion: logstore.LogBillingDetailsVersion,
 	}
 	if len(adminInfo) > 0 {
 		logEntry.Other = common.MapToJsonStr(map[string]interface{}{

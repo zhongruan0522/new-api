@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/NookMux/NookMux/internal/common"
-	"github.com/NookMux/NookMux/internal/domain/shared"
 	relaycommon "github.com/NookMux/NookMux/internal/relay/common"
 
 	"github.com/NookMux/NookMux/internal/domain/billing/contract"
@@ -70,12 +69,11 @@ func appendRequestPath(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, other
 }
 
 func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio float64,
-	cacheTokens int, cacheRatio float64, modelPrice float64, userGroupRatio float64, dynamicRatio float64) map[string]interface{} {
+	cacheRatio float64, modelPrice float64, userGroupRatio float64, dynamicRatio float64) map[string]interface{} {
 	other := make(map[string]interface{})
 	other["model_ratio"] = modelRatio
 	other["group_ratio"] = groupRatio
 	other["completion_ratio"] = completionRatio
-	other["cache_tokens"] = cacheTokens
 	other["cache_ratio"] = cacheRatio
 	other["model_price"] = modelPrice
 	other["user_group_ratio"] = userGroupRatio
@@ -166,46 +164,35 @@ func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[st
 	other["request_conversion"] = chain
 }
 
-func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.RealtimeUsage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
+func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0.0, modelPrice, userGroupRatio, 0)
 	info["ws"] = true
-	info["audio_input"] = usage.InputTokenDetails.AudioTokens
-	info["audio_output"] = usage.OutputTokenDetails.AudioTokens
-	info["text_input"] = usage.InputTokenDetails.TextTokens
-	info["text_output"] = usage.OutputTokenDetails.TextTokens
 	info["audio_ratio"] = audioRatio
 	info["audio_completion_ratio"] = audioCompletionRatio
 	return info
 }
 
-func GenerateAudioOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *shared.Usage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
+func GenerateAudioOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0.0, modelPrice, userGroupRatio, 0)
 	info["audio"] = true
-	info["audio_input"] = usage.PromptTokensDetails.AudioTokens
-	info["audio_output"] = usage.CompletionTokenDetails.AudioTokens
-	info["text_input"] = usage.PromptTokensDetails.TextTokens
-	info["text_output"] = usage.CompletionTokenDetails.TextTokens
 	info["audio_ratio"] = audioRatio
 	info["audio_completion_ratio"] = audioCompletionRatio
 	return info
 }
 
 func GenerateClaudeOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio float64,
-	cacheTokens int, cacheRatio float64,
-	cacheCreationTokens int, cacheCreationRatio float64,
-	cacheCreationTokens5m int, cacheCreationRatio5m float64,
-	cacheCreationTokens1h int, cacheCreationRatio1h float64,
+	cacheRatio float64,
+	cacheCreationRatio float64,
+	cacheCreationRatio5m float64,
+	cacheCreationRatio1h float64,
 	modelPrice float64, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, userGroupRatio, 0)
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheRatio, modelPrice, userGroupRatio, 0)
 	info["claude"] = true
-	info["cache_creation_tokens"] = cacheCreationTokens
 	info["cache_creation_ratio"] = cacheCreationRatio
-	if cacheCreationTokens5m != 0 {
-		info["cache_creation_tokens_5m"] = cacheCreationTokens5m
+	if cacheCreationRatio5m != 0 {
 		info["cache_creation_ratio_5m"] = cacheCreationRatio5m
 	}
-	if cacheCreationTokens1h != 0 {
-		info["cache_creation_tokens_1h"] = cacheCreationTokens1h
+	if cacheCreationRatio1h != 0 {
 		info["cache_creation_ratio_1h"] = cacheCreationRatio1h
 	}
 	return info

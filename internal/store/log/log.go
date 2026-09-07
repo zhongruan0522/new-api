@@ -52,7 +52,10 @@ type Log struct {
 	// text 列先例：仅在有 Token 用量的消费入口写入，历史日志与无用量入口保持
 	// NULL，不以 "{}"、"null" 或空串占位。
 	BillingDetails *string `json:"billing_details,omitempty" gorm:"column:billing_details;type:text"`
-	ModelIcon      string  `json:"model_icon,omitempty" gorm:"-"`
+	// BillingDetailsVersion 是内部迁移版本，不进入 API。版本 0 表示历史行
+	// 尚未完成“Other Token 明细 -> billing_details”迁移；新写入直接为 v1。
+	BillingDetailsVersion int    `json:"-" gorm:"column:billing_details_version;default:0"`
+	ModelIcon             string `json:"model_icon,omitempty" gorm:"-"`
 
 	// OtherProjection 是 FormatUserLogs 清理 admin-only 字段后留下的临时投影，
 	// 供 HTTP 边界继续做角色裁剪时复用，避免同一页日志重复解析 Other JSON。
@@ -71,6 +74,10 @@ const (
 	LogTypeError   = 5
 	LogTypeRefund  = 6
 )
+
+// LogBillingDetailsVersion 与 billing_details JSON 的 schema_version 保持同代，
+// 另外标记该行已完成 Other -> billing_details 的历史数据迁移。
+const LogBillingDetailsVersion = 1
 
 func FormatUserLogs(logs []*Log, startIdx int) {
 	for i := range logs {
@@ -230,28 +237,29 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	otherStr := serializeLogOther(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
-		UserId:            userId,
-		Username:          username,
-		CreatedAt:         common.GetTimestamp(),
-		Type:              LogTypeError,
-		Content:           contentPreview,
-		PromptTokens:      0,
-		CompletionTokens:  0,
-		TokenName:         tokenName,
-		ModelName:         modelName,
-		Quota:             0,
-		ChannelId:         channelId,
-		TokenId:           tokenId,
-		UseTime:           useTimeMs,
-		IsStream:          isStream,
-		Group:             group,
-		Ip:                c.ClientIP(),
-		Ua:                headers.ua,
-		XTitle:            headers.xTitle,
-		HttpReferer:       headers.httpReferer,
-		RequestId:         requestId,
-		UpstreamRequestId: upstreamRequestId,
-		Other:             otherStr,
+		UserId:                userId,
+		Username:              username,
+		CreatedAt:             common.GetTimestamp(),
+		Type:                  LogTypeError,
+		Content:               contentPreview,
+		PromptTokens:          0,
+		CompletionTokens:      0,
+		TokenName:             tokenName,
+		ModelName:             modelName,
+		Quota:                 0,
+		ChannelId:             channelId,
+		TokenId:               tokenId,
+		UseTime:               useTimeMs,
+		IsStream:              isStream,
+		Group:                 group,
+		Ip:                    c.ClientIP(),
+		Ua:                    headers.ua,
+		XTitle:                headers.xTitle,
+		HttpReferer:           headers.httpReferer,
+		RequestId:             requestId,
+		UpstreamRequestId:     upstreamRequestId,
+		Other:                 otherStr,
+		BillingDetailsVersion: LogBillingDetailsVersion,
 	}
 	err := dbstore.LOG_DB.Create(log).Error
 	if err != nil {
@@ -309,29 +317,30 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	}
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
-		UserId:            userId,
-		Username:          username,
-		CreatedAt:         createdAt,
-		Type:              logType,
-		Content:           params.Content,
-		PromptTokens:      params.PromptTokens,
-		CompletionTokens:  params.CompletionTokens,
-		TokenName:         params.TokenName,
-		ModelName:         params.ModelName,
-		Quota:             params.Quota,
-		ChannelId:         params.ChannelId,
-		TokenId:           params.TokenId,
-		UseTime:           params.UseTimeMs,
-		IsStream:          params.IsStream,
-		Group:             params.Group,
-		Ip:                clientIP,
-		Ua:                headers.ua,
-		XTitle:            headers.xTitle,
-		HttpReferer:       headers.httpReferer,
-		RequestId:         requestId,
-		UpstreamRequestId: upstreamRequestId,
-		Other:             otherStr,
-		BillingDetails:    billingDetails,
+		UserId:                userId,
+		Username:              username,
+		CreatedAt:             createdAt,
+		Type:                  logType,
+		Content:               params.Content,
+		PromptTokens:          params.PromptTokens,
+		CompletionTokens:      params.CompletionTokens,
+		TokenName:             params.TokenName,
+		ModelName:             params.ModelName,
+		Quota:                 params.Quota,
+		ChannelId:             params.ChannelId,
+		TokenId:               params.TokenId,
+		UseTime:               params.UseTimeMs,
+		IsStream:              params.IsStream,
+		Group:                 params.Group,
+		Ip:                    clientIP,
+		Ua:                    headers.ua,
+		XTitle:                headers.xTitle,
+		HttpReferer:           headers.httpReferer,
+		RequestId:             requestId,
+		UpstreamRequestId:     upstreamRequestId,
+		Other:                 otherStr,
+		BillingDetails:        billingDetails,
+		BillingDetailsVersion: LogBillingDetailsVersion,
 	}
 	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
 	runtime.RelayGo(func() {

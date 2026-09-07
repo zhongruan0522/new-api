@@ -205,8 +205,6 @@ func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 			"subscription_remain", "subscription_total",
 			"stream_status",
 			"billing_price_snapshot",
-			"audio_input", "audio_output", "audio_input_token_count",
-			"text_input", "text_output",
 		}
 		for _, k := range otherKeys {
 			delete(otherMap, k)
@@ -267,13 +265,6 @@ func stripHiddenOtherFields(log *logstore.Log, hiddenFields map[string]bool) {
 		}
 		if hiddenFields[console.UsageLogFieldPriceTable] {
 			delete(otherMap, "billing_price_snapshot")
-		}
-		if hiddenFields[console.UsageLogFieldAudioTokens] {
-			delete(otherMap, "audio_input")
-			delete(otherMap, "audio_output")
-			delete(otherMap, "audio_input_token_count")
-			delete(otherMap, "text_input")
-			delete(otherMap, "text_output")
 		}
 	}
 

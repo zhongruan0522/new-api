@@ -89,8 +89,12 @@ func TestBillingDetailsMigrateOnDialect(t *testing.T) {
 	logDB := openBillingDetailsDB(t, "LOG_SQL_DSN", logDSN, true)
 
 	// —— 主库路径（同库日志）：空库初始化 ——
+	dbstore.LOG_DB = mainDB
 	if err := migrateDB(); err != nil {
 		t.Fatalf("migrateDB on empty %s: %v", dialectName(isPostgres), err)
+	}
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("billing details backfill on empty %s: %v", dialectName(isPostgres), err)
 	}
 	if !mainDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
 		t.Fatalf("logs.billing_details missing after migrateDB on empty %s", dialectName(isPostgres))
@@ -110,15 +114,25 @@ func TestBillingDetailsMigrateOnDialect(t *testing.T) {
 	if err := migrateDB(); err != nil {
 		t.Fatalf("migrateDB on historical %s schema: %v", dialectName(isPostgres), err)
 	}
-	assertHistoricalLogUntouched(t, mainDB, 102)
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("billing details backfill on historical %s: %v", dialectName(isPostgres), err)
+	}
+	assertHistoricalLogMigrated(t, mainDB, 102)
 	// 再次重复启动迁移验证幂等。
 	if err := migrateDB(); err != nil {
 		t.Fatalf("migrateDB re-run after historical migration on %s: %v", dialectName(isPostgres), err)
 	}
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("billing details backfill re-run on %s: %v", dialectName(isPostgres), err)
+	}
 
 	// —— 独立日志库路径（LOG_SQL_DSN）：空库初始化 + 历史库启动 + 幂等 ——
+	dbstore.LOG_DB = logDB
 	if err := migrateLOGDB(); err != nil {
 		t.Fatalf("migrateLOGDB on empty %s log db: %v", dialectName(isPostgres), err)
+	}
+	if err := backfillLogBillingTokenDetails(); err != nil {
+		t.Fatalf("billing details backfill on empty %s log db: %v", dialectName(isPostgres), err)
 	}
 	seedHistoricalLog(t, logDB, 201)
 	dropBillingDetailsColumn(t, logDB)
@@ -127,11 +141,14 @@ func TestBillingDetailsMigrateOnDialect(t *testing.T) {
 		if err := migrateLOGDB(); err != nil {
 			t.Fatalf("migrateLOGDB run %d on historical %s log db: %v", run, dialectName(isPostgres), err)
 		}
+		if err := backfillLogBillingTokenDetails(); err != nil {
+			t.Fatalf("billing details backfill run %d on historical %s log db: %v", run, dialectName(isPostgres), err)
+		}
 	}
 	if !logDB.Migrator().HasColumn(&logstore.Log{}, "billing_details") {
 		t.Fatalf("logs.billing_details missing after migrateLOGDB on %s", dialectName(isPostgres))
 	}
-	assertHistoricalLogUntouched(t, logDB, 201)
+	assertHistoricalLogMigrated(t, logDB, 201)
 	insertAndReadBackBillingDetails(t, logDB, 202, "migrateLOGDB write/read")
 }
 
@@ -227,30 +244,34 @@ func seedHistoricalLog(t *testing.T, dbHandle *gorm.DB, userId int) {
 		PromptTokens:     100,
 		CompletionTokens: 50,
 		Group:            "default",
-		Other:            `{"cache_read":100}`,
+		Other:            `{"cache_tokens":30,"cache_ratio":0.5}`,
 	}
 	if err := dbHandle.Create(historical).Error; err != nil {
 		t.Fatalf("seed historical log (userId=%d): %v", userId, err)
 	}
 }
 
-// assertHistoricalLogUntouched 验证历史行在新列补建后保持 NULL 且旧字段、
-// Other 不被迁移改写（不回填）。
-func assertHistoricalLogUntouched(t *testing.T, dbHandle *gorm.DB, userId int) {
+// assertHistoricalLogMigrated 验证历史行完成 Token 明细迁移，同时保留
+// Other 中的非 Token 字段。
+func assertHistoricalLogMigrated(t *testing.T, dbHandle *gorm.DB, userId int) {
 	t.Helper()
 	var value sql.NullString
 	if err := dbHandle.Raw("SELECT billing_details FROM logs WHERE user_id = ?", userId).Row().Scan(&value); err != nil {
 		t.Fatalf("query billing_details for historical log (userId=%d): %v", userId, err)
 	}
-	if value.Valid {
-		t.Fatalf("historical billing_details = %q, want NULL (no backfill)", value.String)
+	wantDetails := `{"schema_version":1,"tokens":{"input":{"text_input":70},"output":{"text_output":50},"cache":{"read_cache":30}}}`
+	if !value.Valid || value.String != wantDetails {
+		t.Fatalf("historical billing_details = %v, want %q", value, wantDetails)
 	}
 	var stored logstore.Log
 	if err := dbHandle.Where("user_id = ?", userId).First(&stored).Error; err != nil {
 		t.Fatalf("reload historical log: %v", err)
 	}
-	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_read":100}` {
+	if stored.Quota != 42 || stored.PromptTokens != 100 || stored.CompletionTokens != 50 || stored.Other != `{"cache_ratio":0.5}` {
 		t.Fatalf("historical row mutated by migration: %+v", stored)
+	}
+	if stored.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("billing_details_version = %d, want %d", stored.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
 	}
 }
 
@@ -260,12 +281,13 @@ func insertAndReadBackBillingDetails(t *testing.T, dbHandle *gorm.DB, userId int
 	t.Helper()
 	details := billingDetailsFixture
 	if err := dbHandle.Create(&logstore.Log{
-		UserId:         userId,
-		CreatedAt:      1700000001,
-		Type:           logstore.LogTypeConsume,
-		ModelName:      "gpt-test",
-		Group:          "default",
-		BillingDetails: &details,
+		UserId:                userId,
+		CreatedAt:             1700000001,
+		Type:                  logstore.LogTypeConsume,
+		ModelName:             "gpt-test",
+		Group:                 "default",
+		BillingDetails:        &details,
+		BillingDetailsVersion: logstore.LogBillingDetailsVersion,
 	}).Error; err != nil {
 		t.Fatalf("%s: insert log with billing_details: %v", scenario, err)
 	}

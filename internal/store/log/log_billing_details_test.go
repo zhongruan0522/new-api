@@ -129,6 +129,9 @@ func TestRecordConsumeLogWritesBillingDetailsOnlyWhenProvided(t *testing.T) {
 	if withDetails.BillingDetails == nil || *withDetails.BillingDetails != billingDetailsFixture {
 		t.Fatalf("billing_details = %v, want exact fixture JSON %q", withDetails.BillingDetails, billingDetailsFixture)
 	}
+	if withDetails.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("billing_details_version = %d, want %d", withDetails.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
+	}
 	// 兼容聚合列保持原语义，不因新列迁移或改写。
 	if withDetails.Quota != 233 || withDetails.PromptTokens != 16 || withDetails.CompletionTokens != 10 {
 		t.Fatalf("legacy aggregate columns changed: quota=%d prompt=%d completion=%d",
@@ -147,6 +150,9 @@ func TestRecordConsumeLogWritesBillingDetailsOnlyWhenProvided(t *testing.T) {
 		Other:     map[string]interface{}{"fee_type": "violation"},
 	})
 	withoutDetails := waitForConsumeLogRow(t, "user_id = ?", 2)
+	if withoutDetails.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("billing_details_version = %d, want %d", withoutDetails.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
+	}
 	value := queryBillingDetailsRaw(t, withoutDetails.Id)
 	if value.Valid {
 		t.Fatalf("billing_details = %q for entry without token usage, want NULL", value.String)
@@ -221,6 +227,9 @@ func TestBillingDetailsMigrationKeepsHistoricalRowsEmpty(t *testing.T) {
 	newRow := waitForConsumeLogRow(t, "user_id = ?", 2)
 	if newRow.BillingDetails == nil || *newRow.BillingDetails != billingDetailsFixture {
 		t.Fatalf("post-migration billing_details = %v, want fixture JSON", newRow.BillingDetails)
+	}
+	if newRow.BillingDetailsVersion != logstore.LogBillingDetailsVersion {
+		t.Fatalf("post-migration billing_details_version = %d, want %d", newRow.BillingDetailsVersion, logstore.LogBillingDetailsVersion)
 	}
 	if value := queryBillingDetailsRaw(t, historical.Id); value.Valid {
 		t.Fatalf("historical row was backfilled: %q", value.String)

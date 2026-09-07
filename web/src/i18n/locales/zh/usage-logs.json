@@ -14,6 +14,7 @@
   "usageLogs.fields.billingItem": "计费项",
   "usageLogs.fields.billingMode": "计费模式",
   "usageLogs.fields.billingSource": "计费来源",
+  "usageLogs.fields.noTokenDetails": "未记录 Token 明细",
   "usageLogs.fields.cacheCreation1h": "缓存创建 (1h)",
   "usageLogs.fields.cacheCreation5m": "缓存创建 (5m)",
   "usageLogs.fields.cacheCreationUnallocated": "未分档缓存写入",

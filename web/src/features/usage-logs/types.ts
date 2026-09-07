@@ -166,14 +166,6 @@ export interface LogOtherData {
   request_conversion?: string[]
   ws?: boolean
   audio?: boolean
-  audio_input?: number
-  audio_output?: number
-  text_input?: number
-  text_output?: number
-  cache_tokens?: number
-  cache_creation_tokens?: number
-  cache_creation_tokens_5m?: number
-  cache_creation_tokens_1h?: number
   claude?: boolean
   model_ratio?: number
   completion_ratio?: number
@@ -209,7 +201,6 @@ export interface LogOtherData {
   reasoning_effort?: string
   image?: boolean
   image_ratio?: number
-  image_output?: number
   web_search?: boolean
   web_search_call_count?: number
   web_search_price?: number
@@ -217,7 +208,6 @@ export interface LogOtherData {
   file_search_call_count?: number
   file_search_price?: number
   audio_input_seperate_price?: boolean
-  audio_input_token_count?: number
   audio_input_price?: number
   image_generation_call?: boolean
   image_generation_call_price?: number

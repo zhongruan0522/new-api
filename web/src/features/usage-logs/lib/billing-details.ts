@@ -17,8 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { z } from 'zod'
-import type { UsageLog } from '../data/schema'
-import type { BillingPriceComponentSnapshotData, LogOtherData } from '../types'
+import type { BillingPriceComponentSnapshotData } from '../types'
 
 export const BILLING_TOKEN_FIELDS = [
   'text_input',
@@ -50,7 +49,7 @@ export type BillingTokenValues = Partial<
 >
 
 export type BillingDetails =
-  | { status: 'legacy' }
+  | { status: 'missing' }
   | {
       status: 'invalid'
       code: BillingDetailsErrorCode
@@ -125,7 +124,7 @@ function invalid(code: BillingDetailsErrorCode): BillingDetails {
 }
 
 export function parseBillingDetails(raw: unknown): BillingDetails {
-  if (raw == null || raw === '') return { status: 'legacy' }
+  if (raw == null || raw === '') return { status: 'missing' }
   if (typeof raw !== 'string') return invalid('invalid_fields')
 
   const cached = parseCache.get(raw)
@@ -225,36 +224,10 @@ export interface DisplayTokenValues {
   hasValues: boolean
 }
 
-function legacyCacheCreationTotal(other: LogOtherData | null): number {
-  if (!other) return 0
-  const splitTotal =
-    (other.cache_creation_tokens_5m || 0) +
-    (other.cache_creation_tokens_1h || 0)
-  return splitTotal > 0 ? splitTotal : other.cache_creation_tokens || 0
-}
-
-function legacyOrdinaryInput(log: UsageLog, other: LogOtherData | null) {
-  if ((other?.audio || other?.ws) && other.text_input != null) {
-    return Math.max(other.text_input, 0)
-  }
-
-  const cacheRead = other?.cache_tokens ?? 0
-  const cacheCreation = legacyCacheCreationTotal(other)
-  const audioInput = other?.audio_input_seperate_price
-    ? other.audio_input_token_count || 0
-    : 0
-  return Math.max(
-    (log.prompt_tokens || 0) - cacheRead - cacheCreation - audioInput,
-    0
-  )
-}
-
 export function resolveDisplayTokens(
-  log: UsageLog,
-  billing: BillingDetails,
-  other: LogOtherData | null
+  billing: BillingDetails
 ): DisplayTokenValues {
-  if (billing.status === 'invalid') {
+  if (billing.status !== 'valid') {
     return {
       input: null,
       output: null,
@@ -276,47 +249,6 @@ export function resolveDisplayTokens(
       rejectedPrediction: null,
       fromBillingDetails: true,
       hasValues: false,
-    }
-  }
-
-  if (billing.status === 'legacy') {
-    const cacheRead = other?.cache_tokens || 0
-    const cacheWrite = legacyCacheCreationTotal(other)
-    const audioInput =
-      other?.audio_input ??
-      (other?.audio_input_seperate_price
-        ? other.audio_input_token_count || 0
-        : 0)
-    return {
-      input: legacyOrdinaryInput(log, other),
-      output: log.completion_tokens || 0,
-      cacheRead,
-      cacheWrite,
-      cacheWriteUnallocated: 0,
-      cacheWrite5m: other?.cache_creation_tokens_5m || 0,
-      cacheWrite1h: other?.cache_creation_tokens_1h || 0,
-      textInput: other?.text_input ?? null,
-      imageInput: null,
-      audioInput,
-      videoInput: null,
-      documentInput: null,
-      textOutput: other?.text_output ?? null,
-      audioOutput: other?.audio_output || 0,
-      imageOutput: other?.image_output || 0,
-      reasoningOutput: null,
-      acceptedPrediction: null,
-      rejectedPrediction: null,
-      fromBillingDetails: false,
-      hasValues: Boolean(
-        log.prompt_tokens ||
-        log.completion_tokens ||
-        cacheRead ||
-        cacheWrite ||
-        audioInput ||
-        other?.audio_output ||
-        other?.image_output ||
-        other?.text_input
-      ),
     }
   }
 

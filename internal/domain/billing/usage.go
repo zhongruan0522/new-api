@@ -441,13 +441,12 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 	if dynamicRatio > 0 {
 		originalGroupRatio = groupRatio / dynamicRatio
 	}
-	other := GenerateTextOtherInfo(ctx, relayInfo, settlement.modelRatio, originalGroupRatio, settlement.completionRatio, settlement.cacheTokens, settlement.cacheRatio, settlement.modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
+	other := GenerateTextOtherInfo(ctx, relayInfo, settlement.modelRatio, originalGroupRatio, settlement.completionRatio, settlement.cacheRatio, settlement.modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
 	AppendBillingPriceSnapshot(other, &BillingQuotaResult{PriceSnapshot: settlement.priceSnapshot})
 	if settlement.adminRejectReason != "" {
 		other["reject_reason"] = settlement.adminRejectReason
 	}
 	if settlement.cachedCreationTokens != 0 {
-		other["cache_creation_tokens"] = settlement.cachedCreationTokens
 		other["cache_creation_ratio"] = settlement.cachedCreationRatio
 	}
 	if !settlement.dWebSearchQuota.IsZero() {
@@ -480,7 +479,6 @@ func ApplyQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, settlement *
 	}
 	if !settlement.audioInputQuota.IsZero() {
 		other["audio_input_seperate_price"] = true
-		other["audio_input_token_count"] = settlement.audioTokens
 		other["audio_input_price"] = settlement.audioInputPrice
 	}
 	if !settlement.dImageGenerationCallQuota.IsZero() {

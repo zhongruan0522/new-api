@@ -63,7 +63,6 @@ import {
   type UsageLogDetailsVisibility,
 } from '@/features/usage-logs/components/dialogs/details-dialog'
 import { ModelBadge } from '@/features/usage-logs/components/model-badge'
-import type { UsageLog } from '@/features/usage-logs/data/schema'
 import {
   buildTokenTooltipRows,
   parseBillingDetails,
@@ -336,27 +335,16 @@ export function KeyQueryLogsTable({ rawKey }: KeyQueryLogsTableProps) {
             log.type === LOG_TYPE_REFUND
           if (!isApiCall) return null
 
-          const other = parseLogOther(log.other)
           const billing = parseBillingDetails(log.billing_details)
-          const tokens = resolveDisplayTokens(
-            log as unknown as UsageLog,
-            billing,
-            other
-          )
-          const promptTokens = log.prompt_tokens || 0
-          const completionTokens = log.completion_tokens || 0
-          if (billing.status === 'invalid') {
+          const tokens = resolveDisplayTokens(billing)
+		if (billing.status === 'invalid') {
             return (
               <span className='text-xs text-red-500'>
                 {t(billing.errorKey)}
               </span>
             )
           }
-          if (
-            (billing.status !== 'valid' || !tokens.hasValues) &&
-            promptTokens === 0 &&
-            completionTokens === 0
-          ) {
+          if (!tokens.hasValues) {
             return <span className='text-muted-foreground text-xs'>-</span>
           }
 

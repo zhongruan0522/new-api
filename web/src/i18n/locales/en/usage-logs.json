@@ -14,6 +14,7 @@
   "usageLogs.fields.billingItem": "Billing Item",
   "usageLogs.fields.billingMode": "Billing Mode",
   "usageLogs.fields.billingSource": "Billing Source",
+  "usageLogs.fields.noTokenDetails": "No token details recorded",
   "usageLogs.fields.cacheCreation1h": "Cache Creation (1h)",
   "usageLogs.fields.cacheCreation5m": "Cache Creation (5m)",
   "usageLogs.fields.cacheCreationUnallocated": "Unallocated Cache Creation",

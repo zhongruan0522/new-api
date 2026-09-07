@@ -133,6 +133,8 @@ function buildDetailSegments(
   if (!other) return []
 
   const segments: DetailSegment[] = []
+  const billing = parseBillingDetails(log.billing_details)
+  const billingTokens = billing.status === 'valid' ? billing.tokens : undefined
 
   const priceOpts = { digitsLarge: 4, digitsSmall: 6, abbreviate: false }
   const formatPrice = (price: number) =>
@@ -144,7 +146,7 @@ function buildDetailSegments(
     return showUnit ? `${text}/M` : text
   }
   const isTieredExpr = other.billing_mode === 'tiered_expr'
-  const tieredSummary = getTieredBillingSummary(other)
+  const tieredSummary = getTieredBillingSummary(other, billingTokens)
   const priceSnapshot = other.billing_price_snapshot
   const snapshotComponents = priceSnapshot?.components ?? []
   if (snapshotComponents.length > 0) {
@@ -235,7 +237,7 @@ function buildDetailSegments(
         text: `${t('pricing.fields.standard')} · ${formatPriceList(baseEntries, true)}`,
       })
 
-      if (hasAnyCacheTokens(other)) {
+      if (hasAnyCacheTokens(billingTokens)) {
         const cacheEntries = [
           other.cache_ratio != null && other.cache_ratio !== 1
             ? formatPriceCompact(inputPriceUSD * other.cache_ratio)
@@ -702,22 +704,15 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const log = row.original
         if (!isDisplayableLogType(log.type)) return null
 
-        const other = parseLogOther(log.other)
         const billing = parseBillingDetails(log.billing_details)
-        const tokens = resolveDisplayTokens(log, billing, other)
+        const tokens = resolveDisplayTokens(billing)
 
-        const promptTokens = log.prompt_tokens || 0
-        const completionTokens = log.completion_tokens || 0
-        if (billing.status === 'invalid') {
+		if (billing.status === 'invalid') {
           return (
             <span className='text-xs text-red-500'>{t(billing.errorKey)}</span>
           )
         }
-        if (
-          (billing.status !== 'valid' || !tokens.hasValues) &&
-          promptTokens === 0 &&
-          completionTokens === 0
-        ) {
+        if (!tokens.hasValues) {
           return <span className='text-muted-foreground text-xs'>-</span>
         }
 

@@ -56,6 +56,7 @@ import {
   getPriceSnapshotComponentLabelKey,
   getPriceSnapshotComponentQuantity,
   resolveDisplayTokens,
+  type BillingDetails,
   type DisplayTokenValues,
 } from '../../lib/billing-details'
 import type { UsageLogFieldKey } from '../../lib/field-visibility'
@@ -65,7 +66,6 @@ import {
   parseAuditLine,
   decodeBillingExprB64,
   getTieredBillingSummary,
-  hasAnyCacheTokens,
   isViolationFeeLog,
   getFirstResponseTimeColor,
   getTimeColor,
@@ -538,10 +538,11 @@ function BillingBreakdown(props: {
   const { isVisible, log, other } = props
   const isPerCall = isPerCallBilling(other.model_price)
   const isTieredExpr = other.billing_mode === 'tiered_expr'
-  const tieredSummary = getTieredBillingSummary(other)
-  const isContextPricing = other.context_pricing_enabled === true
   const billing = parseBillingDetails(log.billing_details)
-  const tokens = resolveDisplayTokens(log, billing, other)
+  const billingTokens = billing.status === 'valid' ? billing.tokens : undefined
+  const tieredSummary = getTieredBillingSummary(other, billingTokens)
+  const isContextPricing = other.context_pricing_enabled === true
+  const tokens = resolveDisplayTokens(billing)
   const priceSnapshot = other.billing_price_snapshot
   const hasPriceSnapshotComponents =
     (priceSnapshot?.components?.length ?? 0) > 0
@@ -860,45 +861,26 @@ function BillingBreakdown(props: {
 }
 
 function shouldHideTieredCacheColumns(
-  log: UsageLog,
-  other: LogOtherData
+  log: UsageLog
 ): boolean {
   const billing = parseBillingDetails(log.billing_details)
-  if (billing.status === 'valid') {
-    return !hasOfficialCacheTokens(billing.tokens)
-  }
-  return !hasAnyCacheTokens(other)
+  if (billing.status !== 'valid') return true
+  return !hasOfficialCacheTokens(billing.tokens)
 }
 
-function TokenBreakdown(props: { log: UsageLog; other: LogOtherData | null }) {
+function TokenBreakdown(props: { log: UsageLog; billing: BillingDetails }) {
   const { t } = useTranslation()
-  const { log, other } = props
-  const billing = parseBillingDetails(log.billing_details)
+  const { log, billing } = props
   if (billing.status === 'invalid') {
     // The centralized parse error is rendered once by DetailsDialogBody so it
     // cannot mask valid settlement data and cannot disappear behind a hidden
     // token-breakdown field.
     return null
   }
-  const tokens = resolveDisplayTokens(log, billing, other)
+  const tokens = resolveDisplayTokens(billing)
 
   const promptTokens = log.prompt_tokens || 0
-  const completionTokens = log.completion_tokens || 0
-  const cacheRead = tokens.cacheRead ?? 0
-  const cacheWrite = tokens.cacheWrite ?? 0
-  const audioInput = tokens.audioInput
-  const audioOutput = tokens.audioOutput
-  const imageOutput = tokens.imageOutput
-  const hasTokens =
-    tokens.fromBillingDetails === false
-      ? promptTokens > 0 ||
-        completionTokens > 0 ||
-        cacheRead > 0 ||
-        cacheWrite > 0 ||
-        (audioInput ?? 0) > 0 ||
-        (audioOutput ?? 0) > 0 ||
-        (imageOutput ?? 0) > 0
-      : tokens.hasValues
+  const hasTokens = tokens.hasValues
 
   if (!hasTokens) return null
 
@@ -1059,8 +1041,11 @@ function DetailsDialogBody(props: {
     other?.billing_mode === 'tiered_expr' &&
     !!other?.expr_b64
   const billingDetails = parseBillingDetails(props.log.billing_details)
+  const billingTokens =
+    billingDetails.status === 'valid' ? billingDetails.tokens : undefined
   const hasAudioTokens =
-    billingDetails.status === 'legacy' && !!(other?.ws || other?.audio)
+    (billingTokens?.audio_input ?? 0) > 0 ||
+    (billingTokens?.audio_output ?? 0) > 0
   const showTiming = isTimingLogType(props.log.type)
   const showClientHeaders = isClientHeadersLogType(props.log.type)
   const showAdminIp =
@@ -1397,36 +1382,36 @@ function DetailsDialogBody(props: {
       )}
 
       {/* Audio/WebSocket token breakdown */}
-      {isVisible('audio_tokens') && hasAudioTokens && other && (
+      {isVisible('audio_tokens') && hasAudioTokens && billingTokens && (
         <DetailSection
           icon={<Headphones className='size-3.5' aria-hidden='true' />}
           label={t('usageLogs.fields.audioTokens')}
         >
-          {other.audio_input != null && other.audio_input > 0 && (
+          {(billingTokens.audio_input ?? 0) > 0 && (
             <DetailRow
               label={t('pricing.fields.audioInput')}
-              value={formatTokens(other.audio_input)}
+              value={formatTokens(billingTokens.audio_input ?? 0)}
               mono
             />
           )}
-          {other.audio_output != null && other.audio_output > 0 && (
+          {(billingTokens.audio_output ?? 0) > 0 && (
             <DetailRow
               label={t('pricing.fields.audioOutput')}
-              value={formatTokens(other.audio_output)}
+              value={formatTokens(billingTokens.audio_output ?? 0)}
               mono
             />
           )}
-          {other.text_input != null && other.text_input > 0 && (
+          {(billingTokens.text_input ?? 0) > 0 && (
             <DetailRow
               label={t('usageLogs.fields.textInput')}
-              value={formatTokens(other.text_input)}
+              value={formatTokens(billingTokens.text_input ?? 0)}
               mono
             />
           )}
-          {other.text_output != null && other.text_output > 0 && (
+          {(billingTokens.text_output ?? 0) > 0 && (
             <DetailRow
               label={t('usageLogs.fields.textOutput')}
-              value={formatTokens(other.text_output)}
+              value={formatTokens(billingTokens.text_output ?? 0)}
               mono
             />
           )}
@@ -1494,7 +1479,7 @@ function DetailsDialogBody(props: {
           </DetailSection>
         )}
 
-      {/* Token breakdown reads billing_details first; Other is only a legacy fallback. */}
+      {/* Token breakdown is authoritative only in billing_details. */}
       {billingDetails.status === 'invalid' &&
         isDisplayableType(props.log.type) && (
           <DetailSection
@@ -1510,8 +1495,20 @@ function DetailsDialogBody(props: {
 
       {isVisible('token_breakdown') &&
         isDisplayableType(props.log.type) &&
-        (other || billingDetails.status !== 'legacy') && (
-          <TokenBreakdown log={props.log} other={other} />
+        billingDetails.status === 'valid' && (
+          <TokenBreakdown log={props.log} billing={billingDetails} />
+        )}
+
+      {isVisible('token_breakdown') &&
+        isConsume &&
+        !isViolation &&
+        billingDetails.status === 'missing' && (
+          <DetailSection label={t('usageLogs.fields.tokenBreakdown')}>
+            <DetailRow
+              label={t('usageLogs.fields.billingDetails')}
+              value={t('usageLogs.fields.noTokenDetails')}
+            />
+          </DetailSection>
         )}
 
       {/* Billing breakdown (consume type) */}
@@ -1525,7 +1522,7 @@ function DetailsDialogBody(props: {
           <DynamicPricingBreakdown
             billingExpr={decodeBillingExprB64(other.expr_b64)}
             matchedTierLabel={other.matched_tier}
-            hideCacheColumns={shouldHideTieredCacheColumns(props.log, other)}
+            hideCacheColumns={shouldHideTieredCacheColumns(props.log)}
           />
         </div>
       )}

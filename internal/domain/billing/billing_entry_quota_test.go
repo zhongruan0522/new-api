@@ -89,10 +89,10 @@ func TestPostClaudeConsumeQuotaNormalizedFormula(t *testing.T) {
 	other, err := common.StrToMap(stored.Other)
 	require.NoError(t, err)
 	// 现有计费快照仍写入现有位置
-	assert.Equal(t, float64(200), other["cache_tokens"])
-	assert.Equal(t, float64(100), other["cache_creation_tokens"])
-	assert.Equal(t, float64(60), other["cache_creation_tokens_5m"])
-	assert.Equal(t, float64(40), other["cache_creation_tokens_1h"])
+	assert.NotContains(t, other, "cache_tokens")
+	assert.NotContains(t, other, "cache_creation_tokens")
+	assert.NotContains(t, other, "cache_creation_tokens_5m")
+	assert.NotContains(t, other, "cache_creation_tokens_1h")
 	assert.Equal(t, float64(2), other["model_ratio"])
 }
 
@@ -134,8 +134,8 @@ func TestPostAudioConsumeQuotaNormalizedFormula(t *testing.T) {
 
 	other, err := common.StrToMap(stored.Other)
 	require.NoError(t, err)
-	assert.Equal(t, float64(200), other["audio_input"])
-	assert.Equal(t, float64(100), other["audio_output"])
+	assert.NotContains(t, other, "audio_input")
+	assert.NotContains(t, other, "audio_output")
 	assert.Equal(t, float64(8), other["audio_ratio"])
 }
 
@@ -229,7 +229,7 @@ func TestCalculateUsageGeminiAudioSeparatePriceSnapshot(t *testing.T) {
 	other, err := common.StrToMap(stored.Other)
 	require.NoError(t, err)
 	assert.Equal(t, true, other["audio_input_seperate_price"])
-	assert.Equal(t, float64(100), other["audio_input_token_count"])
+	assert.NotContains(t, other, "audio_input_token_count")
 	assert.Equal(t, float64(1.0), other["audio_input_price"])
 }
 

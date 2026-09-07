@@ -213,7 +213,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := GenerateWssOtherInfo(ctx, relayInfo, usage, relayInfo.PriceData.ModelRatio, relayInfo.PriceData.GroupRatioInfo.GroupRatio,
+	other := GenerateWssOtherInfo(ctx, relayInfo, relayInfo.PriceData.ModelRatio, relayInfo.PriceData.GroupRatioInfo.GroupRatio,
 		relayInfo.PriceData.CompletionRatio, relayInfo.PriceData.AudioRatio, relayInfo.PriceData.AudioCompletionRatio, relayInfo.PriceData.ModelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
 	if relayInfo.PriceData.GroupRatioInfo.DynamicRatio > 0 {
@@ -385,10 +385,10 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 
 	priceData := relayInfo.PriceData
 	other := GenerateClaudeOtherInfo(ctx, relayInfo, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio, priceData.CompletionRatio,
-		bu.CacheReadTokens, priceData.CacheRatio,
-		bu.CacheWriteTokens, priceData.CacheCreationRatio,
-		intValue(bu.CacheWrite5mTokens), priceData.CacheCreation5mRatio,
-		intValue(bu.CacheWrite1hTokens), priceData.CacheCreation1hRatio,
+		priceData.CacheRatio,
+		priceData.CacheCreationRatio,
+		priceData.CacheCreation5mRatio,
+		priceData.CacheCreation1hRatio,
 		priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
 	if priceData.GroupRatioInfo.DynamicRatio > 0 {
@@ -511,7 +511,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := GenerateAudioOtherInfo(ctx, relayInfo, usage, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio,
+	other := GenerateAudioOtherInfo(ctx, relayInfo, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio,
 		priceData.CompletionRatio, priceData.AudioRatio, priceData.AudioCompletionRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	// 记录动态倍率到日志
 	if priceData.GroupRatioInfo.DynamicRatio > 0 {

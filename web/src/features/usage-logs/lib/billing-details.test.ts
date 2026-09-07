@@ -18,8 +18,6 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import type { UsageLog } from '../data/schema'
-import type { LogOtherData } from '../types'
 import {
   buildTokenBreakdownGroups,
   buildTokenTooltipRows,
@@ -30,42 +28,10 @@ import {
   resolveDisplayTokens,
 } from './billing-details'
 
-function createLog(overrides: Partial<UsageLog> = {}): UsageLog {
-  return {
-    id: 1,
-    user_id: 1,
-    created_at: 0,
-    type: 2,
-    content: '',
-    username: '',
-    token_name: '',
-    model_name: 'test-model',
-    quota: 0,
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    use_time: 0,
-    is_stream: false,
-    channel: 0,
-    channel_name: '',
-    token_id: 0,
-    group: '',
-    ip: '',
-    ua: '',
-    x_title: '',
-    http_referer: '',
-    other: '',
-    billing_details: null,
-    request_id: '',
-    upstream_request_id: '',
-    model_icon: '',
-    ...overrides,
-  }
-}
-
 describe('parseBillingDetails', () => {
-  test('empty value is legacy', () => {
-    assert.deepEqual(parseBillingDetails(null), { status: 'legacy' })
-    assert.deepEqual(parseBillingDetails(''), { status: 'legacy' })
+  test('empty value is missing, not legacy', () => {
+    assert.deepEqual(parseBillingDetails(null), { status: 'missing' })
+    assert.deepEqual(parseBillingDetails(''), { status: 'missing' })
   })
 
   test('schema v1 keeps official token dimensions', () => {
@@ -183,12 +149,22 @@ describe('parseBillingDetails', () => {
 })
 
 describe('resolveDisplayTokens', () => {
+  test('missing details never derive tokens from aggregate columns', () => {
+    const tokens = resolveDisplayTokens(parseBillingDetails(null))
+
+    assert.equal(tokens.input, null)
+    assert.equal(tokens.output, null)
+    assert.equal(tokens.cacheRead, null)
+    assert.equal(tokens.cacheWrite, null)
+    assert.equal(tokens.fromBillingDetails, true)
+    assert.equal(tokens.hasValues, false)
+  })
+
   test('valid details do not derive tokens from aggregate columns', () => {
-    const log = createLog({ prompt_tokens: 999, completion_tokens: 888 })
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":4}}}'
     )
-    const tokens = resolveDisplayTokens(log, billing, null)
+    const tokens = resolveDisplayTokens(billing)
 
     assert.equal(tokens.input, 12)
     assert.equal(tokens.output, 7)
@@ -201,7 +177,7 @@ describe('resolveDisplayTokens', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{},"output":{},"cache":{"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
     )
-    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const tokens = resolveDisplayTokens(billing)
 
     assert.equal(tokens.cacheWrite, 12)
     assert.equal(tokens.cacheWrite5m, 7)
@@ -209,43 +185,8 @@ describe('resolveDisplayTokens', () => {
     assert.equal(tokens.cacheWriteUnallocated, 2)
   })
 
-  test('legacy prompt aggregate remains the fallback when Other is absent', () => {
-    const tokens = resolveDisplayTokens(
-      createLog({ prompt_tokens: 120, completion_tokens: 30 }),
-      parseBillingDetails(null),
-      null
-    )
-
-    assert.equal(tokens.input, 120)
-    assert.equal(tokens.output, 30)
-    assert.equal(tokens.fromBillingDetails, false)
-  })
-
-  test('legacy logs keep existing Other subtraction and split fallback', () => {
-    const log = createLog({ prompt_tokens: 120, completion_tokens: 30 })
-    const other: LogOtherData = {
-      cache_tokens: 40,
-      cache_creation_tokens: 20,
-      cache_creation_tokens_5m: 20,
-      audio_input_token_count: 10,
-      audio_input_seperate_price: true,
-    }
-    const tokens = resolveDisplayTokens(log, parseBillingDetails(null), other)
-
-    assert.equal(tokens.input, 50)
-    assert.equal(tokens.output, 30)
-    assert.equal(tokens.cacheRead, 40)
-    assert.equal(tokens.cacheWrite, 20)
-    assert.equal(tokens.audioInput, 10)
-    assert.equal(tokens.fromBillingDetails, false)
-  })
-
-  test('invalid details never leak legacy aggregate fallback', () => {
-    const tokens = resolveDisplayTokens(
-      createLog({ prompt_tokens: 120, completion_tokens: 30 }),
-      parseBillingDetails('{bad'),
-      null
-    )
+  test('invalid details never leak aggregate fallback', () => {
+    const tokens = resolveDisplayTokens(parseBillingDetails('{bad}'))
 
     assert.equal(tokens.input, null)
     assert.equal(tokens.output, null)
@@ -262,7 +203,7 @@ describe('buildTokenTooltipRows', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":2},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":11,"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
     )
-    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const tokens = resolveDisplayTokens(billing)
     const rows = buildTokenTooltipRows(tokens)
 
     assert.deepEqual(
@@ -290,29 +231,11 @@ describe('buildTokenTooltipRows', () => {
     )
   })
 
-  test('legacy tooltips retain positive values and omit unavailable dimensions', () => {
-    const tokens = resolveDisplayTokens(
-      createLog({ prompt_tokens: 120, completion_tokens: 30 }),
-      parseBillingDetails(null),
-      null
-    )
+  test('missing tooltips omit unavailable dimensions', () => {
+    const tokens = resolveDisplayTokens(parseBillingDetails(null))
     const rows = buildTokenTooltipRows(tokens)
 
-    assert.ok(
-      rows.some(
-        (row) =>
-          row.labelKey === 'usageLogs.fields.inputTokens' && row.value === 120
-      )
-    )
-    assert.ok(
-      rows.some(
-        (row) =>
-          row.labelKey === 'usageLogs.fields.outputTokens' && row.value === 30
-      )
-    )
-    assert.ok(
-      !rows.some((row) => row.labelKey === 'usageLogs.fields.reasoningOutput')
-    )
+    assert.deepEqual(rows, [])
   })
 })
 
@@ -322,7 +245,7 @@ describe('buildTokenBreakdownGroups', () => {
       '{"schema_version":1,"tokens":{"input":{"text_input":0,"image_input":2},"output":{"text_output":7,"reasoning_output":3,"rejected_prediction":1},"cache":{"read_cache":11,"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
     )
     const groups = buildTokenBreakdownGroups(
-      resolveDisplayTokens(createLog(), billing, null),
+      resolveDisplayTokens(billing),
       { aggregatePromptTokens: 999, formatTokens: String }
     )
 
@@ -357,13 +280,9 @@ describe('buildTokenBreakdownGroups', () => {
     )
   })
 
-  test('legacy output uses aggregate tokens while optional Other splits stay explicit', () => {
+  test('missing token dimensions render placeholders without aggregate fallback', () => {
     const groups = buildTokenBreakdownGroups(
-      resolveDisplayTokens(
-        createLog({ prompt_tokens: 120, completion_tokens: 30 }),
-        parseBillingDetails(null),
-        null
-      ),
+      resolveDisplayTokens(parseBillingDetails(null)),
       { aggregatePromptTokens: 120, formatTokens: String }
     )
     const standard = groups.find(
@@ -371,8 +290,8 @@ describe('buildTokenBreakdownGroups', () => {
     )
 
     assert.deepEqual(standard?.rows.slice(0, 2), [
-      { labelKey: 'usageLogs.fields.inputTokens', value: '120' },
-      { labelKey: 'usageLogs.fields.outputTokens', value: '30' },
+      { labelKey: 'usageLogs.fields.inputTokens', value: '-' },
+      { labelKey: 'usageLogs.fields.outputTokens', value: '-' },
     ])
   })
 })
@@ -382,7 +301,7 @@ describe('price snapshot helpers', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"reasoning_output":3},"cache":{"read_cache":4,"write_cache":5,"write_cache_5m":5}}}'
     )
-    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const tokens = resolveDisplayTokens(billing)
 
     assert.equal(
       getPriceSnapshotComponentQuantity('text_input', tokens, String),
@@ -418,7 +337,7 @@ describe('price snapshot helpers', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"text_output":7,"reasoning_output":3},"cache":{"read_cache":4,"write_cache":8,"write_cache_5m":5,"write_cache_1h":3}}}'
     )
-    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const tokens = resolveDisplayTokens(billing)
 
     assert.equal(
       getPriceSnapshotComponentQuantity('input', tokens, String),
@@ -454,7 +373,7 @@ describe('price snapshot helpers', () => {
     const billing = parseBillingDetails(
       '{"schema_version":1,"tokens":{"input":{"text_input":12},"output":{"reasoning_output":3},"cache":{"write_cache":12,"write_cache_5m":7,"write_cache_1h":3}}}'
     )
-    const tokens = resolveDisplayTokens(createLog(), billing, null)
+    const tokens = resolveDisplayTokens(billing)
 
     assert.equal(
       getPriceSnapshotComponentQuantity('input', tokens, String, 988),
